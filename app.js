@@ -248,6 +248,13 @@ function setInvalid(id,bad){ document.getElementById(id).closest(".field").class
    Apenas hay un teléfono válido, guardamos lo que el cliente lleva lleno
    (en la hoja "Pedidos Abandonados") para poder escribirle si no completa. */
 const ORDER_SID = "AB" + Date.now() + Math.floor(Math.random()*1e6);
+// Si el cliente escribe su número CON el código de país (ej: +56 9...), se lo quitamos para no duplicarlo
+function telLimpio(){
+  var cc=(form.codpais.value||"").replace(/\D/g,"");
+  var d=(form.telefono.value||"").replace(/\D/g,"");
+  if(cc && d.indexOf(cc)===0 && d.length-cc.length>=8) d=d.slice(cc.length);
+  return d;
+}
 function sendSheet(payload){
   if(typeof SHEET_URL==="undefined" || !SHEET_URL) return;
   try{ fetch(SHEET_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(payload)}).catch(function(){}); }catch(e){}
@@ -256,7 +263,7 @@ function currentFormData(){
   return {
     sid:ORDER_SID, producto:PRODUCTO,
     cantidad: current?parseInt(current.dataset.qty,10):"", total: current?parseInt(current.dataset.price,10):"",
-    nombre:form.nombre.value.trim(), indicativo:form.codpais.value, telefono:form.telefono.value.trim(),
+    nombre:form.nombre.value.trim(), indicativo:form.codpais.value, telefono:telLimpio(),
     correo:form.correo.value.trim(), direccion:form.direccion.value.trim(),
     referencia:form.referencia.value.trim(), region:form.region.value, comuna:form.comuna.value,
     pagina:location.href, fecha:new Date().toLocaleString("es-CL")
@@ -298,7 +305,7 @@ form.addEventListener("submit",async e=>{
   const total=parseInt(current.dataset.price,10);
   const data={
     sid:ORDER_SID, producto:PRODUCTO, dropi_id:DROPI_ID, cantidad:qty, total:total,
-    nombre, indicativo:form.codpais.value, telefono:form.telefono.value.trim(), direccion:dir,
+    nombre, indicativo:form.codpais.value, telefono:telLimpio(), direccion:dir,
     correo:form.correo.value.trim(), referencia:form.referencia.value.trim(), region:form.region.value, comuna:form.comuna.value,
     pagina:location.href, fecha:new Date().toLocaleString("es-CL")
   };
@@ -310,7 +317,7 @@ form.addEventListener("submit",async e=>{
     } else { console.warn("SHEET_URL vacío: configúralo en app.js para guardar pedidos."); }
     // Confirmación por WhatsApp (n8n) — formato que espera el flujo
     if(N8N_CONFIRM){
-      var telWA = (form.codpais.value+"").replace(/\D/g,"") + (form.telefono.value+"").replace(/\D/g,"");
+      var telWA = (form.codpais.value+"").replace(/\D/g,"") + telLimpio();
       fetch(N8N_CONFIRM,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
         customer:{ phone: telWA },
         shipping_address:{ first_name: nombre.split(" ")[0], address1: dir },
