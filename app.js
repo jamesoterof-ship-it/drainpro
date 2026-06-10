@@ -14,10 +14,19 @@ fb("ViewContent", { content_name: PRODUCTO, content_ids: ["drainpro"], content_t
 var _checkoutTracked = false;
 
 /* ---------- Scroll suave + cantidad preseleccionada ---------- */
+function irAlObjetivo(sel){
+  var el=document.querySelector(sel); if(!el) return;
+  var head=document.querySelector(".header");
+  var off=(head?head.offsetHeight:0)+8;
+  function go(b){ window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - off, behavior: b }); }
+  go("smooth");
+  setTimeout(function(){ go("smooth"); }, 400);   // re-corrige el salto por imágenes que cargan tarde
+  setTimeout(function(){ go("auto"); }, 900);
+}
 document.querySelectorAll("[data-scroll]").forEach(b=>{
   b.addEventListener("click",()=>{
     if(b.dataset.qty) selectPack(b.dataset.qty);
-    document.querySelector(b.dataset.scroll).scrollIntoView({behavior:"smooth"});
+    irAlObjetivo(b.dataset.scroll);
     var m=document.getElementById("menu"); if(m) m.hidden=true;   // cerrar menú si está abierto
     // InitiateCheckout al tocar un botón de compra (una sola vez)
     if(b.dataset.scroll === "#pedido" && !_checkoutTracked){
