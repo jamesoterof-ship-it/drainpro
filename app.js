@@ -5,7 +5,16 @@ const SHEET_URL = "https://script.google.com/macros/s/AKfycbwtAGeI0KObN_6cJjrccr
 const PRODUCTO = "Polvo Limpiador DRAINPRO";
 const DROPI_ID = "69746";   // ID del producto DRAINPRO en Dropi
 const N8N_CONFIRM = "https://n8n-production-8a42.up.railway.app/webhook/d4f51138-9611-4f93-9c51-e137fea97dcc"; // confirmación WhatsApp
+const PANEL_URL = "https://script.google.com/macros/s/AKfycbz8-Y9XZ-T8mxfMiIK9-XpLe6orEX3r-OvRkJ1fLu3lytqf9lc4oGXlU4VmKTs6C1vP/exec"; // panel: visitas/conversión
 const clp = n => "$" + Math.round(n).toLocaleString("es-CL");
+
+/* ---------- Contador de visitas (para el panel) ---------- */
+function trackPanel(tipo){
+  if(!PANEL_URL) return;
+  try{ fetch(PANEL_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({tipo:tipo})}).catch(function(){}); }catch(e){}
+}
+// una visita por sesión (no recuenta si recarga en la misma pestaña)
+try{ if(!sessionStorage.getItem("jaye_vis")){ sessionStorage.setItem("jaye_vis","1"); trackPanel("visita"); } }catch(e){ trackPanel("visita"); }
 
 /* ---------- Píxel de Meta (helper seguro) ---------- */
 function fb(evento, datos){ if(window.fbq){ try{ fbq("track", evento, datos || {}); }catch(e){} } }
@@ -33,6 +42,7 @@ document.querySelectorAll("[data-scroll]").forEach(b=>{
       _checkoutTracked = true;
       var p = (typeof current!=="undefined" && current) ? parseInt(current.dataset.price,10) : 17000;
       fb("InitiateCheckout", { content_name: PRODUCTO, value: p, currency: "CLP" });
+      trackPanel("visita_form");   // llegó al formulario
     }
   });
 });
