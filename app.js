@@ -4,6 +4,7 @@
 const SHEET_URL = "https://script.google.com/macros/s/AKfycbwtAGeI0KObN_6cJjrccrCGVJgMhkHX7Ny4P4rC7pZ7Z9dM6N-0tlmPWxJMA9PDICe-/exec";
 const PRODUCTO = "Polvo Limpiador DRAINPRO";
 const DROPI_ID = "69746";   // ID del producto DRAINPRO en Dropi
+const N8N_CONFIRM = "https://n8n-production-8a42.up.railway.app/webhook/d4f51138-9611-4f93-9c51-e137fea97dcc"; // confirmación WhatsApp
 const clp = n => "$" + Math.round(n).toLocaleString("es-CL");
 
 /* ---------- Píxel de Meta (helper seguro) ---------- */
@@ -298,6 +299,17 @@ form.addEventListener("submit",async e=>{
     if(SHEET_URL){
       await fetch(SHEET_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(data)});
     } else { console.warn("SHEET_URL vacío: configúralo en app.js para guardar pedidos."); }
+    // Confirmación por WhatsApp (n8n) — formato que espera el flujo
+    if(N8N_CONFIRM){
+      var telWA = (form.codpais.value+"").replace(/\D/g,"") + (form.telefono.value+"").replace(/\D/g,"");
+      fetch(N8N_CONFIRM,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+        customer:{ phone: telWA },
+        shipping_address:{ first_name: nombre.split(" ")[0], address1: dir },
+        order_number: "JG-"+String(Date.now()).slice(-6),
+        line_items:[{ title: PRODUCTO, quantity: qty }],
+        total_price: String(total)
+      })}).catch(function(){});
+    }
     // marcar el pedido abandonado como COMPLETADO (misma fila por sid)
     if(abandonedSent) sendSheet(Object.assign(currentFormData(),{tipo:"abandonado",estado:"COMPLETADO"}));
     // Píxel de Meta: Purchase (conversión)
