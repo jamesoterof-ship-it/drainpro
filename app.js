@@ -408,3 +408,79 @@ form.addEventListener("submit",async e=>{
   /* Movil: boton atras */
   try{ history.pushState(null,'',location.href); window.addEventListener('popstate',function(){ if(!shown){ showExit(); history.pushState(null,'',location.href); } }); }catch(e){}
 })();
+
+/* ============================================================
+   RULETA DE PREMIOS al entrar — premio SIEMPRE Envío Gratis.
+   Usa las VARIABLES DE COLOR de la propia página (cada landing
+   sale con su paleta). Al ganar entra a la página al instante.
+   ============================================================ */
+(function(){
+  try{ if(sessionStorage.getItem('jaye_ruleta')) return; }catch(e){}
+  var cf=document.createElement('script'); cf.src='confetti.min.js'; cf.async=true; document.head.appendChild(cf);
+
+  var st=document.createElement('style');
+  st.textContent=
+  '.jrul-ov{position:fixed;inset:0;background:rgba(8,8,12,.8);backdrop-filter:blur(5px);display:grid;place-items:center;z-index:99998;padding:16px;animation:jrf .25s ease}@keyframes jrf{from{opacity:0}to{opacity:1}}'+
+  '.jrul-ov[hidden]{display:none}'+
+  '.jrul-card{position:relative;width:100%;max-width:360px;background:linear-gradient(160deg,#141416,#000);border:1px solid var(--gold,#d4af37);border-radius:24px;padding:24px 20px 26px;text-align:center;color:#fff;font-family:var(--ff,sans-serif);box-shadow:0 26px 80px rgba(0,0,0,.6)}'+
+  '.jrul-x{position:absolute;top:10px;right:14px;background:none;border:0;color:#9a93a8;font-size:25px;cursor:pointer;line-height:1}'+
+  '.jrul-k{display:inline-block;background:rgba(255,255,255,.1);color:var(--gold,#d4af37);border:1px solid var(--gold,#d4af37);font-weight:800;font-size:11px;padding:5px 12px;border-radius:999px;letter-spacing:.04em}'+
+  '.jrul-card h2{font-family:var(--ff-head,inherit);font-size:22px;font-weight:800;margin:10px 0 2px;color:#fff}'+
+  '.jrul-sub{color:#c9c2d6;font-size:13.5px;margin-bottom:14px}'+
+  '.jrul-wrap{position:relative;width:272px;height:272px;margin:0 auto 4px}'+
+  '.jrul-ptr{position:absolute;top:-4px;left:50%;transform:translateX(-50%);z-index:5;width:0;height:0;border-left:15px solid transparent;border-right:15px solid transparent;border-top:24px solid #fff;filter:drop-shadow(0 3px 4px rgba(0,0,0,.4))}'+
+  '.jrul-wheel{width:272px;height:272px;border-radius:50%;position:relative;transition:transform 4.6s cubic-bezier(.16,.84,.3,1);border:7px solid #fff;box-shadow:0 0 0 5px rgba(255,255,255,.12),0 16px 44px rgba(0,0,0,.5);background:conic-gradient(var(--teal,#108474) 0 60deg,var(--gold,#d4af37) 60deg 120deg,var(--indigo,#1a0a5c) 120deg 180deg,var(--naranja,#ff6b00) 180deg 240deg,var(--gold-d,#b8860b) 240deg 300deg,var(--teal-d,#0c6b5d) 300deg 360deg)}'+
+  '.jrul-wheel .l{position:absolute;left:50%;top:14px;width:120px;margin-left:-60px;text-align:center;transform-origin:60px 122px;font-family:var(--ff-head,sans-serif);font-weight:800;font-size:12px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.55);white-space:nowrap;pointer-events:none}'+
+  '.jrul-hub{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:50px;height:50px;border-radius:50%;background:#fff;z-index:4;display:grid;place-items:center;font-weight:800;color:var(--teal,#108474);font-size:11px;font-family:var(--ff-head,sans-serif)}'+
+  '.jrul-spin{margin-top:16px;width:100%;background:linear-gradient(90deg,var(--gold,#d4af37),var(--gold-l,#f0d080));color:#241a02;border:0;border-radius:13px;padding:15px;font-family:var(--ff-head,sans-serif);font-weight:800;font-size:16px;cursor:pointer;box-shadow:0 10px 24px rgba(0,0,0,.3)}'+
+  '.jrul-spin:disabled{opacity:.5;cursor:not-allowed}'+
+  '.jrul-foot{color:#8a82a3;font-size:11px;margin-top:10px}'+
+  '.jrul-win{display:none}.jrul-win .em{font-size:48px}.jrul-win h2{font-size:24px;margin:4px 0;color:#fff}'+
+  '.jrul-premio{font-family:var(--ff-head,sans-serif);font-weight:800;font-size:28px;color:var(--gold,#d4af37);margin:4px 0}'+
+  '.jrul-win p{color:#c9c2d6;font-size:14px;margin-bottom:16px}'+
+  '.jrul-cta{width:100%;background:var(--rojo-cta,linear-gradient(90deg,#3a0808,#e0110f));color:#fff;border:0;border-radius:13px;padding:15px;font-family:var(--ff-head,sans-serif);font-weight:800;font-size:16px;cursor:pointer}'+
+  '.jrul-note{margin-top:10px;color:var(--gold,#d4af37);font-weight:700;font-size:12.5px}';
+  document.head.appendChild(st);
+
+  var N=6, SEG=360/N, labels='';
+  for(var i=0;i<N;i++){ labels+='<div class="l" style="transform:rotate('+(i*SEG+SEG/2)+'deg)">ENVÍO GRATIS</div>'; }
+  var ov=document.createElement('div'); ov.className='jrul-ov'; ov.hidden=true;
+  ov.innerHTML=
+   '<div class="jrul-card">'+
+    '<button class="jrul-x" aria-label="Cerrar">&times;</button>'+
+    '<div class="jrul-intro">'+
+      '<span class="jrul-k">🎁 SOLO POR HOY</span>'+
+      '<h2>¡Gira y gana tu premio!</h2><div class="jrul-sub">Tienes 1 giro gratis. ¡Mucha suerte!</div>'+
+      '<div class="jrul-wrap"><div class="jrul-ptr"></div><div class="jrul-wheel">'+labels+'</div><div class="jrul-hub">GIRA</div></div>'+
+      '<button class="jrul-spin">🎯 GIRAR LA RULETA</button>'+
+      '<div class="jrul-foot">Válido solo en tu compra de hoy · pago contra entrega</div>'+
+    '</div>'+
+    '<div class="jrul-win">'+
+      '<div class="em">🎉</div><h2>¡Felicidades!</h2>'+
+      '<div class="jrul-premio">ENVÍO GRATIS</div>'+
+      '<p>¡Tu envío gratis quedó activo en tu compra de hoy!</p>'+
+      '<button class="jrul-cta">¡Empezar a comprar!</button>'+
+      '<div class="jrul-note">🚚 Envío gratis aplicado</div>'+
+    '</div>'+
+   '</div>';
+  document.body.appendChild(ov);
+
+  var wheel=ov.querySelector('.jrul-wheel'), spin=ov.querySelector('.jrul-spin');
+  var girando=false, giro=0;
+  function cerrar(){ ov.hidden=true; }
+  function entrarPagina(){ cerrar(); try{ window.scrollTo({top:0,behavior:'smooth'}); }catch(e){ window.scrollTo(0,0); } }
+  function fiesta(){ if(typeof confetti!=='function') return;
+    confetti({particleCount:120,spread:80,origin:{y:.4}});
+    var fin=Date.now()+1000;(function fr(){ confetti({particleCount:4,angle:60,spread:55,origin:{x:0}}); confetti({particleCount:4,angle:120,spread:55,origin:{x:1}}); if(Date.now()<fin) requestAnimationFrame(fr); })();
+  }
+  function girar(){ if(girando) return; girando=true; spin.disabled=true;
+    var idx=Math.floor(Math.random()*N), centro=idx*SEG+SEG/2, jit=(Math.random()*0.6-0.3)*SEG;
+    giro+=360*6+(360-(centro+jit)); wheel.style.transform='rotate('+giro+'deg)';
+    setTimeout(function(){ ov.querySelector('.jrul-intro').style.display='none'; ov.querySelector('.jrul-win').style.display='block'; fiesta(); setTimeout(entrarPagina,1500); },4700);
+  }
+  spin.addEventListener('click',girar);
+  ov.querySelector('.jrul-x').addEventListener('click',cerrar);
+  ov.querySelector('.jrul-cta').addEventListener('click',entrarPagina);
+  ov.addEventListener('click',function(e){ if(e.target===ov) cerrar(); });
+  setTimeout(function(){ ov.hidden=false; try{ sessionStorage.setItem('jaye_ruleta','1'); }catch(e){} }, 700);
+})();
