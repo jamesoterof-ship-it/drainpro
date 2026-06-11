@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ruleta de premios — DEMO</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* paleta REAL de Shilajit (en la fábrica saldría de cada página automáticamente) */
+  --pri:#108474; --pri-d:#0c6b5d; --acc:#d4af37; --ink:#0b0b0b;
+  --s1:#108474; --s2:#d4af37; --s3:#1a0a5c; --s4:#ff6b00; --s5:#0c6b5d; --s6:#b8860b;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:#0e0a1a;min-height:100vh;color:#fff;overflow-x:hidden}
+.fakepage{max-width:680px;margin:0 auto;padding:40px 20px;text-align:center;opacity:.5}
+.fakepage h1{font-family:'Sora';font-size:26px;margin-bottom:8px}
+.btn-reabrir{margin-top:24px;background:var(--acc);color:#241a02;border:0;border-radius:12px;padding:13px 22px;font-family:'Sora';font-weight:800;cursor:pointer;font-size:15px}
+
+/* ===== Overlay ruleta ===== */
+.rul-ov{position:fixed;inset:0;background:rgba(8,5,18,.82);backdrop-filter:blur(6px);display:grid;place-items:center;z-index:9999;padding:16px;animation:fade .25s ease}
+.rul-ov[hidden]{display:none}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.rul-card{position:relative;width:100%;max-width:380px;background:linear-gradient(160deg,#06231f,#0b0b0b);border:1px solid rgba(212,168,55,.25);border-radius:26px;padding:26px 22px 30px;text-align:center;box-shadow:0 30px 90px rgba(0,0,0,.6)}
+.rul-x{position:absolute;top:12px;right:16px;background:none;border:0;color:#9b91b5;font-size:26px;cursor:pointer;line-height:1}
+.rul-kicker{display:inline-block;background:rgba(245,181,10,.16);color:var(--acc);border:1px solid rgba(245,181,10,.35);font-weight:700;font-size:12px;padding:5px 12px;border-radius:999px;letter-spacing:.04em}
+.rul-card h2{font-family:'Sora';font-size:23px;font-weight:800;margin:12px 0 4px}
+.rul-card .sub{color:#b9b0d0;font-size:14px;margin-bottom:16px}
+
+/* rueda */
+.wheel-wrap{position:relative;width:290px;height:290px;margin:0 auto 6px}
+.pointer{position:absolute;top:-6px;left:50%;transform:translateX(-50%);z-index:5;width:0;height:0;border-left:16px solid transparent;border-right:16px solid transparent;border-top:26px solid #fff;filter:drop-shadow(0 3px 4px rgba(0,0,0,.4))}
+.pointer::after{content:"";position:absolute;top:-30px;left:-7px;width:14px;height:14px;border-radius:50%;background:#fff}
+.wheel{width:290px;height:290px;border-radius:50%;position:relative;transition:transform 4.6s cubic-bezier(.16,.84,.3,1);
+  border:8px solid #fff;box-shadow:0 0 0 6px rgba(255,255,255,.12),0 18px 50px rgba(0,0,0,.5);
+  background:conic-gradient(
+    var(--s1) 0 60deg, var(--s2) 60deg 120deg, var(--s3) 120deg 180deg,
+    var(--s4) 180deg 240deg, var(--s5) 240deg 300deg, var(--s6) 300deg 360deg);}
+.wheel .lbl{position:absolute;left:50%;top:14px;width:130px;margin-left:-65px;text-align:center;transform-origin:65px 131px;font-family:'Sora';font-weight:800;font-size:13.5px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.5);white-space:nowrap;pointer-events:none}
+.hub{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:54px;height:54px;border-radius:50%;background:#fff;z-index:4;display:grid;place-items:center;box-shadow:0 4px 14px rgba(0,0,0,.4)}
+.hub span{font-family:'Sora';font-weight:800;color:var(--pri);font-size:12px}
+
+.spin-btn{margin-top:18px;width:100%;background:linear-gradient(90deg,var(--acc),#ffce5a);color:#241a02;border:0;border-radius:14px;padding:16px;font-family:'Sora';font-weight:800;font-size:17px;cursor:pointer;box-shadow:0 12px 26px rgba(245,181,10,.35);transition:.2s}
+.spin-btn:hover{transform:translateY(-2px)}
+.spin-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.rul-foot{color:#8a82a3;font-size:11.5px;margin-top:12px}
+
+/* resultado */
+.rul-win{display:none}
+.rul-win .em{font-size:52px}
+.rul-win h2{font-size:26px;margin:6px 0}
+.rul-win .premio{font-family:'Sora';font-weight:800;font-size:30px;background:linear-gradient(90deg,var(--acc),#ffce5a);-webkit-background-clip:text;background-clip:text;color:transparent;margin:6px 0 4px}
+.rul-win p{color:#c7bfdd;font-size:14.5px;margin-bottom:18px}
+.rul-cta{width:100%;background:linear-gradient(90deg,var(--pri),var(--pri-d));color:#fff;border:0;border-radius:14px;padding:16px;font-family:'Sora';font-weight:800;font-size:16px;cursor:pointer}
+.rul-timer{margin-top:12px;color:var(--acc);font-weight:700;font-size:13px}
+</style>
+</head>
+<body>
+  <div class="fakepage">
+    <h1>🛒 (Aquí va tu página de producto)</h1>
+    <p>Esto es solo el fondo de ejemplo. La ruleta aparece encima al entrar.</p>
+    <button class="btn-reabrir" onclick="abrirRuleta()">↻ Volver a mostrar la ruleta</button>
+  </div>
+
+  <!-- RULETA -->
+  <div class="rul-ov" id="rulOv" hidden>
+    <div class="rul-card">
+      <button class="rul-x" onclick="cerrarRuleta()" aria-label="Cerrar">×</button>
+
+      <div id="rulIntro">
+        <span class="rul-kicker">🎁 SOLO POR HOY</span>
+        <h2>¡Gira y gana tu premio!</h2>
+        <div class="sub">Tienes 1 giro gratis. ¿Qué te va a tocar?</div>
+        <div class="wheel-wrap">
+          <div class="pointer"></div>
+          <div class="wheel" id="wheel"></div>
+          <div class="hub"><span>GIRA</span></div>
+        </div>
+        <button class="spin-btn" id="spinBtn" onclick="girar()">🎯 GIRAR LA RULETA</button>
+        <div class="rul-foot">Premio válido solo en tu compra de hoy · pago contra entrega</div>
+      </div>
+
+      <div class="rul-win" id="rulWin">
+        <div class="em">🎉</div>
+        <h2>¡Felicidades!</h2>
+        <div class="premio" id="premioTxt">ENVÍO GRATIS</div>
+        <p id="premioSub">Tu premio quedó aplicado a tu pedido.</p>
+        <button class="rul-cta" onclick="entrarPagina()">¡Empezar a comprar! 🛒</button>
+        <div class="rul-timer" id="rulTimer">🚚 Tu envío gratis ya quedó activo</div>
+      </div>
+    </div>
+  </div>
+
+<script src="confetti.min.js"></script>
+<script>
+/* ===== Premios (en la fábrica esto saldría del CONFIG del producto) ===== */
+var PREMIOS = [
+  {txt:"ENVÍO GRATIS",  sub:"¡Te ahorras el envío en tu pedido de hoy!", win:true},
+  {txt:"5% OFF",        sub:"5% de descuento en tu compra de hoy.",       win:true},
+  {txt:"REGALO 🎁",      sub:"Un regalo sorpresa con tu pedido.",          win:true},
+  {txt:"10% OFF",       sub:"10% de descuento en tu compra de hoy.",      win:true},
+  {txt:"ENVÍO GRATIS",  sub:"¡Te ahorras el envío en tu pedido de hoy!", win:true},
+  {txt:"15% OFF",       sub:"15% de descuento, ¡el premio mayor!",        win:true}
+];
+var SEG = 360/PREMIOS.length;
+
+/* dibujar etiquetas en la rueda */
+(function(){
+  var wheel=document.getElementById('wheel');
+  PREMIOS.forEach(function(p,i){
+    var el=document.createElement('div'); el.className='lbl';
+    var ang = i*SEG + SEG/2;                      // centro del segmento
+    el.style.transform = 'rotate('+ang+'deg)';    // rayo desde el borde hacia el centro
+    el.textContent = p.txt;
+    wheel.appendChild(el);
+  });
+})();
+
+var girando=false, giroActual=0;
+function abrirRuleta(){ var ov=document.getElementById('rulOv'); ov.hidden=false;
+  document.getElementById('rulIntro').style.display='block'; document.getElementById('rulWin').style.display='none';
+  document.getElementById('spinBtn').disabled=false; }
+function cerrarRuleta(){ document.getElementById('rulOv').hidden=true; }
+
+function girar(){
+  if(girando) return; girando=true;
+  document.getElementById('spinBtn').disabled=true;
+  /* SIEMPRE cae en ENVÍO GRATIS (es el único premio) */
+  var pool=[0,4];                      // ambos segmentos = ENVÍO GRATIS
+  var idx=pool[Math.floor(Math.random()*pool.length)];
+  var centro = idx*SEG + SEG/2;
+  var jitter = (Math.random()*0.6-0.3)*SEG;       // realismo, sin salir del segmento
+  var destino = 360*6 + (360 - (centro + jitter)); // 6 vueltas y deja el segmento arriba
+  giroActual += destino;
+  var wheel=document.getElementById('wheel');
+  wheel.style.transform='rotate('+giroActual+'deg)';
+  setTimeout(function(){ mostrarPremio(PREMIOS[idx]); }, 4700);
+}
+
+function mostrarPremio(p){
+  document.getElementById('rulIntro').style.display='none';
+  var w=document.getElementById('rulWin'); w.style.display='block';
+  document.getElementById('premioTxt').textContent=p.txt;
+  document.getElementById('premioSub').textContent=p.sub;
+  fiesta();
+  setTimeout(entrarPagina, 1500);   // entra a la página normal, rápido
+  girando=false;
+}
+
+function fiesta(){
+  if(typeof confetti!=='function') return;
+  var fin=Date.now()+1200;
+  (function frame(){
+    confetti({particleCount:5,angle:60,spread:60,origin:{x:0},colors:['#f5b50a','#6d28d9','#fff','#0e8074']});
+    confetti({particleCount:5,angle:120,spread:60,origin:{x:1},colors:['#f5b50a','#6d28d9','#fff','#0e8074']});
+    if(Date.now()<fin) requestAnimationFrame(frame);
+  })();
+  confetti({particleCount:120,spread:80,origin:{y:.4}});
+}
+
+/* entra a la PÁGINA NORMAL al instante (solo cierra la ruleta, no va al formulario) */
+function entrarPagina(){
+  cerrarRuleta();
+  try{ window.scrollTo({top:0,behavior:'smooth'}); }catch(e){ window.scrollTo(0,0); }
+}
+
+/* aparece al entrar (en real: 1 vez por sesión, a los ~1.5s) */
+setTimeout(abrirRuleta, 800);
+</script>
+</body>
+</html>
