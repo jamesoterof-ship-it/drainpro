@@ -484,12 +484,11 @@ form.addEventListener("submit",async e=>{
   ov.querySelector('.jrul-x').addEventListener('click',cerrar);
   ov.querySelector('.jrul-cta').addEventListener('click',entrarPagina);
   ov.addEventListener('click',function(e){ if(e.target===ov) cerrar(); });
-  var _ab=false, _fb;
+  var _ab=false;
   function _abrir(){ if(_ab) return; _ab=true;
     ['pointerdown','touchstart','click','scroll','keydown'].forEach(function(ev){ window.removeEventListener(ev,_abrir,true); });
-    clearTimeout(_fb);
     ov.hidden=false; try{ sessionStorage.setItem('jaye_ruleta','1'); }catch(e){}
   }
+  /* SOLO se abre cuando el cliente toca/desliza/hace clic en cualquier parte (sin temporizador) */
   ['pointerdown','touchstart','click','scroll','keydown'].forEach(function(ev){ window.addEventListener(ev,_abrir,{capture:true,passive:true}); });
-  _fb=setTimeout(_abrir, 2500);   // respaldo si no interactúa
 })();
