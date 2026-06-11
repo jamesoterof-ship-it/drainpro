@@ -21,7 +21,7 @@ function aprobar(k){
   var s=aprobSet(); s.add(k); try{ localStorage.setItem('jaye_aprob', JSON.stringify([...s])); }catch(e){}
   fetch(URL_APROBAR,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:k,accion:'aprobar'})}).catch(function(){});
   if(typeof toast==='function') toast('Aprobado ✓ — se montará en Dropi en el próximo ciclo');
-  renderPedidosWeb(); renderVentasWA();
+  renderPedidosWeb(); renderVentasWA(); if(typeof renderAprobar==='function') renderAprobar();
 }
 var BTN_APROB='background:var(--brand,#3056c9);color:#fff;border:0;border-radius:8px;padding:5px 12px;font-weight:700;font-size:12.5px;cursor:pointer';
 
@@ -136,7 +136,7 @@ async function cargarVentas(){
         fecha:r.FECHA||'',hora:r.HORA||'',orden:fechaOrden(r.FECHA,r.HORA)});
     });
     ordenes=ords.sort((a,b)=>b.orden-a.orden);   // (3) recientes primero
-    renderVentasWA(); renderVentasBot(); renderBots(); renderResumen(); renderConvStats();
+    renderVentasWA(); renderVentasBot(); renderBots(); renderResumen(); renderConvStats(); if(typeof renderAprobar==='function') renderAprobar();
   }catch(e){}
 }
 const mapPedido=r=>({fecha:r.fecha||'',cli:r.nombre||'—',tel:soloNum((r.indicativo||'')+(r.telefono||'')),
@@ -168,7 +168,7 @@ async function cargarPaginas(){
     .filter(o=>o.estado!=='COMPLETADO')               // (6) solo NO completados
     .sort((a,b)=>b.orden-a.orden);
   visitasWeb=vis;
-  renderPedidosWeb(); renderAbandonadosWeb(); renderVisitas(); renderResumen();
+  renderPedidosWeb(); renderAbandonadosWeb(); renderVisitas(); renderResumen(); if(typeof renderAprobar==='function') renderAprobar();
 }
 
 /* ---------- RESUMEN (canal + rango funcionales) ---------- */
@@ -693,8 +693,46 @@ function kpi(lbl,val,meta,bg,col){
   return '<div class="kpi"><div class="top-r"><span class="lbl">'+lbl+'</span><span class="icn" style="background:'+bg+';color:'+col+'"><svg class="ico-sm" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg></span></div><div class="val">'+val+'</div><div class="meta">'+meta+'</div></div>';
 }
 
+/* ---------- APROBACIÓN UNIFICADA (página + WhatsApp en una sola lista) ---------- */
+let fAprob='pend';
+document.querySelectorAll('#segAprob .minitab').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('#segAprob .minitab').forEach(x=>x.classList.remove('act'));
+  b.classList.add('act'); fAprob=b.dataset.a; renderAprobar();
+}));
+function renderAprobar(){
+  const tb=document.getElementById('tbodyAprobar'); if(!tb) return;
+  const dosDias=Date.now()-2*864e5;
+  const items=[];
+  (pedidosWeb||[]).forEach(o=>{ if(!o.conf) return; const k=keyPag(o);
+    items.push({k,canal:'Página',cli:o.cli,tel:o.tel,fecha:o.fecha,prod:o.prod,color:o.color,comuna:o.comuna,cant:o.cant,total:o.total,orden:o.orden,
+      st:o.dropi?'montado':(esAprobado(k)?'aprobado':'pendiente')});
+  });
+  (ordenes||[]).forEach(o=>{ if(o.loc!=='CL') return; if(o.orden<dosDias && !o.montado) return; const k=keyWa(o);
+    items.push({k,canal:'WhatsApp',cli:o.cli,tel:o.tel,fecha:o.fecha,prod:o.prod,color:'#0e8074',comuna:o.zona,cant:o.cant,total:o.precio,orden:o.orden,
+      st:o.montado?'montado':(esAprobado(k)?'aprobado':'pendiente')});
+  });
+  const nPend=items.filter(x=>x.st==='pendiente').length;
+  const bg=document.getElementById('badgeAprobar');
+  if(bg){ bg.style.display=nPend?'':'none'; bg.textContent=nPend; }
+  let arr=items.sort((a,b)=>b.orden-a.orden);
+  if(fAprob==='pend') arr=arr.filter(x=>x.st==='pendiente');
+  if(!arr.length){ tb.innerHTML='<tr><td colspan="8" class="vacio">'+(fAprob==='pend'?'Nada por aprobar. 🎉':'Sin ventas recientes.')+'</td></tr>'; return; }
+  tb.innerHTML=arr.slice(0,100).map(x=>`
+    <tr>
+      <td class="cli">${esc(x.cli)}<small>${esc(x.fecha)} · +${x.tel}</small></td>
+      <td>${x.canal}</td>
+      <td><span class="pchip"><i style="background:${x.color}"></i>${esc(x.prod)}</span></td>
+      <td>${esc(x.comuna||'—')}</td>
+      <td>${x.cant}</td>
+      <td class="money">${x.total}</td>
+      <td>${x.st==='montado'?'<span class="st st-ok"><i></i>Montado</span>':(x.st==='aprobado'?'<span class="st st-rec"><i></i>Aprobado ⏳</span>':'<button style="'+BTN_APROB+'" onclick="aprobar(&quot;'+x.k+'&quot;)">✓ Aprobar</button>')}</td>
+      <td><a class="qr" style="text-decoration:none" href="https://wa.me/${x.tel}" target="_blank">WhatsApp</a></td>
+    </tr>`).join('');
+}
+
 /* ---------- navegación ---------- */
 const TITULOS={resumen:['Resumen general','Todos los canales · monedas separadas por país'],
+  aprobar:['Aprobación de ventas','Página + WhatsApp · solo lo que apruebes se monta en Dropi'],
   pedidos:['Pedidos de páginas','Shilajit y DRAINPRO · confirmación y estado Dropi'],
   abandonados:['Pedidos abandonados','Solo los no completados · recuperación automática'],
   visitas:['Visitas y conversión','Métricas de las páginas'],
