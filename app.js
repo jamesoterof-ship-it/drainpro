@@ -480,15 +480,14 @@ form.addEventListener("submit",async e=>{
     giro+=360*6+(360-(centro+jit)); wheel.style.transform='rotate('+giro+'deg)';
     setTimeout(function(){ ov.querySelector('.jrul-intro').style.display='none'; ov.querySelector('.jrul-win').style.display='block'; fiesta(); setTimeout(entrarPagina,1500); },4700);
   }
-  spin.addEventListener('click',girar);
+  function _spinTap(e){
+    if(e && e.target && (e.target.closest('.jrul-x') || e.target.closest('.jrul-cta'))) return; // × cierra, CTA entra
+    var win=ov.querySelector('.jrul-win'); if(win && win.style.display==='block') return;        // ya ganó: no re-gira
+    girar();
+  }
   ov.querySelector('.jrul-x').addEventListener('click',cerrar);
   ov.querySelector('.jrul-cta').addEventListener('click',entrarPagina);
-  ov.addEventListener('click',function(e){ if(e.target===ov) cerrar(); });
-  var _ab=false;
-  function _abrir(){ if(_ab) return; _ab=true;
-    ['pointerdown','touchstart','click','scroll','keydown'].forEach(function(ev){ window.removeEventListener(ev,_abrir,true); });
-    ov.hidden=false; try{ sessionStorage.setItem('jaye_ruleta','1'); }catch(e){}
-  }
-  /* SOLO se abre cuando el cliente toca/desliza/hace clic en cualquier parte (sin temporizador) */
-  ['pointerdown','touchstart','click','scroll','keydown'].forEach(function(ev){ window.addEventListener(ev,_abrir,{capture:true,passive:true}); });
+  ov.addEventListener('click',_spinTap);   // tocar CUALQUIER parte de la ruleta la hace girar (no solo el botón)
+  /* la ruleta aparece sola al entrar (1 vez por sesión) */
+  setTimeout(function(){ ov.hidden=false; try{ sessionStorage.setItem('jaye_ruleta','1'); }catch(e){} }, 700);
 })();
