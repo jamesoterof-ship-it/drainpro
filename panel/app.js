@@ -8,7 +8,22 @@ const URL_HIST=BASE+'/historial';
 const URL_PAUSA=BASE+'/pausar-activar';
 const URL_RESP=BASE+'/responder';
 const URL_VENTAS=BASE+'/ventas';
+const URL_APROBAR=BASE+'/aprobar-pedido';
 const URL_IMG='https://web-production-a5adc.up.railway.app/api/jaye/enviar-imagen';
+
+/* ---------- Aprobación de pedidos (solo lo aprobado se monta en Dropi) ---------- */
+function pnameId(p){ p=(p||'').toLowerCase(); if(p.includes('extract'))return 0; if(p.includes('shilajit'))return 113699; if(p.includes('tornado')||p.includes('drainpro'))return 69746; if(p.includes('nad'))return 120370; return 0; }
+function keyPag(o){ return 'pag:'+o.pagina+':'+o.fila; }
+function keyWa(o){ return 'wa:'+String(o.tel||'').slice(-8)+'|'+pnameId(o.prod)+'|'+String(o.fecha||'').split(',')[0]; }
+function aprobSet(){ try{ return new Set(JSON.parse(localStorage.getItem('jaye_aprob')||'[]')); }catch(e){ return new Set(); } }
+function esAprobado(k){ return aprobSet().has(k); }
+function aprobar(k){
+  var s=aprobSet(); s.add(k); try{ localStorage.setItem('jaye_aprob', JSON.stringify([...s])); }catch(e){}
+  fetch(URL_APROBAR,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:k,accion:'aprobar'})}).catch(function(){});
+  if(typeof toast==='function') toast('Aprobado ✓ — se montará en Dropi en el próximo ciclo');
+  renderPedidosWeb(); renderVentasWA();
+}
+var BTN_APROB='background:var(--brand,#3056c9);color:#fff;border:0;border-radius:8px;padding:5px 12px;font-weight:700;font-size:12.5px;cursor:pointer';
 
 const PAGINAS=[
   {id:'shilajit', nombre:'Shilajit Ultra', url:'https://script.google.com/macros/s/AKfycbzhWqfMJVJiquBdOfOAqkgVFp9dHBphmpEk4CLd4woXSb4A9vIN_1iPq3PkjKKKHCusGQ/exec', color:'#0e8074'},
@@ -260,7 +275,7 @@ function renderPedidosWeb(){
       <td>${o.cant}</td>
       <td class="money">${o.total}</td>
       <td>${o.conf?'<span class="st st-ok"><i></i>Confirmado</span>':'<span class="st st-rec"><i></i>Pendiente</span>'}</td>
-      <td onclick="event.stopPropagation();toggleDropi(${i})" title="Clic para cambiar">${o.dropi?'<span class="st st-ok"><i></i>Enviado</span>':'<span class="st st-ab"><i></i>Pendiente</span>'}</td>
+      <td onclick="event.stopPropagation()">${o.dropi?'<span class="st st-ok"><i></i>Montado</span>':(esAprobado(keyPag(o))?'<span class="st st-rec"><i></i>Aprobado ⏳</span>':'<button style="'+BTN_APROB+'" onclick="aprobar(&quot;'+keyPag(o)+'&quot;)">✓ Aprobar</button>')}</td>
       <td><svg class="ico-sm chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></td>
     </tr>`).join('');
   window._pedidosF=arr;
@@ -426,7 +441,7 @@ function renderVentasBot(){
       <td>${o.cant}</td>
       <td class="money">${o.precio}</td>
       <td>${o.conf?'<span class="st st-ok"><i></i>Confirmado</span>':'<span class="st st-rec"><i></i>Pendiente</span>'}</td>
-      <td>${o.montado?'<span class="st st-ok"><i></i>Montado'+(o.ordenDropi?' #'+o.ordenDropi:'')+'</span>':'<span class="st st-ab"><i></i>Pendiente</span>'}</td>
+      <td onclick="event.stopPropagation()">${o.montado?'<span class="st st-ok"><i></i>Montado'+(o.ordenDropi?' #'+o.ordenDropi:'')+'</span>':(esAprobado(keyWa(o))?'<span class="st st-rec"><i></i>Aprobado ⏳</span>':'<button style="'+BTN_APROB+'" onclick="aprobar(&quot;'+keyWa(o)+'&quot;)">✓ Aprobar</button>')}</td>
       <td><svg class="ico-sm chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></td>
     </tr>`).join('');
   window._ventasBotF=arr;
@@ -557,7 +572,7 @@ function renderVentasWA(){
       <td>${o.cant}</td>
       <td class="money">${o.precio}</td>
       <td>${o.conf?'<span class="st st-ok"><i></i>Confirmado</span>':'<span class="st st-rec"><i></i>Pendiente</span>'}</td>
-      <td>${o.montado?'<span class="st st-ok"><i></i>Montado'+(o.ordenDropi?' #'+o.ordenDropi:'')+'</span>':'<span class="st st-ab"><i></i>Pendiente</span>'}</td>
+      <td onclick="event.stopPropagation()">${o.montado?'<span class="st st-ok"><i></i>Montado'+(o.ordenDropi?' #'+o.ordenDropi:'')+'</span>':(esAprobado(keyWa(o))?'<span class="st st-rec"><i></i>Aprobado ⏳</span>':'<button style="'+BTN_APROB+'" onclick="aprobar(&quot;'+keyWa(o)+'&quot;)">✓ Aprobar</button>')}</td>
       <td><svg class="ico-sm chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></td>
     </tr>`).join('');
   window._ventasF=arr;
