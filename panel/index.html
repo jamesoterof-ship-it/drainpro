@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Jaye Group · Panel</title>
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#000000">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Jaye Group">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{background:#000;color:#fff;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;padding:24px;text-align:center}
+.logo{width:min(78vw,360px);max-width:360px;display:block}
+.cargando{display:flex;align-items:center;gap:11px;color:#9aa3b2;font-size:14px;font-weight:500;letter-spacing:.01em}
+.spin{width:18px;height:18px;border:2px solid rgba(255,255,255,.18);border-top-color:#c9a227;border-radius:50%;animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.btn{margin-top:4px;display:none;align-items:center;gap:9px;background:#fff;color:#0b0b0b;font-family:inherit;font-size:15px;font-weight:700;border:none;border-radius:12px;padding:13px 24px;cursor:pointer;text-decoration:none}
+.btn.show{display:inline-flex}
+.hint{color:#6b7280;font-size:12.5px;max-width:300px;line-height:1.5}
+</style>
+</head>
+<body>
+  <img class="logo" src="icon-512.png" alt="Jaye Group">
+  <div class="cargando"><span class="spin"></span> Abriendo tu panel…</div>
+  <a class="btn" id="btn" href="#">Abrir panel</a>
+  <div class="hint" id="hint"></div>
+<script>
+  var PANEL = "https://script.google.com/macros/s/AKfycby5-CjsGi__NOVHPKOs1w9LUu1-UQ_562_iVGI7RTNai1FOcQG95AOg7E-uxc3lSccJ/exec";
+  var btn = document.getElementById('btn');
+  btn.href = PANEL;
+  // redirige solo al panel
+  setTimeout(function(){ window.location.href = PANEL; }, 800);
+  // si por algo no redirige, muestra el botón a los 2.5s
+  setTimeout(function(){
+    btn.classList.add('show');
+    document.querySelector('.cargando').style.display = 'none';
+    document.getElementById('hint').textContent = "Si no abre solo, toca el botón. Entra con tu cuenta de Google.";
+  }, 2500);
+</script>
+</body>
+</html>
