@@ -149,7 +149,7 @@ async function cargarPaginas(){
   visitasArchivo=visArch;
   abandonadosWeb=abs.map(r=>({fecha:r.fecha||'',cli:r.nombre||'—',tel:soloNum((r.indicativo||'')+(r.telefono||'')),
     prod:r.producto,color:r.color,estado:String(r.estado||'').toUpperCase(),comuna:r.comuna||'—',
-    cant:numero(r.cantidad)||1,total:fmtCLP(numero(r.total)),contactado:!!r.contactado,orden:fechaOrden(r.fecha,'')}))
+    cant:numero(r.cantidad)||1,total:fmtCLP(numero(r.total)),contactado:!!r.contactado,contactadoFecha:fechaCorta(r.contactado),orden:fechaOrden(r.fecha,'')}))
     .filter(o=>o.estado!=='COMPLETADO')               // (6) solo NO completados
     .sort((a,b)=>b.orden-a.orden);
   visitasWeb=vis;
@@ -290,6 +290,7 @@ async function toggleDropi(i){
 }
 
 /* ---------- ABANDONADOS ---------- */
+function fechaCorta(v){ if(!v) return ''; try{ var d=new Date(v); if(isNaN(d)) return ''; return d.toLocaleString('es-CL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}); }catch(e){ return ''; } }
 function renderAbandonadosWeb(){
   const tb=document.getElementById('tbodyAband'); if(!tb) return;
   if(!PAGINAS.some(p=>p.url)){tb.innerHTML='<tr><td colspan="7" class="vacio">Esperando conexión de las planillas…</td></tr>';return;}
@@ -301,7 +302,7 @@ function renderAbandonadosWeb(){
       <td>${esc(o.comuna)}</td>
       <td>${o.cant}</td>
       <td class="money">${o.total}</td>
-      <td>${o.contactado?'<span class="st st-rec"><i></i>Recuperando</span>':'<span class="st st-ab"><i></i>Incompleto</span>'}</td>
+      <td>${o.contactado?'<span class="st st-ok"><i></i>✓ Mensaje enviado</span>'+(o.contactadoFecha?'<small style="display:block;color:var(--ink-3)">'+esc(o.contactadoFecha)+'</small>':''):'<span class="st st-ab"><i></i>Sin contactar</span>'}</td>
       <td><a class="qr" style="text-decoration:none" href="https://wa.me/${o.tel}" target="_blank">WhatsApp</a></td>
     </tr>`).join('');
 }
