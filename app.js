@@ -442,8 +442,10 @@ form.addEventListener("submit",async e=>{
   '.jrul-note{margin-top:10px;color:var(--gold,#d4af37);font-weight:700;font-size:12.5px}';
   document.head.appendChild(st);
 
-  var N=6, SEG=360/N, labels='';
-  for(var i=0;i<N;i++){ labels+='<div class="l" style="transform:rotate('+(i*SEG+SEG/2)+'deg)">ENVÍO GRATIS</div>'; }
+  var PREM=['ENVÍO GRATIS','5% OFF','🎁 REGALO','10% OFF','ENVÍO GRATIS','15% OFF'];
+  var GRATIS=[0,4];   // la rueda SIEMPRE se detiene en un segmento de Envío Gratis
+  var N=PREM.length, SEG=360/N, labels='';
+  for(var i=0;i<N;i++){ labels+='<div class="l" style="transform:rotate('+(i*SEG+SEG/2)+'deg)">'+PREM[i]+'</div>'; }
   var ov=document.createElement('div'); ov.className='jrul-ov'; ov.hidden=true;
   ov.innerHTML=
    '<div class="jrul-card">'+
@@ -474,7 +476,7 @@ form.addEventListener("submit",async e=>{
     var fin=Date.now()+1000;(function fr(){ confetti({particleCount:4,angle:60,spread:55,origin:{x:0}}); confetti({particleCount:4,angle:120,spread:55,origin:{x:1}}); if(Date.now()<fin) requestAnimationFrame(fr); })();
   }
   function girar(){ if(girando) return; girando=true; spin.disabled=true;
-    var idx=Math.floor(Math.random()*N), centro=idx*SEG+SEG/2, jit=(Math.random()*0.6-0.3)*SEG;
+    var idx=GRATIS[Math.floor(Math.random()*GRATIS.length)], centro=idx*SEG+SEG/2, jit=(Math.random()*0.6-0.3)*SEG;
     giro+=360*6+(360-(centro+jit)); wheel.style.transform='rotate('+giro+'deg)';
     setTimeout(function(){ ov.querySelector('.jrul-intro').style.display='none'; ov.querySelector('.jrul-win').style.display='block'; fiesta(); setTimeout(entrarPagina,1500); },4700);
   }
