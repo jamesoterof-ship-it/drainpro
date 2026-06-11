@@ -5,7 +5,7 @@ const SHEET_URL = "https://script.google.com/macros/s/AKfycbwtAGeI0KObN_6cJjrccr
 const PRODUCTO = "Polvo Limpiador DRAINPRO";
 const DROPI_ID = "69746";   // ID del producto DRAINPRO en Dropi
 const N8N_CONFIRM = "https://n8n-production-8a42.up.railway.app/webhook/d4f51138-9611-4f93-9c51-e137fea97dcc"; // confirmación WhatsApp
-const PANEL_URL = "https://script.google.com/macros/s/AKfycbz8-Y9XZ-T8mxfMiIK9-XpLe6orEX3r-OvRkJ1fLu3lytqf9lc4oGXlU4VmKTs6C1vP/exec"; // panel: visitas/conversión
+const PANEL_URL = "https://script.google.com/macros/s/AKfycbwRayJ1bThod83lMlvOWSdE8MAedTPLbaxIcrDN301PYUk7SWZoen6pFE5rScYiuvra/exec"; // panel: visitas/conversión
 const clp = n => "$" + Math.round(n).toLocaleString("es-CL");
 
 /* ---------- Contador de visitas (para el panel) ---------- */
