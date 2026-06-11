@@ -7,6 +7,7 @@
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
 <link rel="apple-touch-icon" href="icon-180.png">
+<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#000000">
 <meta name="mobile-web-app-capable" content="yes">
@@ -16,33 +17,53 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{height:100%}
-body{background:#000;color:#fff;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;padding:24px;text-align:center}
-.logo{width:min(78vw,360px);max-width:360px;display:block}
-.cargando{display:flex;align-items:center;gap:11px;color:#9aa3b2;font-size:14px;font-weight:500;letter-spacing:.01em}
+body{background:#000;color:#fff;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:26px;text-align:center}
+.logo{width:min(74vw,330px);display:block}
+.cargando{display:none;align-items:center;gap:11px;color:#9aa3b2;font-size:14px;font-weight:500}
 .spin{width:18px;height:18px;border:2px solid rgba(255,255,255,.18);border-top-color:#c9a227;border-radius:50%;animation:sp .8s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
-.btn{margin-top:4px;display:none;align-items:center;gap:9px;background:#fff;color:#0b0b0b;font-family:inherit;font-size:15px;font-weight:700;border:none;border-radius:12px;padding:13px 24px;cursor:pointer;text-decoration:none}
-.btn.show{display:inline-flex}
-.hint{color:#6b7280;font-size:12.5px;max-width:300px;line-height:1.5}
+.btn{display:inline-flex;align-items:center;gap:9px;background:#fff;color:#0b0b0b;font-family:inherit;font-size:16px;font-weight:700;border:none;border-radius:13px;padding:14px 30px;cursor:pointer;text-decoration:none}
+.card{display:none;max-width:340px;background:#111317;border:1px solid #23262e;border-radius:16px;padding:18px 20px;text-align:left}
+.card h3{font-size:14px;font-weight:700;color:#c9a227;margin-bottom:10px;letter-spacing:.02em}
+.card p{font-size:13.5px;color:#c7ccd6;line-height:1.6;margin-bottom:6px}
+.card b{color:#fff}
+.wrap{display:flex;flex-direction:column;align-items:center;gap:18px}
 </style>
 </head>
 <body>
   <img class="logo" src="icon-512.png" alt="Jaye Group">
-  <div class="cargando"><span class="spin"></span> Abriendo tu panel…</div>
-  <a class="btn" id="btn" href="#">Abrir panel</a>
-  <div class="hint" id="hint"></div>
+
+  <div class="cargando" id="cargando"><span class="spin"></span> Abriendo tu panel…</div>
+
+  <div class="wrap" id="navView">
+    <a class="btn" id="btn" href="#">Abrir panel</a>
+    <div class="card" id="card">
+      <h3>📲 PONLO EN TU PANTALLA DE INICIO</h3>
+      <p id="instr-ios"><b>iPhone:</b> toca el botón <b>Compartir</b> (cuadro con flecha ↑) abajo, y elige <b>"Agregar a inicio"</b>.</p>
+      <p id="instr-and"><b>Android:</b> toca el menú <b>⋮</b> arriba a la derecha y elige <b>"Agregar a pantalla de inicio"</b>.</p>
+      <p style="margin-top:8px;color:#8a8f9a">Quedará con el logo de Jaye Group. Al tocarlo, abre tu panel directo.</p>
+    </div>
+  </div>
+
 <script>
   var PANEL = "https://script.google.com/macros/s/AKfycby5-CjsGi__NOVHPKOs1w9LUu1-UQ_562_iVGI7RTNai1FOcQG95AOg7E-uxc3lSccJ/exec";
-  var btn = document.getElementById('btn');
-  btn.href = PANEL;
-  // redirige solo al panel
-  setTimeout(function(){ window.location.href = PANEL; }, 800);
-  // si por algo no redirige, muestra el botón a los 2.5s
-  setTimeout(function(){
-    btn.classList.add('show');
-    document.querySelector('.cargando').style.display = 'none';
-    document.getElementById('hint').textContent = "Si no abre solo, toca el botón. Entra con tu cuenta de Google.";
-  }, 2500);
+  document.getElementById('btn').href = PANEL;
+
+  var standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+  if (standalone) {
+    // abierto DESDE el ícono instalado -> va directo al panel
+    document.getElementById('navView').style.display = 'none';
+    document.getElementById('cargando').style.display = 'flex';
+    setTimeout(function(){ window.location.href = PANEL; }, 500);
+  } else {
+    // abierto en el navegador -> mostrar botón + instrucciones (NO redirige)
+    document.getElementById('card').style.display = 'block';
+    var ua = navigator.userAgent || '';
+    var isIOS = /iPhone|iPad|iPod/i.test(ua);
+    document.getElementById('instr-ios').style.display = isIOS ? 'block' : 'none';
+    document.getElementById('instr-and').style.display = isIOS ? 'none' : 'block';
+  }
 </script>
 </body>
 </html>
