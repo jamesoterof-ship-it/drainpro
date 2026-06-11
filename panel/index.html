@@ -3,67 +3,746 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Jaye Group · Panel</title>
+<title>Jaye Group · Centro de control</title>
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
 <link rel="apple-touch-icon" href="icon-180.png">
-<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#000000">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Jaye Group">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
+:root{
+  --bg:#f6f7f9; --surface:#ffffff; --surface-2:#fbfcfd;
+  --border:#e9ebf0; --border-2:#eef0f4;
+  --ink:#0f1729; --ink-2:#5b6573; --ink-3:#98a1b0;
+  --brand:#3056c9; --brand-700:#2543a8; --brand-tint:#eef2fe;
+  --gold:#c9a227;
+  --blue:#3060ea; --blue-tint:#eef2fe;
+  --green:#179f6b; --green-tint:#e7f6ef;
+  --red:#e0444b; --red-tint:#fdecec;
+  --amber:#c98a16; --amber-tint:#fbf2df;
+  --violet:#7c4dd8; --violet-tint:#f1ebfc;
+  --shadow:0 1px 2px rgba(16,23,41,.04), 0 1px 3px rgba(16,23,41,.06);
+  --shadow-lg:0 12px 32px rgba(16,23,41,.12);
+  --on-ink:#ffffff; --grid:#eef0f4; --top-bg:rgba(255,255,255,.85);
+  --r:14px;
+}
+:root[data-theme="dark"]{
+  --bg:#0f1420; --surface:#171d2b; --surface-2:#1d2536;
+  --border:#2a3344; --border-2:#222a3b;
+  --ink:#e9edf4; --ink-2:#a3adbe; --ink-3:#6b768a;
+  --brand:#5d7df2; --brand-700:#7d97f5; --brand-tint:#1b2540;
+  --gold:#d9b13b;
+  --blue:#5b8def; --blue-tint:#172139;
+  --green:#27b083; --green-tint:#14271e;
+  --red:#f0696e; --red-tint:#2c1a1c;
+  --amber:#e0a93a; --amber-tint:#292414;
+  --violet:#a98aec; --violet-tint:#211b32;
+  --shadow:0 1px 2px rgba(0,0,0,.3), 0 1px 3px rgba(0,0,0,.4);
+  --shadow-lg:0 12px 36px rgba(0,0,0,.55);
+  --on-ink:#0f1420; --grid:#222a3b; --top-bg:rgba(19,24,36,.88);
+}
+/* en oscuro, las pestañas/botones activos sólidos van en índigo (no blanco puro) */
+:root[data-theme="dark"] .seg button.act,
+:root[data-theme="dark"] .minitab.act{background:var(--brand);color:#fff;border-color:var(--brand)}
+:root[data-theme="dark"] .seg.alt button.act{background:var(--brand-tint);color:var(--brand-700)}
+:root[data-theme="dark"] .nav-i.act .badge,
+:root[data-theme="dark"] .b-copy{background:var(--brand);color:#fff}
+:root[data-theme="dark"] .b-copy{border-color:var(--brand)}
 *{margin:0;padding:0;box-sizing:border-box}
-html,body{height:100%}
-body{background:#000;color:#fff;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:26px;text-align:center}
-.logo{width:min(74vw,330px);display:block}
-.cargando{display:none;align-items:center;gap:11px;color:#9aa3b2;font-size:14px;font-weight:500}
-.spin{width:18px;height:18px;border:2px solid rgba(255,255,255,.18);border-top-color:#c9a227;border-radius:50%;animation:sp .8s linear infinite}
-@keyframes sp{to{transform:rotate(360deg)}}
-.btn{display:inline-flex;align-items:center;gap:9px;background:#fff;color:#0b0b0b;font-family:inherit;font-size:16px;font-weight:700;border:none;border-radius:13px;padding:14px 30px;cursor:pointer;text-decoration:none}
-.card{display:none;max-width:340px;background:#111317;border:1px solid #23262e;border-radius:16px;padding:18px 20px;text-align:left}
-.card h3{font-size:14px;font-weight:700;color:#c9a227;margin-bottom:10px;letter-spacing:.02em}
-.card p{font-size:13.5px;color:#c7ccd6;line-height:1.6;margin-bottom:6px}
-.card b{color:#fff}
-.wrap{display:flex;flex-direction:column;align-items:center;gap:18px}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
+svg{display:block}
+.ico{width:20px;height:20px;stroke:currentColor;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.ico-sm{width:16px;height:16px;stroke:currentColor;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round}
+
+.app{display:grid;grid-template-columns:248px 1fr;min-height:100vh}
+
+/* ===== SIDEBAR ===== */
+.side{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
+.brand{display:flex;align-items:center;gap:11px;padding:20px 20px 18px}
+.brand img{height:32px;border-radius:7px}
+.brand .t{font-weight:800;font-size:15px;letter-spacing:-.01em}
+.brand .t span{color:var(--gold);font-weight:700}
+.grouplabel{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin:16px 12px 6px;padding:8px 10px 7px;border-top:1px solid var(--border);color:var(--ink-3)}
+.grouplabel .ico-sm{width:14px;height:14px}
+nav{padding:0 12px;display:flex;flex-direction:column;gap:2px}
+.nav-i{position:relative;display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:9px;color:var(--ink-2);font-size:14px;font-weight:500;cursor:pointer;transition:background .15s,color .15s}
+.nav-i .ico{transition:transform .18s,stroke .18s}
+.nav-i:hover{background:var(--surface-2);color:var(--ink)}
+.nav-i:hover .ico{transform:translateX(2px)}
+.nav-i::before{content:"";position:absolute;left:-12px;top:50%;width:3px;height:0;border-radius:3px;background:var(--brand);transform:translateY(-50%);transition:height .2s ease}
+.nav-i.act{background:var(--surface-2);color:var(--ink);font-weight:600}
+.nav-i.act::before{height:58%}
+.nav-i.act .ico{stroke:var(--brand);transform:scale(1.08)}
+.grp-web .nav-i.act .ico{stroke:var(--blue)} .grp-web .nav-i.act::before{background:var(--blue)}
+.grp-wa .nav-i.act .ico{stroke:var(--green)} .grp-wa .nav-i.act::before{background:var(--green)}
+.nav-i .badge{margin-left:auto;background:#eef0f4;color:var(--ink-2);font-size:11px;font-weight:700;padding:1px 8px;border-radius:999px}
+.nav-i.act .badge{background:var(--ink);color:var(--on-ink)}
+.nav-i.sub{padding:7px 12px 7px 36px;font-size:13.5px}
+.subdot{position:absolute;left:18px;width:8px;height:8px;border-radius:50%}
+.nav-i.subact{background:var(--surface-2);color:var(--ink);font-weight:600}
+.side .foot{margin-top:auto;padding:14px 16px;border-top:1px solid var(--border)}
+.user{display:flex;align-items:center;gap:10px}
+.user .av{width:34px;height:34px;border-radius:9px;background:var(--ink);color:var(--on-ink);display:grid;place-items:center;font-weight:700;font-size:14px}
+.user .nm{font-size:13px;font-weight:600;line-height:1.2}
+.user .em{font-size:11.5px;color:var(--ink-3)}
+
+/* ===== MAIN ===== */
+.main{display:flex;flex-direction:column;min-width:0}
+.top{background:var(--top-bg);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:16px;padding:13px 26px;min-height:64px}
+.top h1{font-size:18px;font-weight:700;letter-spacing:-.01em}
+.top .sub{font-size:12.5px;color:var(--ink-3);margin-top:1px}
+.iconbtn{margin-left:auto;width:38px;height:38px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--ink-2);display:grid;place-items:center;cursor:pointer}
+.iconbtn:hover{background:var(--surface-2);color:var(--ink)}
+.content{padding:18px 32px 56px;max-width:1700px;width:100%;margin:0 auto}
+
+/* filtros sticky (12) */
+.filters{position:sticky;top:64px;z-index:30;display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--bg);padding:8px 0 12px;margin:-4px 0 10px;border-bottom:1px solid var(--border-2)}
+.seg{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:3px;box-shadow:var(--shadow)}
+.seg button{font-family:inherit;font-size:13px;font-weight:600;color:var(--ink-2);background:none;border:none;padding:7px 13px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:7px}
+.seg button.act{background:var(--ink);color:var(--on-ink)}
+.seg.alt button.act{background:var(--brand-tint);color:var(--brand-700)}
+.spacer{margin-left:auto}
+.flag{display:inline-block;font-size:0;width:21px;height:14px;border-radius:3px;flex:0 0 auto;border:1px solid rgba(15,23,41,.10);box-shadow:0 1px 2px rgba(15,23,41,.08)}
+.flag-cl{background:linear-gradient(180deg,#fff 0 50%,#d52b1e 50% 100%);position:relative;overflow:hidden}
+.flag-cl::after{content:"";position:absolute;left:0;top:0;width:38%;height:50%;background:#0039a6}
+.flag-co{background:linear-gradient(180deg,#fcd116 0 50%,#003893 50% 75%,#ce1126 75% 100%)}
+.flag-py{background:linear-gradient(180deg,#d52b1e 0 33%,#fff 33% 66%,#0038a8 66% 100%)}
+.daterange{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 12px;margin:0 0 14px auto;width:fit-content;box-shadow:var(--shadow)}
+.daterange[hidden]{display:none}
+.daterange .drl{font-size:12.5px;color:var(--ink-3);font-weight:600}
+.daterange input[type=date]{font-family:inherit;font-size:13px;color:var(--ink);border:1px solid var(--border);background:var(--surface-2);border-radius:8px;padding:6px 9px;outline:none}
+.daterange .apply{font-family:inherit;font-size:13px;font-weight:600;color:#fff;background:var(--brand);border:none;border-radius:8px;padding:7px 14px;cursor:pointer}
+
+/* KPI */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:18px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px;box-shadow:var(--shadow)}
+.kpi .top-r{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.kpi .lbl{font-size:13px;color:var(--ink-2);font-weight:500}
+.kpi .icn{width:36px;height:36px;border-radius:10px;display:grid;place-items:center}
+.icn-o{background:var(--brand-tint);color:var(--brand)} .icn-b{background:var(--blue-tint);color:var(--blue)}
+.icn-g{background:var(--green-tint);color:var(--green)} .icn-v{background:var(--violet-tint);color:var(--violet)}
+.kpi .val{font-size:28px;font-weight:800;letter-spacing:-.02em;line-height:1}
+.kpi .meta{display:flex;align-items:center;gap:6px;margin-top:10px;font-size:12.5px;color:var(--ink-3)}
+.monedas{display:flex;flex-direction:column;gap:7px}
+.monedas .mm{display:flex;align-items:center;gap:9px;font-size:15.5px;font-weight:800;letter-spacing:-.01em}
+.monedas .mm small{font-size:11px;color:var(--ink-3);font-weight:600;margin-left:auto}
+
+/* paneles */
+.row{display:grid;grid-template-columns:1.85fr 1fr;gap:16px;margin-bottom:18px}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow)}
+.panel .ph{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 4px}
+.panel .ph h2{font-size:15px;font-weight:700;letter-spacing:-.01em}
+.panel .ph .sm{font-size:12.5px;color:var(--ink-3);margin-top:2px}
+.legend{display:flex;gap:14px;font-size:12.5px;color:var(--ink-2);font-weight:500}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:6px;vertical-align:middle}
+.chartwrap{padding:8px 14px 14px}
+.paislist{padding:14px 20px 18px;display:flex;flex-direction:column;gap:13px}
+.pais{display:flex;align-items:center;gap:11px;font-size:13.5px;font-weight:600}
+.pais .track{flex:1;height:8px;border-radius:6px;background:#f0f1f4;overflow:hidden}
+.pais .track i{display:block;height:100%;border-radius:6px}
+.pais b{min-width:90px;text-align:right;font-weight:700;font-size:12.5px}
+.pais .pct{width:38px;text-align:right;color:var(--ink-3);font-size:12px;font-weight:500}
+
+/* tabla — encabezados fijos (12) */
+.tbl-head{display:flex;align-items:center;gap:12px;padding:18px 20px 14px;flex-wrap:wrap}
+.tbl-head h2{font-size:15px;font-weight:700}
+.minitabs{display:flex;gap:6px}
+.minitab{font-family:inherit;font-size:12.5px;font-weight:600;padding:6px 13px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--ink-2);cursor:pointer;display:flex;align-items:center;gap:6px}
+.minitab.act{background:var(--ink);border-color:var(--ink);color:#fff}
+.tinysearch{margin-left:auto;display:flex;align-items:center;gap:7px;background:var(--surface-2);border:1px solid var(--border);border-radius:9px;padding:7px 11px;width:220px;color:var(--ink-3)}
+.tinysearch input{border:none;background:none;outline:none;font-family:inherit;font-size:13px;color:var(--ink);width:100%}
+table{width:100%;border-collapse:separate;border-spacing:0}
+th{position:sticky;top:var(--th-top,64px);z-index:10;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-3);font-weight:600;text-align:left;padding:11px 20px;background:var(--surface-2);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+td{padding:13px 20px;border-bottom:1px solid var(--border-2);font-size:13.5px}
+tbody tr{cursor:pointer;transition:.1s}
+tbody tr:hover{background:var(--surface-2)}
+tbody tr:last-child td{border-bottom:none}
+.cli{font-weight:600}
+.cli small{display:block;color:var(--ink-3);font-weight:400;font-size:12px;margin-top:1px}
+.pchip{display:inline-flex;align-items:center;gap:7px;font-weight:500}
+.pchip i{width:8px;height:8px;border-radius:50%;flex:0 0 auto}
+.money{font-weight:700;letter-spacing:-.01em}
+.st{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;white-space:nowrap}
+.st i{width:6px;height:6px;border-radius:50%}
+.st-ok{background:var(--green-tint);color:var(--green)} .st-ok i{background:var(--green)}
+.st-ab{background:var(--red-tint);color:var(--red)} .st-ab i{background:var(--red)}
+.st-rec{background:var(--amber-tint);color:var(--amber)} .st-rec i{background:var(--amber)}
+.chev{color:var(--ink-3)}
+tbody tr:hover .chev{color:var(--brand)}
+.vacio{padding:36px;text-align:center;color:var(--ink-3);font-size:13.5px}
+
+/* conversaciones */
+.mespick{display:inline-flex;align-items:center;gap:9px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 12px;box-shadow:var(--shadow);cursor:pointer;position:relative}
+.mespick .ico-sm{color:var(--ink-3)}
+.mespick .mlbl{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-3)}
+.mespick select{appearance:none;-webkit-appearance:none;border:none;background:none;outline:none;font-family:inherit;font-size:14px;font-weight:700;color:var(--ink);cursor:pointer;padding-right:4px}
+.mespick .chevd{color:var(--ink-2)}
+.actfeed{padding:6px 8px 12px}
+.actrow{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:10px;transition:.1s}
+.actrow:hover{background:var(--surface-2)}
+.actav{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;font-weight:700;font-size:13px;color:#fff;flex:0 0 auto}
+.actinfo{flex:1;min-width:0}
+.actinfo .n1{font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.actinfo .n2{font-size:12px;color:var(--ink-3);margin-top:1px}
+.actcanal{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;flex:0 0 auto}
+.act-wa{background:var(--green-tint);color:var(--green)}
+.act-web{background:var(--blue-tint);color:var(--blue)}
+.actmoney{font-weight:700;font-size:13.5px;text-align:right;white-space:nowrap;flex:0 0 auto}
+.convbar .cstep{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.convbar .cstep .nm{font-size:13px;color:var(--ink-2);width:130px;font-weight:500}
+.convbar .cstep .track{flex:1;height:9px;border-radius:6px;background:#f0f1f4;overflow:hidden}
+.convbar .cstep .track i{display:block;height:100%;border-radius:6px}
+.convbar .cstep b{font-size:14px;font-weight:700;width:70px;text-align:right}
+.convstats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.convstats .cs{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:13px 16px;box-shadow:var(--shadow)}
+.convstats .cs .lbl{font-size:12px;color:var(--ink-2);font-weight:500;display:flex;align-items:center;gap:7px}
+.convstats .cs .val{font-size:22px;font-weight:800;letter-spacing:-.02em;margin-top:6px}
+.convstats .cs .val small{font-size:12px;color:var(--ink-3);font-weight:600;margin-left:4px}
+.convstats .cs.acc .val{color:var(--green)}
+@media(max-width:1080px){.convstats{grid-template-columns:repeat(2,1fr)}}
+.convgrid{display:grid;grid-template-columns:360px 1fr;gap:16px;min-height:560px}
+.convlist{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column;max-height:72vh}
+.convlist .clh{padding:14px 16px;border-bottom:1px solid var(--border)}
+.convlist .clh .tinysearch{width:100%;margin:0}
+#clist{overflow-y:auto;flex:1}
+.citem{display:flex;align-items:center;gap:11px;padding:13px 16px;border-bottom:1px solid var(--border-2);cursor:pointer;transition:.1s}
+.citem:hover{background:var(--surface-2)}
+.citem.sel{background:var(--brand-tint)}
+.cav{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;font-weight:700;font-size:14px;color:#fff;flex:0 0 auto;position:relative}
+.cav .bdot{position:absolute;bottom:-2px;right:-2px;width:12px;height:12px;border-radius:50%;border:2px solid #fff}
+.bdot-on{background:var(--green)} .bdot-paused{background:var(--amber)}
+.cinfo{flex:1;min-width:0}
+.cinfo .l1{display:flex;align-items:center;gap:7px}
+.cinfo .nm{font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cinfo .tm{margin-left:auto;font-size:11px;color:var(--ink-3);flex:0 0 auto}
+.cinfo .l2{font-size:12.5px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.ctag{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;flex:0 0 auto}
+.ctag-bot{background:var(--green-tint);color:var(--green)}
+.ctag-ag{background:var(--amber-tint);color:var(--amber)}
+.chatwin{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);display:none;flex-direction:column;overflow:hidden;max-height:72vh}
+.chh{display:flex;align-items:center;gap:11px;padding:13px 16px;border-bottom:1px solid var(--border)}
+.chh .nm{font-size:14.5px;font-weight:700}
+.chh .ph2{font-size:12px;color:var(--ink-3)}
+.chh .acts{margin-left:auto;display:flex;gap:8px}
+.btn-pause{display:flex;align-items:center;gap:7px;font-family:inherit;font-size:12.5px;font-weight:700;padding:8px 14px;border-radius:9px;cursor:pointer;border:1px solid var(--amber);background:var(--amber-tint);color:var(--amber)}
+.btn-pause.btn-resume{border-color:var(--green);background:var(--green-tint);color:var(--green)}
+.chmsgs{flex:1;padding:18px;background:var(--surface-2);display:flex;flex-direction:column;gap:10px;overflow-y:auto;min-height:300px}
+.msg{max-width:74%;padding:10px 13px;border-radius:13px;font-size:13.5px;line-height:1.45;box-shadow:var(--shadow);white-space:pre-wrap;word-break:break-word}
+.msg .who{font-size:10.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;margin-bottom:3px;opacity:.6}
+.msgimg{max-width:210px;max-height:240px;border-radius:10px;display:block;cursor:pointer;margin-top:2px;object-fit:cover}
+.imgov{position:fixed;inset:0;background:rgba(15,23,41,.82);display:none;place-items:center;z-index:120;padding:24px;cursor:zoom-out}
+.imgov.open{display:grid}
+.imgov img{max-width:94vw;max-height:90vh;border-radius:14px;box-shadow:var(--shadow-lg)}
+.m-cli{align-self:flex-start;background:var(--surface);border:1px solid var(--border)}
+.m-bot{align-self:flex-end;background:var(--brand-tint);border:1px solid #d6e0f8}
+.m-ag{align-self:flex-end;background:var(--green-tint);border:1px solid #cdeadd}
+.qrow{display:flex;gap:7px;padding:10px 14px 0;flex-wrap:wrap}
+.qr{font-family:inherit;font-size:12px;font-weight:600;color:var(--ink-2);background:var(--surface-2);border:1px solid var(--border);border-radius:999px;padding:6px 12px;cursor:pointer}
+.qr:hover{border-color:var(--brand);color:var(--brand-700)}
+.chin{display:flex;align-items:center;gap:9px;padding:12px 14px}
+.chin .att{width:42px;height:42px;border-radius:11px;border:1px solid var(--border);background:var(--surface);color:var(--ink-2);display:grid;place-items:center;cursor:pointer;flex:0 0 auto}
+.chin .att:hover{border-color:var(--brand);color:var(--brand)}
+.chin input[type=text]{flex:1;font-family:inherit;font-size:13.5px;border:1px solid var(--border);background:var(--surface-2);border-radius:11px;padding:11px 14px;outline:none;color:var(--ink)}
+.chin .send{width:42px;height:42px;border-radius:11px;border:none;background:var(--brand);color:#fff;display:grid;place-items:center;cursor:pointer;flex:0 0 auto}
+.chin .send:hover{background:var(--brand-700)}
+#chatEmpty{display:grid;place-items:center;background:var(--surface);border:1px dashed var(--border);border-radius:var(--r);color:var(--ink-3);font-size:13.5px;min-height:300px}
+
+/* bots */
+.botgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:18px}
+.bot{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);padding:18px}
+.bot .bh{display:flex;align-items:center;gap:11px}
+.bot .bav{width:42px;height:42px;border-radius:11px;display:grid;place-items:center;font-weight:800;font-size:15px;color:#fff}
+.bot .bnm{font-size:14.5px;font-weight:700}
+.bot .bsub{font-size:12px;color:var(--ink-3);margin-top:2px;display:flex;align-items:center;gap:6px}
+.bstats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:16px}
+.bstat{background:var(--surface-2);border:1px solid var(--border-2);border-radius:10px;padding:10px;text-align:center}
+.bstat b{display:block;font-size:17px;font-weight:800}
+.bstat span{font-size:11px;color:var(--ink-3)}
+.bfoot{display:flex;align-items:center;gap:8px;margin-top:14px}
+.bbtn{flex:1;font-family:inherit;font-size:12.5px;font-weight:600;padding:9px;border-radius:9px;border:1px solid var(--border);background:var(--surface);color:var(--ink-2);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px}
+.bbtn:hover{background:var(--surface-2);color:var(--ink)}
+.stlive{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;color:var(--green)}
+.stlive i{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pl 1.6s infinite}
+@keyframes pl{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* modal */
+.ov{position:fixed;inset:0;background:rgba(15,23,41,.45);backdrop-filter:blur(2px);display:none;place-items:center;z-index:100;padding:18px}
+.ov.open{display:grid}
+.modal{background:var(--surface);border-radius:18px;width:100%;max-width:460px;box-shadow:var(--shadow-lg);overflow:hidden;animation:pop .18s ease}
+@keyframes pop{from{transform:translateY(8px) scale(.98);opacity:0}to{transform:none;opacity:1}}
+.mh{display:flex;align-items:center;gap:10px;padding:18px 20px;border-bottom:1px solid var(--border)}
+.mh .tt{font-size:15px;font-weight:700}
+.mh .x{margin-left:auto;width:32px;height:32px;border-radius:9px;border:1px solid var(--border);background:var(--surface);color:var(--ink-2);cursor:pointer;display:grid;place-items:center}
+.mb{padding:8px 20px 4px;max-height:48vh;overflow-y:auto}
+.dl{display:flex;justify-content:space-between;gap:16px;padding:11px 0;border-bottom:1px solid var(--border-2);font-size:13.5px}
+.dl:last-child{border:none}
+.dl .k{color:var(--ink-3)}
+.dl .v{font-weight:600;text-align:right}
+.mtot{margin:8px 20px;background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center}
+.mtot .k{font-size:13px;color:var(--ink-2);font-weight:600}
+.mtot .v{font-size:20px;font-weight:800;color:var(--green);letter-spacing:-.02em}
+.macts{display:flex;gap:10px;padding:8px 20px 20px}
+.macts button{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;font-family:inherit;font-weight:600;font-size:13.5px;padding:11px;border-radius:11px;cursor:pointer;border:1px solid var(--border)}
+.b-copy{background:var(--ink);color:var(--on-ink);border-color:var(--ink)}
+.b-wa{background:var(--green);color:#fff;border-color:var(--green)}
+
+/* toast */
+#toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--on-ink);font-size:13.5px;font-weight:600;padding:12px 20px;border-radius:12px;opacity:0;pointer-events:none;transition:.25s;z-index:200;box-shadow:var(--shadow-lg)}
+#toast.show{opacity:1;transform:translateX(-50%)}
+#toast.err{background:var(--red)}
+
+.view{display:none}
+.view.act{display:block}
+
+@media(max-width:1080px){.kpis{grid-template-columns:repeat(2,1fr)}.row{grid-template-columns:1fr}.botgrid{grid-template-columns:1fr}.convgrid{grid-template-columns:1fr}}
+
+/* ===== botón menú (hamburguesa) y volver: ocultos en escritorio ===== */
+.hamb,.chback{display:none}
+.hamb{width:40px;height:40px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--ink);place-items:center;cursor:pointer;flex:0 0 auto}
+.chback{width:38px;height:38px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--ink-2);place-items:center;cursor:pointer;flex:0 0 auto}
+.drawerov{display:none;position:fixed;inset:0;background:rgba(15,23,41,.45);z-index:55}
+.drawerov.open{display:block}
+
+/* ===== MÓVIL ===== */
+@media(max-width:760px){
+  .app{grid-template-columns:1fr}
+  /* menú lateral como cajón deslizable */
+  .side{position:fixed;left:0;top:0;height:100vh;width:264px;max-width:84vw;z-index:60;transform:translateX(-100%);transition:transform .25s ease;box-shadow:var(--shadow-lg)}
+  .side.open{transform:none}
+  .hamb{display:grid}
+  /* topbar */
+  .top{padding:11px 14px;gap:11px}
+  .top h1{font-size:16px}
+  .top .sub{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .content{padding:14px 14px 60px}
+  .filters{top:60px;gap:7px}
+  .seg{flex-wrap:wrap}
+  .seg button{padding:7px 11px;font-size:12.5px}
+  .kpis{grid-template-columns:1fr 1fr;gap:11px}
+  .kpi{padding:14px}
+  .kpi .val{font-size:23px}
+  .convstats{grid-template-columns:1fr 1fr}
+  /* tablas: scroll horizontal */
+  .panel{overflow-x:auto}
+  table{min-width:560px}
+  th{top:0}
+  /* conversaciones: lista O chat (no los dos) */
+  .convlist,.chatwin{max-height:none}
+  #clist{max-height:none}
+  .convgrid.ver-chat .convlist{display:none}
+  .convgrid:not(.ver-chat) #chatEmpty{display:none!important}
+  .convgrid:not(.ver-chat) .chatwin{display:none!important}
+  .convgrid.ver-chat .chatwin{display:flex!important}
+  .chatwin{height:calc(100vh - 140px);min-height:420px}
+  .chback{display:grid}
+  body.chat-abierto .convstats,
+  body.chat-abierto #view-conv .filters{display:none}
+}
 </style>
 </head>
 <body>
-  <img class="logo" src="icon-512.png" alt="Jaye Group">
+<div class="app">
 
-  <div class="cargando" id="cargando"><span class="spin"></span> Abriendo tu panel…</div>
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="side">
+    <div class="brand">
+      <img src="logo-jaye.webp" alt="Jaye Group">
+      <div class="t">Jaye <span>Group</span></div>
+    </div>
 
-  <div class="wrap" id="navView">
-    <a class="btn" id="btn" href="#">Abrir panel</a>
-    <div class="card" id="card">
-      <h3>📲 PONLO EN TU PANTALLA DE INICIO</h3>
-      <p id="instr-ios"><b>iPhone:</b> toca el botón <b>Compartir</b> (cuadro con flecha ↑) abajo, y elige <b>"Agregar a inicio"</b>.</p>
-      <p id="instr-and"><b>Android:</b> toca el menú <b>⋮</b> arriba a la derecha y elige <b>"Agregar a pantalla de inicio"</b>.</p>
-      <p style="margin-top:8px;color:#8a8f9a">Quedará con el logo de Jaye Group. Al tocarlo, abre tu panel directo.</p>
+    <nav style="padding-top:4px">
+      <div class="nav-i act" data-view="resumen">
+        <svg class="ico" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+        Resumen general
+      </div>
+    </nav>
+
+    <div class="grouplabel">
+      <svg class="ico-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>
+      Ventas por página
+    </div>
+    <nav class="grp-web">
+      <div class="nav-i" data-view="pedidos">
+        <svg class="ico" viewBox="0 0 24 24"><path d="M6 2 3 6v13a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+        Pedidos
+      </div>
+      <div class="nav-i" data-view="abandonados">
+        <svg class="ico" viewBox="0 0 24 24"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+        Abandonados
+      </div>
+      <div class="nav-i" data-view="visitas">
+        <svg class="ico" viewBox="0 0 24 24"><path d="M3 3v18h18"/><rect x="7" y="11" width="3" height="6" rx="1"/><rect x="12" y="7" width="3" height="10" rx="1"/><rect x="17" y="13" width="3" height="4" rx="1"/></svg>
+        Visitas y conversión
+      </div>
+    </nav>
+
+    <div class="grouplabel">
+      <svg class="ico-sm" viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.6A8.4 8.4 0 1 1 21 11.5z"/></svg>
+      Ventas por WhatsApp
+    </div>
+    <nav class="grp-wa">
+      <div class="nav-i" data-view="bots">
+        <svg class="ico" viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 0 0-6 0v4M5 9h14l-1 11H6L5 9z"/></svg>
+        Ventas WhatsApp <span class="badge" id="convBadge">…</span>
+      </div>
+      <div class="nav-i" data-view="bots">
+        <svg class="ico" viewBox="0 0 24 24"><rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 8V4M8 4h8"/><circle cx="9" cy="13.5" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="13.5" r="1" fill="currentColor" stroke="none"/><path d="M9.5 17h5"/></svg>
+        Control de bots
+      </div>
+      <div class="nav-i sub" data-view="conv" data-bot="Carlos"><span class="subdot" style="background:#0e8074"></span>Carlos · Chile</div>
+      <div class="nav-i sub" data-view="conv" data-bot="James"><span class="subdot" style="background:#3060ea"></span>James · Colombia</div>
+      <div class="nav-i sub" data-view="conv" data-bot="Ramon"><span class="subdot" style="background:#7c4dd8"></span>Ramón · Paraguay</div>
+    </nav>
+
+    <div class="grouplabel">
+      <svg class="ico-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1"/></svg>
+      Sistema
+    </div>
+    <nav style="padding-bottom:10px">
+      <div class="nav-i" data-view="historico">
+        <svg class="ico" viewBox="0 0 24 24"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>
+        Histórico
+      </div>
+      <div class="nav-i" data-view="config">
+        <svg class="ico" viewBox="0 0 24 24"><path d="M12.2 2h-.4a2 2 0 0 0-2 2v.2a2 2 0 0 1-1 1.7l-.4.3a2 2 0 0 1-2 0l-.2-.1a2 2 0 0 0-2.7.7l-.3.5a2 2 0 0 0 .7 2.7l.2.1a2 2 0 0 1 1 1.8 2 2 0 0 1-1 1.8l-.2.1a2 2 0 0 0-.7 2.7l.3.5a2 2 0 0 0 2.7.7l.2-.1a2 2 0 0 1 2 0l.4.3a2 2 0 0 1 1 1.7v.2a2 2 0 0 0 2 2h.4a2 2 0 0 0 2-2v-.2a2 2 0 0 1 1-1.7l.4-.3a2 2 0 0 1 2 0l.2.1a2 2 0 0 0 2.7-.7l.3-.5a2 2 0 0 0-.7-2.7l-.2-.1a2 2 0 0 1 0-3.6l.2-.1a2 2 0 0 0 .7-2.7l-.3-.5a2 2 0 0 0-2.7-.7l-.2.1a2 2 0 0 1-2 0l-.4-.3a2 2 0 0 1-1-1.7V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+        Configuración
+      </div>
+    </nav>
+
+    <div class="foot">
+      <div class="user">
+        <div class="av">JG</div>
+        <div><div class="nm">James Otero</div><div class="em">jamesoterof@gmail.com</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ===== MAIN ===== -->
+  <div class="main">
+    <header class="top">
+      <button class="hamb" id="hamb" aria-label="Menú" onclick="abrirDrawer()">
+        <svg class="ico" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+      <div style="min-width:0">
+        <h1 id="vtitle">Resumen general</h1>
+        <div class="sub"><span id="fechaHead"></span> · <span id="vsub">Todos los canales · monedas separadas por país</span></div>
+      </div>
+      <button class="iconbtn" id="btnTema" title="Tema claro / oscuro" onclick="toggleTema()">
+        <svg class="ico" id="temaIcon" viewBox="0 0 24 24"></svg>
+      </button>
+      <button class="iconbtn" title="Actualizar" onclick="cargarConvos();cargarVentas();cargarPaginas();toast('Actualizando…')" style="margin-left:0">
+        <svg class="ico" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg>
+      </button>
+    </header>
+
+    <!-- ====== RESUMEN ====== -->
+    <div class="content view act" id="view-resumen">
+      <div class="filters">
+        <div class="seg" id="segCanal">
+          <button class="act" data-c="todos">Todos los canales</button>
+          <button data-c="web">Páginas</button>
+          <button data-c="wa">WhatsApp</button>
+        </div>
+        <div class="seg alt spacer" id="rangeSeg">
+          <button data-r="hoy" class="act">Hoy</button>
+          <button data-r="ayer">Ayer</button>
+          <button data-r="7d">7 días</button>
+          <button data-r="30d">30 días</button>
+          <button data-r="fechas">Por fechas</button>
+        </div>
+      </div>
+      <div class="daterange" id="daterange" hidden>
+        <span class="drl">Desde</span><input type="date" id="fDesde">
+        <span class="drl">Hasta</span><input type="date" id="fHasta">
+        <button class="apply" id="btnAplicarFechas">Aplicar</button>
+      </div>
+
+      <div class="kpis">
+        <div class="kpi">
+          <div class="top-r"><span class="lbl" id="lTot">Ventas totales (hoy)</span><span class="icn" style="background:var(--border-2);color:var(--ink)"><svg class="ico-sm" viewBox="0 0 24 24"><path d="M6 2 3 6v13a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></span></div>
+          <div class="val" id="kTot">…</div>
+          <div class="meta">páginas + WhatsApp, todos los países</div>
+        </div>
+        <div class="kpi">
+          <div class="top-r"><span class="lbl" id="lWa">Ventas por WhatsApp (hoy)</span><span class="icn icn-g"><svg class="ico-sm" viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.6A8.4 8.4 0 1 1 21 11.5z"/></svg></span></div>
+          <div class="val" id="kWa">…</div>
+          <div class="meta">cerradas por Carlos, James y Ramón</div>
+        </div>
+        <div class="kpi">
+          <div class="top-r"><span class="lbl" id="lWeb">Ventas por página (hoy)</span><span class="icn icn-b"><svg class="ico-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></span></div>
+          <div class="val" id="kWeb">—</div>
+          <div class="meta" id="kWebMeta">pendiente conectar planillas</div>
+        </div>
+        <div class="kpi">
+          <div class="top-r"><span class="lbl" id="lMon">Ventas hoy · por moneda</span><span class="icn icn-v"><svg class="ico-sm" viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span></div>
+          <div class="monedas" id="kMonedas"><div class="vacio" style="padding:4px 0;text-align:left">cargando…</div></div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="panel">
+          <div class="ph">
+            <div><h2>Ventas por día</h2><div class="sm">Según el rango y canal elegidos</div></div>
+            <div class="legend"><span><i style="background:var(--blue)"></i>Páginas</span><span><i style="background:var(--green)"></i>WhatsApp</span></div>
+          </div>
+          <div class="chartwrap" id="chartReal"><div class="vacio">Cargando…</div></div>
+        </div>
+        <div class="panel">
+          <div class="ph"><div><h2>Ventas por país</h2><div class="sm" id="paisesSub">…</div></div></div>
+          <div class="paislist" id="paisesReal"><div class="vacio">Cargando…</div></div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="panel">
+          <div class="ph"><div><h2>Actividad reciente</h2><div class="sm">Últimas ventas · todos los canales</div></div></div>
+          <div id="actividadReciente"><div class="vacio">Cargando…</div></div>
+        </div>
+        <div class="panel">
+          <div class="ph"><div><h2>Top productos</h2><div class="sm" id="topProdSub">Hoy</div></div></div>
+          <div class="paislist" id="topProductos"><div class="vacio">Cargando…</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== PEDIDOS PÁGINAS ====== -->
+    <div class="content view" id="view-pedidos">
+      <div class="panel">
+        <div class="tbl-head">
+          <h2>Pedidos de páginas</h2>
+          <div class="minitabs" id="segProdP">
+            <button class="minitab act" data-pp="todos">Todos</button>
+            <button class="minitab" data-pp="shilajit">Shilajit Ultra</button>
+            <button class="minitab" data-pp="drainpro">DRAINPRO</button>
+          </div>
+          <div class="tinysearch">
+            <svg class="ico-sm" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+            <input id="pbuscar" placeholder="Filtrar pedidos…">
+          </div>
+        </div>
+        <table>
+          <thead><tr><th>Cliente</th><th>Producto</th><th>Comuna</th><th>Cant.</th><th>Total</th><th>Confirmación</th><th>Dropi</th><th></th></tr></thead>
+          <tbody id="tbodyPedidos"><tr><td colspan="9" class="vacio">Cargando…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ====== ABANDONADOS ====== -->
+    <div class="content view" id="view-abandonados">
+      <div class="panel">
+        <div class="tbl-head"><h2>Pedidos abandonados (sin completar)</h2></div>
+        <table>
+          <thead><tr><th>Cliente</th><th>Producto</th><th>Comuna</th><th>Cant.</th><th>Total</th><th>Estado</th><th></th></tr></thead>
+          <tbody id="tbodyAband"><tr><td colspan="7" class="vacio">Cargando…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ====== VISITAS ====== -->
+    <div class="content view" id="view-visitas">
+      <div class="filters">
+        <div class="seg"><span style="padding:7px 13px;font-size:13px;font-weight:600;color:var(--ink-2)">Página:</span></div>
+        <div class="seg" id="segPagV">
+          <button class="act" data-pg="todas">Todas</button>
+          <button data-pg="shilajit"><span style="width:8px;height:8px;border-radius:50%;background:#0e8074;display:inline-block"></span>Shilajit</button>
+          <button data-pg="drainpro"><span style="width:8px;height:8px;border-radius:50%;background:#3060ea;display:inline-block"></span>DRAINPRO</button>
+        </div>
+        <div class="seg alt spacer" id="segRvis">
+          <button class="act" data-r="hoy">Hoy</button>
+          <button data-r="ayer">Ayer</button>
+          <button data-r="7d">7 días</button>
+          <button data-r="30d">30 días</button>
+        </div>
+      </div>
+      <div class="kpis" id="visitasKpis"></div>
+      <div class="row">
+        <div class="panel">
+          <div class="ph"><div><h2>Visitas por día</h2><div class="sm" id="visChartSub">—</div></div>
+            <div class="legend"><span><i style="background:var(--ink-3)"></i>Visitas</span><span><i style="background:var(--amber)"></i>Formulario</span><span><i style="background:var(--green)"></i>Pedidos</span></div></div>
+          <div class="chartwrap" id="visChart"><div class="vacio">—</div></div>
+        </div>
+        <div class="panel">
+          <div class="ph"><div><h2>Embudo de conversión</h2><div class="sm" id="visFunSub">—</div></div></div>
+          <div class="convbar" id="visFunnel" style="margin:14px 20px 20px;padding-top:4px"></div>
+        </div>
+      </div>
+      <div id="visitasBox"><div class="vacio">Cargando…</div></div>
+    </div>
+
+    <!-- ====== CONVERSACIONES + VENTAS DEL BOT ====== -->
+    <div class="content view" id="view-conv">
+      <div class="filters">
+        <div class="minitabs" id="tabsConv">
+          <button class="minitab act" data-t="conv">Conversaciones</button>
+          <button class="minitab" data-t="ventas" id="tabVentasLbl">Ventas del bot</button>
+        </div>
+        <div class="seg alt" id="segEst">
+          <button class="act" data-e="todas">Todas</button>
+          <button data-e="activa">Activas</button>
+          <button data-e="pausada">Pausadas</button>
+        </div>
+        <div class="seg alt spacer" id="segRconv">
+          <button data-r="hoy">Hoy</button>
+          <button data-r="ayer">Ayer</button>
+          <button class="act" data-r="7d">7 días</button>
+          <button data-r="30d">30 días</button>
+        </div>
+      </div>
+
+      <div class="convstats" id="convStats"></div>
+
+      <div id="convPanel">
+        <div class="convgrid">
+          <div class="convlist">
+            <div class="clh">
+              <div class="tinysearch">
+                <svg class="ico-sm" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+                <input id="cbuscar" placeholder="Buscar conversación…">
+              </div>
+            </div>
+            <div id="clist"><div class="vacio">Cargando conversaciones…</div></div>
+          </div>
+
+          <div>
+            <div id="chatEmpty">Selecciona una conversación para ver el chat</div>
+            <div class="chatwin" id="chatwin">
+              <div class="chh">
+                <button class="chback" onclick="volverLista()" aria-label="Volver"><svg class="ico" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></button>
+                <div class="cav" id="chAv">·</div>
+                <div style="min-width:0">
+                  <div class="nm" id="chNom">—</div>
+                  <div class="ph2" id="chTel">—</div>
+                </div>
+                <div class="acts">
+                  <button class="btn-pause" id="btnPausa" onclick="togglePausa()">
+                    <svg class="ico-sm" style="width:13px;height:13px" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" rx="1.2"/><rect x="14" y="4" width="4" height="16" rx="1.2"/></svg>
+                    <span id="pauseTxt">Pausar bot</span>
+                  </button>
+                </div>
+              </div>
+              <div class="chmsgs" id="chmsgs"></div>
+              <div class="qrow">
+                <button class="qr" onclick="quickReply('Envío gratis, pagas al recibir en tu casa.')">Envío gratis, pagas al recibir</button>
+                <button class="qr" onclick="quickReply('Tu pedido llega en 2 a 3 días hábiles.')">Llega en 2-3 días</button>
+                <button class="qr" onclick="quickReply('¿Me confirmas tu comuna por favor?')">¿Tu comuna?</button>
+                <button class="qr" onclick="quickReply('Muchas gracias por tu compra en Jaye Group.')">Gracias por tu compra</button>
+              </div>
+              <div class="chin">
+                <button class="att" title="Enviar imagen" onclick="document.getElementById('chFile').click()">
+                  <svg class="ico-sm" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 15l-5-5L5 21"/></svg>
+                </button>
+                <input type="file" id="chFile" accept="image/*" style="display:none" onchange="sendImg(this)">
+                <input type="text" id="chInput" placeholder="Responder como agente…">
+                <button class="send" onclick="enviarRespuesta()"><svg class="ico-sm" viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/></svg></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="ventasBotPanel" style="display:none">
+        <div class="panel">
+          <table>
+            <thead><tr><th>Cliente</th><th>Producto</th><th>Comuna / Ciudad</th><th>Cant.</th><th>Total</th><th>Estado</th><th></th></tr></thead>
+            <tbody id="tbodyVentasBot"><tr><td colspan="7" class="vacio">Cargando…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== BOTS + VENTAS WA GLOBAL ====== -->
+    <div class="content view" id="view-bots">
+      <div class="botgrid" id="botcards"><div class="vacio">Cargando bots…</div></div>
+
+      <div class="panel">
+        <div class="tbl-head">
+          <h2>Ventas por WhatsApp</h2>
+          <div class="minitabs" id="segPaisV">
+            <button class="minitab act" data-p="todas">Todas</button>
+            <button class="minitab" data-p="CL"><span class="flag flag-cl"></span>Chile</button>
+            <button class="minitab" data-p="CO"><span class="flag flag-co"></span>Colombia</button>
+            <button class="minitab" data-p="PY"><span class="flag flag-py"></span>Paraguay</button>
+          </div>
+          <div class="tinysearch">
+            <svg class="ico-sm" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+            <input id="vbuscar" placeholder="Filtrar ventas…">
+          </div>
+        </div>
+        <table>
+          <thead><tr><th>Cliente</th><th>Bot</th><th>Producto</th><th>País</th><th>Cant.</th><th>Total</th><th>Estado</th><th></th></tr></thead>
+          <tbody id="tbodyVentasWA"><tr><td colspan="8" class="vacio">Cargando ventas…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ====== HISTÓRICO ====== -->
+    <div class="content view" id="view-historico">
+      <div class="filters">
+        <label class="mespick">
+          <svg class="ico-sm" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="17" rx="2.5"/><path d="M3 9h18M8 2.5v4M16 2.5v4"/></svg>
+          <span class="mlbl">Mes</span>
+          <select id="selMes"></select>
+          <svg class="ico-sm chevd" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+        </label>
+      </div>
+      <div class="kpis" id="histKpis"></div>
+      <div class="panel" style="margin-bottom:18px">
+        <div class="ph"><div><h2>Ventas por canal</h2><div class="sm" id="histCanalSub">—</div></div>
+          <div class="legend"><span><i style="background:var(--green)"></i>WhatsApp</span><span><i style="background:var(--blue)"></i>Página</span></div></div>
+        <div class="paislist" id="histCanal"><div class="vacio">—</div></div>
+      </div>
+      <div class="row">
+        <div class="panel">
+          <div class="ph"><div><h2>Ventas por país</h2><div class="sm" id="histPaisSub">—</div></div></div>
+          <div class="paislist" id="histPaises"><div class="vacio">—</div></div>
+        </div>
+        <div class="panel">
+          <div class="ph"><div><h2>Top productos</h2><div class="sm">Del mes seleccionado</div></div></div>
+          <div class="paislist" id="histProd"><div class="vacio">—</div></div>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:2px"><div class="vacio" id="histNota" style="text-align:left;padding:16px 20px;font-size:12.5px"></div></div>
+    </div>
+
+    <!-- ====== CONFIG ====== -->
+    <div class="content view" id="view-config">
+      <div class="panel"><div class="vacio">Próximamente: cierre mensual automático, archivo histórico y preferencias.</div></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="ov" id="ov" onclick="if(event.target===this)closeM()">
+  <div class="modal">
+    <div class="mh">
+      <span class="tt" id="mTitulo">—</span>
+      <button class="x" onclick="closeM()"><svg class="ico-sm" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="mb" id="mBody"></div>
+    <div class="mtot"><span class="k">Total a cobrar</span><span class="v" id="mTotal">—</span></div>
+    <div class="macts">
+      <button class="b-copy" onclick="copiarVenta()"><svg class="ico-sm" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>Copiar datos</button>
+      <button class="b-wa" onclick="waVenta()"><svg class="ico-sm" viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.6A8.4 8.4 0 1 1 21 11.5z"/></svg>WhatsApp</button>
     </div>
   </div>
+</div>
 
-<script>
-  var PANEL = "https://script.google.com/macros/s/AKfycbxguODGbMRivuhp7q8l2KUTBxle4liBjsMHzXb2OFXgy8BWV6J4oZxUP-xeq4JmQyaA/exec";
-  document.getElementById('btn').href = PANEL;
+<!-- Fondo oscuro del menú móvil -->
+<div class="drawerov" id="drawerov" onclick="cerrarDrawer()"></div>
 
-  var standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+<!-- Lightbox de imágenes del chat -->
+<div class="imgov" id="imgov" onclick="this.classList.remove('open')">
+  <img id="imgovImg" src="" alt="imagen ampliada">
+</div>
 
-  if (standalone) {
-    // abierto DESDE el ícono instalado -> va directo al panel
-    document.getElementById('navView').style.display = 'none';
-    document.getElementById('cargando').style.display = 'flex';
-    setTimeout(function(){ window.location.href = PANEL; }, 500);
-  } else {
-    // abierto en el navegador -> mostrar botón + instrucciones (NO redirige)
-    document.getElementById('card').style.display = 'block';
-    var ua = navigator.userAgent || '';
-    var isIOS = /iPhone|iPad|iPod/i.test(ua);
-    document.getElementById('instr-ios').style.display = isIOS ? 'block' : 'none';
-    document.getElementById('instr-and').style.display = isIOS ? 'none' : 'block';
-  }
-</script>
+<script src="app.js"></script>
 </body>
 </html>
