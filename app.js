@@ -305,11 +305,15 @@ form.addEventListener("submit",async e=>{
   const tel=form.telefono.value.replace(/\D/g,"");
   const dir=form.direccion.value.trim();
   bad=nombre.length<2; setInvalid("nombre",bad); if(bad)ok=false;
-  bad=tel.length<8;    setInvalid("telefono",bad); if(bad)ok=false;
+  var _ccd=(form.codpais.value||"").replace(/\D/g,"");
+  bad = _ccd==="56" ? !/^9\d{8}$/.test(tel) : tel.length<8;   // Chile: 9 dígitos y empieza con 9
+  var _tf=document.getElementById("telefono"), _te=_tf&&_tf.closest(".field").querySelector(".err");
+  if(_te) _te.textContent = (_ccd==="56"&&bad) ? "Escribe los 9 dígitos de tu celular (empieza con 9). Ej: 9 1234 5678" : "Escribe un teléfono válido.";
+  setInvalid("telefono",bad); if(bad)ok=false;
   bad=dir.length<4;    setInvalid("direccion",bad); if(bad)ok=false;
   bad=!form.region.value; setInvalid("region",bad); if(bad)ok=false;
   bad=!form.comuna.value; setInvalid("comuna",bad); if(bad)ok=false;
-  if(!ok){ form.querySelector(".invalid")?.scrollIntoView({behavior:"smooth",block:"center"}); return; }
+  if(!ok){ if(window.__ayudaFormWA) window.__ayudaFormWA(); var _inv=form.querySelector(".invalid"); if(_inv) _inv.scrollIntoView({behavior:"smooth",block:"center"}); return; }
 
   const qty=parseInt(current.dataset.qty,10);
   const total=parseInt(current.dataset.price,10);
@@ -351,3 +355,56 @@ form.addEventListener("submit",async e=>{
     alert("Hubo un problema al enviar. Intenta de nuevo o escríbenos por WhatsApp.");
   }
 });
+
+/* ============================================================
+   AYUDA WhatsApp si el formulario no deja avanzar + AVISO AL SALIR
+   ============================================================ */
+(function(){
+  var WA = (document.querySelector('.wa') && document.querySelector('.wa').href) || 'https://wa.me/56920007288';
+  var WAICO = '<svg viewBox="0 0 32 32" width="15" height="15" style="vertical-align:-2px;fill:currentColor" aria-hidden="true"><path d="M16 .4C7.4.4.5 7.3.5 15.9c0 2.8.7 5.4 2.1 7.8L.3 31.6l8.1-2.1c2.3 1.3 4.9 1.9 7.6 1.9 8.6 0 15.5-6.9 15.5-15.5S24.6.4 16 .4zm0 28.3c-2.4 0-4.7-.6-6.7-1.9l-.5-.3-4.8 1.3 1.3-4.7-.3-.5c-1.4-2.1-2.1-4.6-2.1-7 0-7.1 5.8-12.9 12.9-12.9S28.9 8.8 28.9 15.9 23.1 28.7 16 28.7zm7.1-9.6c-.4-.2-2.3-1.1-2.6-1.3-.4-.1-.6-.2-.9.2-.3.4-1 1.3-1.2 1.5-.2.2-.4.3-.8.1-.4-.2-1.6-.6-3.1-1.9-1.1-1-1.9-2.3-2.1-2.7-.2-.4 0-.6.2-.8.2-.2.4-.4.6-.7.2-.2.3-.4.4-.7.1-.3 0-.5 0-.7-.1-.2-.9-2.1-1.2-2.9-.3-.8-.6-.7-.9-.7h-.8c-.2 0-.7.1-1 .5-.3.4-1.3 1.3-1.3 3.1s1.3 3.6 1.5 3.8c.2.2 2.6 4 6.3 5.6.9.4 1.6.6 2.1.8.9.3 1.7.2 2.3.1.7-.1 2.3-.9 2.6-1.8.3-.9.3-1.6.2-1.8-.1-.2-.3-.3-.7-.5z"/></svg>';
+
+  /* estilos inyectados */
+  var st=document.createElement('style');
+  st.textContent='.form-help-wa{display:none;margin-top:12px;padding:11px 14px;background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;font-size:13.5px;color:#9a3412;text-align:center;line-height:1.5}.form-help-wa a{color:#16a34a;font-weight:700;text-decoration:none}'+
+    '.exit-ov{position:fixed;inset:0;background:rgba(15,12,28,.62);display:grid;place-items:center;z-index:99999;padding:18px;animation:exitfade .2s ease}@keyframes exitfade{from{opacity:0}to{opacity:1}}'+
+    '.exit-card{background:#fff;border-radius:22px;max-width:380px;width:100%;padding:30px 24px 26px;text-align:center;position:relative;box-shadow:0 30px 80px rgba(0,0,0,.45)}'+
+    '.exit-x{position:absolute;top:10px;right:15px;border:0;background:none;font-size:27px;cursor:pointer;color:#aaa;line-height:1}'+
+    '.exit-card .em{font-size:46px;line-height:1}.exit-card h3{font-size:22px;margin:8px 0 10px;color:#10131c;font-weight:800}'+
+    '.exit-card p{font-size:15px;color:#555;line-height:1.55;margin-bottom:18px}.exit-card p b{color:#10131c}'+
+    '.exit-card .exit-wa{display:block;margin-top:13px;color:#16a34a;font-weight:700;text-decoration:none;font-size:14px}';
+  document.head.appendChild(st);
+
+  /* mensaje de ayuda cuando el formulario no deja avanzar */
+  window.__ayudaFormWA=function(){
+    var btn=document.getElementById('submitBtn'); if(!btn) return;
+    var h=document.getElementById('formHelpWA');
+    if(!h){ h=document.createElement('div'); h.id='formHelpWA'; h.className='form-help-wa';
+      h.innerHTML='⚠️ ¿Tienes algún inconveniente con el formulario? <a href="'+WA+'" target="_blank" rel="noopener">Escríbenos por WhatsApp y te ayudamos '+WAICO+'</a>';
+      btn.parentNode.insertBefore(h, btn.nextSibling); }
+    h.style.display='block';
+  };
+
+  /* aviso al salir (exit-intent) — 1 vez por sesion */
+  var shown=false;
+  function yaCompro(){ var ok=document.getElementById('okMsg'); return ok && ok.style.display==='block'; }
+  function showExit(){
+    if(shown||yaCompro()) return;
+    try{ if(sessionStorage.getItem('jaye_exit')) return; sessionStorage.setItem('jaye_exit','1'); }catch(e){}
+    shown=true;
+    var ov=document.createElement('div'); ov.className='exit-ov';
+    ov.innerHTML='<div class="exit-card"><button class="exit-x" aria-label="Cerrar">×</button>'+
+      '<div class="em">🎁</div><h3>¡Espera! No te vayas todavía</h3>'+
+      '<p>Esta promoción con <b>envío gratis</b> es <b>solo por hoy</b>. No pagas nada ahora: <b>pagas al recibir</b> en tu casa.</p>'+
+      '<button class="btn btn--cta exit-cta" style="width:100%">Quiero completar mi pedido</button>'+
+      '<a class="exit-wa" href="'+WA+'" target="_blank" rel="noopener">o escríbenos por WhatsApp '+WAICO+'</a></div>';
+    document.body.appendChild(ov);
+    function close(){ if(ov.parentNode) ov.parentNode.removeChild(ov); }
+    ov.querySelector('.exit-x').onclick=close;
+    ov.addEventListener('click',function(e){ if(e.target===ov) close(); });
+    ov.querySelector('.exit-cta').onclick=function(){ close(); var p=document.getElementById('pedido'); if(p) p.scrollIntoView({behavior:'smooth'}); };
+  }
+  /* PC: el mouse sale por arriba (hacia cerrar/cambiar pestana) */
+  document.addEventListener('mouseout',function(e){ if(e.clientY<=0 && !e.relatedTarget) showExit(); });
+  /* Movil: boton atras */
+  try{ history.pushState(null,'',location.href); window.addEventListener('popstate',function(){ if(!shown){ showExit(); history.pushState(null,'',location.href); } }); }catch(e){}
+})();
