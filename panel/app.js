@@ -115,6 +115,9 @@ async function cargarVentas(){
         precioNum:precio,precio:esR?fmtGS(precio):esJ?fmtCOP(precio)+' COP':fmtCLP(precio),
         dir:r.DIRECCION||'—',zona:r.COMUNA||r.CIUDAD||'—',region:r.REGION||r.DEPARTAMENTO||'—',
         bot:esR?'Ramon':esJ?'James':'Carlos',loc:esR?'PY':esJ?'CO':'CL',estado:r.ESTADO||'—',
+        conf:true,/* venta de WhatsApp = el cliente ya confirmó en el chat con el bot */
+        montado:/montad/i.test(String(r.ESTADO||'')),
+        ordenDropi:(String(r.ESTADO||'').match(/#(\d+)/)||[])[1]||'',
         fecha:r.FECHA||'',hora:r.HORA||'',orden:fechaOrden(r.FECHA,r.HORA)});
     });
     ordenes=ords.sort((a,b)=>b.orden-a.orden);   // (3) recientes primero
@@ -413,7 +416,7 @@ function renderConvList(){
 function renderVentasBot(){
   const tb=document.getElementById('tbodyVentasBot'); if(!tb) return;
   const arr=ordenes.filter(o=>o.bot===fBot);
-  if(!arr.length){tb.innerHTML='<tr><td colspan="7" class="vacio">Este bot aún no registra ventas.</td></tr>';return;}
+  if(!arr.length){tb.innerHTML='<tr><td colspan="8" class="vacio">Este bot aún no registra ventas.</td></tr>';return;}
   tb.innerHTML=arr.slice(0,80).map((o,i)=>`
     <tr onclick="verVentaBot(${i})">
       <td class="cli">${esc(o.cli)}<small>${esc(o.fecha)} ${esc(o.hora)} · +${o.tel}</small></td>
@@ -421,7 +424,8 @@ function renderVentasBot(){
       <td>${esc(o.zona)}</td>
       <td>${o.cant}</td>
       <td class="money">${o.precio}</td>
-      <td><span class="st st-ok"><i></i>${esc(o.estado)}</span></td>
+      <td>${o.conf?'<span class="st st-ok"><i></i>Confirmado</span>':'<span class="st st-rec"><i></i>Pendiente</span>'}</td>
+      <td>${o.montado?'<span class="st st-ok"><i></i>Montado'+(o.ordenDropi?' #'+o.ordenDropi:'')+'</span>':'<span class="st st-ab"><i></i>Pendiente</span>'}</td>
       <td><svg class="ico-sm chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></td>
     </tr>`).join('');
   window._ventasBotF=arr;
@@ -542,7 +546,7 @@ function renderVentasWA(){
   let arr=ordenes;
   if(fPaisV!=='todas') arr=arr.filter(o=>o.loc===fPaisV);
   if(q) arr=arr.filter(o=>(o.cli+' '+o.prod+' '+o.tel+' '+o.zona).toLowerCase().includes(q));
-  if(!arr.length){tb.innerHTML='<tr><td colspan="8" class="vacio">Sin ventas registradas aún.</td></tr>';return;}
+  if(!arr.length){tb.innerHTML='<tr><td colspan="9" class="vacio">Sin ventas registradas aún.</td></tr>';return;}
   tb.innerHTML=arr.slice(0,100).map((o,i)=>`
     <tr onclick="verVenta(${i})">
       <td class="cli">${esc(o.cli)}<small>${esc(o.fecha)} ${esc(o.hora)} · +${o.tel}</small></td>
@@ -551,7 +555,8 @@ function renderVentasWA(){
       <td><span class="flag ${FLAG[o.loc]}"></span></td>
       <td>${o.cant}</td>
       <td class="money">${o.precio}</td>
-      <td><span class="st st-ok"><i></i>${esc(o.estado)}</span></td>
+      <td>${o.conf?'<span class="st st-ok"><i></i>Confirmado</span>':'<span class="st st-rec"><i></i>Pendiente</span>'}</td>
+      <td>${o.montado?'<span class="st st-ok"><i></i>Montado'+(o.ordenDropi?' #'+o.ordenDropi:'')+'</span>':'<span class="st st-ab"><i></i>Pendiente</span>'}</td>
       <td><svg class="ico-sm chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></td>
     </tr>`).join('');
   window._ventasF=arr;
@@ -563,7 +568,9 @@ function verVenta(i){
   document.getElementById('mBody').innerHTML=
     fila('Canal','WhatsApp · '+BOTNOM[o.bot])+fila('País',{CL:'Chile',CO:'Colombia',PY:'Paraguay'}[o.loc])+
     fila('Producto',o.prod)+fila('Cantidad',o.cant+' unidades')+fila('Teléfono','+'+o.tel)+
-    fila('Dirección',o.dir)+fila('Comuna / Ciudad',o.zona)+fila('Región / Depto.',o.region)+fila('Fecha',o.fecha+' '+(o.hora||''));
+    fila('Dirección',o.dir)+fila('Comuna / Ciudad',o.zona)+fila('Región / Depto.',o.region)+
+    fila('Confirmación del cliente',o.conf?'CONFIRMADO':'Pendiente')+fila('Montado en Dropi',o.montado?('SÍ'+(o.ordenDropi?' · orden #'+o.ordenDropi:'')):'Pendiente')+
+    fila('Fecha',o.fecha+' '+(o.hora||''));
   document.getElementById('mTotal').textContent=o.precio;
   window._ventaAbierta=o;
   document.getElementById('ov').classList.add('open');
