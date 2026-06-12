@@ -16,14 +16,38 @@ function pnameId(p){ p=(p||'').toLowerCase(); if(p.includes('extract'))return 0;
 function keyPag(o){ return 'pag:'+o.pagina+':'+o.fila; }
 function keyWa(o){ return 'wa:'+String(o.tel||'').slice(-8)+'|'+pnameId(o.prod)+'|'+String(o.fecha||'').split(',')[0]; }
 function aprobSet(){ try{ return new Set(JSON.parse(localStorage.getItem('jaye_aprob')||'[]')); }catch(e){ return new Set(); } }
+function rechazSet(){ try{ return new Set(JSON.parse(localStorage.getItem('jaye_rechaz')||'[]')); }catch(e){ return new Set(); } }
+function guardarSet(n,s){ try{ localStorage.setItem(n, JSON.stringify([...s])); }catch(e){} }
 function esAprobado(k){ return aprobSet().has(k); }
+function esRechazado(k){ return rechazSet().has(k); }
+function refrescarAprob(){ if(typeof renderPedidosWeb==='function') renderPedidosWeb(); if(typeof renderVentasWA==='function') renderVentasWA(); if(typeof renderVentasBot==='function') renderVentasBot(); if(typeof renderAprobar==='function') renderAprobar(); }
 function aprobar(k){
-  var s=aprobSet(); s.add(k); try{ localStorage.setItem('jaye_aprob', JSON.stringify([...s])); }catch(e){}
+  var a=aprobSet(); a.add(k); guardarSet('jaye_aprob',a);
+  var r=rechazSet(); if(r.delete(k)) guardarSet('jaye_rechaz',r);   // aprobar manda sobre rechazar
   fetch(URL_APROBAR,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:k,accion:'aprobar'})}).catch(function(){});
   if(typeof toast==='function') toast('Aprobado ✓ — se montará en Dropi en el próximo ciclo');
-  renderPedidosWeb(); renderVentasWA(); if(typeof renderAprobar==='function') renderAprobar();
+  refrescarAprob();
+}
+function rechazar(k){
+  var r=rechazSet(); r.add(k); guardarSet('jaye_rechaz',r);
+  var a=aprobSet(); if(a.delete(k)) guardarSet('jaye_aprob',a);     // al rechazar, deja de estar aprobado
+  fetch(URL_APROBAR,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:k,accion:'rechazar'})}).catch(function(){});
+  if(typeof toast==='function') toast('Rechazado ✕ — no se montará en Dropi');
+  refrescarAprob();
+}
+function deshacerRechazo(k){
+  var r=rechazSet(); r.delete(k); guardarSet('jaye_rechaz',r);
+  fetch(URL_APROBAR,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:k,accion:'quitar-rechazo'})}).catch(function(){});
+  if(typeof toast==='function') toast('Rechazo deshecho — vuelve a Pendientes');
+  refrescarAprob();
 }
 var BTN_APROB='background:var(--brand,#3056c9);color:#fff;border:0;border-radius:8px;padding:5px 12px;font-weight:700;font-size:12.5px;cursor:pointer';
+function celdaAprob(k,montadoHtml){
+  if(montadoHtml) return montadoHtml;
+  if(esAprobado(k)) return '<span class="st st-rec"><i></i>Aprobado ⏳</span>';
+  if(esRechazado(k)) return '<span class="st st-ab"><i></i>Rechazado</span><button class="b-desh" onclick="deshacerRechazo(&quot;'+k+'&quot;)">Deshacer</button>';
+  return '<button class="b-apr" onclick="aprobar(&quot;'+k+'&quot;)">✓ Aprobar</button><button class="b-rech" title="Rechazar — no se monta en Dropi" onclick="rechazar(&quot;'+k+'&quot;)">✕</button>';
+}
 
 const PAGINAS=[
   {id:'shilajit', nombre:'Shilajit Ultra', url:'https://script.google.com/macros/s/AKfycbzhWqfMJVJiquBdOfOAqkgVFp9dHBphmpEk4CLd4woXSb4A9vIN_1iPq3PkjKKKHCusGQ/exec', color:'#0e8074'},
@@ -275,7 +299,7 @@ function renderPedidosWeb(){
       <td>${o.cant}</td>
       <td class="money">${o.total}</td>
       <td>${o.conf?'<span class="st st-ok"><i></i>Confirmado</span>':'<span class="st st-rec"><i></i>Pendiente</span>'}</td>
-      <td onclick="event.stopPropagation()">${o.dropi?'<span class="st st-ok"><i></i>Montado</span>':(esAprobado(keyPag(o))?'<span class="st st-rec"><i></i>Aprobado ⏳</span>':'<button style="'+BTN_APROB+'" onclick="aprobar(&quot;'+keyPag(o)+'&quot;)">✓ Aprobar</button>')}</td>
+      <td class="cell-aprob" onclick="event.stopPropagation()">${celdaAprob(keyPag(o), o.dropi?'<span class="st st-ok"><i></i>Montado</span>':'')}</td>
       <td><svg class="ico-sm chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></td>
     </tr>`).join('');
   window._pedidosF=arr;
@@ -441,7 +465,7 @@ function renderVentasBot(){
       <td>${o.cant}</td>
       <td class="money">${o.precio}</td>
       <td>${o.conf?'<span class="st st-ok"><i></i>Confirmado</span>':'<span class="st st-rec"><i></i>Pendiente</span>'}</td>
-      <td onclick="event.stopPropagation()">${o.montado?'<span class="st st-ok"><i></i>Montado'+(o.ordenDropi?' #'+o.ordenDropi:'')+'</span>':(esAprobado(keyWa(o))?'<span class="st st-rec"><i></i>Aprobado ⏳</span>':'<button style="'+BTN_APROB+'" onclick="aprobar(&quot;'+keyWa(o)+'&quot;)">✓ Aprobar</button>')}</td>
+      <td class="cell-aprob" onclick="event.stopPropagation()">${celdaAprob(keyWa(o), o.montado?'<span class="st st-ok"><i></i>Montado'+(o.ordenDropi?' #'+o.ordenDropi:'')+'</span>':'')}</td>
       <td><svg class="ico-sm chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></td>
     </tr>`).join('');
   window._ventasBotF=arr;
@@ -572,7 +596,7 @@ function renderVentasWA(){
       <td>${o.cant}</td>
       <td class="money">${o.precio}</td>
       <td>${o.conf?'<span class="st st-ok"><i></i>Confirmado</span>':'<span class="st st-rec"><i></i>Pendiente</span>'}</td>
-      <td onclick="event.stopPropagation()">${o.montado?'<span class="st st-ok"><i></i>Montado'+(o.ordenDropi?' #'+o.ordenDropi:'')+'</span>':(esAprobado(keyWa(o))?'<span class="st st-rec"><i></i>Aprobado ⏳</span>':'<button style="'+BTN_APROB+'" onclick="aprobar(&quot;'+keyWa(o)+'&quot;)">✓ Aprobar</button>')}</td>
+      <td class="cell-aprob" onclick="event.stopPropagation()">${celdaAprob(keyWa(o), o.montado?'<span class="st st-ok"><i></i>Montado'+(o.ordenDropi?' #'+o.ordenDropi:'')+'</span>':'')}</td>
       <td><svg class="ico-sm chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></td>
     </tr>`).join('');
   window._ventasF=arr;
@@ -704,30 +728,56 @@ function renderAprobar(){
   const dosDias=Date.now()-2*864e5;
   const items=[];
   (pedidosWeb||[]).forEach(o=>{ if(!o.conf) return; const k=keyPag(o);
-    items.push({k,canal:'Página',cli:o.cli,tel:o.tel,fecha:o.fecha,prod:o.prod,color:o.color,comuna:o.comuna,cant:o.cant,total:o.total,orden:o.orden,
-      st:o.dropi?'montado':(esAprobado(k)?'aprobado':'pendiente')});
+    items.push({k,raw:o,canal:'Página',cli:o.cli,tel:o.tel,fecha:o.fecha,prod:o.prod,color:o.color,comuna:o.comuna,cant:o.cant,total:o.total,orden:o.orden,
+      st:o.dropi?'montado':(esAprobado(k)?'aprobado':(esRechazado(k)?'rechazado':'pendiente'))});
   });
   (ordenes||[]).forEach(o=>{ if(o.loc!=='CL') return; if(o.orden<dosDias && !o.montado) return; const k=keyWa(o);
-    items.push({k,canal:'WhatsApp',cli:o.cli,tel:o.tel,fecha:o.fecha,prod:o.prod,color:'#0e8074',comuna:o.zona,cant:o.cant,total:o.precio,orden:o.orden,
-      st:o.montado?'montado':(esAprobado(k)?'aprobado':'pendiente')});
+    items.push({k,raw:o,canal:'WhatsApp',cli:o.cli,tel:o.tel,fecha:o.fecha,prod:o.prod,color:'#0e8074',comuna:o.zona,cant:o.cant,total:o.precio,orden:o.orden,
+      st:o.montado?'montado':(esAprobado(k)?'aprobado':(esRechazado(k)?'rechazado':'pendiente'))});
   });
   const nPend=items.filter(x=>x.st==='pendiente').length;
   const bg=document.getElementById('badgeAprobar');
   if(bg){ bg.style.display=nPend?'':'none'; bg.textContent=nPend; }
   let arr=items.sort((a,b)=>b.orden-a.orden);
   if(fAprob==='pend') arr=arr.filter(x=>x.st==='pendiente');
+  window._aprobF=arr;
   if(!arr.length){ tb.innerHTML='<tr><td colspan="8" class="vacio">'+(fAprob==='pend'?'Nada por aprobar. 🎉':'Sin ventas recientes.')+'</td></tr>'; return; }
-  tb.innerHTML=arr.slice(0,100).map(x=>`
-    <tr>
+  tb.innerHTML=arr.slice(0,100).map((x,i)=>`
+    <tr onclick="verAprob(${i})">
       <td class="cli">${esc(x.cli)}<small>${esc(x.fecha)} · +${x.tel}</small></td>
       <td>${x.canal}</td>
       <td><span class="pchip"><i style="background:${x.color}"></i>${esc(x.prod)}</span></td>
       <td>${esc(x.comuna||'—')}</td>
       <td>${x.cant}</td>
       <td class="money">${x.total}</td>
-      <td>${x.st==='montado'?'<span class="st st-ok"><i></i>Montado</span>':(x.st==='aprobado'?'<span class="st st-rec"><i></i>Aprobado ⏳</span>':'<button style="'+BTN_APROB+'" onclick="aprobar(&quot;'+x.k+'&quot;)">✓ Aprobar</button>')}</td>
-      <td><a class="qr" style="text-decoration:none" href="https://wa.me/${x.tel}" target="_blank">WhatsApp</a></td>
+      <td class="cell-aprob" onclick="event.stopPropagation()">${celdaAprob(x.k, x.st==='montado'?'<span class="st st-ok"><i></i>Montado</span>':'')}</td>
+      <td onclick="event.stopPropagation()"><a class="qr" style="text-decoration:none" href="https://wa.me/${x.tel}" target="_blank">WhatsApp</a></td>
     </tr>`).join('');
+}
+/* detalle del cliente al hacer clic en una fila de Aprobación (página o WhatsApp) */
+function verAprob(i){
+  const x=(window._aprobF||[])[i]; if(!x) return; const o=x.raw||{};
+  const fila=(k,v)=>`<div class="dl"><span class="k">${k}</span><span class="v">${esc(v)}</span></div>`;
+  document.getElementById('mTitulo').textContent=o.cli||x.cli;
+  if(x.canal==='Página'){
+    document.getElementById('mBody').innerHTML=
+      fila('Canal','Página · '+o.prod)+fila('Producto',o.prod)+fila('Cantidad',o.cant+' unidades')+
+      fila('Teléfono','+'+o.tel)+(o.correo?fila('Correo',o.correo):'')+fila('Dirección',o.dir)+
+      (o.ref?fila('Referencia',o.ref):'')+fila('Comuna',o.comuna)+fila('Región',o.region)+
+      fila('Confirmación del cliente',o.conf?'CONFIRMADO':'Pendiente')+fila('Dropi',o.dropi?'ENVIADO':'Pendiente')+fila('Fecha',o.fecha);
+    document.getElementById('mTotal').textContent=o.total+' CLP';
+    window._ventaAbierta={cli:o.cli,dir:o.dir+(o.ref?' - '+o.ref:''),region:o.region,tel:o.tel,prod:o.prod,cant:o.cant,precio:o.total};
+  }else{
+    document.getElementById('mBody').innerHTML=
+      fila('Canal','WhatsApp · '+(BOTNOM[o.bot]||''))+fila('País',{CL:'Chile',CO:'Colombia',PY:'Paraguay'}[o.loc]||'—')+
+      fila('Producto',o.prod)+fila('Cantidad',o.cant+' unidades')+fila('Teléfono','+'+o.tel)+
+      fila('Dirección',o.dir)+fila('Comuna / Ciudad',o.zona)+fila('Región / Depto.',o.region)+
+      fila('Confirmación del cliente',o.conf?'CONFIRMADO':'Pendiente')+fila('Montado en Dropi',o.montado?('SÍ'+(o.ordenDropi?' · orden #'+o.ordenDropi:'')):'Pendiente')+
+      fila('Fecha',o.fecha+' '+(o.hora||''));
+    document.getElementById('mTotal').textContent=o.precio;
+    window._ventaAbierta=o;
+  }
+  document.getElementById('ov').classList.add('open');
 }
 
 /* ---------- navegación ---------- */
