@@ -1056,7 +1056,9 @@ function _renderFinTabla(ped){
   });
   var tb=document.getElementById('tbodyDropi'); if(!tb) return;
   if(!arr.length){ tb.innerHTML='<tr><td colspan="8" class="vacio">Sin pedidos en este filtro.</td></tr>'; return; }
-  tb.innerHTML=arr.slice(0,300).map(function(p){
+  var T={rec:0,cos:0,fle:0,gan:0}; arr.forEach(function(p){ T.rec+=+p.recaudo||0; T.cos+=+p.costo||0; T.fle+=+p.flete||0; T.gan+=(+p.recaudo||0)-(+p.costo||0)-(+p.flete||0); });
+  var totRow='<tr style="background:#eef1f5;font-weight:700;border-top:2px solid #d8dee8"><td>'+arr.length+' guías</td><td></td><td></td><td style="color:#8a93a0">TOTAL</td><td class="money">'+_cop(T.rec)+'</td><td class="money">'+_cop(T.cos)+'</td><td class="money">'+_cop(T.fle)+'</td><td class="money" style="color:'+(T.gan>=0?'#0f7a52':'#c0392b')+'">'+_cop(T.gan)+'</td></tr>';
+  tb.innerHTML=totRow+arr.slice(0,300).map(function(p){
     var gan=(+p.recaudo||0)-(+p.costo||0)-(+p.flete||0), ent=/ENTREGAD/.test((p.estado||'').toUpperCase());
     return '<tr><td class="cli">'+esc(p.cliente||'—')+'<small>+'+(p.telefono||'')+(p.motivo_devolucion?(' · '+esc(p.motivo_devolucion)):'')+'</small></td>'+
       '<td>'+esc((p.producto||'').slice(0,26))+' <small>x'+(p.cantidad||1)+'</small></td>'+
