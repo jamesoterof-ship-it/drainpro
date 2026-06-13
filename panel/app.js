@@ -10,6 +10,57 @@ const URL_RESP=BASE+'/responder';
 const URL_VENTAS=BASE+'/ventas';
 const URL_APROBAR=BASE+'/aprobar-pedido';
 const URL_IMG='https://web-production-a5adc.up.railway.app/api/jaye/enviar-imagen';
+const URL_HUELLAS=BASE+'/leer-huellas';
+window.huellaMap={};
+async function cargarHuellas(){
+  try{
+    const r=await fetch(URL_HUELLAS); const arr=await r.json();
+    const m={}; (Array.isArray(arr)?arr:[]).forEach(h=>{ if(h&&h.tel8) m[h.tel8]=h; });
+    window.huellaMap=m;
+    if(typeof refrescarAprob==='function') refrescarAprob();
+    else if(typeof renderAprobar==='function') renderAprobar();
+  }catch(e){}
+}
+function huellaBadge(tel){
+  var k=String(tel||'').replace(/\D/g,'').slice(-8); if(!k) return '';
+  var h=(window.huellaMap||{})[k];
+  var rc, sym, t;
+  if(!h){ rc='#9aa4b2'; sym='+'; t='Cliente nuevo (sin historial)'; }
+  else {
+    rc={'Segura':'#1d9e75','Probable':'#caa000','Riesgosa':'#d8782e','Crítica':'#e24b4a'}[h.risk_label] || ((+h.n_dev||0)>0?'#d8782e':'#8a93a0');
+    sym=(h.risk_label==='Segura' && (+h.n_dev||0)===0)?'✓':'!'; t='Ver alerta del cliente';
+  }
+  return '<button class="hbtn" onclick="event.stopPropagation();verHuella(this,\''+k+'\')" title="'+t+'" style="border:0;cursor:pointer;width:19px;height:19px;border-radius:50%;background:'+rc+';color:#fff;font-weight:700;font-size:12px;line-height:1;display:inline-flex;align-items:center;justify-content:center;padding:0;margin-left:6px;vertical-align:middle">'+sym+'</button>';
+}
+function cerrarHuella(){var e=document.getElementById('huellaPop'); if(e) e.remove();}
+function verHuella(btn,k){
+  cerrarHuella();
+  var h=(window.huellaMap||{})[k];
+  var dark=document.body.classList.contains('dark')||document.documentElement.classList.contains('dark');
+  var bg=dark?'#1b2330':'#fff', bd=dark?'#33415a':'#d8dee8', tx=dark?'#e8edf4':'#1a2433', sub=dark?'#9fb0c6':'#5a6470';
+  var d=document.createElement('div'); d.id='huellaPop';
+  d.style.cssText='position:fixed;z-index:99999;width:250px;background:'+bg+';border:1px solid '+bd+';border-radius:12px;box-shadow:0 12px 34px rgba(0,0,0,.28);padding:12px 14px;font-size:12.5px;color:'+sub;
+  if(!h){
+    d.innerHTML='<div style="font-weight:700;margin-bottom:7px;color:'+tx+';display:flex;align-items:center;gap:7px"><span style="width:9px;height:9px;border-radius:50%;background:#9aa4b2;display:inline-block"></span>Cliente nuevo</div>'
+      +'<div>Sin historial en tu tienda ni en Dropi. Es la <b style="color:'+tx+'">primera vez</b> que te pide.</div>';
+  } else {
+    var rc={'Segura':'#1d9e75','Probable':'#caa000','Riesgosa':'#d8782e','Crítica':'#e24b4a'}[h.risk_label]||'#8a93a0';
+    var np=+h.n_ped||0,nd=+h.n_dev||0,dt=+h.dropi_total||0,dd=+h.dropi_dev||0;
+    d.innerHTML='<div style="font-weight:700;margin-bottom:9px;color:'+tx+';display:flex;align-items:center;gap:7px"><span style="width:9px;height:9px;border-radius:50%;background:'+rc+';display:inline-block"></span>'+(h.risk_label||'Cliente')+(h.buyer_type?(' · '+h.buyer_type):'')+'</div>'
+      +'<div style="margin-bottom:6px">Tu tienda: <b style="color:'+tx+'">'+np+' pedidos</b> · <b style="color:'+(nd>0?'#d8472e':'#1d9e75')+'">'+nd+' devol.</b></div>'
+      +'<div>Dropi (plataforma): <b style="color:'+rc+'">'+(h.risk_label||'?')+'</b><br>'+dt+' pedidos · <b style="color:'+(dd>0?'#d8472e':'#1d9e75')+'">'+dd+' devoluciones</b></div>';
+  }
+  document.body.appendChild(d);
+  var r=btn.getBoundingClientRect(); var W=250, H=d.offsetHeight||130;
+  var left=r.right+8;                       /* al lado derecho del icono */
+  var top=r.top + r.height/2 - H/2;          /* centrado verticalmente con el icono */
+  if(left+W>window.innerWidth-6) left=r.left-W-8;   /* sin espacio a la derecha -> a la izquierda */
+  if(left<6) left=6;
+  if(top<6) top=6;
+  if(top+H>window.innerHeight-6) top=window.innerHeight-H-6;
+  d.style.top=top+'px'; d.style.left=left+'px';
+}
+document.addEventListener('click',function(e){ if(!e.target.closest('.hbtn') && !e.target.closest('#huellaPop')) cerrarHuella(); });
 
 /* ---------- Aprobación de pedidos (solo lo aprobado se monta en Dropi) ---------- */
 function pnameId(p){ p=(p||'').toLowerCase(); if(p.includes('extract'))return 0; if(p.includes('shilajit'))return 113699; if(p.includes('tornado')||p.includes('drainpro'))return 69746; if(p.includes('nad'))return 120370; return 0; }
@@ -293,7 +344,7 @@ function renderPedidosWeb(){
   if(!arr.length){tb.innerHTML='<tr><td colspan="9" class="vacio">Sin pedidos aquí.</td></tr>';return;}
   tb.innerHTML=arr.slice(0,100).map((o,i)=>`
     <tr onclick="verPedido(${i})">
-      <td class="cli">${esc(o.cli)}<small>${esc(o.fecha)} · +${o.tel}</small></td>
+      <td class="cli">${esc(o.cli)}<small>${esc(o.fecha)} · +${o.tel}</small>${huellaBadge(o.tel)}</td>
       <td><span class="pchip"><i style="background:${o.color}"></i>${esc(o.prod)}</span></td>
       <td>${esc(o.comuna)}</td>
       <td>${o.cant}</td>
@@ -459,7 +510,7 @@ function renderVentasBot(){
   if(!arr.length){tb.innerHTML='<tr><td colspan="8" class="vacio">Este bot aún no registra ventas.</td></tr>';return;}
   tb.innerHTML=arr.slice(0,80).map((o,i)=>`
     <tr onclick="verVentaBot(${i})">
-      <td class="cli">${esc(o.cli)}<small>${esc(o.fecha)} ${esc(o.hora)} · +${o.tel}</small></td>
+      <td class="cli">${esc(o.cli)}<small>${esc(o.fecha)} ${esc(o.hora)} · +${o.tel}</small>${huellaBadge(o.tel)}</td>
       <td><span class="pchip"><i style="background:#0e8074"></i>${esc(o.prod)}</span></td>
       <td>${esc(o.zona)}</td>
       <td>${o.cant}</td>
@@ -589,7 +640,7 @@ function renderVentasWA(){
   if(!arr.length){tb.innerHTML='<tr><td colspan="9" class="vacio">Sin ventas registradas aún.</td></tr>';return;}
   tb.innerHTML=arr.slice(0,100).map((o,i)=>`
     <tr onclick="verVenta(${i})">
-      <td class="cli">${esc(o.cli)}<small>${esc(o.fecha)} ${esc(o.hora)} · +${o.tel}</small></td>
+      <td class="cli">${esc(o.cli)}<small>${esc(o.fecha)} ${esc(o.hora)} · +${o.tel}</small>${huellaBadge(o.tel)}</td>
       <td>${BOTNOM[o.bot].split(' ·')[0]}</td>
       <td><span class="pchip"><i style="background:#0e8074"></i>${esc(o.prod)}</span></td>
       <td><span class="flag ${FLAG[o.loc]}"></span></td>
@@ -744,7 +795,7 @@ function renderAprobar(){
   if(!arr.length){ tb.innerHTML='<tr><td colspan="8" class="vacio">'+(fAprob==='pend'?'Nada por aprobar. 🎉':'Sin ventas recientes.')+'</td></tr>'; return; }
   tb.innerHTML=arr.slice(0,100).map((x,i)=>`
     <tr onclick="verAprob(${i})">
-      <td class="cli">${esc(x.cli)}<small>${esc(x.fecha)} · +${x.tel}</small></td>
+      <td class="cli">${esc(x.cli)}<small>${esc(x.fecha)} · +${x.tel}</small>${huellaBadge(x.tel)}</td>
       <td>${x.canal}</td>
       <td><span class="pchip"><i style="background:${x.color}"></i>${esc(x.prod)}</span></td>
       <td>${esc(x.comuna||'—')}</td>
@@ -899,6 +950,7 @@ function volverLista(){ const g=document.querySelector('#view-conv .convgrid'); 
 const esMovil=()=>window.matchMedia('(max-width:760px)').matches;
 
 /* ---------- arranque (15 s) ---------- */
-cargarConvos(); cargarVentas(); cargarPaginas();
+cargarConvos(); cargarVentas(); cargarPaginas(); cargarHuellas();
 setInterval(()=>{cargarConvos();cargarVentas();cargarPaginas();},15000);
+setInterval(cargarHuellas,300000);
 document.getElementById('fechaHead').textContent=new Date().toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'});
