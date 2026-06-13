@@ -991,21 +991,45 @@ function renderFinanzas(){
     kpi('Devoluciones',devueltos+' · '+pctDev+'%',pctDev>20?'#c0392b':'#1a2433')+
     kpi('Ganancia neta',_cop(ganancia),ganancia>=0?'#0f7a52':'#c0392b','margen '+margen+'%');
   _renderFinCharts(ped,meta,_finDesde());
-  _renderCausales(ped); _renderPLProd();
+  _renderDevDonuts(ped); _renderPLProd();
 }
-function _renderCausales(ped){
-  var tot={},n=0;
-  ped.forEach(function(p){ var est=(p.estado||'').toUpperCase(); if(!/DEVOL|RECHAZ/.test(est)) return; if(!_enR(p.actualizado_en||p.creado_en)) return; var m=(p.motivo_devolucion||'Sin motivo').toUpperCase(); tot[m]=(tot[m]||0)+1; n++; });
-  var box=document.getElementById('finCausales'), t=document.getElementById('finDevTot');
-  if(t) t.textContent=n+' devoluciones en el período';
-  if(!box) return;
-  if(!n){ box.innerHTML='<div class="vacio" style="padding:10px">Sin devoluciones en este filtro. 🎉</div>'; return; }
-  var arr=Object.keys(tot).map(function(k){return {m:k,c:tot[k]};}).sort(function(a,b){return b.c-a.c;});
-  box.innerHTML=arr.map(function(x){ var pct=Math.round(x.c/n*100);
-    return '<div style="margin-bottom:9px"><div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:3px"><span>'+esc(x.m)+'</span><span style="color:#8a93a0"><b style="color:#1a2433">'+x.c+'</b> · '+pct+'%</span></div>'+
-      '<div style="height:7px;background:#eef0f2;border-radius:4px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+(/RECHAZ|NIEGA/.test(x.m)?'#e24b4a':(/DIREC|UBICA|DATOS|DOMICILIO/.test(x.m)?'#d8782e':'#8a93a0'))+'"></div></div></div>';
-  }).join('');
+var _echDP=null,_echCa=null;
+function _shortProd(s){ s=(s||'').toUpperCase();
+  if(s.indexOf('SHILAJIT')>=0)return'Shilajit'; if(/POLVO|DRENAJE|DRAINPRO/.test(s))return'Polvo Limpiador';
+  if(s.indexOf('NAD')>=0)return'NAD+'; if(s.indexOf('FREIDORA')>=0)return'Freidora'; if(s.indexOf('MAGNESIO')>=0)return'Magnesio';
+  if(/COL[AÁ]GENO/.test(s))return'Colágeno'; if(s.indexOf('CANDIDA')>=0)return'Cándida'; if(s.indexOf('SELLADOR')>=0)return'Sellador'; if(s.indexOf('FAJA')>=0)return'Faja';
+  return (s.charAt(0)+s.slice(1).toLowerCase()).split(' ').slice(0,2).join(' '); }
+function _donutPro(el,data){
+  if(typeof echarts==='undefined'||!el||!el.offsetWidth) return null;
+  var inst=echarts.getInstanceByDom(el)||echarts.init(el);
+  var total=data.reduce(function(a,b){return a+b.value;},0);
+  inst.setOption({
+    color:['#e24b4a','#d8782e','#e0a800','#1d9e75','#378ADD','#7c4dd8','#d4537e','#5a6470'],
+    tooltip:{trigger:'item',formatter:'{b}<br/><b>{c}</b> · {d}%'},
+    legend:{type:'scroll',bottom:0,left:'center',textStyle:{fontSize:10,color:'#5a6470'},itemWidth:11,itemHeight:11,icon:'circle'},
+    graphic:[{type:'text',left:'center',top:'40%',style:{text:String(total),fontSize:26,fontWeight:'bold',fill:'#1a2433'}},{type:'text',left:'center',top:'53%',style:{text:'devol.',fontSize:11,fill:'#8a93a0'}}],
+    series:[{type:'pie',radius:['48%','75%'],center:['50%','46%'],avoidLabelOverlap:true,
+      itemStyle:{borderRadius:7,borderColor:'#fff',borderWidth:2,shadowBlur:16,shadowColor:'rgba(40,50,70,.22)',shadowOffsetX:2,shadowOffsetY:5},
+      label:{show:true,position:'outside',formatter:'{d}%',fontSize:11,fontWeight:'bold',color:'#1a2433'},
+      labelLine:{length:9,length2:9,lineStyle:{color:'#cdd5df'}},
+      emphasis:{scaleSize:9,itemStyle:{shadowBlur:24}},
+      data:data}]
+  },true);
+  inst.resize(); return inst;
 }
+function _renderDevDonuts(ped){
+  var prod={},caus={},n=0;
+  ped.forEach(function(p){ var est=(p.estado||'').toUpperCase(); if(!/DEVOL|RECHAZ/.test(est)) return; if(!_enR(p.actualizado_en||p.creado_en)) return;
+    var pr=_shortProd(p.producto); prod[pr]=(prod[pr]||0)+1;
+    var m=(p.motivo_devolucion||'Sin motivo'); m=m.charAt(0).toUpperCase()+m.slice(1).toLowerCase(); caus[m]=(caus[m]||0)+1; n++; });
+  var t=document.getElementById('finDevTot'); if(t) t.textContent=n+' devoluciones en el período';
+  var dp=Object.keys(prod).map(function(k){return {name:k,value:prod[k]};}).sort(function(a,b){return b.value-a.value;});
+  var dc=Object.keys(caus).map(function(k){return {name:k,value:caus[k]};}).sort(function(a,b){return b.value-a.value;});
+  if(!n){ dp=[{name:'Sin devoluciones',value:1}]; dc=[{name:'Sin devoluciones',value:1}]; }
+  _echDP=_donutPro(document.getElementById('echDevProd'),dp);
+  _echCa=_donutPro(document.getElementById('echCausales'),dc);
+}
+window.addEventListener('resize',function(){ try{if(_echDP)_echDP.resize(); if(_echCa)_echCa.resize();}catch(e){} });
 function _renderPLProd(){
   var arr=window._finPLProd||[], tb=document.getElementById('tbodyPLProd'); if(!tb) return;
   if(!arr.length){ tb.innerHTML='<tr><td colspan="8" class="vacio">Sin datos.</td></tr>'; return; }

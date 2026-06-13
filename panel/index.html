@@ -582,8 +582,17 @@ tbody tr:hover .chev{color:var(--brand)}
         </table>
       </div>
       <div class="panel">
-        <div class="tbl-head"><h2>Causales de devolución</h2><span style="font-size:12px;color:#8a93a0" id="finDevTot"></span></div>
-        <div id="finCausales" style="padding:10px 4px 6px"></div>
+        <div class="tbl-head"><h2>Análisis de devoluciones</h2><span style="font-size:12px;color:#8a93a0" id="finDevTot"></span></div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;padding:6px 2px">
+          <div>
+            <div style="font-size:13px;font-weight:600;color:#1a2433;margin:4px 0 2px 6px">¿Cuál producto devuelve más?</div>
+            <div id="echDevProd" style="height:300px;width:100%"></div>
+          </div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:#1a2433;margin:4px 0 2px 6px">¿Por qué devuelven?</div>
+            <div id="echCausales" style="height:300px;width:100%"></div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -843,6 +852,7 @@ tbody tr:hover .chev{color:var(--brand)}
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<script src="app.js?v=6"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.1/echarts.min.js"></script>
+<script src="app.js?v=7"></script>
 </body>
 </html>
