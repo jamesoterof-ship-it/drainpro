@@ -1248,3 +1248,43 @@ cargarConvos(); cargarVentas(); cargarPaginas(); cargarHuellas();
 setInterval(()=>{cargarConvos();cargarVentas();cargarPaginas();},15000);
 setInterval(cargarHuellas,300000);
 document.getElementById('fechaHead').textContent=new Date().toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'});
+
+/* ====================== ASESOR IA (botón flotante + chat) ====================== */
+const URL_AGENTE=BASE+'/agente-finanzas';
+window._agHist=[]; window._agBusy=false; window._agInit=false;
+function agToggle(){ var p=document.getElementById('agPanel'); if(!p) return; p.classList.toggle('open');
+  if(p.classList.contains('open')){ if(!window._agInit){ window._agInit=true;
+      agPush('a','Hola James 👋 Soy tu **asesor**: contable, **Meta Ads** y riesgo de clientes. Veo tus números reales de Dropi y Meta. Pregúntame o usa un atajo de abajo.'); }
+    setTimeout(function(){ var t=document.getElementById('agText'); if(t) t.focus(); },80); } }
+function agAuto(t){ t.style.height='auto'; t.style.height=Math.min(t.scrollHeight,96)+'px'; }
+function agKey(e){ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); agSend(); } }
+function agChip(txt){ var t=document.getElementById('agText'); if(t){ t.value=txt; } agSend(); }
+function agEsc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function agMd(s){ s=agEsc(s);
+  s=s.replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>').replace(/`([^`]+)`/g,'<code>$1</code>');
+  // listas con - o •
+  s=s.replace(/(^|\n)[\-•]\s+(.+)/g,'$1<li>$2</li>');
+  s=s.replace(/(<li>[\s\S]*?<\/li>)/g,function(m){return '<ul>'+m.replace(/\n(?!<li>)/g,' ')+'</ul>';});
+  s=s.replace(/\n/g,'<br>');
+  return s; }
+function agPush(role,text){ var m=document.getElementById('agMsgs'); if(!m) return null;
+  var d=document.createElement('div'); d.className='agMsg '+(role==='u'?'u':'a'); d.innerHTML=role==='u'?agEsc(text):agMd(text);
+  m.appendChild(d); m.scrollTop=m.scrollHeight; return d; }
+function agDots(on){ var m=document.getElementById('agMsgs'); if(!m) return;
+  var ex=document.getElementById('agDots'); if(ex) ex.remove();
+  if(on){ var d=document.createElement('div'); d.id='agDots'; d.className='agDots'; d.innerHTML='<i></i><i></i><i></i>'; m.appendChild(d); m.scrollTop=m.scrollHeight; } }
+async function agSend(){ if(window._agBusy) return; var t=document.getElementById('agText'); if(!t) return;
+  var q=(t.value||'').trim(); if(!q) return;
+  t.value=''; agAuto(t); agPush('u',q); window._agHist.push({role:'user',content:q});
+  window._agBusy=true; var sb=document.getElementById('agSend'); if(sb) sb.disabled=true; agDots(true);
+  try{
+    var r=await fetch(URL_AGENTE,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({pregunta:q, historial:window._agHist.slice(-10), pais:'CL'})});
+    var txt=await r.text(); var resp='';
+    try{ var j=JSON.parse(txt); resp=j.respuesta||j.text||j.output||j.answer||(j.content&&j.content[0]&&j.content[0].text)||txt; }
+    catch(e){ resp=txt; }
+    agDots(false); if(!resp||!resp.trim()) resp='No pude generar respuesta. Revisa que el flujo «Agente Finanzas» esté activo en n8n.';
+    agPush('a',resp); window._agHist.push({role:'assistant',content:resp});
+  }catch(err){ agDots(false); agPush('a','⚠️ No me pude conectar al cerebro (n8n). Verifica que el webhook «agente-finanzas» esté activo.'); }
+  window._agBusy=false; var sb2=document.getElementById('agSend'); if(sb2) sb2.disabled=false;
+}
