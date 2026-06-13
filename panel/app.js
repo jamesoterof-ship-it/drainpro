@@ -1252,6 +1252,7 @@ document.getElementById('fechaHead').textContent=new Date().toLocaleDateString('
 
 /* ====================== ASESOR IA (botón flotante + chat) ====================== */
 const URL_AGENTE=BASE+'/agente-finanzas';
+const URL_METAACCION=BASE+'/meta-accion';
 window._agHist=[]; window._agBusy=false; window._agInit=false;
 function agToggle(){ var p=document.getElementById('agPanel'); if(!p) return; p.classList.toggle('open');
   if(p.classList.contains('open')){
@@ -1307,7 +1308,31 @@ async function agSend(){ if(window._agBusy) return; var t=document.getElementByI
     try{ var j=JSON.parse(txt); resp=j.respuesta||j.text||j.output||j.answer||(j.content&&j.content[0]&&j.content[0].text)||txt; }
     catch(e){ resp=txt; }
     agDots(false); if(!resp||!resp.trim()) resp='No pude generar respuesta. Revisa que el flujo «Agente Finanzas» esté activo en n8n.';
+    // separar acciones propuestas de Meta (ACCIONES_JSON: [...]) del texto
+    var acciones=[]; var mm=resp.match(/ACCIONES_JSON:\s*(\[[\s\S]*\])\s*$/);
+    if(mm){ try{ acciones=JSON.parse(mm[1]); }catch(e){} resp=resp.slice(0,mm.index).trim(); }
     agPush('a',resp); window._agHist.push({role:'assistant',content:resp});
-  }catch(err){ agDots(false); agPush('a','⚠️ No me pude conectar al cerebro (n8n). Verifica que el webhook «agente-finanzas» esté activo.'); }
+    if(acciones&&acciones.length) agAcciones(acciones);
+  }catch(err){ agDots(false); agPush('a','No me pude conectar al cerebro (n8n). Verifica que el webhook «agente-finanzas» esté activo.'); }
   window._agBusy=false; var sb2=document.getElementById('agSend'); if(sb2) sb2.disabled=false;
 }
+/* Tarjetas de accion de Meta con boton Autorizar (nada se ejecuta sin clic) */
+function agAcciones(arr){ var m=document.getElementById('agMsgs'); if(!m) return;
+  arr.forEach(function(a){ if(!a||!a.campania_id||!a.tipo) return;
+    var lbl=a.tipo==='pausar'?('Pausar campaña: '+(a.nombre||a.campania_id))
+      :a.tipo==='activar'?('Activar campaña: '+(a.nombre||a.campania_id))
+      :('Presupuesto «'+(a.nombre||a.campania_id)+'» → $'+Number(a.valor||0).toLocaleString('es-CO')+'/día');
+    var d=document.createElement('div'); d.className='agAccion';
+    d.innerHTML='<div class="agAccT">Acción en Meta · requiere tu autorización</div><div class="agAccL">'+agEsc(lbl)+'</div>'+
+      '<div class="agAccB"><button class="agOk">Autorizar</button><button class="agNo">Cancelar</button></div>';
+    var done=false;
+    d.querySelector('.agOk').onclick=function(){ if(done)return; done=true; agEjecutar(a,d); };
+    d.querySelector('.agNo').onclick=function(){ d.querySelector('.agAccB').innerHTML='<span class="agAccMsg" style="color:#8a93a0">Cancelado.</span>'; };
+    m.appendChild(d); });
+  m.scrollTop=m.scrollHeight; }
+async function agEjecutar(a,d){ var b=d.querySelector('.agAccB'); b.innerHTML='<span class="agAccMsg" style="color:#8a6d12">Ejecutando…</span>';
+  try{ var r=await fetch(URL_METAACCION,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({campania_id:a.campania_id,tipo:a.tipo,valor:a.valor,nombre:a.nombre})});
+    var j=await r.json(); var ok=j&&j.ok;
+    b.innerHTML='<span class="agAccMsg" style="color:'+(ok?'#0f7a52':'#c0392b')+'">'+agEsc(j&&j.mensaje?j.mensaje:(ok?'Listo':'No se pudo'))+'</span>';
+  }catch(e){ b.innerHTML='<span class="agAccMsg" style="color:#c0392b">No me pude conectar para ejecutar.</span>'; } }

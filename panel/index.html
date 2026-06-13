@@ -911,6 +911,14 @@ tbody tr:hover .chev{color:var(--brand)}
 #agSend{flex:none;width:40px;height:40px;border:none;border-radius:11px;background:linear-gradient(135deg,#e7c768,#c19a30);color:#1a1a1a;cursor:pointer;display:grid;place-items:center}
 #agSend:hover{filter:brightness(1.06)}
 #agSend:disabled{opacity:.5;cursor:default}
+.agAccion{align-self:stretch;margin:2px 0;padding:11px 13px;border:1.5px solid #caa53d;border-radius:12px;background:linear-gradient(135deg,#fffdf6,#fbf3df)}
+:root[data-theme="dark"] .agAccion{background:#1c1c1c}
+.agAccT{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#a07d18;margin-bottom:4px}
+.agAccL{font-size:13.5px;font-weight:700;color:var(--ink);margin-bottom:9px}
+.agAccB{display:flex;gap:8px;align-items:center}
+.agAccB .agOk{flex:1;border:none;border-radius:9px;padding:9px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#e7c768,#c19a30);color:#1a1a1a}
+.agAccB .agNo{border:1px solid var(--border);border-radius:9px;padding:9px 14px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;background:transparent;color:var(--ink-2)}
+.agAccMsg{font-size:12.5px;font-weight:600}
 @media(max-width:480px){#agPanel{width:calc(100vw - 20px);height:calc(100vh - 30px);bottom:10px;right:10px}#agBtn span{display:none}#agBtn{padding:0;width:52px;justify-content:center}}
 </style>
 <button id="agBtn" onclick="agToggle()" aria-label="Asesor IA">
@@ -938,6 +946,6 @@ tbody tr:hover .chev{color:var(--brand)}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
-<script src="app.js?v=16"></script>
+<script src="app.js?v=17"></script>
 </body>
 </html>
