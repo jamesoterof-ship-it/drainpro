@@ -61,6 +61,7 @@ function verHuella(btn,k){
   d.style.top=top+'px'; d.style.left=left+'px';
 }
 document.addEventListener('click',function(e){ if(!e.target.closest('.hbtn') && !e.target.closest('#huellaPop')) cerrarHuella(); });
+window.addEventListener('scroll',cerrarHuella,true);
 
 /* ---------- Aprobación de pedidos (solo lo aprobado se monta en Dropi) ---------- */
 function pnameId(p){ p=(p||'').toLowerCase(); if(p.includes('extract'))return 0; if(p.includes('shilajit'))return 113699; if(p.includes('tornado')||p.includes('drainpro'))return 69746; if(p.includes('nad'))return 120370; return 0; }
