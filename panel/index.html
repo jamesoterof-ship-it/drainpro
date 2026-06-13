@@ -575,23 +575,42 @@ tbody tr:hover .chev{color:var(--brand)}
         </div>
       </div>
       <div class="panel" style="margin-bottom:16px">
-        <div class="tbl-head"><h2>Rentabilidad por producto</h2><span style="font-size:12px;color:#8a93a0">dónde se gana y dónde se pierde (incluye pauta y devoluciones)</span></div>
+        <div class="tbl-head"><h2>Estado de resultados</h2><span style="font-size:12px;color:#8a93a0">por capas · márgenes de contribución</span></div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px;padding:8px 2px">
+          <div id="finPL"></div>
+          <div><div style="font-size:12.5px;color:#8a93a0;margin:2px 0 4px 4px">Cómo se reparte cada peso de ingreso</div><div id="finWaterfall" style="height:280px;width:100%"></div></div>
+        </div>
+      </div>
+      <div class="panel" style="margin-bottom:16px">
+        <div class="tbl-head"><h2>Economía por unidad</h2><span style="font-size:12px;color:#8a93a0">cuánto cuesta y deja cada unidad · histórico</span></div>
         <table>
-          <thead><tr><th>Producto</th><th>Ped.</th><th>Dev %</th><th>Ingresos</th><th>Costo</th><th>Flete</th><th>Publicidad</th><th>Ganancia</th></tr></thead>
-          <tbody id="tbodyPLProd"><tr><td colspan="8" class="vacio">Cargando…</td></tr></tbody>
+          <thead><tr><th>Producto</th><th>Uds.</th><th>Precio/u</th><th>Costo/u</th><th>Flete/u</th><th>Pauta/u</th><th>Margen/u</th><th>Dev%</th></tr></thead>
+          <tbody id="tbodyUnit"><tr><td colspan="8" class="vacio">Activa «Leer PL Producto» en n8n…</td></tr></tbody>
         </table>
       </div>
+      <div class="panel" style="margin-bottom:16px">
+        <div class="tbl-head"><h2>Devoluciones</h2><span style="font-size:12px;color:#8a93a0" id="finDevTot"></span></div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:20px;padding:6px 2px">
+          <div>
+            <div style="font-size:13px;font-weight:600;color:#1a2433;margin:2px 0 4px 4px">¿Cuál producto devuelve más?</div>
+            <div id="finDevProdBar" style="height:200px;width:100%"></div>
+            <div id="finDevProdTab" style="margin-top:6px"></div>
+          </div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:#1a2433;margin:2px 0 4px 4px">¿Por qué devuelven?</div>
+            <div id="finCausalesBar" style="height:200px;width:100%"></div>
+            <div id="finCausalesTab" style="margin-top:6px"></div>
+          </div>
+        </div>
+      </div>
       <div class="panel">
-        <div class="tbl-head"><h2>Análisis de devoluciones</h2><span style="font-size:12px;color:#8a93a0" id="finDevTot"></span></div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;padding:6px 2px">
+        <div class="tbl-head"><h2>Publicidad (Meta)</h2><span style="font-size:12px;color:#8a93a0">gasto y CAC por producto · histórico</span></div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:20px;padding:6px 2px">
           <div>
-            <div style="font-size:13px;font-weight:600;color:#1a2433;margin:4px 0 2px 6px">¿Cuál producto devuelve más?</div>
-            <div id="echDevProd" style="height:300px;width:100%"></div>
+            <div style="font-size:13px;font-weight:600;color:#1a2433;margin:2px 0 4px 4px">Gasto por producto</div>
+            <div id="finAdsBar" style="height:220px;width:100%"></div>
           </div>
-          <div>
-            <div style="font-size:13px;font-weight:600;color:#1a2433;margin:4px 0 2px 6px">¿Por qué devuelven?</div>
-            <div id="echCausales" style="height:300px;width:100%"></div>
-          </div>
+          <div id="finAdsTab"></div>
         </div>
       </div>
     </div>
@@ -852,7 +871,6 @@ tbody tr:hover .chev{color:var(--brand)}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/echarts-gl@2.0.9/dist/echarts-gl.min.js"></script>
-<script src="app.js?v=9"></script>
+<script src="app.js?v=10"></script>
 </body>
 </html>
