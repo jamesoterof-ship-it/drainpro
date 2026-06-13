@@ -873,43 +873,50 @@ tbody tr:hover .chev{color:var(--brand)}
 <!-- ===== Asesor IA: botón flotante + chat ===== -->
 <style>
 #agBtn{position:fixed;bottom:22px;right:22px;z-index:60;display:flex;align-items:center;gap:9px;height:52px;padding:0 20px 0 16px;border:none;border-radius:30px;cursor:pointer;
-  background:linear-gradient(135deg,var(--brand),var(--brand-700));color:#fff;font-family:'Inter',sans-serif;font-size:15px;font-weight:700;
-  box-shadow:0 8px 26px rgba(48,86,201,.42);transition:transform .15s ease,box-shadow .15s ease}
-#agBtn:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(48,86,201,.5)}
+  background:linear-gradient(135deg,#FF6B00,#FF8A1E);color:#fff;font-family:'Inter',sans-serif;font-size:15px;font-weight:700;
+  box-shadow:0 8px 26px rgba(255,107,0,.45);transition:transform .15s ease,box-shadow .15s ease}
+#agBtn:hover{transform:translateY(-2px);box-shadow:0 12px 34px rgba(255,107,0,.55)}
 #agBtn svg{flex:none}
+#agAlert{position:absolute;top:-5px;right:-3px;min-width:21px;height:21px;padding:0 5px;border-radius:11px;background:#e11900;color:#fff;font-size:12px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;border:2px solid var(--bg);box-shadow:0 2px 7px rgba(0,0,0,.32);animation:agPing 1.6s infinite}
+@keyframes agPing{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
 #agPanel{position:fixed;bottom:22px;right:22px;z-index:61;display:none;flex-direction:column;
   width:390px;max-width:calc(100vw - 28px);height:620px;max-height:calc(100vh - 40px);
   background:var(--surface);border:1px solid var(--border);border-radius:18px;overflow:hidden;
   box-shadow:0 22px 60px rgba(15,20,32,.32)}
 #agPanel.open{display:flex}
-#agHead{display:flex;align-items:center;gap:10px;padding:14px 16px;color:#fff;background:linear-gradient(135deg,var(--brand),var(--brand-700))}
-#agHead .agAv{width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.18);display:grid;place-items:center;flex:none}
+#agHead{display:flex;align-items:center;gap:10px;padding:14px 16px;color:#fff;background:linear-gradient(120deg,#0D0D0D 0%,#3D081B 55%,#8B0000 100%)}
+#agHead .agAv{width:36px;height:36px;border-radius:10px;background:#FF6B00;display:grid;place-items:center;flex:none;box-shadow:0 2px 8px rgba(255,107,0,.5)}
 #agHead .agT{font-size:15px;font-weight:800;line-height:1.1}
 #agHead .agS{font-size:11px;opacity:.85;margin-top:2px}
 #agHead .agX{margin-left:auto;width:30px;height:30px;border-radius:8px;border:none;background:rgba(255,255,255,.16);color:#fff;cursor:pointer;font-size:16px;line-height:1}
 #agMsgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;background:var(--bg)}
 .agMsg{max-width:86%;padding:10px 13px;border-radius:14px;font-size:13.5px;line-height:1.5;white-space:normal;word-wrap:break-word}
-.agMsg.u{align-self:flex-end;background:var(--brand);color:#fff;border-bottom-right-radius:4px}
+.agMsg.u{align-self:flex-end;background:#FF6B00;color:#fff;border-bottom-right-radius:4px}
 .agMsg.a{align-self:flex-start;background:var(--surface);border:1px solid var(--border);color:var(--ink);border-bottom-left-radius:4px}
-.agMsg.a b{color:var(--ink)} .agMsg.a code{background:var(--brand-tint);color:var(--brand-700);padding:1px 5px;border-radius:5px;font-size:12px}
+.agMsg.a b{color:var(--ink)} .agMsg.a code{background:#fff1e6;color:#c2540a;padding:1px 5px;border-radius:5px;font-size:12px}
 .agMsg.a ul{margin:6px 0;padding-left:18px} .agMsg.a li{margin:3px 0}
 .agDots{align-self:flex-start;display:flex;gap:4px;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:14px}
 .agDots i{width:7px;height:7px;border-radius:50%;background:var(--ink-3);animation:agB 1s infinite}
 .agDots i:nth-child(2){animation-delay:.15s} .agDots i:nth-child(3){animation-delay:.3s}
 @keyframes agB{0%,60%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-4px)}}
 #agChips{display:flex;gap:7px;overflow-x:auto;padding:9px 12px;background:var(--bg);border-top:1px solid var(--border-2)}
-#agChips button{flex:none;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;color:var(--brand-700);background:var(--brand-tint);
-  border:1px solid var(--border);border-radius:16px;padding:6px 11px;cursor:pointer;white-space:nowrap}
+#agChips button{flex:none;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;color:#c2540a;background:#fff1e6;
+  border:1px solid #ffd9b8;border-radius:16px;padding:6px 11px;cursor:pointer;white-space:nowrap}
+#agChips button:hover{background:#ffe6d1}
 #agInput{display:flex;align-items:flex-end;gap:8px;padding:11px 12px;background:var(--surface);border-top:1px solid var(--border)}
 #agText{flex:1;resize:none;max-height:96px;font-family:'Inter',sans-serif;font-size:13.5px;color:var(--ink);background:var(--surface-2);
   border:1px solid var(--border);border-radius:12px;padding:10px 12px;outline:none;line-height:1.4}
-#agSend{flex:none;width:40px;height:40px;border:none;border-radius:11px;background:var(--brand);color:#fff;cursor:pointer;display:grid;place-items:center}
+#agText:focus{border-color:#FF6B00}
+#agSend{flex:none;width:40px;height:40px;border:none;border-radius:11px;background:#FF6B00;color:#fff;cursor:pointer;display:grid;place-items:center}
+#agSend:hover{background:#e85f00}
 #agSend:disabled{opacity:.5;cursor:default}
 @media(max-width:480px){#agPanel{width:calc(100vw - 20px);height:calc(100vh - 30px);bottom:10px;right:10px}#agBtn span{display:none}#agBtn{padding:0;width:52px;justify-content:center}}
 </style>
 <button id="agBtn" onclick="agToggle()" aria-label="Asesor IA">
   <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9.5 14 11.4 12 16l-2-4.6L5.5 9.5 10 7.6z"/><path d="M18.5 14.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg>
   <span>Asesor</span>
+  <span id="agAlert" style="display:none"></span>
 </button>
 <div id="agPanel">
   <div id="agHead">
@@ -931,6 +938,6 @@ tbody tr:hover .chev{color:var(--brand)}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
-<script src="app.js?v=14"></script>
+<script src="app.js?v=15"></script>
 </body>
 </html>

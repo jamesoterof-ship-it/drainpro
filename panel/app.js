@@ -790,6 +790,7 @@ function renderAprobar(){
   const nPend=items.filter(x=>x.st==='pendiente').length;
   const bg=document.getElementById('badgeAprobar');
   if(bg){ bg.style.display=nPend?'':'none'; bg.textContent=nPend; }
+  agRiesgoCalc(items);
   let arr=items.sort((a,b)=>b.orden-a.orden);
   if(fAprob==='pend') arr=arr.filter(x=>x.st==='pendiente');
   window._aprobF=arr;
@@ -1253,18 +1254,40 @@ document.getElementById('fechaHead').textContent=new Date().toLocaleDateString('
 const URL_AGENTE=BASE+'/agente-finanzas';
 window._agHist=[]; window._agBusy=false; window._agInit=false;
 function agToggle(){ var p=document.getElementById('agPanel'); if(!p) return; p.classList.toggle('open');
-  if(p.classList.contains('open')){ if(!window._agInit){ window._agInit=true;
-      agPush('a','Hola James 👋 Soy tu **asesor**: contable, **Meta Ads** y riesgo de clientes. Veo tus números reales de Dropi y Meta. Pregúntame o usa un atajo de abajo.'); }
+  if(p.classList.contains('open')){
+    if(!window._agInit){ window._agInit=true;
+      agPush('a','Hola James. Soy tu asesor: contable, Meta Ads y riesgo de clientes. Veo tus numeros reales de Dropi y Meta. Preguntame o usa un atajo de abajo.'); }
+    agAlertaRiesgo();
     setTimeout(function(){ var t=document.getElementById('agText'); if(t) t.focus(); },80); } }
+/* Aviso de clientes riesgosos: cuenta los PENDIENTES de aprobacion que son Riesgosa/Critica */
+window._agRiesgo=[];
+function agRiesgoCalc(items){
+  var pend=(items||[]).filter(function(x){return x.st==='pendiente';});
+  var out=[];
+  pend.forEach(function(x){ var k=String(x.tel||'').replace(/\D/g,'').slice(-8); var h=(window.huellaMap||{})[k];
+    if(h && /RIESG|CR[IÍ]TIC/i.test(h.risk_label||'')) out.push({cli:x.cli,tel:x.tel,risk:h.risk_label,dev:(+h.dropi_dev||0),tot:(+h.dropi_total||0)}); });
+  window._agRiesgo=out;
+  var b=document.getElementById('agAlert'); if(b){ if(out.length){ b.style.display='flex'; b.textContent=out.length; } else b.style.display='none'; }
+}
+function agAlertaRiesgo(){ var arr=window._agRiesgo||[]; var ex=document.getElementById('agRiesgoMsg'); if(ex) ex.remove();
+  if(!arr.length) return; var m=document.getElementById('agMsgs'); if(!m) return;
+  var l=arr.slice(0,6).map(function(r){return '- '+(r.cli||'Cliente')+' ('+r.risk+', '+r.dev+'/'+r.tot+' devueltos en Dropi)';}).join('\n');
+  var d=document.createElement('div'); d.id='agRiesgoMsg'; d.className='agMsg a'; d.style.borderColor='#e24b4a';
+  d.innerHTML=agMd('ALERTA DE RIESGO: tienes '+arr.length+' cliente(s) riesgoso(s) esperando aprobacion:\n'+l+'\n\nRevisalos antes de aprobar. Dime si quieres que te diga cuales bloquear.');
+  m.appendChild(d); m.scrollTop=m.scrollHeight; }
 function agAuto(t){ t.style.height='auto'; t.style.height=Math.min(t.scrollHeight,96)+'px'; }
 function agKey(e){ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); agSend(); } }
 function agChip(txt){ var t=document.getElementById('agText'); if(t){ t.value=txt; } agSend(); }
 function agEsc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function agMd(s){ s=agEsc(s);
-  s=s.replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>').replace(/`([^`]+)`/g,'<code>$1</code>');
-  // listas con - o •
-  s=s.replace(/(^|\n)[\-•]\s+(.+)/g,'$1<li>$2</li>');
-  s=s.replace(/(<li>[\s\S]*?<\/li>)/g,function(m){return '<ul>'+m.replace(/\n(?!<li>)/g,' ')+'</ul>';});
+  // Texto PLANO serio: fuera asteriscos, codigo, encabezados y tablas
+  s=s.replace(/\*\*([^*]+)\*\*/g,'$1');           // sin negritas markdown
+  s=s.replace(/\*([^*\n]+)\*/g,'$1');              // sin italicas
+  s=s.replace(/`+([^`]*)`+/g,'$1');                // sin codigo
+  s=s.replace(/^\s{0,3}#{1,6}\s*/gm,'');            // sin encabezados #
+  s=s.replace(/^\s*\|(.*)\|\s*$/gm,function(m,c){return c.replace(/\|/g,'   ').trim();}); // tablas -> texto
+  s=s.replace(/^\s*[-*•]\s+/gm,'• ');               // vinetas limpias
+  s=s.replace(/\n{3,}/g,'\n\n');
   s=s.replace(/\n/g,'<br>');
   return s; }
 function agPush(role,text){ var m=document.getElementById('agMsgs'); if(!m) return null;
