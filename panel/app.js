@@ -958,10 +958,10 @@ const esMovil=()=>window.matchMedia('(max-width:760px)').matches;
 const URL_PEDIDOS_DROPI=BASE+'/leer-pedidos-dropi';
 const URL_GASTO_META=BASE+'/leer-gasto-meta';
 const URL_PL_PRODUCTO=BASE+'/leer-pl-producto';
-window._finPedidos=[]; window._finMeta=[]; window._finPLProd=[]; window._finRango='30'; window._finEstado=''; window._finBuscar=''; window._finCargado=false; window._fDesde=''; window._fHasta='';
+window._finPedidos=[]; window._finMeta=[]; window._finPLProd=[]; window._finRango='mes'; window._finEstado=''; window._finBuscar=''; window._finCargado=false; window._fDesde=''; window._fHasta='';
 var _finCG=null,_finCD=null;
 function _cop(n){return '$'+Math.round(+n||0).toLocaleString('es-CO');}
-function _finDesde(){ if(window._fDesde) return window._fDesde; var r=window._finRango; if(r==='all') return '2000-01-01'; var d=new Date(); if(r!=='hoy') d.setDate(d.getDate()-(parseInt(r,10)-1)); return d.toISOString().slice(0,10); }
+function _finDesde(){ if(window._fDesde) return window._fDesde; var r=window._finRango; if(r==='all') return '2000-01-01'; var d=new Date(); if(r==='mes'){ d.setDate(1); } else if(r!=='hoy'){ d.setDate(d.getDate()-(parseInt(r,10)-1)); } return d.toISOString().slice(0,10); }
 function _finHasta(){ return window._fHasta || '2999-12-31'; }
 function _enR(d){ d=String(d||'').slice(0,10); return d && d>=_finDesde() && d<=_finHasta(); }
 function _esTransito(e){return /TR[AÁ]NSITO|REPARTO|DESTINO|PREPARAD|ESPERA|GUIA/i.test(e);}
@@ -972,24 +972,50 @@ async function cargarFinanzas(){
   renderFinanzas(); _renderFinTabla(window._finPedidos);
   if(p===null){ var tb=document.getElementById('tbodyDropi'); if(tb) tb.innerHTML='<tr><td colspan="8" class="vacio">No se pudieron cargar los pedidos (¿webhook activo en n8n?).</td></tr>'; }
 }
+function _periodoLabel(){
+  var ms=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  function f(s){ var p=String(s).split('-'); return parseInt(p[2],10)+' '+ms[parseInt(p[1],10)-1]; }
+  if(window._finRango==='all'&&!window._fDesde) return 'todo el histórico';
+  var d=_finDesde(), h=window._fHasta||new Date().toISOString().slice(0,10);
+  return f(d)+' → '+f(h)+' '+String(d).split('-')[0];
+}
 function renderFinanzas(){
   var ped=window._finPedidos||[], meta=window._finMeta||[];
-  var montados=0,entregados=0,devueltos=0,ingresos=0,costo=0,flete=0;
+  // COHORTE: solo los pedidos MONTADOS (creados) en el período; se clasifican por su estado actual → SUMAN exacto
+  var montados=0,entregados=0,devueltos=0,enCamino=0,cancelados=0,ingresos=0,costo=0,flete=0;
+  // EN PROCESO (en camino/novedad): "cash in transit" — NO es ingreso aún, se mide aparte
+  var procVal=0,procCosto=0,procFlete=0;
   ped.forEach(function(p){
+    if(!_enR(p.creado_en)) return;
+    montados++;
     var est=(p.estado||'').toUpperCase();
-    if(_enR(p.creado_en)) montados++;
-    if(/ENTREGAD/.test(est) && _enR(p.entregado_en)){ entregados++; ingresos+=+p.recaudo||0; costo+=+p.costo||0; flete+=+p.flete||0; }
-    if(/DEVOL|RECHAZ/.test(est) && _enR(p.actualizado_en||p.creado_en)){ devueltos++; flete+=+p.flete||0; }
+    if(/ENTREGAD/.test(est)){ entregados++; ingresos+=+p.recaudo||0; costo+=+p.costo||0; flete+=+p.flete||0; }
+    else if(/DEVOL|RECHAZ/.test(est)){ devueltos++; flete+=+p.flete||0; }
+    else if(/CANCELAD/.test(est)){ cancelados++; }
+    else { enCamino++; procVal+=+p.recaudo||0; procCosto+=+p.costo||0; procFlete+=+p.flete||0; }
   });
   var ads=0; meta.forEach(function(m){ if(_enR(m.fecha)) ads+=+m.gasto||0; });
-  var ganancia=ingresos-costo-flete-ads, pctDev=(entregados+devueltos)?Math.round(devueltos/(entregados+devueltos)*100):0;
-  var margen=ingresos?Math.round(ganancia/ingresos*100):0;
+  var ganancia=ingresos-costo-flete-ads, resueltos=entregados+devueltos;
+  var pctDev=resueltos?Math.round(devueltos/resueltos*100):0, margen=ingresos?Math.round(ganancia/ingresos*100):0;
+  // PROYECCIÓN: aplico la tasa histórica de entrega del propio cohorte a lo que está en proceso
+  var tasaEnt=resueltos?entregados/resueltos:0;
+  // todas las en-proceso pagan flete (se entreguen o se devuelvan); ingreso y costo solo en las que se proyecta entregar
+  var ganProy=ganancia + (procVal*tasaEnt) - (procCosto*tasaEnt) - procFlete;
+  // COSTO DE OPERACIÓN PROMEDIO por venta ENTREGADA: producto + flete (incl. devoluciones) + pauta, todo ÷ entregados
+  // => el % de devolución queda cargado solo (lo que se gastó en lo no entregado lo pagan las entregadas)
+  var opProd=entregados?costo/entregados:0, opFlete=entregados?flete/entregados:0, opMeta=entregados?ads/entregados:0, opProm=opProd+opFlete+opMeta;
+  var pe=document.getElementById('finPeriodo'); if(pe) pe.textContent=_periodoLabel();
   var kpi=function(l,vv,col,sub){return '<div style="background:#f4f6f9;border-radius:12px;padding:11px 13px"><div style="font-size:11.5px;color:#8a93a0">'+l+'</div><div style="font-size:19px;font-weight:700;margin-top:2px;color:'+(col||'#1a2433')+'">'+vv+'</div>'+(sub?'<div style="font-size:10.5px;color:#8a93a0;margin-top:1px">'+sub+'</div>':'')+'</div>';};
   var K=document.getElementById('finKpis'); if(K) K.innerHTML=
-    kpi('Montados',montados)+kpi('Entregados',entregados)+kpi('Ingresos',_cop(ingresos))+
-    kpi('Costo producto',_cop(costo))+kpi('Flete',_cop(flete))+kpi('Publicidad',_cop(ads))+
-    kpi('Devoluciones',devueltos+' · '+pctDev+'%',pctDev>20?'#c0392b':'#1a2433')+
-    kpi('Ganancia neta',_cop(ganancia),ganancia>=0?'#0f7a52':'#c0392b','margen '+margen+'%');
+    kpi('Montados (ventas)',montados,'#1a2433','= entreg+dev+camino+canc')+
+    kpi('Entregados',entregados,'#0f7a52')+
+    kpi('Devueltos',devueltos+' · '+pctDev+'%',pctDev>20?'#c0392b':'#1a2433','% de resueltos')+
+    kpi('En camino',enCamino,'#185fa5',_cop(procVal)+' en proceso')+
+    kpi('Cancelados',cancelados,'#8a93a0')+
+    kpi('Ingresos (realizado)',_cop(ingresos),'#1a2433','solo entregados')+kpi('Costo producto',_cop(costo))+kpi('Flete',_cop(flete),'#1a2433','entregas + devol.')+kpi('Publicidad',_cop(ads))+
+    kpi('Costo op. prom/venta',_cop(opProm),'#b06a00','prod '+_cop(opProd)+' · flete '+_cop(opFlete)+' · meta '+_cop(opMeta)+' · dev '+pctDev+'% cargado')+
+    kpi('Ganancia neta',_cop(ganancia),ganancia>=0?'#0f7a52':'#c0392b','margen '+margen+'%')+
+    kpi('Ganancia proyectada',_cop(ganProy),ganProy>=0?'#0f7a52':'#c0392b','al cerrar lo en proceso ('+Math.round(tasaEnt*100)+'% entrega)');
   _renderFinCharts(ped,meta,_finDesde());
   _renderPL(ingresos,costo,flete,ads);
   _renderDevBars(ped);
@@ -1026,11 +1052,12 @@ function _renderWaterfall(ing,cogs,flete,ads,neta){
 }
 function _renderUnit(){
   var arr=window._finPLProd||[], tb=document.getElementById('tbodyUnit'); if(!tb) return;
-  if(!arr.length){ tb.innerHTML='<tr><td colspan="8" class="vacio">Activa «Leer PL Producto» en n8n para ver esto.</td></tr>'; return; }
+  if(!arr.length){ tb.innerHTML='<tr><td colspan="9" class="vacio">Activa «Leer PL Producto» en n8n para ver esto.</td></tr>'; return; }
   tb.innerHTML=arr.map(function(p){ var u=+p.unidades||0;
-    var prU=u?(+p.ingresos)/u:0, coU=u?(+p.costo)/u:0, flU=u?(+p.flete)/u:0, adU=u?(+p.publicidad)/u:0, mgU=prU-coU-flU-adU;
+    var prU=u?(+p.ingresos)/u:0, coU=u?(+p.costo)/u:0, flU=u?(+p.flete)/u:0, adU=u?(+p.publicidad)/u:0;
+    var opU=coU+flU+adU, mgU=prU-opU;  // costo de operación /entregado: ya incluye el % de devolución (flete y pauta divididos entre entregados)
     var dp=(+p.entregados+ +p.devueltos)?Math.round(+p.devueltos/(+p.entregados+ +p.devueltos)*100):0;
-    return '<tr><td><b>'+esc(p.producto)+'</b></td><td>'+u+'</td><td class="money">'+_cop(prU)+'</td><td class="money">'+_cop(coU)+'</td><td class="money">'+_cop(flU)+'</td><td class="money" style="color:#b06a00">'+_cop(adU)+'</td><td class="money" style="font-weight:700;color:'+(mgU>=0?'#0f7a52':'#c0392b')+'">'+_cop(mgU)+'</td><td style="color:'+(dp>25?'#c0392b':'#5a6470')+'">'+dp+'%</td></tr>';
+    return '<tr><td><b>'+esc(p.producto)+'</b></td><td>'+u+'</td><td class="money">'+_cop(prU)+'</td><td class="money">'+_cop(coU)+'</td><td class="money">'+_cop(flU)+'</td><td class="money" style="color:#b06a00">'+_cop(adU)+'</td><td class="money" style="font-weight:700">'+_cop(opU)+'</td><td class="money" style="font-weight:700;color:'+(mgU>=0?'#0f7a52':'#c0392b')+'">'+_cop(mgU)+'</td><td style="color:'+(dp>25?'#c0392b':'#5a6470')+'">'+dp+'%</td></tr>';
   }).join('');
 }
 var _echAds=null;
@@ -1060,7 +1087,7 @@ function _barH(el,data,color){
 function _datTab(rows,n){ return '<table style="width:100%;font-size:12px"><tbody>'+rows.map(function(x){ var pct=n?Math.round(x.value/n*100):0; return '<tr style="border-top:0.5px solid #eef0f2"><td style="padding:4px 6px;color:#5a6470">'+esc(x.name)+'</td><td style="padding:4px 6px;text-align:right;font-weight:600">'+x.value+'</td><td style="padding:4px 6px;text-align:right;color:#8a93a0;width:42px">'+pct+'%</td></tr>'; }).join('')+'</tbody></table>'; }
 function _renderDevBars(ped){
   var prod={},caus={},n=0;
-  ped.forEach(function(p){ var est=(p.estado||'').toUpperCase(); if(!/DEVOL|RECHAZ/.test(est)) return; if(!_enR(p.actualizado_en||p.creado_en)) return;
+  ped.forEach(function(p){ var est=(p.estado||'').toUpperCase(); if(!/DEVOL|RECHAZ/.test(est)) return; if(!_enR(p.creado_en)) return;
     var pr=_shortProd(p.producto); prod[pr]=(prod[pr]||0)+1;
     var m=(p.motivo_devolucion||'Sin motivo'); m=m.charAt(0).toUpperCase()+m.slice(1).toLowerCase(); caus[m]=(caus[m]||0)+1; n++; });
   var t=document.getElementById('finDevTot'); if(t) t.textContent=n+' devoluciones en el período';
@@ -1120,7 +1147,7 @@ function _pie3D(el,data){ if(!el||!el.offsetWidth) return null;
   catch(e){ return _donutPro(el,data); } }
 function _renderDevDonuts(ped){
   var prod={},caus={},n=0;
-  ped.forEach(function(p){ var est=(p.estado||'').toUpperCase(); if(!/DEVOL|RECHAZ/.test(est)) return; if(!_enR(p.actualizado_en||p.creado_en)) return;
+  ped.forEach(function(p){ var est=(p.estado||'').toUpperCase(); if(!/DEVOL|RECHAZ/.test(est)) return; if(!_enR(p.creado_en)) return;
     var pr=_shortProd(p.producto); prod[pr]=(prod[pr]||0)+1;
     var m=(p.motivo_devolucion||'Sin motivo'); m=m.charAt(0).toUpperCase()+m.slice(1).toLowerCase(); caus[m]=(caus[m]||0)+1; n++; });
   var t=document.getElementById('finDevTot'); if(t) t.textContent=n+' devoluciones en el período';
@@ -1178,6 +1205,7 @@ function _estChip(est){ var e=(est||'').toUpperCase(),bg='#eef0f2',c='#5a6470';
   else if(/NOVEDAD/.test(e)){bg='#fbf0d4';c='#8a5a00';} else if(_esTransito(e)){bg='#e6f1fb';c='#185fa5';}
   return '<span style="font-size:11px;background:'+bg+';color:'+c+';padding:2px 8px;border-radius:9px;white-space:nowrap">'+(est||'—')+'</span>';
 }
+function _ganOf(p){ var e=(p.estado||'').toUpperCase(); if(/DEVOL|RECHAZ/.test(e)) return -(+p.flete||0); return (+p.recaudo||0)-(+p.costo||0)-(+p.flete||0); }
 function _renderFinTabla(ped){
   var est=window._finEstado, q=(window._finBuscar||'').toLowerCase();
   var arr=(ped||[]).filter(function(p){
@@ -1187,15 +1215,20 @@ function _renderFinTabla(ped){
   });
   var tb=document.getElementById('tbodyDropi'); if(!tb) return;
   if(!arr.length){ tb.innerHTML='<tr><td colspan="8" class="vacio">Sin pedidos en este filtro.</td></tr>'; return; }
-  var T={rec:0,cos:0,fle:0,gan:0}; arr.forEach(function(p){ T.rec+=+p.recaudo||0; T.cos+=+p.costo||0; T.fle+=+p.flete||0; T.gan+=(+p.recaudo||0)-(+p.costo||0)-(+p.flete||0); });
-  var totRow='<tr style="background:#eef1f5;font-weight:700;border-top:2px solid #d8dee8"><td>'+arr.length+' guías</td><td></td><td></td><td style="color:#8a93a0">TOTAL</td><td class="money">'+_cop(T.rec)+'</td><td class="money">'+_cop(T.cos)+'</td><td class="money">'+_cop(T.fle)+'</td><td class="money" style="color:'+(T.gan>=0?'#0f7a52':'#c0392b')+'">'+_cop(T.gan)+'</td></tr>';
-  tb.innerHTML=totRow+arr.slice(0,300).map(function(p){
-    var gan=(+p.recaudo||0)-(+p.costo||0)-(+p.flete||0), ent=/ENTREGAD/.test((p.estado||'').toUpperCase());
+  var grp={},T={rec:0,cos:0,fle:0,gan:0};
+  arr.forEach(function(p){ var k=_shortProd(p.producto); var g=grp[k]||(grp[k]={n:0,rec:0,cos:0,fle:0,gan:0}); var gn=_ganOf(p);
+    g.n++; g.rec+=+p.recaudo||0; g.cos+=+p.costo||0; g.fle+=+p.flete||0; g.gan+=gn;
+    T.rec+=+p.recaudo||0; T.cos+=+p.costo||0; T.fle+=+p.flete||0; T.gan+=gn; });
+  var gk=Object.keys(grp).sort(function(a,b){return grp[b].n-grp[a].n;});
+  var sumRows=gk.map(function(k){ var g=grp[k]; return '<tr style="background:#f7f9fb"><td><b style="color:#1a2433">'+esc(k)+'</b> <small style="color:#8a93a0">'+g.n+' guía'+(g.n>1?'s':'')+'</small></td><td></td><td></td><td></td><td class="money">'+_cop(g.rec)+'</td><td class="money">'+_cop(g.cos)+'</td><td class="money">'+_cop(g.fle)+'</td><td class="money" style="color:'+(g.gan>=0?'#0f7a52':'#c0392b')+';font-weight:600">'+_cop(g.gan)+'</td></tr>'; }).join('');
+  var totRow='<tr style="background:#e7ebf1;font-weight:700;border-top:2px solid #cfd8e3;border-bottom:2px solid #cfd8e3"><td>'+arr.length+' guías</td><td></td><td></td><td style="color:#5a6470">TOTAL</td><td class="money">'+_cop(T.rec)+'</td><td class="money">'+_cop(T.cos)+'</td><td class="money">'+_cop(T.fle)+'</td><td class="money" style="color:'+(T.gan>=0?'#0f7a52':'#c0392b')+'">'+_cop(T.gan)+'</td></tr>';
+  tb.innerHTML=sumRows+totRow+arr.slice(0,300).map(function(p){
+    var gan=_ganOf(p), e2=(p.estado||'').toUpperCase(), proj=!/ENTREGAD|DEVOL|RECHAZ/.test(e2);
     return '<tr><td class="cli">'+esc(p.cliente||'—')+'<small>+'+(p.telefono||'')+(p.motivo_devolucion?(' · '+esc(p.motivo_devolucion)):'')+'</small></td>'+
       '<td>'+esc((p.producto||'').slice(0,26))+' <small>x'+(p.cantidad||1)+'</small></td>'+
       '<td>'+(p.guia?('<span style="font-variant-numeric:tabular-nums">'+esc(p.guia)+'</span>'):'—')+'</td>'+
       '<td>'+_estChip(p.estado)+'</td><td class="money">'+_cop(p.recaudo)+'</td><td class="money">'+_cop(p.costo)+'</td><td class="money">'+_cop(p.flete)+'</td>'+
-      '<td class="money" style="color:'+(gan>=0?'#0f7a52':'#c0392b')+';font-weight:600">'+(ent?_cop(gan):('<span style="color:#9aa4b2">'+_cop(gan)+'*</span>'))+'</td></tr>';
+      '<td class="money" style="color:'+(gan>=0?'#0f7a52':'#c0392b')+';font-weight:600">'+(proj?('<span style="color:#9aa4b2">'+_cop(gan)+'*</span>'):_cop(gan))+'</td></tr>';
   }).join('');
 }
 document.addEventListener('click',function(e){
