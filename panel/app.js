@@ -1017,17 +1017,41 @@ function _donutPro(el,data){
   },true);
   inst.resize(); return inst;
 }
+var _PAL=['#e24b4a','#d8782e','#e0a800','#1d9e75','#378ADD','#7c4dd8','#d4537e','#5a6470'];
+function _webglOK(){ try{var c=document.createElement('canvas'); return !!(window.WebGLRenderingContext&&(c.getContext('webgl')||c.getContext('experimental-webgl')));}catch(e){return false;} }
+function _gpe(s,e,k,h){ var sr=s*Math.PI*2,er=e*Math.PI*2; return {
+  u:{min:-Math.PI,max:Math.PI*3,step:Math.PI/32}, v:{min:0,max:Math.PI*2,step:Math.PI/20},
+  x:function(u,v){ if(u<sr)return Math.cos(sr)*(1+Math.cos(v)*k); if(u>er)return Math.cos(er)*(1+Math.cos(v)*k); return Math.cos(u)*(1+Math.cos(v)*k); },
+  y:function(u,v){ if(u<sr)return Math.sin(sr)*(1+Math.cos(v)*k); if(u>er)return Math.sin(er)*(1+Math.cos(v)*k); return Math.sin(u)*(1+Math.cos(v)*k); },
+  z:function(u,v){ if(u<-Math.PI*0.5)return Math.sin(u); if(u>Math.PI*2.5)return Math.sin(u)*h; return Math.sin(v)>0?h:-1; } }; }
+function getPie3D(pieData,inner){
+  var series=[],sum=0,sv=0,ev=0,k=typeof inner!=='undefined'?(1-inner)/(1+inner):1/3;
+  for(var i=0;i<pieData.length;i++){ sum+=pieData[i].value;
+    var it={name:pieData[i].name,type:'surface',parametric:true,wireframe:{show:false},pieData:pieData[i],itemStyle:{}};
+    if(pieData[i].itemStyle&&pieData[i].itemStyle.color) it.itemStyle.color=pieData[i].itemStyle.color; series.push(it); }
+  for(var j=0;j<series.length;j++){ ev=sv+series[j].pieData.value; series[j].pieData.startRatio=sv/sum; series[j].pieData.endRatio=ev/sum;
+    series[j].parametricEquation=_gpe(sv/sum,ev/sum,k,1.6); sv=ev; }
+  return { tooltip:{formatter:function(p){ for(var x=0;x<series.length;x++){ if(series[x].name===p.seriesName){var d=series[x].pieData; return p.seriesName+'<br/><b>'+d.value+'</b> · '+Math.round((d.endRatio-d.startRatio)*100)+'%';} } return p.seriesName; }},
+    legend:{type:'scroll',bottom:0,left:'center',textStyle:{fontSize:10,color:'#5a6470'},itemWidth:11,itemHeight:11,icon:'circle'},
+    xAxis3D:{min:-1,max:1},yAxis3D:{min:-1,max:1},zAxis3D:{min:-1,max:1},
+    grid3D:{show:false,boxHeight:5,top:'-4%',viewControl:{alpha:40,beta:25,distance:215,rotateSensitivity:1,zoomSensitivity:0,panSensitivity:0,autoRotate:true,autoRotateSpeed:9}},
+    series:series }; }
+function _pie3D(el,data){ if(!el||!el.offsetWidth) return null;
+  try{ var inst=echarts.getInstanceByDom(el)||echarts.init(el); inst.setOption(getPie3D(data,0.5),true); inst.resize(); return inst; }
+  catch(e){ return _donutPro(el,data); } }
 function _renderDevDonuts(ped){
   var prod={},caus={},n=0;
   ped.forEach(function(p){ var est=(p.estado||'').toUpperCase(); if(!/DEVOL|RECHAZ/.test(est)) return; if(!_enR(p.actualizado_en||p.creado_en)) return;
     var pr=_shortProd(p.producto); prod[pr]=(prod[pr]||0)+1;
     var m=(p.motivo_devolucion||'Sin motivo'); m=m.charAt(0).toUpperCase()+m.slice(1).toLowerCase(); caus[m]=(caus[m]||0)+1; n++; });
   var t=document.getElementById('finDevTot'); if(t) t.textContent=n+' devoluciones en el período';
-  var dp=Object.keys(prod).map(function(k){return {name:k,value:prod[k]};}).sort(function(a,b){return b.value-a.value;});
-  var dc=Object.keys(caus).map(function(k){return {name:k,value:caus[k]};}).sort(function(a,b){return b.value-a.value;});
-  if(!n){ dp=[{name:'Sin devoluciones',value:1}]; dc=[{name:'Sin devoluciones',value:1}]; }
-  _echDP=_donutPro(document.getElementById('echDevProd'),dp);
-  _echCa=_donutPro(document.getElementById('echCausales'),dc);
+  function mk(o){ return Object.keys(o).map(function(k){return {name:k,value:o[k]};}).sort(function(a,b){return b.value-a.value;}).map(function(x,i){ x.itemStyle={color:_PAL[i%_PAL.length]}; return x; }); }
+  var dp=mk(prod), dc=mk(caus);
+  if(!n){ dp=[{name:'Sin devoluciones',value:1,itemStyle:{color:'#cdd5df'}}]; dc=dp.slice(); }
+  var use3d=_webglOK()&&typeof echarts!=='undefined';
+  var R=use3d?_pie3D:_donutPro;
+  _echDP=R(document.getElementById('echDevProd'),dp);
+  _echCa=R(document.getElementById('echCausales'),dc);
 }
 window.addEventListener('resize',function(){ try{if(_echDP)_echDP.resize(); if(_echCa)_echCa.resize();}catch(e){} });
 function _renderPLProd(){
