@@ -1052,12 +1052,17 @@ function _renderWaterfall(ing,cogs,flete,ads,neta){
 }
 function _renderUnit(){
   var arr=window._finPLProd||[], tb=document.getElementById('tbodyUnit'); if(!tb) return;
-  if(!arr.length){ tb.innerHTML='<tr><td colspan="9" class="vacio">Activa «Leer PL Producto» en n8n para ver esto.</td></tr>'; return; }
-  tb.innerHTML=arr.map(function(p){ var u=+p.unidades||0;
-    var prU=u?(+p.ingresos)/u:0, coU=u?(+p.costo)/u:0, flU=u?(+p.flete)/u:0, adU=u?(+p.publicidad)/u:0;
-    var opU=coU+flU+adU, mgU=prU-opU;  // costo de operación /entregado: ya incluye el % de devolución (flete y pauta divididos entre entregados)
+  if(!arr.length){ tb.innerHTML='<tr><td colspan="10" class="vacio">Activa «Leer PL Producto» en n8n para ver esto.</td></tr>'; return; }
+  tb.innerHTML=arr.map(function(p){ var v=+p.entregados||0, u=+p.unidades||0;
+    // TODO por VENTA (orden entregada), NO por unidad: la pauta/CAC se paga por venta; el costo de producto ya viene ×cantidad (promo 2x)
+    var udsV=v?u/v:0;                  // unidades por venta (revela los packs: ~2 = 2x)
+    var prV=v?(+p.ingresos)/v:0;       // precio promedio por venta
+    var coV=v?(+p.costo)/v:0;          // costo producto por venta (ya incluye el ×2 del pack)
+    var flV=v?(+p.flete)/v:0;          // flete por venta (1 envío, incl. devoluciones)
+    var caV=v?(+p.publicidad)/v:0;     // CAC: pauta por VENTA, no por unidad
+    var opV=coV+flV+caV, mgV=prV-opV;
     var dp=(+p.entregados+ +p.devueltos)?Math.round(+p.devueltos/(+p.entregados+ +p.devueltos)*100):0;
-    return '<tr><td><b>'+esc(p.producto)+'</b></td><td>'+u+'</td><td class="money">'+_cop(prU)+'</td><td class="money">'+_cop(coU)+'</td><td class="money">'+_cop(flU)+'</td><td class="money" style="color:#b06a00">'+_cop(adU)+'</td><td class="money" style="font-weight:700">'+_cop(opU)+'</td><td class="money" style="font-weight:700;color:'+(mgU>=0?'#0f7a52':'#c0392b')+'">'+_cop(mgU)+'</td><td style="color:'+(dp>25?'#c0392b':'#5a6470')+'">'+dp+'%</td></tr>';
+    return '<tr><td><b>'+esc(p.producto)+'</b></td><td>'+v+'</td><td>'+udsV.toFixed(1)+'</td><td class="money">'+_cop(prV)+'</td><td class="money">'+_cop(coV)+'</td><td class="money">'+_cop(flV)+'</td><td class="money" style="color:#b06a00">'+_cop(caV)+'</td><td class="money" style="font-weight:700">'+_cop(opV)+'</td><td class="money" style="font-weight:700;color:'+(mgV>=0?'#0f7a52':'#c0392b')+'">'+_cop(mgV)+'</td><td style="color:'+(dp>25?'#c0392b':'#5a6470')+'">'+dp+'%</td></tr>';
   }).join('');
 }
 var _echAds=null;
@@ -1072,8 +1077,8 @@ function _renderAds(){
       series:[{type:'bar',data:arr.map(function(p){return +p.publicidad;}).reverse(),itemStyle:{color:'#e0a800',borderRadius:[0,4,4,0]}}]},true); _echAds.resize();
   }
   if(tab){ if(!arr.length){ tab.innerHTML='<div class="vacio" style="padding:10px">Activa «Leer PL Producto».</div>'; }
-    else tab.innerHTML='<table style="width:100%;font-size:12px"><thead><tr style="color:#8a93a0;text-align:left"><th style="padding:5px 6px;font-weight:500">Producto</th><th style="padding:5px 6px;font-weight:500">Pauta</th><th style="padding:5px 6px;font-weight:500">CAC/u</th></tr></thead><tbody>'+
-      arr.map(function(p){ var u=+p.unidades||0,cac=u?(+p.publicidad)/u:0; return '<tr style="border-top:0.5px solid #eef0f2"><td style="padding:5px 6px">'+esc(p.producto)+'</td><td style="padding:5px 6px;font-weight:600">'+_cop(p.publicidad)+'</td><td style="padding:5px 6px;color:#b06a00">'+_cop(cac)+'</td></tr>'; }).join('')+'</tbody></table>'; }
+    else tab.innerHTML='<table style="width:100%;font-size:12px"><thead><tr style="color:#8a93a0;text-align:left"><th style="padding:5px 6px;font-weight:500">Producto</th><th style="padding:5px 6px;font-weight:500">Pauta</th><th style="padding:5px 6px;font-weight:500">CAC/vta</th></tr></thead><tbody>'+
+      arr.map(function(p){ var v=+p.entregados||0,cac=v?(+p.publicidad)/v:0; return '<tr style="border-top:0.5px solid #eef0f2"><td style="padding:5px 6px">'+esc(p.producto)+'</td><td style="padding:5px 6px;font-weight:600">'+_cop(p.publicidad)+'</td><td style="padding:5px 6px;color:#b06a00">'+_cop(cac)+'</td></tr>'; }).join('')+'</tbody></table>'; }
 }
 var _echBP=null,_echBC=null;
 function _barH(el,data,color){
