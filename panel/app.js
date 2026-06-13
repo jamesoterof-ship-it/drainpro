@@ -344,7 +344,7 @@ function renderPedidosWeb(){
   if(!arr.length){tb.innerHTML='<tr><td colspan="9" class="vacio">Sin pedidos aquí.</td></tr>';return;}
   tb.innerHTML=arr.slice(0,100).map((o,i)=>`
     <tr onclick="verPedido(${i})">
-      <td class="cli">${esc(o.cli)}<small>${esc(o.fecha)} · +${o.tel}</small>${huellaBadge(o.tel)}</td>
+      <td class="cli">${esc(o.cli)}${huellaBadge(o.tel)}<small>${esc(o.fecha)} · +${o.tel}</small></td>
       <td><span class="pchip"><i style="background:${o.color}"></i>${esc(o.prod)}</span></td>
       <td>${esc(o.comuna)}</td>
       <td>${o.cant}</td>
@@ -510,7 +510,7 @@ function renderVentasBot(){
   if(!arr.length){tb.innerHTML='<tr><td colspan="8" class="vacio">Este bot aún no registra ventas.</td></tr>';return;}
   tb.innerHTML=arr.slice(0,80).map((o,i)=>`
     <tr onclick="verVentaBot(${i})">
-      <td class="cli">${esc(o.cli)}<small>${esc(o.fecha)} ${esc(o.hora)} · +${o.tel}</small>${huellaBadge(o.tel)}</td>
+      <td class="cli">${esc(o.cli)}${huellaBadge(o.tel)}<small>${esc(o.fecha)} ${esc(o.hora)} · +${o.tel}</small></td>
       <td><span class="pchip"><i style="background:#0e8074"></i>${esc(o.prod)}</span></td>
       <td>${esc(o.zona)}</td>
       <td>${o.cant}</td>
@@ -640,7 +640,7 @@ function renderVentasWA(){
   if(!arr.length){tb.innerHTML='<tr><td colspan="9" class="vacio">Sin ventas registradas aún.</td></tr>';return;}
   tb.innerHTML=arr.slice(0,100).map((o,i)=>`
     <tr onclick="verVenta(${i})">
-      <td class="cli">${esc(o.cli)}<small>${esc(o.fecha)} ${esc(o.hora)} · +${o.tel}</small>${huellaBadge(o.tel)}</td>
+      <td class="cli">${esc(o.cli)}${huellaBadge(o.tel)}<small>${esc(o.fecha)} ${esc(o.hora)} · +${o.tel}</small></td>
       <td>${BOTNOM[o.bot].split(' ·')[0]}</td>
       <td><span class="pchip"><i style="background:#0e8074"></i>${esc(o.prod)}</span></td>
       <td><span class="flag ${FLAG[o.loc]}"></span></td>
@@ -795,7 +795,7 @@ function renderAprobar(){
   if(!arr.length){ tb.innerHTML='<tr><td colspan="8" class="vacio">'+(fAprob==='pend'?'Nada por aprobar. 🎉':'Sin ventas recientes.')+'</td></tr>'; return; }
   tb.innerHTML=arr.slice(0,100).map((x,i)=>`
     <tr onclick="verAprob(${i})">
-      <td class="cli">${esc(x.cli)}<small>${esc(x.fecha)} · +${x.tel}</small>${huellaBadge(x.tel)}</td>
+      <td class="cli">${esc(x.cli)}${huellaBadge(x.tel)}<small>${esc(x.fecha)} · +${x.tel}</small></td>
       <td>${x.canal}</td>
       <td><span class="pchip"><i style="background:${x.color}"></i>${esc(x.prod)}</span></td>
       <td>${esc(x.comuna||'—')}</td>
