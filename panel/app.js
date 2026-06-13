@@ -837,6 +837,7 @@ function verAprob(i){
 const TITULOS={resumen:['Resumen general','Todos los canales · monedas separadas por país'],
   finanzas:['Finanzas','P&L, costos, devoluciones y rentabilidad por producto · Chile · en COP'],
   dropi:['Dropi · Guías','Estado de cada guía actualizado con Dropi · seguimiento'],
+  calc:['Calculadora de combos','Costo y precio de venta por combo (1/2/3) en CLP · flete repartido'],
   aprobar:['Aprobación de ventas','Página + WhatsApp · solo lo que apruebes se monta en Dropi'],
   pedidos:['Pedidos de páginas','Shilajit y DRAINPRO · confirmación y estado Dropi'],
   abandonados:['Pedidos abandonados','Solo los no completados · recuperación automática'],
@@ -866,6 +867,7 @@ function mostrarVista(v){
   if(v==='historico') renderHistorico();
   if(v==='visitas') renderVisitas();
   if(v==='finanzas'||v==='dropi'){ if(!window._finCargado){ cargarFinanzas(); } else { renderFinanzas(); _renderFinTabla(window._finPedidos); } }
+  if(v==='calc') cargarCalc();
   if(typeof cerrarDrawer==='function') cerrarDrawer();
   if(typeof volverLista==='function') volverLista();   // vuelve a la lista al cambiar de vista
   ajustarStickyTop();
@@ -1336,3 +1338,46 @@ async function agEjecutar(a,d){ var b=d.querySelector('.agAccB'); b.innerHTML='<
     var j=await r.json(); var ok=j&&j.ok;
     b.innerHTML='<span class="agAccMsg" style="color:'+(ok?'#0f7a52':'#c0392b')+'">'+agEsc(j&&j.mensaje?j.mensaje:(ok?'Listo':'No se pudo'))+'</span>';
   }catch(e){ b.innerHTML='<span class="agAccMsg" style="color:#c0392b">No me pude conectar para ejecutar.</span>'; } }
+
+/* ====================== CALCULADORA DE COMBOS ====================== */
+const URL_CALC=BASE+'/calc-productos';
+window._calcProds=[]; window._calcPrecios={};
+async function cargarCalc(){ var sel=document.getElementById('calcProd'); if(!sel) return;
+  if(!window._calcProds.length){ try{ var r=await fetch(URL_CALC); var a=await r.json(); window._calcProds=Array.isArray(a)?a:(a.data||a.objects||[]); }catch(e){} }
+  if(!sel.dataset.ready){
+    var html='<option value="">— elige un producto —</option>';
+    window._calcProds.forEach(function(p,i){ html+='<option value="'+i+'">'+esc(p.nombre||('id '+p.producto_id))+'</option>'; });
+    html+='<option value="nuevo">+ Producto nuevo (escribo el costo)</option>';
+    sel.innerHTML=html; sel.dataset.ready='1';
+  }
+  renderCalc();
+}
+function calcPick(){ var sel=document.getElementById('calcProd'); var v=sel.value; window._calcPrecios={};
+  if(v!=='' && v!=='nuevo'){ var p=window._calcProds[+v];
+    if(p){ document.getElementById('calcCosto').value=p.costo_unit_clp||''; document.getElementById('calcFlete').value=p.flete_clp||''; } }
+  renderCalc(); }
+function calcReset(){ window._calcPrecios={}; renderCalc(); }
+function _fclp(n){ return '$'+Math.round(n||0).toLocaleString('es-CL'); }
+function renderCalc(){ var tb=document.getElementById('calcBody'); if(!tb) return;
+  var costo=+(document.getElementById('calcCosto')||{}).value||0;
+  var flete=+(document.getElementById('calcFlete')||{}).value||0;
+  var mk=+(document.getElementById('calcMarkup')||{}).value||0;
+  if(!costo){ tb.innerHTML='<tr><td colspan="8" class="vacio">Elige un producto o escribe el costo unitario.</td></tr>'; return; }
+  tb.innerHTML=[1,2,3].map(function(n){
+    var cp=costo*n, ct=cp+flete, sug=Math.round(ct*(1+mk/100));
+    var pr=(window._calcPrecios[n]!=null)?window._calcPrecios[n]:sug;
+    var gan=pr-ct, mg=pr?Math.round(gan/pr*100):0;
+    return '<tr><td><b>Combo x'+n+'</b></td><td>'+n+'</td><td class="money">'+_fclp(cp)+'</td><td class="money">'+_fclp(flete)+'</td><td class="money">'+_fclp(ct)+'</td>'+
+      '<td><input type="number" inputmode="numeric" data-n="'+n+'" value="'+pr+'" oninput="calcPrecio('+n+',this.value)"></td>'+
+      '<td class="money" style="font-weight:700;color:'+(gan>=0?'#0f7a52':'#c0392b')+'">'+_fclp(gan)+'</td>'+
+      '<td style="color:'+(mg>=0?'#0f7a52':'#c0392b')+'">'+mg+'%</td></tr>';
+  }).join('');
+}
+function calcPrecio(n,v){ window._calcPrecios[n]= (v===''?null:(+v||0));
+  var costo=+(document.getElementById('calcCosto')||{}).value||0, flete=+(document.getElementById('calcFlete')||{}).value||0;
+  var ct=costo*n+flete, pr=window._calcPrecios[n]||0, gan=pr-ct, mg=pr?Math.round(gan/pr*100):0;
+  var inp=document.querySelector('#calcBody input[data-n="'+n+'"]'); if(!inp) return;
+  var tds=inp.closest('tr').querySelectorAll('td');
+  tds[6].textContent=_fclp(gan); tds[6].style.color=gan>=0?'#0f7a52':'#c0392b';
+  tds[7].textContent=mg+'%'; tds[7].style.color=mg>=0?'#0f7a52':'#c0392b';
+}

@@ -383,6 +383,10 @@ tbody tr:hover .chev{color:var(--brand)}
         <svg class="ico" viewBox="0 0 24 24"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 12l9 4 9-4"/><path d="M3 17l9 4 9-4"/></svg>
         Dropi · Guías
       </div>
+      <div class="nav-i" data-view="calc">
+        <svg class="ico" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8"/><path d="M8 10h2M12 10h2M16 10h.01"/><path d="M8 14h2M12 14h2M16 14h.01"/><path d="M8 18h6"/></svg>
+        Calculadora
+      </div>
     </nav>
 
     <div class="grouplabel">
@@ -636,6 +640,30 @@ tbody tr:hover .chev{color:var(--brand)}
           <thead><tr><th>Cliente</th><th>Producto</th><th>N° guía</th><th>Estado</th><th>Recaudo</th><th>Costo</th><th>Flete</th><th>Ganancia</th></tr></thead>
           <tbody id="tbodyDropi"><tr><td colspan="8" class="vacio">Cargando…</td></tr></tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- ====== CALCULADORA DE COMBOS ====== -->
+    <div class="content view" id="view-calc">
+      <div class="panel" style="margin-bottom:16px">
+        <div class="tbl-head"><h2>Calculadora de combos</h2><span style="font-size:12px;color:#8a93a0">precios y costos en CLP · el flete es uno solo por envío → el combo sale más barato por unidad</span></div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;padding:12px 4px">
+          <label class="calcF">Producto
+            <select id="calcProd" onchange="calcPick()"><option value="">Cargando…</option></select></label>
+          <label class="calcF">Costo unitario (CLP)
+            <input id="calcCosto" type="number" inputmode="numeric" placeholder="810" oninput="calcReset()"></label>
+          <label class="calcF">Flete por envío (CLP)
+            <input id="calcFlete" type="number" inputmode="numeric" placeholder="2700" oninput="calcReset()"></label>
+          <label class="calcF">% Ganancia (sobre costo)
+            <input id="calcMarkup" type="number" inputmode="numeric" value="150" oninput="calcReset()"></label>
+        </div>
+      </div>
+      <div class="panel" style="margin-bottom:16px">
+        <table>
+          <thead><tr><th>Combo</th><th>Uds.</th><th>Costo producto</th><th>Flete</th><th>Costo total</th><th>Precio venta (CLP)</th><th>Ganancia</th><th>Margen</th></tr></thead>
+          <tbody id="calcBody"><tr><td colspan="8" class="vacio">Elige un producto o escribe el costo.</td></tr></tbody>
+        </table>
+        <div style="font-size:11.5px;color:#8a93a0;padding:8px 4px">Cambia el costo, el flete o el % de ganancia y se recalcula solo. También puedes escribir el precio de venta de cada combo y te muestra la ganancia y el margen.</div>
       </div>
     </div>
 
@@ -919,6 +947,11 @@ tbody tr:hover .chev{color:var(--brand)}
 .agAccB .agOk{flex:1;border:none;border-radius:9px;padding:9px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#e7c768,#c19a30);color:#1a1a1a}
 .agAccB .agNo{border:1px solid var(--border);border-radius:9px;padding:9px 14px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;background:transparent;color:var(--ink-2)}
 .agAccMsg{font-size:12.5px;font-weight:600}
+.calcF{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:600;color:var(--ink-2)}
+.calcF input,.calcF select{font-family:'Inter',sans-serif;font-size:14px;color:var(--ink);background:var(--surface-2);border:1px solid var(--border);border-radius:9px;padding:9px 11px;outline:none}
+.calcF input:focus,.calcF select:focus{border-color:#caa53d}
+#calcBody input{width:108px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:var(--ink);background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:6px 8px;outline:none}
+#calcBody input:focus{border-color:#caa53d}
 @media(max-width:480px){#agPanel{width:calc(100vw - 20px);height:calc(100vh - 30px);bottom:10px;right:10px}#agBtn span{display:none}#agBtn{padding:0;width:52px;justify-content:center}}
 </style>
 <button id="agBtn" onclick="agToggle()" aria-label="Asesor IA">
@@ -946,6 +979,6 @@ tbody tr:hover .chev{color:var(--brand)}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
-<script src="app.js?v=17"></script>
+<script src="app.js?v=18"></script>
 </body>
 </html>
