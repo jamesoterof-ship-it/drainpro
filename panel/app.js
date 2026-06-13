@@ -965,17 +965,12 @@ function _finDesde(){ if(window._fDesde) return window._fDesde; var r=window._fi
 function _finHasta(){ return window._fHasta || '2999-12-31'; }
 function _enR(d){ d=String(d||'').slice(0,10); return d && d>=_finDesde() && d<=_finHasta(); }
 function _esTransito(e){return /TR[AÁ]NSITO|REPARTO|DESTINO|PREPARAD|ESPERA|GUIA/i.test(e);}
+async function _finJ(u){ try{ var r=await fetch(u); var j=await r.json(); return Array.isArray(j)?j:null; }catch(e){ return null; } }
 async function cargarFinanzas(){
-  try{
-    var a=await fetch(URL_PEDIDOS_DROPI), b=await fetch(URL_GASTO_META), cc=await fetch(URL_PL_PRODUCTO);
-    window._finPedidos=await a.json().catch(function(){return[];});
-    window._finMeta=await b.json().catch(function(){return[];});
-    window._finPLProd=await cc.json().catch(function(){return[];});
-    if(!Array.isArray(window._finPedidos)) window._finPedidos=[];
-    if(!Array.isArray(window._finMeta)) window._finMeta=[];
-    if(!Array.isArray(window._finPLProd)) window._finPLProd=[];
-    window._finCargado=true; renderFinanzas(); _renderFinTabla(window._finPedidos);
-  }catch(e){ var tb=document.getElementById('tbodyDropi'); if(tb) tb.innerHTML='<tr><td colspan="8" class="vacio">No se pudo cargar (¿webhooks activos en n8n?).</td></tr>'; }
+  var p=await _finJ(URL_PEDIDOS_DROPI), m=await _finJ(URL_GASTO_META), pl=await _finJ(URL_PL_PRODUCTO);
+  window._finPedidos=p||[]; window._finMeta=m||[]; window._finPLProd=pl||[]; window._finCargado=true;
+  renderFinanzas(); _renderFinTabla(window._finPedidos);
+  if(p===null){ var tb=document.getElementById('tbodyDropi'); if(tb) tb.innerHTML='<tr><td colspan="8" class="vacio">No se pudieron cargar los pedidos (¿webhook activo en n8n?).</td></tr>'; }
 }
 function renderFinanzas(){
   var ped=window._finPedidos||[], meta=window._finMeta||[];
