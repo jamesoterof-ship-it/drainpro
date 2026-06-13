@@ -375,9 +375,13 @@ tbody tr:hover .chev{color:var(--brand)}
         Aprobación de ventas
         <span id="badgeAprobar" style="display:none;margin-left:auto;background:#e1283c;color:#fff;border-radius:999px;font-size:11px;font-weight:800;padding:1px 8px"></span>
       </div>
+      <div class="nav-i" data-view="finanzas">
+        <svg class="ico" viewBox="0 0 24 24"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        Finanzas
+      </div>
       <div class="nav-i" data-view="dropi">
         <svg class="ico" viewBox="0 0 24 24"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 12l9 4 9-4"/><path d="M3 17l9 4 9-4"/></svg>
-        Dropi · Finanzas
+        Dropi · Guías
       </div>
     </nav>
 
@@ -546,11 +550,11 @@ tbody tr:hover .chev{color:var(--brand)}
       </div>
     </div>
 
-    <!-- ====== DROPI · FINANZAS ====== -->
-    <div class="content view" id="view-dropi">
+    <!-- ====== FINANZAS ====== -->
+    <div class="content view" id="view-finanzas">
       <div class="panel" style="margin-bottom:16px">
         <div class="tbl-head">
-          <h2>Dropi · Finanzas <span style="font-weight:400;color:#8a93a0;font-size:13px">· Chile · en COP</span></h2>
+          <h2>Finanzas <span style="font-weight:400;color:#8a93a0;font-size:13px">· Chile · COP</span></h2>
           <div class="minitabs" id="finRango">
             <button class="minitab" data-r="hoy">Hoy</button>
             <button class="minitab" data-r="7">7 días</button>
@@ -558,22 +562,36 @@ tbody tr:hover .chev{color:var(--brand)}
             <button class="minitab act" data-r="30">Mes</button>
             <button class="minitab" data-r="all">Todo</button>
           </div>
+          <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:#8a93a0;margin-left:auto">
+            <input type="date" id="finDesde" title="Desde" style="font-size:12px;padding:4px 6px;border:1px solid #d8dee8;border-radius:8px">
+            <span>→</span>
+            <input type="date" id="finHasta" title="Hasta" style="font-size:12px;padding:4px 6px;border:1px solid #d8dee8;border-radius:8px">
+          </div>
         </div>
         <div id="finKpis" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:10px;padding:6px 2px 16px"></div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;padding:0 2px 8px">
-          <div>
-            <div style="font-size:12.5px;color:#8a93a0;margin-bottom:6px">Ingresos · Gasto · Ganancia (COP/día)</div>
-            <div style="position:relative;height:220px"><canvas id="finChartGan"></canvas></div>
-          </div>
-          <div>
-            <div style="font-size:12.5px;color:#8a93a0;margin-bottom:6px">% de devoluciones por día</div>
-            <div style="position:relative;height:220px"><canvas id="finChartDev"></canvas></div>
-          </div>
+          <div><div style="font-size:12.5px;color:#8a93a0;margin-bottom:6px">Ingresos · Gasto · Ganancia (COP/día)</div><div style="position:relative;height:220px"><canvas id="finChartGan"></canvas></div></div>
+          <div><div style="font-size:12.5px;color:#8a93a0;margin-bottom:6px">Devoluciones por día (cantidad)</div><div style="position:relative;height:220px"><canvas id="finChartDev"></canvas></div></div>
         </div>
       </div>
+      <div class="panel" style="margin-bottom:16px">
+        <div class="tbl-head"><h2>Rentabilidad por producto</h2><span style="font-size:12px;color:#8a93a0">dónde se gana y dónde se pierde (incluye pauta y devoluciones)</span></div>
+        <table>
+          <thead><tr><th>Producto</th><th>Ped.</th><th>Dev %</th><th>Ingresos</th><th>Costo</th><th>Flete</th><th>Publicidad</th><th>Ganancia</th></tr></thead>
+          <tbody id="tbodyPLProd"><tr><td colspan="8" class="vacio">Cargando…</td></tr></tbody>
+        </table>
+      </div>
+      <div class="panel">
+        <div class="tbl-head"><h2>Causales de devolución</h2><span style="font-size:12px;color:#8a93a0" id="finDevTot"></span></div>
+        <div id="finCausales" style="padding:10px 4px 6px"></div>
+      </div>
+    </div>
+
+    <!-- ====== DROPI · GUÍAS ====== -->
+    <div class="content view" id="view-dropi">
       <div class="panel">
         <div class="tbl-head">
-          <h2>Pedidos · Guías</h2>
+          <h2>Dropi · Guías <span style="font-weight:400;color:#8a93a0;font-size:13px">· estado en vivo</span></h2>
           <div class="minitabs" id="finEstado">
             <button class="minitab act" data-e="">Todos</button>
             <button class="minitab" data-e="TR[AÁ]NSITO|REPARTO|DESTINO|PREPARAD|ESPERA">En camino</button>
@@ -825,6 +843,6 @@ tbody tr:hover .chev{color:var(--brand)}
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<script src="app.js?v=3"></script>
+<script src="app.js?v=4"></script>
 </body>
 </html>

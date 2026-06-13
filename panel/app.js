@@ -834,7 +834,8 @@ function verAprob(i){
 
 /* ---------- navegación ---------- */
 const TITULOS={resumen:['Resumen general','Todos los canales · monedas separadas por país'],
-  dropi:['Dropi · Finanzas','Ganancia, guías y devoluciones de Chile · en COP, actualizado con Dropi'],
+  finanzas:['Finanzas','P&L, costos, devoluciones y rentabilidad por producto · Chile · en COP'],
+  dropi:['Dropi · Guías','Estado de cada guía actualizado con Dropi · seguimiento'],
   aprobar:['Aprobación de ventas','Página + WhatsApp · solo lo que apruebes se monta en Dropi'],
   pedidos:['Pedidos de páginas','Shilajit y DRAINPRO · confirmación y estado Dropi'],
   abandonados:['Pedidos abandonados','Solo los no completados · recuperación automática'],
@@ -863,7 +864,7 @@ function mostrarVista(v){
   document.getElementById('vsub').textContent=t[1];
   if(v==='historico') renderHistorico();
   if(v==='visitas') renderVisitas();
-  if(v==='dropi'){ if(!window._finCargado){ cargarFinanzas(); } else { renderDropi(); } }
+  if(v==='finanzas'||v==='dropi'){ if(!window._finCargado){ cargarFinanzas(); } else { renderFinanzas(); _renderFinTabla(window._finPedidos); } }
   if(typeof cerrarDrawer==='function') cerrarDrawer();
   if(typeof volverLista==='function') volverLista();   // vuelve a la lista al cambiar de vista
   ajustarStickyTop();
@@ -956,36 +957,69 @@ const esMovil=()=>window.matchMedia('(max-width:760px)').matches;
 /* ===================== DROPI · FINANZAS ===================== */
 const URL_PEDIDOS_DROPI=BASE+'/leer-pedidos-dropi';
 const URL_GASTO_META=BASE+'/leer-gasto-meta';
-window._finPedidos=[]; window._finMeta=[]; window._finRango='30'; window._finEstado=''; window._finBuscar=''; window._finCargado=false;
+const URL_PL_PRODUCTO=BASE+'/leer-pl-producto';
+window._finPedidos=[]; window._finMeta=[]; window._finPLProd=[]; window._finRango='30'; window._finEstado=''; window._finBuscar=''; window._finCargado=false; window._fDesde=''; window._fHasta='';
 var _finCG=null,_finCD=null;
 function _cop(n){return '$'+Math.round(+n||0).toLocaleString('es-CO');}
-function _finDesde(){ var r=window._finRango; if(r==='all') return '2000-01-01'; var d=new Date(); if(r!=='hoy') d.setDate(d.getDate()-(parseInt(r,10)-1)); return d.toISOString().slice(0,10); }
+function _finDesde(){ if(window._fDesde) return window._fDesde; var r=window._finRango; if(r==='all') return '2000-01-01'; var d=new Date(); if(r!=='hoy') d.setDate(d.getDate()-(parseInt(r,10)-1)); return d.toISOString().slice(0,10); }
+function _finHasta(){ return window._fHasta || '2999-12-31'; }
+function _enR(d){ d=String(d||'').slice(0,10); return d && d>=_finDesde() && d<=_finHasta(); }
 function _esTransito(e){return /TR[AÁ]NSITO|REPARTO|DESTINO|PREPARAD|ESPERA|GUIA/i.test(e);}
 async function cargarFinanzas(){
-  var tb=document.getElementById('tbodyDropi'); if(tb) tb.innerHTML='<tr><td colspan="8" class="vacio">Cargando…</td></tr>';
   try{
-    var a=await fetch(URL_PEDIDOS_DROPI), b=await fetch(URL_GASTO_META);
+    var a=await fetch(URL_PEDIDOS_DROPI), b=await fetch(URL_GASTO_META), cc=await fetch(URL_PL_PRODUCTO);
     window._finPedidos=await a.json().catch(function(){return[];});
     window._finMeta=await b.json().catch(function(){return[];});
+    window._finPLProd=await cc.json().catch(function(){return[];});
     if(!Array.isArray(window._finPedidos)) window._finPedidos=[];
     if(!Array.isArray(window._finMeta)) window._finMeta=[];
-    window._finCargado=true; renderDropi();
-  }catch(e){ if(tb) tb.innerHTML='<tr><td colspan="8" class="vacio">No se pudo cargar (¿webhooks activos en n8n?).</td></tr>'; }
+    if(!Array.isArray(window._finPLProd)) window._finPLProd=[];
+    window._finCargado=true; renderFinanzas(); _renderFinTabla(window._finPedidos);
+  }catch(e){ var tb=document.getElementById('tbodyDropi'); if(tb) tb.innerHTML='<tr><td colspan="8" class="vacio">No se pudo cargar (¿webhooks activos en n8n?).</td></tr>'; }
 }
-function renderDropi(){
-  var ped=window._finPedidos||[], meta=window._finMeta||[], desde=_finDesde();
+function renderFinanzas(){
+  var ped=window._finPedidos||[], meta=window._finMeta||[];
   var montados=0,entregados=0,devueltos=0,ingresos=0,costo=0,flete=0;
   ped.forEach(function(p){
-    var creado=String(p.creado_en||'').slice(0,10), est=(p.estado||'').toUpperCase();
-    if(creado>=desde) montados++;
-    if(/ENTREGAD/.test(est) && String(p.entregado_en||'').slice(0,10)>=desde){ entregados++; ingresos+=+p.recaudo||0; costo+=+p.costo||0; flete+=+p.flete||0; }
-    if(/DEVOL|RECHAZ/.test(est) && String(p.actualizado_en||p.creado_en||'').slice(0,10)>=desde){ devueltos++; flete+=+p.flete||0; }
+    var est=(p.estado||'').toUpperCase();
+    if(_enR(p.creado_en)) montados++;
+    if(/ENTREGAD/.test(est) && _enR(p.entregado_en)){ entregados++; ingresos+=+p.recaudo||0; costo+=+p.costo||0; flete+=+p.flete||0; }
+    if(/DEVOL|RECHAZ/.test(est) && _enR(p.actualizado_en||p.creado_en)){ devueltos++; flete+=+p.flete||0; }
   });
-  var ads=0; meta.forEach(function(m){ if(String(m.fecha||'')>=desde) ads+=+m.gasto||0; });
+  var ads=0; meta.forEach(function(m){ if(_enR(m.fecha)) ads+=+m.gasto||0; });
   var ganancia=ingresos-costo-flete-ads, pctDev=(entregados+devueltos)?Math.round(devueltos/(entregados+devueltos)*100):0;
-  var kpi=function(l,vv,col){return '<div style="background:#f4f6f9;border-radius:12px;padding:11px 13px"><div style="font-size:11.5px;color:#8a93a0">'+l+'</div><div style="font-size:19px;font-weight:700;margin-top:2px;color:'+(col||'#1a2433')+'">'+vv+'</div></div>';};
-  var K=document.getElementById('finKpis'); if(K) K.innerHTML=kpi('Montados',montados)+kpi('Entregados',entregados)+kpi('Ingresos',_cop(ingresos))+kpi('Costo producto',_cop(costo))+kpi('Flete',_cop(flete))+kpi('Publicidad',_cop(ads))+kpi('% Devoluciones',pctDev+'%',pctDev>20?'#c0392b':'#1a2433')+kpi('Ganancia neta',_cop(ganancia),ganancia>=0?'#0f7a52':'#c0392b');
-  _renderFinCharts(ped,meta,desde); _renderFinTabla(ped);
+  var margen=ingresos?Math.round(ganancia/ingresos*100):0;
+  var kpi=function(l,vv,col,sub){return '<div style="background:#f4f6f9;border-radius:12px;padding:11px 13px"><div style="font-size:11.5px;color:#8a93a0">'+l+'</div><div style="font-size:19px;font-weight:700;margin-top:2px;color:'+(col||'#1a2433')+'">'+vv+'</div>'+(sub?'<div style="font-size:10.5px;color:#8a93a0;margin-top:1px">'+sub+'</div>':'')+'</div>';};
+  var K=document.getElementById('finKpis'); if(K) K.innerHTML=
+    kpi('Montados',montados)+kpi('Entregados',entregados)+kpi('Ingresos',_cop(ingresos))+
+    kpi('Costo producto',_cop(costo))+kpi('Flete',_cop(flete))+kpi('Publicidad',_cop(ads))+
+    kpi('Devoluciones',devueltos+' · '+pctDev+'%',pctDev>20?'#c0392b':'#1a2433')+
+    kpi('Ganancia neta',_cop(ganancia),ganancia>=0?'#0f7a52':'#c0392b','margen '+margen+'%');
+  _renderFinCharts(ped,meta,_finDesde());
+  _renderCausales(ped); _renderPLProd();
+}
+function _renderCausales(ped){
+  var tot={},n=0;
+  ped.forEach(function(p){ var est=(p.estado||'').toUpperCase(); if(!/DEVOL|RECHAZ/.test(est)) return; if(!_enR(p.actualizado_en||p.creado_en)) return; var m=(p.motivo_devolucion||'Sin motivo').toUpperCase(); tot[m]=(tot[m]||0)+1; n++; });
+  var box=document.getElementById('finCausales'), t=document.getElementById('finDevTot');
+  if(t) t.textContent=n+' devoluciones en el período';
+  if(!box) return;
+  if(!n){ box.innerHTML='<div class="vacio" style="padding:10px">Sin devoluciones en este filtro. 🎉</div>'; return; }
+  var arr=Object.keys(tot).map(function(k){return {m:k,c:tot[k]};}).sort(function(a,b){return b.c-a.c;});
+  box.innerHTML=arr.map(function(x){ var pct=Math.round(x.c/n*100);
+    return '<div style="margin-bottom:9px"><div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:3px"><span>'+esc(x.m)+'</span><span style="color:#8a93a0"><b style="color:#1a2433">'+x.c+'</b> · '+pct+'%</span></div>'+
+      '<div style="height:7px;background:#eef0f2;border-radius:4px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+(/RECHAZ|NIEGA/.test(x.m)?'#e24b4a':(/DIREC|UBICA|DATOS|DOMICILIO/.test(x.m)?'#d8782e':'#8a93a0'))+'"></div></div></div>';
+  }).join('');
+}
+function _renderPLProd(){
+  var arr=window._finPLProd||[], tb=document.getElementById('tbodyPLProd'); if(!tb) return;
+  if(!arr.length){ tb.innerHTML='<tr><td colspan="8" class="vacio">Sin datos.</td></tr>'; return; }
+  tb.innerHTML=arr.map(function(p){ var gan=(+p.ingresos||0)-(+p.costo||0)-(+p.flete||0)-(+p.publicidad||0);
+    var dp=(+p.entregados+ +p.devueltos)?Math.round(+p.devueltos/(+p.entregados+ +p.devueltos)*100):0;
+    return '<tr><td><b>'+esc(p.producto)+'</b></td><td>'+p.pedidos+'</td><td style="color:'+(dp>25?'#c0392b':'#5a6470')+'">'+dp+'%</td>'+
+      '<td class="money">'+_cop(p.ingresos)+'</td><td class="money">'+_cop(p.costo)+'</td><td class="money">'+_cop(p.flete)+'</td><td class="money" style="color:#b06a00">'+_cop(p.publicidad)+'</td>'+
+      '<td class="money" style="font-weight:700;color:'+(gan>=0?'#0f7a52':'#c0392b')+'">'+_cop(gan)+'</td></tr>';
+  }).join('');
 }
 function _renderFinCharts(ped,meta,desde){
   if(typeof Chart==='undefined') return;
@@ -1019,9 +1053,8 @@ function _estChip(est){ var e=(est||'').toUpperCase(),bg='#eef0f2',c='#5a6470';
   return '<span style="font-size:11px;background:'+bg+';color:'+c+';padding:2px 8px;border-radius:9px;white-space:nowrap">'+(est||'—')+'</span>';
 }
 function _renderFinTabla(ped){
-  var desde=_finDesde(), est=window._finEstado, q=(window._finBuscar||'').toLowerCase();
+  var est=window._finEstado, q=(window._finBuscar||'').toLowerCase();
   var arr=(ped||[]).filter(function(p){
-    if(String(p.creado_en||'').slice(0,10)<desde) return false;
     if(est && !(new RegExp(est,'i')).test(p.estado||'')) return false;
     if(q){ if((((p.cliente||'')+' '+(p.guia||'')+' '+(p.producto||'')+' '+(p.telefono||'')).toLowerCase()).indexOf(q)<0) return false; }
     return true;
@@ -1038,11 +1071,12 @@ function _renderFinTabla(ped){
   }).join('');
 }
 document.addEventListener('click',function(e){
-  var r=e.target.closest&&e.target.closest('#finRango .minitab'); if(r){ document.querySelectorAll('#finRango .minitab').forEach(function(b){b.classList.remove('act');}); r.classList.add('act'); window._finRango=r.dataset.r; renderDropi(); }
+  var r=e.target.closest&&e.target.closest('#finRango .minitab'); if(r){ document.querySelectorAll('#finRango .minitab').forEach(function(b){b.classList.remove('act');}); r.classList.add('act'); window._finRango=r.dataset.r; window._fDesde=''; window._fHasta=''; var di=document.getElementById('finDesde'),hi=document.getElementById('finHasta'); if(di)di.value=''; if(hi)hi.value=''; renderFinanzas(); }
   var s=e.target.closest&&e.target.closest('#finEstado .minitab'); if(s){ document.querySelectorAll('#finEstado .minitab').forEach(function(b){b.classList.remove('act');}); s.classList.add('act'); window._finEstado=s.dataset.e; _renderFinTabla(window._finPedidos); }
 });
+document.addEventListener('change',function(e){ if(e.target&&(e.target.id==='finDesde'||e.target.id==='finHasta')){ window._fDesde=(document.getElementById('finDesde')||{}).value||''; window._fHasta=(document.getElementById('finHasta')||{}).value||''; document.querySelectorAll('#finRango .minitab').forEach(function(b){b.classList.remove('act');}); renderFinanzas(); } });
 document.addEventListener('input',function(e){ if(e.target&&e.target.id==='finBuscar'){ window._finBuscar=e.target.value; _renderFinTabla(window._finPedidos); } });
-setInterval(function(){ var vw=document.getElementById('view-dropi'); if(vw&&vw.classList.contains('act')) cargarFinanzas(); }, 180000);
+setInterval(function(){ var f=document.getElementById('view-finanzas'),d=document.getElementById('view-dropi'); if((f&&f.classList.contains('act'))||(d&&d.classList.contains('act'))) cargarFinanzas(); }, 180000);
 
 cargarConvos(); cargarVentas(); cargarPaginas(); cargarHuellas();
 setInterval(()=>{cargarConvos();cargarVentas();cargarPaginas();},15000);
