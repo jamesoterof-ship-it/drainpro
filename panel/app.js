@@ -1053,7 +1053,7 @@ function _renderDevDonuts(ped){
   _echDP=R(document.getElementById('echDevProd'),dp);
   _echCa=R(document.getElementById('echCausales'),dc);
 }
-window.addEventListener('resize',function(){ try{if(_echDP)_echDP.resize(); if(_echCa)_echCa.resize();}catch(e){} });
+window.addEventListener('resize',function(){ try{if(_echDP)_echDP.resize(); if(_echCa)_echCa.resize(); if(_echGan)_echGan.resize(); if(_echDev)_echDev.resize();}catch(e){} });
 function _renderPLProd(){
   var arr=window._finPLProd||[], tb=document.getElementById('tbodyPLProd'); if(!tb) return;
   if(!arr.length){ tb.innerHTML='<tr><td colspan="8" class="vacio">Sin datos.</td></tr>'; return; }
@@ -1064,31 +1064,35 @@ function _renderPLProd(){
       '<td class="money" style="font-weight:700;color:'+(gan>=0?'#0f7a52':'#c0392b')+'">'+_cop(gan)+'</td></tr>';
   }).join('');
 }
+var _echGan=null,_echDev=null;
 function _renderFinCharts(ped,meta,desde){
-  if(typeof Chart==='undefined') return;
-  var dias={},byTot={},byDev={},metaDay={};
+  if(typeof echarts==='undefined') return;
+  var dias={},byDev={},metaDay={};
   function dd(d){return String(d||'').slice(0,10);}
   ped.forEach(function(p){ var est=(p.estado||'').toUpperCase();
-    if(/ENTREGAD/.test(est)){ var d=dd(p.entregado_en); if(d>=desde){ dias[d]=dias[d]||{ing:0,gas:0}; dias[d].ing+=+p.recaudo||0; dias[d].gas+=(+p.costo||0)+(+p.flete||0); } }
-    var c=dd(p.creado_en); if(c>=desde && /ENTREGAD|DEVOL|RECHAZ/.test(est)){ byTot[c]=(byTot[c]||0)+1; if(/DEVOL|RECHAZ/.test(est)) byDev[c]=(byDev[c]||0)+1; }
+    if(/ENTREGAD/.test(est)){ var d=dd(p.entregado_en); if(_enR(d)){ dias[d]=dias[d]||{ing:0,gas:0}; dias[d].ing+=+p.recaudo||0; dias[d].gas+=(+p.costo||0)+(+p.flete||0); } }
+    if(/DEVOL|RECHAZ/.test(est)){ var c=dd(p.actualizado_en||p.creado_en); if(_enR(c)) byDev[c]=(byDev[c]||0)+1; }
   });
-  meta.forEach(function(m){ if(String(m.fecha)>=desde) metaDay[m.fecha]=+m.gasto||0; });
-  var labels=Object.keys(Object.assign({},dias,byTot,metaDay)).filter(function(d){return d>=desde;}).sort();
+  meta.forEach(function(m){ if(_enR(m.fecha)) metaDay[m.fecha]=+m.gasto||0; });
+  var labels=Object.keys(Object.assign({},dias,byDev,metaDay)).filter(function(d){return _enR(d);}).sort();
   var ing=labels.map(function(d){return dias[d]?Math.round(dias[d].ing):0;});
   var gas=labels.map(function(d){return (dias[d]?dias[d].gas:0)+(metaDay[d]||0);});
   var gan=labels.map(function(d,i){return ing[i]-gas[i];});
-  var devp=labels.map(function(d){return byTot[d]?Math.round((byDev[d]||0)/byTot[d]*100):0;});
+  var dev=labels.map(function(d){return byDev[d]||0;});
   var lab=labels.map(function(d){return d.slice(5);});
-  if(_finCG)_finCG.destroy(); if(_finCD)_finCD.destroy();
-  var g=document.getElementById('finChartGan'), v=document.getElementById('finChartDev'); if(!g||!v) return;
-  var yM=function(x){return '$'+(x/1e6).toFixed(1)+'M';};
-  _finCG=new Chart(g,{type:'line',data:{labels:lab,datasets:[
-    {label:'Ingresos',data:ing,borderColor:'#378ADD',tension:.35,borderWidth:2,pointRadius:1},
-    {label:'Gasto',data:gas,borderColor:'#caa000',borderDash:[5,4],tension:.35,borderWidth:2,pointRadius:1},
-    {label:'Ganancia',data:gan,borderColor:'#1d9e75',backgroundColor:'rgba(29,158,117,.12)',fill:true,tension:.35,borderWidth:2.5,pointRadius:1}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{boxWidth:10,font:{size:10}}}},scales:{x:{ticks:{font:{size:9}},grid:{display:false}},y:{ticks:{font:{size:9},callback:yM}}}}});
-  _finCD=new Chart(v,{type:'line',data:{labels:lab,datasets:[{label:'%',data:devp,borderColor:'#e24b4a',backgroundColor:'rgba(226,75,74,.12)',fill:true,tension:.35,borderWidth:2.5,pointRadius:2}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:9}},grid:{display:false}},y:{suggestedMin:0,suggestedMax:50,ticks:{font:{size:9},callback:function(x){return x+'%';}}}}}});
+  var g=document.getElementById('finChartGan'), v=document.getElementById('finChartDev');
+  if(g&&g.offsetWidth){ _echGan=echarts.getInstanceByDom(g)||echarts.init(g);
+    _echGan.setOption({color:['#1d9e75','#e0a800','#378ADD'],tooltip:{trigger:'axis',axisPointer:{type:'shadow'},valueFormatter:function(x){return _cop(x);}},
+      legend:{bottom:0,textStyle:{fontSize:10,color:'#5a6470'},itemWidth:11,itemHeight:11,icon:'roundRect'},
+      grid:{left:46,right:10,top:12,bottom:36},
+      xAxis:{type:'category',data:lab,axisLabel:{fontSize:9,color:'#8a93a0'},axisTick:{show:false},axisLine:{lineStyle:{color:'#d8dee8'}}},
+      yAxis:{type:'value',axisLabel:{fontSize:9,color:'#8a93a0',formatter:function(x){return '$'+(x/1e6).toFixed(1)+'M';}},splitLine:{lineStyle:{color:'#eef0f2'}}},
+      series:[{name:'Ingresos',type:'bar',data:ing,itemStyle:{borderRadius:[4,4,0,0]}},{name:'Gasto',type:'bar',data:gas,itemStyle:{borderRadius:[4,4,0,0]}},{name:'Ganancia',type:'bar',data:gan,itemStyle:{borderRadius:[4,4,0,0]}}]},true); _echGan.resize(); }
+  if(v&&v.offsetWidth){ _echDev=echarts.getInstanceByDom(v)||echarts.init(v);
+    _echDev.setOption({tooltip:{trigger:'axis',axisPointer:{type:'shadow'}},grid:{left:30,right:10,top:12,bottom:24},
+      xAxis:{type:'category',data:lab,axisLabel:{fontSize:9,color:'#8a93a0'},axisTick:{show:false},axisLine:{lineStyle:{color:'#d8dee8'}}},
+      yAxis:{type:'value',minInterval:1,axisLabel:{fontSize:9,color:'#8a93a0'},splitLine:{lineStyle:{color:'#eef0f2'}}},
+      series:[{name:'Devoluciones',type:'bar',data:dev,itemStyle:{color:'#e24b4a',borderRadius:[4,4,0,0]}}]},true); _echDev.resize(); }
 }
 function _estChip(est){ var e=(est||'').toUpperCase(),bg='#eef0f2',c='#5a6470';
   if(/ENTREGAD/.test(e)){bg='#e1f5ee';c='#0f6e56';} else if(/DEVOL|RECHAZ/.test(e)){bg='#fcebeb';c='#a32d2d';}
