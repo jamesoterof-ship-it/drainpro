@@ -646,18 +646,18 @@ tbody tr:hover .chev{color:var(--brand)}
     <!-- ====== CALCULADORA DE COMBOS ====== -->
     <div class="content view" id="view-calc">
       <div class="panel" style="margin-bottom:16px">
-        <div class="tbl-head"><h2>Calculadora de combos</h2><span style="font-size:12px;color:#8a93a0">en CLP · flete + Meta cargados con el % de devolución (lo que se gasta en las que se devuelven lo cubren las entregadas) · flete uno solo por envío</span></div>
+        <div class="tbl-head"><h2>Calculadora de combos</h2><span style="font-size:12px;color:#8a93a0">en CLP · flete, Meta y devolución son el PROMEDIO fijo de tu histórico (editables) · al elegir producto solo cambia el costo · flete+Meta se cargan con la devolución</span></div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;padding:12px 4px">
           <label class="calcF">Producto
             <select id="calcProd" onchange="calcPick()"><option value="">Cargando…</option></select></label>
           <label class="calcF">Costo unitario (CLP)
             <input id="calcCosto" type="number" inputmode="numeric" placeholder="810" oninput="calcReset()"></label>
-          <label class="calcF">Flete por envío (CLP)
-            <input id="calcFlete" type="number" inputmode="numeric" placeholder="2700" oninput="calcReset()"></label>
-          <label class="calcF">CAC / Meta por venta (CLP)
-            <input id="calcCac" type="number" inputmode="numeric" placeholder="3000" oninput="calcReset()"></label>
-          <label class="calcF">% Devolución (promedio)
-            <input id="calcDevol" type="number" inputmode="numeric" placeholder="20" oninput="calcReset()"></label>
+          <label class="calcF">Flete promedio (CLP)
+            <input id="calcFlete" type="number" inputmode="numeric" placeholder="7368" oninput="calcReset()"></label>
+          <label class="calcF">Meta promedio /venta (CLP)
+            <input id="calcCac" type="number" inputmode="numeric" placeholder="3356" oninput="calcReset()"></label>
+          <label class="calcF">% Devolución promedio
+            <input id="calcDevol" type="number" inputmode="numeric" placeholder="27" oninput="calcReset()"></label>
           <label class="calcF">% Ganancia (sobre costo)
             <input id="calcMarkup" type="number" inputmode="numeric" value="150" oninput="calcReset()"></label>
         </div>
@@ -983,6 +983,6 @@ tbody tr:hover .chev{color:var(--brand)}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
-<script src="app.js?v=19"></script>
+<script src="app.js?v=20"></script>
 </body>
 </html>

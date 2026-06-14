@@ -1350,12 +1350,15 @@ async function cargarCalc(){ var sel=document.getElementById('calcProd'); if(!se
     html+='<option value="nuevo">+ Producto nuevo (escribo el costo)</option>';
     sel.innerHTML=html; sel.dataset.ready='1';
   }
+  // promedios GLOBALES fijos del histórico (transporte entre regiones, Meta, devolución) — editables
+  var g=window._calcProds[0]||{};
+  var setIf=function(id,val){ var el=document.getElementById(id); if(el&&!el.value&&val!=null) el.value=val; };
+  setIf('calcFlete',g.flete_prom_clp); setIf('calcCac',g.cac_prom_clp); setIf('calcDevol',g.devol_prom_pct);
   renderCalc();
 }
 function calcPick(){ var sel=document.getElementById('calcProd'); var v=sel.value; window._calcPrecios={};
   if(v!=='' && v!=='nuevo'){ var p=window._calcProds[+v];
-    if(p){ document.getElementById('calcCosto').value=p.costo_unit_clp||''; document.getElementById('calcFlete').value=p.flete_clp||'';
-      document.getElementById('calcCac').value=p.cac_clp||''; document.getElementById('calcDevol').value=(p.devol_pct!=null?p.devol_pct:''); } }
+    if(p){ document.getElementById('calcCosto').value=p.costo_unit_clp||''; } }  // solo el COSTO cambia por producto; transporte/Meta/devolución quedan en el promedio fijo
   renderCalc(); }
 function calcReset(){ window._calcPrecios={}; renderCalc(); }
 function _fclp(n){ return '$'+Math.round(n||0).toLocaleString('es-CL'); }
