@@ -1361,6 +1361,7 @@ function calcPick(){ var sel=document.getElementById('calcProd'); var v=sel.valu
     if(p){ document.getElementById('calcCosto').value=p.costo_unit_clp||''; } }  // solo el COSTO cambia por producto; transporte/Meta/devolución quedan en el promedio fijo
   renderCalc(); }
 function calcReset(){ window._calcPrecios={}; renderCalc(); }
+function calcSetMk(n){ var el=document.getElementById('calcMarkup'); if(el) el.value=n; window._calcPrecios={}; renderCalc(); }
 function _fclp(n){ return '$'+Math.round(n||0).toLocaleString('es-CL'); }
 function _calcCarga(){ var d=(+(document.getElementById('calcDevol')||{}).value||0)/100; if(d<0)d=0; if(d>=0.95)d=0.95; return 1/(1-d); }
 function renderCalc(){ var tb=document.getElementById('calcBody'); if(!tb) return;

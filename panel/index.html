@@ -658,8 +658,15 @@ tbody tr:hover .chev{color:var(--brand)}
             <input id="calcCac" type="number" inputmode="numeric" placeholder="3356" oninput="calcReset()"></label>
           <label class="calcF">% Devolución promedio
             <input id="calcDevol" type="number" inputmode="numeric" placeholder="27" oninput="calcReset()"></label>
-          <label class="calcF">% Ganancia (sobre costo)
-            <input id="calcMarkup" type="number" inputmode="numeric" value="150" oninput="calcReset()"></label>
+          <label class="calcF">% Ganancia (sobre costo op.)
+            <input id="calcMarkup" type="number" inputmode="numeric" value="80" oninput="calcReset()">
+            <div style="display:flex;gap:5px;margin-top:5px;flex-wrap:wrap">
+              <button type="button" onclick="calcSetMk(40)" style="font-size:11px;padding:3px 9px;border:1px solid var(--border);border-radius:7px;background:var(--surface-2);color:var(--ink-2);cursor:pointer">40%</button>
+              <button type="button" onclick="calcSetMk(60)" style="font-size:11px;padding:3px 9px;border:1px solid var(--border);border-radius:7px;background:var(--surface-2);color:var(--ink-2);cursor:pointer">60%</button>
+              <button type="button" onclick="calcSetMk(80)" style="font-size:11px;padding:3px 9px;border:1px solid var(--border);border-radius:7px;background:var(--surface-2);color:var(--ink-2);cursor:pointer">80%</button>
+              <button type="button" onclick="calcSetMk(100)" style="font-size:11px;padding:3px 9px;border:1px solid var(--border);border-radius:7px;background:var(--surface-2);color:var(--ink-2);cursor:pointer">100%</button>
+              <button type="button" onclick="calcSetMk(150)" style="font-size:11px;padding:3px 9px;border:1px solid var(--border);border-radius:7px;background:var(--surface-2);color:var(--ink-2);cursor:pointer">150%</button>
+            </div></label>
         </div>
       </div>
       <div class="panel" style="margin-bottom:16px">
@@ -983,6 +990,6 @@ tbody tr:hover .chev{color:var(--brand)}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
-<script src="app.js?v=20"></script>
+<script src="app.js?v=21"></script>
 </body>
 </html>
