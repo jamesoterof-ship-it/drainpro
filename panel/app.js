@@ -1354,30 +1354,36 @@ async function cargarCalc(){ var sel=document.getElementById('calcProd'); if(!se
 }
 function calcPick(){ var sel=document.getElementById('calcProd'); var v=sel.value; window._calcPrecios={};
   if(v!=='' && v!=='nuevo'){ var p=window._calcProds[+v];
-    if(p){ document.getElementById('calcCosto').value=p.costo_unit_clp||''; document.getElementById('calcFlete').value=p.flete_clp||''; } }
+    if(p){ document.getElementById('calcCosto').value=p.costo_unit_clp||''; document.getElementById('calcFlete').value=p.flete_clp||'';
+      document.getElementById('calcCac').value=p.cac_clp||''; document.getElementById('calcDevol').value=(p.devol_pct!=null?p.devol_pct:''); } }
   renderCalc(); }
 function calcReset(){ window._calcPrecios={}; renderCalc(); }
 function _fclp(n){ return '$'+Math.round(n||0).toLocaleString('es-CL'); }
+function _calcCarga(){ var d=(+(document.getElementById('calcDevol')||{}).value||0)/100; if(d<0)d=0; if(d>=0.95)d=0.95; return 1/(1-d); }
 function renderCalc(){ var tb=document.getElementById('calcBody'); if(!tb) return;
   var costo=+(document.getElementById('calcCosto')||{}).value||0;
   var flete=+(document.getElementById('calcFlete')||{}).value||0;
+  var cac=+(document.getElementById('calcCac')||{}).value||0;
   var mk=+(document.getElementById('calcMarkup')||{}).value||0;
-  if(!costo){ tb.innerHTML='<tr><td colspan="8" class="vacio">Elige un producto o escribe el costo unitario.</td></tr>'; return; }
+  var carga=_calcCarga();
+  if(!costo){ tb.innerHTML='<tr><td colspan="9" class="vacio">Elige un producto o escribe el costo unitario.</td></tr>'; return; }
+  var flC=Math.round(flete*carga), caC=Math.round(cac*carga);
   tb.innerHTML=[1,2,3].map(function(n){
-    var cp=costo*n, ct=cp+flete, sug=Math.round(ct*(1+mk/100));
+    var cp=costo*n, ct=cp+flC+caC, sug=Math.round(ct*(1+mk/100));
     var pr=(window._calcPrecios[n]!=null)?window._calcPrecios[n]:sug;
     var gan=pr-ct, mg=pr?Math.round(gan/pr*100):0;
-    return '<tr><td><b>Combo x'+n+'</b></td><td>'+n+'</td><td class="money">'+_fclp(cp)+'</td><td class="money">'+_fclp(flete)+'</td><td class="money">'+_fclp(ct)+'</td>'+
+    return '<tr><td><b>Combo x'+n+'</b></td><td>'+n+'</td><td class="money">'+_fclp(cp)+'</td><td class="money">'+_fclp(flC)+'</td><td class="money" style="color:#b06a00">'+_fclp(caC)+'</td><td class="money" style="font-weight:700">'+_fclp(ct)+'</td>'+
       '<td><input type="number" inputmode="numeric" data-n="'+n+'" value="'+pr+'" oninput="calcPrecio('+n+',this.value)"></td>'+
       '<td class="money" style="font-weight:700;color:'+(gan>=0?'#0f7a52':'#c0392b')+'">'+_fclp(gan)+'</td>'+
       '<td style="color:'+(mg>=0?'#0f7a52':'#c0392b')+'">'+mg+'%</td></tr>';
   }).join('');
 }
 function calcPrecio(n,v){ window._calcPrecios[n]= (v===''?null:(+v||0));
-  var costo=+(document.getElementById('calcCosto')||{}).value||0, flete=+(document.getElementById('calcFlete')||{}).value||0;
-  var ct=costo*n+flete, pr=window._calcPrecios[n]||0, gan=pr-ct, mg=pr?Math.round(gan/pr*100):0;
+  var costo=+(document.getElementById('calcCosto')||{}).value||0, flete=+(document.getElementById('calcFlete')||{}).value||0, cac=+(document.getElementById('calcCac')||{}).value||0;
+  var carga=_calcCarga();
+  var ct=costo*n+Math.round(flete*carga)+Math.round(cac*carga), pr=window._calcPrecios[n]||0, gan=pr-ct, mg=pr?Math.round(gan/pr*100):0;
   var inp=document.querySelector('#calcBody input[data-n="'+n+'"]'); if(!inp) return;
   var tds=inp.closest('tr').querySelectorAll('td');
-  tds[6].textContent=_fclp(gan); tds[6].style.color=gan>=0?'#0f7a52':'#c0392b';
-  tds[7].textContent=mg+'%'; tds[7].style.color=mg>=0?'#0f7a52':'#c0392b';
+  tds[7].textContent=_fclp(gan); tds[7].style.color=gan>=0?'#0f7a52':'#c0392b';
+  tds[8].textContent=mg+'%'; tds[8].style.color=mg>=0?'#0f7a52':'#c0392b';
 }

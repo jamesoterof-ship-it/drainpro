@@ -646,7 +646,7 @@ tbody tr:hover .chev{color:var(--brand)}
     <!-- ====== CALCULADORA DE COMBOS ====== -->
     <div class="content view" id="view-calc">
       <div class="panel" style="margin-bottom:16px">
-        <div class="tbl-head"><h2>Calculadora de combos</h2><span style="font-size:12px;color:#8a93a0">precios y costos en CLP · el flete es uno solo por envío → el combo sale más barato por unidad</span></div>
+        <div class="tbl-head"><h2>Calculadora de combos</h2><span style="font-size:12px;color:#8a93a0">en CLP · flete + Meta cargados con el % de devolución (lo que se gasta en las que se devuelven lo cubren las entregadas) · flete uno solo por envío</span></div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;padding:12px 4px">
           <label class="calcF">Producto
             <select id="calcProd" onchange="calcPick()"><option value="">Cargando…</option></select></label>
@@ -654,14 +654,18 @@ tbody tr:hover .chev{color:var(--brand)}
             <input id="calcCosto" type="number" inputmode="numeric" placeholder="810" oninput="calcReset()"></label>
           <label class="calcF">Flete por envío (CLP)
             <input id="calcFlete" type="number" inputmode="numeric" placeholder="2700" oninput="calcReset()"></label>
+          <label class="calcF">CAC / Meta por venta (CLP)
+            <input id="calcCac" type="number" inputmode="numeric" placeholder="3000" oninput="calcReset()"></label>
+          <label class="calcF">% Devolución (promedio)
+            <input id="calcDevol" type="number" inputmode="numeric" placeholder="20" oninput="calcReset()"></label>
           <label class="calcF">% Ganancia (sobre costo)
             <input id="calcMarkup" type="number" inputmode="numeric" value="150" oninput="calcReset()"></label>
         </div>
       </div>
       <div class="panel" style="margin-bottom:16px">
         <table>
-          <thead><tr><th>Combo</th><th>Uds.</th><th>Costo producto</th><th>Flete</th><th>Costo total</th><th>Precio venta (CLP)</th><th>Ganancia</th><th>Margen</th></tr></thead>
-          <tbody id="calcBody"><tr><td colspan="8" class="vacio">Elige un producto o escribe el costo.</td></tr></tbody>
+          <thead><tr><th>Combo</th><th>Uds.</th><th>Producto</th><th>Flete +dev</th><th>Meta +dev</th><th>Costo op.</th><th>Precio venta (CLP)</th><th>Ganancia</th><th>Margen</th></tr></thead>
+          <tbody id="calcBody"><tr><td colspan="9" class="vacio">Elige un producto o escribe el costo.</td></tr></tbody>
         </table>
         <div style="font-size:11.5px;color:#8a93a0;padding:8px 4px">Cambia el costo, el flete o el % de ganancia y se recalcula solo. También puedes escribir el precio de venta de cada combo y te muestra la ganancia y el margen.</div>
       </div>
@@ -979,6 +983,6 @@ tbody tr:hover .chev{color:var(--brand)}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
-<script src="app.js?v=18"></script>
+<script src="app.js?v=19"></script>
 </body>
 </html>
