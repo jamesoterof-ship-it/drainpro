@@ -240,6 +240,7 @@ async function cargarPaginas(){
   visitasArchivo=visArch;
   abandonadosWeb=abs.map(r=>({fecha:r.fecha||'',cli:r.nombre||'—',tel:soloNum((r.indicativo||'')+(r.telefono||'')),
     prod:r.producto,color:r.color,estado:String(r.estado||'').toUpperCase(),comuna:r.comuna||'—',
+    dir:r.direccion||'',ref:r.referencia||'',region:r.region||'',correo:r.correo||'',
     cant:numero(r.cantidad)||1,total:fmtCLP(numero(r.total)),contactado:!!r.contactado,contactadoFecha:fechaCorta(r.contactado),orden:fechaOrden(r.fecha,'')}))
     .filter(o=>o.estado!=='COMPLETADO')               // (6) solo NO completados
     .sort((a,b)=>b.orden-a.orden);
@@ -386,16 +387,33 @@ function renderAbandonadosWeb(){
   const tb=document.getElementById('tbodyAband'); if(!tb) return;
   if(!PAGINAS.some(p=>p.url)){tb.innerHTML='<tr><td colspan="7" class="vacio">Esperando conexión de las planillas…</td></tr>';return;}
   if(!abandonadosWeb.length){tb.innerHTML='<tr><td colspan="7" class="vacio">Sin abandonados pendientes. 🎉</td></tr>';return;}
-  tb.innerHTML=abandonadosWeb.slice(0,100).map(o=>`
-    <tr>
+  tb.innerHTML=abandonadosWeb.slice(0,100).map((o,i)=>`
+    <tr onclick="verAbandonado(${i})" style="cursor:pointer">
       <td class="cli">${esc(o.cli)}<small>${esc(o.fecha)} · +${o.tel}</small></td>
       <td><span class="pchip"><i style="background:${o.color}"></i>${esc(o.prod)}</span></td>
       <td>${esc(o.comuna)}</td>
       <td>${o.cant}</td>
       <td class="money">${o.total}</td>
       <td>${o.contactado?'<span class="st st-ok"><i></i>✓ Mensaje enviado</span>'+(o.contactadoFecha?'<small style="display:block;color:var(--ink-3)">'+esc(o.contactadoFecha)+'</small>':''):'<span class="st st-ab"><i></i>Sin contactar</span>'}</td>
-      <td><a class="qr" style="text-decoration:none" href="https://wa.me/${o.tel}" target="_blank">WhatsApp</a></td>
+      <td onclick="event.stopPropagation()"><a class="qr" style="text-decoration:none" href="https://wa.me/${o.tel}" target="_blank">WhatsApp</a></td>
     </tr>`).join('');
+  window._abandF=abandonadosWeb.slice(0,100);
+}
+function verAbandonado(i){
+  const o=(window._abandF||abandonadosWeb)[i]; if(!o) return;
+  const fila=(k,v)=>`<div class="dl"><span class="k">${k}</span><span class="v">${esc(v)}</span></div>`;
+  document.getElementById('mTitulo').textContent=o.cli;
+  document.getElementById('mBody').innerHTML=
+    fila('Canal','Página · pedido abandonado')+fila('Producto',o.prod)+fila('Cantidad',o.cant+' unidades')+
+    fila('Teléfono','+'+o.tel)+(o.correo?fila('Correo',o.correo):'')+
+    fila('Dirección',o.dir||'— (no la alcanzó a completar)')+
+    (o.ref?fila('Referencia',o.ref):'')+fila('Comuna',o.comuna)+
+    (o.region?fila('Región',o.region):'')+
+    fila('Estado',o.contactado?('Mensaje de recuperación enviado'+(o.contactadoFecha?' · '+o.contactadoFecha:'')):'Sin contactar')+
+    fila('Fecha',o.fecha);
+  document.getElementById('mTotal').textContent=o.total+' CLP';
+  window._ventaAbierta={cli:o.cli,dir:(o.dir||'')+(o.ref?' - '+o.ref:''),region:o.region,tel:o.tel,prod:o.prod,cant:o.cant,precio:o.total};
+  document.getElementById('ov').classList.add('open');
 }
 
 /* ---------- VISITAS ---------- */
