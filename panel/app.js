@@ -1428,7 +1428,7 @@ var AD_NUMS=[{id:'966653193207908',label:'🇨🇱 +56 9 2000 7288 (Chile)'},{id
 var AD_PIXELS=[{id:'1249894010361489',label:'Jaye Hogar (Chile)'},{id:'963855752775059',label:'Colombia'},{id:'2162367424167882',label:'JAYE PARAGUAY'},{id:'1503126321234302',label:'GUATEMALA'},{id:'966394032414530',label:'JAYE STORE'}];
 var AD_COUNTRIES='Afganistán,Albania,Alemania,Andorra,Angola,Arabia Saudita,Argelia,Argentina,Armenia,Australia,Austria,Bélgica,Bolivia,Brasil,Bulgaria,Canadá,Chile,China,Chipre,Colombia,Corea del Sur,Costa Rica,Croacia,Cuba,Dinamarca,Ecuador,Egipto,El Salvador,Emiratos Árabes Unidos,Eslovaquia,Eslovenia,España,Estados Unidos,Estonia,Filipinas,Finlandia,Francia,Grecia,Guatemala,Honduras,Hungría,India,Indonesia,Irlanda,Israel,Italia,Japón,Letonia,Lituania,Luxemburgo,Malasia,Marruecos,México,Nicaragua,Nigeria,Noruega,Nueva Zelanda,Países Bajos,Panamá,Paraguay,Perú,Polonia,Portugal,Puerto Rico,Reino Unido,República Checa,República Dominicana,Rumania,Rusia,Singapur,Sudáfrica,Suecia,Suiza,Tailandia,Turquía,Ucrania,Uruguay,Venezuela,Vietnam'.split(',');
 var AD_PRODUCTS=['DRAINPRO','Shilajit Ultra',"NAD+ Men's Complex"];
-var AD_CTAS={ whatsapp:[{v:'WHATSAPP_MESSAGE',t:'Enviar mensaje'}], link:[{v:'SHOP_NOW',t:'Comprar'},{v:'ORDER_NOW',t:'Pedir ahora'},{v:'LEARN_MORE',t:'Más información'},{v:'GET_OFFER',t:'Conseguir oferta'},{v:'SIGN_UP',t:'Registrarte'},{v:'SUBSCRIBE',t:'Suscribirte'},{v:'BOOK_TRAVEL',t:'Reservar'},{v:'CONTACT_US',t:'Contáctanos'}] };
+var AD_CTAS={ whatsapp:[{v:'WHATSAPP_MESSAGE',t:'Enviar mensaje'}], link:[{v:'SHOP_NOW',t:'Comprar'},{v:'ORDER_NOW',t:'Pedir ahora'},{v:'LEARN_MORE',t:'Más información'},{v:'SIGN_UP',t:'Registrarte'},{v:'SUBSCRIBE',t:'Suscribirte'},{v:'GET_OFFER',t:'Conseguir oferta'},{v:'GET_QUOTE',t:'Solicitar presupuesto'},{v:'CONTACT_US',t:'Contáctanos'},{v:'APPLY_NOW',t:'Solicitar ahora'},{v:'DOWNLOAD',t:'Descargar'},{v:'BOOK_TRAVEL',t:'Reservar'},{v:'DONATE_NOW',t:'Donar'},{v:'WATCH_MORE',t:'Ver más'},{v:'LISTEN_NOW',t:'Escuchar ahora'},{v:'CALL_NOW',t:'Llamar ahora'},{v:'GET_DIRECTIONS',t:'Cómo llegar'},{v:'SEE_MENU',t:'Ver menú'},{v:'BUY_TICKETS',t:'Comprar entradas'},{v:'GET_SHOWTIMES',t:'Ver horarios'},{v:'REQUEST_TIME',t:'Solicitar hora'},{v:'SAVE',t:'Guardar'},{v:'NO_BUTTON',t:'Sin botón'}] };
 var AD_PAGEPIC='https://graph.facebook.com/'+AD_PAGE.id+'/picture?type=square&width=96&height=96';
 var _adAds=[]; var _adCopyPool=null;
 function adCtaUpd(){ var s=document.getElementById('adCta'); if(!s) return; var cur=s.value; var list=AD_CTAS[_adDest]||AD_CTAS.link; s.innerHTML=list.map(function(c){return '<option value="'+c.v+'"'+(c.v===cur?' selected':'')+'>'+c.t+'</option>';}).join(''); }
@@ -1498,18 +1498,19 @@ function adFileRender(){
   if(list) list.innerHTML=_adFiles.map(function(f,i){ return '<span style="display:inline-flex;align-items:center;gap:6px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:4px 5px 4px 9px;font-size:12px;color:var(--ink);margin:4px 5px 0 0">'+(/video/.test(f.type)?'🎬':'🖼️')+' '+esc2(f.name).slice(0,26)+'<button type="button" onclick="adFileDel('+i+')" title="Quitar" style="border:0;background:none;color:#8a93a0;cursor:pointer;font-size:15px;line-height:1;padding:0 3px">×</button></span>'; }).join('');
 }
 function pick(arr,i){ if(!arr||!arr.length) return ''; return arr[i%arr.length]; }
+function win(arr,start,n){ if(!arr||!arr.length) return []; var o=[]; for(var k=0;k<Math.min(n,arr.length);k++) o.push(arr[(start+k)%arr.length]); return o; }
 function generarAnuncios(){
   if(!_adFiles.length){ if(typeof toast==='function')toast('Sube al menos un video o imagen'); return; }
-  var prod=document.getElementById('adProd').value, desc=document.getElementById('adDesc').value.trim(), pais=document.getElementById('adPais').value;
+  var prod=document.getElementById('adProd').value, desc=document.getElementById('adDesc').value.trim(), pais=document.getElementById('adPais').value, link=(document.getElementById('adLinkProd')||{}).value||'', estudio=(document.getElementById('adEstudio')||{}).value||'';
   var btn=document.getElementById('adGenBtn'); var old=btn.textContent; btn.disabled=true; btn.textContent='Generando… (~30s)';
   var panel=document.getElementById('adGaleriaPanel'); panel.style.display='block';
   document.getElementById('adGaleria').innerHTML='<div class="vacio" style="grid-column:1/-1">La IA está escribiendo los copys… ✍️</div>';
   document.getElementById('adMontaMsg').innerHTML='';
-  fetch(URL_GENCOPY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({producto:prod,descripcion:desc,copy_actual:'',pais:pais})})
+  fetch(URL_GENCOPY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({producto:prod,descripcion:desc,copy_actual:'',pais:pais,link:link,estudio:estudio})})
     .then(function(r){return r.json();}).then(function(j){
       if(!j||!j.textos||!j.textos.length){ document.getElementById('adGaleria').innerHTML='<div class="vacio" style="grid-column:1/-1">No se pudo generar. Intenta de nuevo.</div>'; return; }
       _adCopyPool=j;
-      _adAds=_adFiles.map(function(f,i){ return { texto:pick(j.textos,i), titular:pick(j.titulares,i), descripcion:pick(j.descripciones,i) }; });
+      _adAds=_adFiles.map(function(f,i){ return { textos:win(j.textos,i,3), titulares:win(j.titulares,i,3), descripciones:win(j.descripciones,i,3) }; });
       renderGaleria();
     })
     .catch(function(){ document.getElementById('adGaleria').innerHTML='<div class="vacio" style="grid-column:1/-1">Error generando. Intenta de nuevo.</div>'; })
@@ -1535,22 +1536,22 @@ function renderGaleria(){
           +'<button type="button" onclick="adAdRegen('+i+')" title="Generar copy nuevo" style="border:1px solid var(--border);background:var(--surface-2);border-radius:7px;width:27px;height:27px;cursor:pointer;font-size:12px">🔄</button>'
           +'<button type="button" onclick="adAdDel('+i+')" title="Quitar anuncio" style="border:1px solid var(--border);background:var(--surface-2);border-radius:7px;width:27px;height:27px;cursor:pointer;font-size:15px;line-height:1;color:#c0392b">×</button>'
         +'</div></div>'
-      +'<div style="padding:0 10px 8px;font-size:12px;line-height:1.4;color:var(--ink);white-space:pre-wrap;max-height:90px;overflow:hidden">'+esc2(ad.texto)+'</div>'
+      +'<div style="padding:0 10px 8px;font-size:12px;line-height:1.4;color:var(--ink);white-space:pre-wrap;max-height:90px;overflow:hidden">'+esc2((ad.textos&&ad.textos[0])||'')+'</div>'
       +crea
       +'<div style="display:flex;align-items:center;gap:8px;padding:9px 10px;background:var(--surface-2)">'
         +'<div style="min-width:0;flex:1"><div style="font-size:9.5px;color:#8a93a0;text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc2(dom)+'</div>'
-        +'<div style="font-weight:700;font-size:12px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc2(ad.titular)+'</div>'
-        +'<div style="font-size:10.5px;color:#8a93a0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc2(ad.descripcion)+'</div></div>'
+        +'<div style="font-weight:700;font-size:12px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc2((ad.titulares&&ad.titulares[0])||'')+'</div>'
+        +'<div style="font-size:10.5px;color:#8a93a0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc2((ad.descripciones&&ad.descripciones[0])||'')+'</div></div>'
         +'<button type="button" style="display:inline-flex;align-items:center;gap:4px;background:#e7f0ff;color:#1b74e4;border:0;border-radius:7px;padding:7px 10px;font-weight:700;font-size:11.5px;white-space:nowrap;cursor:default">'+ctaBtn+'</button>'
-      +'</div></div>';
+      +'</div>'+'<div style="padding:5px 10px;font-size:10px;color:#8a93a0;border-top:1px solid var(--border)">📋 3 textos · 3 títulos · 3 descripciones (Meta los prueba)</div></div>';
   }).join('');
 }
 function adAdDel(i){ _adAds.splice(i,1); _adFiles.splice(i,1); adFileRender(); renderGaleria(); }
 function adAdRegen(i){
-  var prod=document.getElementById('adProd').value, desc=document.getElementById('adDesc').value.trim(), pais=document.getElementById('adPais').value;
+  var prod=document.getElementById('adProd').value, desc=document.getElementById('adDesc').value.trim(), pais=document.getElementById('adPais').value, link=(document.getElementById('adLinkProd')||{}).value||'', estudio=(document.getElementById('adEstudio')||{}).value||'';
   if(typeof toast==='function')toast('Generando copy nuevo…');
-  fetch(URL_GENCOPY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({producto:prod,descripcion:desc,copy_actual:(_adAds[i]?_adAds[i].texto:''),pais:pais})})
-    .then(function(r){return r.json();}).then(function(j){ if(j&&j.textos&&j.textos.length){ _adAds[i]={texto:j.textos[0],titular:(j.titulares&&j.titulares[0])||'',descripcion:(j.descripciones&&j.descripciones[0])||''}; renderGaleria(); if(typeof toast==='function')toast('Copy nuevo ✓'); } })
+  fetch(URL_GENCOPY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({producto:prod,descripcion:desc,copy_actual:'',pais:pais,link:link,estudio:estudio})})
+    .then(function(r){return r.json();}).then(function(j){ if(j&&j.textos&&j.textos.length){ _adAds[i]={textos:win(j.textos,0,3),titulares:win(j.titulares,0,3),descripciones:win(j.descripciones,0,3)}; renderGaleria(); if(typeof toast==='function')toast('Copy nuevo ✓'); } })
     .catch(function(){ if(typeof toast==='function')toast('Error'); });
 }
 function adLimpiar(){
@@ -1577,7 +1578,7 @@ function aprobarMontar(){
     pixelId:(pxEl?pxEl.value:''), pixel:pixelTxt, ctaId:(ctaEl?ctaEl.value:''), cta:ctaTxt, pageId:AD_PAGE.id,
     presupuesto:(document.getElementById('adPresup').value||50000),
     ubicaciones:(_adGeos.length?_adGeos.map(function(g){return g.name;}).join(', '):'Todo el país'), geos:_adGeos.slice(),
-    anuncios:_adAds.map(function(a,i){return {creativo:(_adFiles[i]?_adFiles[i].name:''), texto:a.texto, titular:a.titular, descripcion:a.descripcion};}),
+    anuncios:_adAds.map(function(a,i){return {creativo:(_adFiles[i]?_adFiles[i].name:''), textos:a.textos, titulares:a.titulares, descripciones:a.descripciones};}),
     fecha:new Date().toISOString() };
   try{ var q=JSON.parse(localStorage.getItem('jaye_camp_aprob')||'[]'); q.push(camp); localStorage.setItem('jaye_camp_aprob',JSON.stringify(q)); }catch(e){}
   var dest= destino==='whatsapp' ? ('WhatsApp '+numTxt) : camp.link;
