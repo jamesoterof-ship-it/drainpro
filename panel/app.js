@@ -14,6 +14,7 @@ const URL_HUELLAS=BASE+'/leer-huellas';
 const URL_PEDWEB=BASE+'/leer-pedidos-web';   // pedidos de pagina desde Postgres (no Google)
 const URL_ABANDONADOS=BASE+'/leer-abandonados'; // abandonados desde Postgres (no Google)
 const URL_GENCOPY=BASE+'/generar-copy'; // creador de anuncios: genera copys con IA (Claude)
+const URL_BUSCAGEO=BASE+'/buscar-geo'; // buscador de ubicaciones de Meta (ciudades/regiones)
 window.huellaMap={};
 async function cargarHuellas(){
   try{
@@ -1426,8 +1427,10 @@ var AD_PAGE={nombre:'Jaye Group',id:'1021271641058424'};
 var AD_NUMS=[{id:'966653193207908',label:'🇨🇱 +56 9 2000 7288 (Chile)'},{id:'1134195636445391',label:'🇨🇴 +57 314 5021958 (Colombia)'},{id:'1114986368370031',label:'🇵🇾 +595 975 357165 (Paraguay)'}];
 var AD_PIXELS=[{id:'1249894010361489',label:'Jaye Hogar (Chile)'},{id:'963855752775059',label:'Colombia'},{id:'2162367424167882',label:'JAYE PARAGUAY'},{id:'1503126321234302',label:'GUATEMALA'},{id:'966394032414530',label:'JAYE STORE'}];
 var AD_COUNTRIES='Afganistán,Albania,Alemania,Andorra,Angola,Arabia Saudita,Argelia,Argentina,Armenia,Australia,Austria,Bélgica,Bolivia,Brasil,Bulgaria,Canadá,Chile,China,Chipre,Colombia,Corea del Sur,Costa Rica,Croacia,Cuba,Dinamarca,Ecuador,Egipto,El Salvador,Emiratos Árabes Unidos,Eslovaquia,Eslovenia,España,Estados Unidos,Estonia,Filipinas,Finlandia,Francia,Grecia,Guatemala,Honduras,Hungría,India,Indonesia,Irlanda,Israel,Italia,Japón,Letonia,Lituania,Luxemburgo,Malasia,Marruecos,México,Nicaragua,Nigeria,Noruega,Nueva Zelanda,Países Bajos,Panamá,Paraguay,Perú,Polonia,Portugal,Puerto Rico,Reino Unido,República Checa,República Dominicana,Rumania,Rusia,Singapur,Sudáfrica,Suecia,Suiza,Tailandia,Turquía,Ucrania,Uruguay,Venezuela,Vietnam'.split(',');
+var AD_PRODUCTS=['DRAINPRO','Shilajit Ultra',"NAD+ Men's Complex"];
 function adFill(){
   var pl=document.getElementById('adPaisList'); if(pl&&!pl.children.length) pl.innerHTML=AD_COUNTRIES.map(function(c){return '<option value="'+c+'">';}).join('');
+  var prl=document.getElementById('adProdList'); if(prl&&!prl.children.length) prl.innerHTML=AD_PRODUCTS.map(function(c){return '<option value="'+c+'">';}).join('');
   var ns=document.getElementById('adNum'); if(ns&&!ns.children.length) ns.innerHTML=AD_NUMS.map(function(n){return '<option value="'+n.id+'">'+n.label+'</option>';}).join('');
   var px=document.getElementById('adPixel'); if(px&&!px.children.length) px.innerHTML=AD_PIXELS.map(function(p){return '<option value="'+p.id+'">'+p.label+'</option>';}).join('');
 }
@@ -1444,12 +1447,35 @@ function adPaisUpd(){
 function adNombreSug(){
   var nom=document.getElementById('adNombre'); if(!nom||nom.dataset.edit) return;
   var pais=(document.getElementById('adPais')||{}).value||'Chile';
-  var ps=document.getElementById('adProd'); var prod=ps?ps.options[ps.selectedIndex].text:'';
+  var prod=(document.getElementById('adProd')||{}).value||'';
   var d=new Date(); var f=(''+d.getDate()).padStart(2,'0')+'-'+(''+(d.getMonth()+1)).padStart(2,'0');
   nom.value=pais+' · '+prod+' · '+f;
 }
 function adDestUpd(){ var w=document.getElementById('adLinkWrap'); if(w) w.style.display=(_adDest==='link')?'':'none'; var nw=document.getElementById('adNumWrap'); if(nw) nw.style.display=(_adDest==='whatsapp')?'':'none'; }
 function adSugPresup(){ document.getElementById('adPresup').value=50000; if(typeof toast==='function')toast('Sugerido: 50.000 COP/día para empezar y que Meta aprenda'); }
+var _adGeos=[]; var _geoTimer=null;
+function adGeoBuscar(){
+  clearTimeout(_geoTimer);
+  var q=document.getElementById('adUbic').value.trim(); var sug=document.getElementById('adGeoSug');
+  if(q.length<2){ sug.style.display='none'; sug.innerHTML=''; return; }
+  _geoTimer=setTimeout(function(){
+    var pais=(document.getElementById('adPais')||{}).value||'';
+    sug.style.display='block'; sug.innerHTML='<div style="padding:8px 11px;color:#8a93a0;font-size:12px">Buscando…</div>';
+    fetch(URL_BUSCAGEO+'?q='+encodeURIComponent(q)+'&pais='+encodeURIComponent(pais)).then(function(r){return r.json();}).then(function(j){
+      var arr=(j&&j.data)||[];
+      if(!arr.length){ sug.innerHTML='<div style="padding:8px 11px;color:#8a93a0;font-size:12px">Sin resultados.</div>'; return; }
+      sug.innerHTML=arr.map(function(x){ return '<div class="adGeoItem" data-k="'+x.key+'" data-n="'+String(x.name).replace(/"/g,'&quot;')+'" style="padding:8px 11px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);color:var(--ink)">'+String(x.name).replace(/</g,'&lt;')+' <span style="color:#8a93a0;font-size:11px">'+(x.type==='city'?'ciudad':'región')+'</span></div>'; }).join('');
+      [].slice.call(sug.querySelectorAll('.adGeoItem')).forEach(function(it){ it.addEventListener('click',function(){ adGeoAdd(it.dataset.k,it.dataset.n); }); });
+    }).catch(function(){ sug.innerHTML='<div style="padding:8px 11px;color:#8a93a0;font-size:12px">No se pudo buscar (activa "Buscar Geo Meta" en n8n).</div>'; });
+  },350);
+}
+function adGeoAdd(key,name){ if(!_adGeos.some(function(g){return g.key===key;})) _adGeos.push({key:key,name:name}); document.getElementById('adUbic').value=''; document.getElementById('adGeoSug').style.display='none'; adGeoRender(); }
+function adGeoDel(key){ _adGeos=_adGeos.filter(function(g){return String(g.key)!==String(key);}); adGeoRender(); }
+function adGeoRender(){
+  var box=document.getElementById('adGeoChips'); if(!box) return;
+  if(!_adGeos.length){ box.innerHTML='<span style="font-size:11.5px;color:#8a93a0">Vacío = todo el país</span>'; return; }
+  box.innerHTML=_adGeos.map(function(g){ return '<span style="display:inline-flex;align-items:center;gap:5px;background:var(--surface-2);border:1px solid var(--border);border-radius:999px;padding:3px 4px 3px 10px;font-size:12px;color:var(--ink)">'+String(g.name).replace(/</g,'&lt;')+'<button type="button" onclick="adGeoDel(\''+g.key+'\')" style="border:0;background:none;color:#8a93a0;cursor:pointer;font-size:15px;line-height:1;padding:0 3px">×</button></span>'; }).join('');
+}
 function adFilePick(){
   _adFiles=[].slice.call((document.getElementById('adFile')||{}).files||[]);
   var fn=document.getElementById('adFileName'); if(fn) fn.textContent=_adFiles.length?('📎 '+_adFiles.length+' archivo(s)'):'';
@@ -1527,7 +1553,7 @@ function aprobarMontar(){
   var camp={ pais:pais, producto:document.getElementById('adProd').value, nombre:document.getElementById('adNombre').value,
     destino:destino, link:document.getElementById('adLink').value, numeroId:(numEl?numEl.value:''), numero:numTxt,
     pixelId:(pxEl?pxEl.value:''), pixel:pixelTxt, pageId:AD_PAGE.id, presupuesto:(document.getElementById('adPresup').value||50000),
-    ubicaciones:document.getElementById('adUbic').value, texto:t?t.dataset.txt:'', titular:h?h.dataset.txt:'',
+    ubicaciones:(_adGeos.length?_adGeos.map(function(g){return g.name;}).join(', '):'Todo el país'), geos:_adGeos.slice(), texto:t?t.dataset.txt:'', titular:h?h.dataset.txt:'',
     creativos:_adFiles.map(function(f){return f.name;}), fecha:new Date().toISOString() };
   try{ var q=JSON.parse(localStorage.getItem('jaye_camp_aprob')||'[]'); q.push(camp); localStorage.setItem('jaye_camp_aprob',JSON.stringify(q)); }catch(e){}
   var dest= destino==='whatsapp' ? ('WhatsApp '+numTxt) : camp.link;
@@ -1559,4 +1585,4 @@ document.querySelectorAll('#adDestSeg .adDestBtn').forEach(function(b){ b.addEve
   b.style.background='var(--brand,#3056c9)'; b.style.color='#fff'; b.style.borderColor='var(--brand,#3056c9)';
   adDestUpd();
 }); });
-(function(){ adFill(); var n=document.getElementById('adNombre'); if(n) n.addEventListener('input',function(){n.dataset.edit='1';}); if(document.getElementById('adPais')) adPaisUpd(); adDestUpd(); if(document.getElementById('adFile')) adFilePick(); })();
+(function(){ adFill(); var n=document.getElementById('adNombre'); if(n) n.addEventListener('input',function(){n.dataset.edit='1';}); if(document.getElementById('adPais')) adPaisUpd(); adDestUpd(); if(document.getElementById('adFile')) adFilePick(); adGeoRender(); })();

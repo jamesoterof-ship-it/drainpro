@@ -698,11 +698,8 @@ tbody tr:hover .chev{color:var(--brand)}
               <input id="adPais" list="adPaisList" value="Chile" placeholder="Escribe cualquier país…" oninput="adPaisUpd()" autocomplete="off">
               <datalist id="adPaisList"></datalist></label>
             <label class="calcF">Producto
-              <select id="adProd" onchange="adNombreSug()">
-                <option value="Polvo Limpiador DRAINPRO — destapa cañerías y desagües tapados (grasa, pelos, sarro)">DRAINPRO</option>
-                <option value="Flynew Shilajit Ultra — energía, vitalidad y minerales (60 cápsulas)">Shilajit Ultra</option>
-                <option value="NAD+ Men's Complex — energía, foco y bienestar después de los 40">NAD+ Men's Complex</option>
-              </select></label>
+              <input id="adProd" list="adProdList" value="DRAINPRO" placeholder="Escribe cualquier producto…" oninput="adNombreSug()" autocomplete="off">
+              <datalist id="adProdList"></datalist></label>
             <label class="calcF">Nombre de la campaña
               <input id="adNombre" type="text" placeholder="se genera solo, puedes editarlo"></label>
             <label class="calcF">Destino del anuncio
@@ -718,8 +715,10 @@ tbody tr:hover .chev{color:var(--brand)}
               <select id="adPixel"></select></label>
             <label class="calcF">Presupuesto diario (COP)
               <span style="display:flex;gap:6px;align-items:center"><input id="adPresup" type="number" inputmode="numeric" placeholder="50000" style="flex:1"><button type="button" onclick="adSugPresup()" title="Consejo de la IA" style="font-size:11px;padding:7px 9px;border:1px solid var(--border);border-radius:7px;background:var(--surface-2);color:var(--ink-2);cursor:pointer;font-weight:700;white-space:nowrap">💡 Sugerir</button></span></label>
-            <label class="calcF">Ubicaciones
-              <input id="adUbic" type="text" value="Todo el país" placeholder="Todo el país, o región/depto/ciudad (separa con comas)"></label>
+            <label class="calcF">Ubicaciones (vacío = todo el país)
+              <input id="adUbic" type="text" placeholder="Escribe Bogotá, Barranquilla… y elígelas" autocomplete="off" oninput="adGeoBuscar()">
+              <div id="adGeoSug" style="border:1px solid var(--border);border-radius:9px;margin-top:4px;max-height:200px;overflow:auto;display:none;background:var(--surface)"></div>
+              <div id="adGeoChips" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:5px"></div></label>
             <label class="calcF">¿Qué muestra tu creativo? (opcional)
               <input id="adDesc" type="text" placeholder="Ej: el polvo disolviendo grasa, antes/después"></label>
           </div>
@@ -1073,6 +1072,6 @@ tbody tr:hover .chev{color:var(--brand)}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
-<script src="app.js?v=28"></script>
+<script src="app.js?v=29"></script>
 </body>
 </html>
