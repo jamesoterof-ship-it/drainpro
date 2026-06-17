@@ -15,6 +15,7 @@ const URL_PEDWEB=BASE+'/leer-pedidos-web';   // pedidos de pagina desde Postgres
 const URL_ABANDONADOS=BASE+'/leer-abandonados'; // abandonados desde Postgres (no Google)
 const URL_GENCOPY=BASE+'/generar-copy'; // creador de anuncios: genera copys con IA (Claude)
 const URL_BUSCAGEO=BASE+'/buscar-geo'; // buscador de ubicaciones de Meta (ciudades/regiones)
+const URL_ASESORCAMP=BASE+'/asesor-campana'; // asesor: recomienda qué hacer con una campaña existente
 window.huellaMap={};
 async function cargarHuellas(){
   try{
@@ -1586,18 +1587,31 @@ function aprobarMontar(){
   if(typeof toast==='function')toast('Campaña aprobada ✓');
 }
 function esc2(s){ return String(s||'').replace(/</g,'&lt;'); }
+var _adCamps=[];
 function cargarCampanas(){
   var box=document.getElementById('adCampList'); box.innerHTML='<div class="vacio">Cargando campañas de Meta…</div>';
   fetch(BASE+'/leer-campanas').then(function(r){return r.json();}).then(function(arr){
-    if(!arr||!arr.length||arr[0].vacio){ box.innerHTML='<div class="vacio">No hay campañas (o el lector aún no está encendido).</div>'; return; }
-    box.innerHTML=arr.map(function(c){
+    if(!arr||!arr.length||arr[0].vacio){ box.innerHTML='<div class="vacio">No hay campañas (o "Leer Campañas Meta" aún no está encendido en n8n).</div>'; return; }
+    _adCamps=arr;
+    box.innerHTML=arr.map(function(c,i){
       return '<div style="border:1px solid var(--border);border-radius:10px;padding:11px 13px;margin-bottom:9px">'
-        +'<div style="font-weight:700;color:var(--ink)">'+esc2(c.nombre)+' <span style="font-size:11px;color:#8a93a0">· '+esc2(c.estado)+'</span></div>'
+        +'<div style="display:flex;align-items:center;gap:8px"><div style="font-weight:700;color:var(--ink);flex:1;min-width:0">'+esc2(c.nombre)+' <span style="font-size:11px;color:#8a93a0">· '+esc2(c.estado)+'</span></div>'
+        +'<button type="button" onclick="adAsesor('+i+')" style="font-size:11.5px;padding:6px 11px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);color:var(--ink);cursor:pointer;font-weight:700;white-space:nowrap">💡 ¿Qué hago?</button></div>'
         +'<div style="font-size:12px;color:var(--ink-2);margin-top:3px">Gasto 14d: '+Number(c.gasto||0).toLocaleString('es-CO')+' COP · Resultados: '+(c.resultados||0)+(c.costo_result?(' · '+Number(c.costo_result).toLocaleString('es-CO')+'/result'):'')+'</div>'
         +(c.copy?('<div style="font-size:12px;color:#8a93a0;margin-top:4px">Copy actual: '+esc2(String(c.copy).slice(0,120))+'…</div>'):'')
+        +'<div id="adRec'+i+'" style="display:none"></div>'
         +'</div>';
     }).join('');
-  }).catch(function(){ box.innerHTML='<div class="vacio">No se pudo cargar (el lector "Leer Campañas Meta" aún no está activo).</div>'; });
+  }).catch(function(){ box.innerHTML='<div class="vacio">No se pudo cargar (enciende "Leer Campañas Meta" en n8n).</div>'; });
+}
+function adAsesor(i){
+  var c=_adCamps[i]; if(!c) return;
+  var box=document.getElementById('adRec'+i); if(box){ box.style.display='block'; box.innerHTML='<div style="color:#8a93a0;font-size:12px;margin-top:6px">Analizando con IA… 🤔</div>'; }
+  var pais=(document.getElementById('adPais')||{}).value||'Chile';
+  fetch(URL_ASESORCAMP,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({campana:c,pais:pais})})
+    .then(function(r){return r.json();}).then(function(j){
+      if(box) box.innerHTML='<div style="background:var(--surface-2);border:1px solid var(--border);border-radius:9px;padding:9px 11px;margin-top:7px"><div style="font-weight:800;color:var(--ink);font-size:12.5px">💡 '+esc2(j.titulo||'Recomendación')+'</div><div style="font-size:12px;color:var(--ink);margin-top:3px">'+esc2(j.recomendacion||'')+'</div>'+(j.porque?('<div style="font-size:11px;color:#8a93a0;margin-top:3px">'+esc2(j.porque)+'</div>'):'')+'</div>';
+    }).catch(function(){ if(box) box.innerHTML='<div style="color:#8a93a0;font-size:12px;margin-top:6px">No se pudo analizar (enciende "Asesor Campaña" en n8n).</div>'; });
 }
 document.querySelectorAll('#adModo .minitab').forEach(function(b){ b.addEventListener('click',function(){
   document.querySelectorAll('#adModo .minitab').forEach(function(x){x.classList.remove('act');}); b.classList.add('act');
