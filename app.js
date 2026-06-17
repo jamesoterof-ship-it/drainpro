@@ -18,8 +18,11 @@ try{ if(!sessionStorage.getItem("jaye_vis")){ sessionStorage.setItem("jaye_vis",
 
 /* ---------- Píxel de Meta (helper seguro) ---------- */
 function fb(evento, datos){ if(window.fbq){ try{ fbq("track", evento, datos || {}); }catch(e){} } }
+/* ---------- Píxel de TikTok (helper seguro) ---------- */
+function tt(evento, datos){ if(window.ttq){ try{ ttq.track(evento, datos || {}); }catch(e){} } }
 // ViewContent al cargar la página de producto
 fb("ViewContent", { content_name: PRODUCTO, content_ids: ["drainpro"], content_type: "product", value: 17000, currency: "CLP" });
+tt("ViewContent", { content_id: "drainpro", content_name: PRODUCTO, content_type: "product", value: 17000, currency: "CLP" });
 var _checkoutTracked = false;
 
 /* ---------- Scroll suave + cantidad preseleccionada ---------- */
@@ -42,6 +45,7 @@ document.querySelectorAll("[data-scroll]").forEach(b=>{
       _checkoutTracked = true;
       var p = (typeof current!=="undefined" && current) ? parseInt(current.dataset.price,10) : 17000;
       fb("InitiateCheckout", { content_name: PRODUCTO, value: p, currency: "CLP" });
+      tt("InitiateCheckout", { content_id: "drainpro", content_name: PRODUCTO, value: p, currency: "CLP" });
       trackPanel("visita_form");   // llegó al formulario
     }
   });
@@ -333,8 +337,8 @@ form.addEventListener("submit",async e=>{
     if(N8N_CONFIRM){
       var telWA = (form.codpais.value+"").replace(/\D/g,"") + telLimpio();
       fetch(N8N_CONFIRM,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
-        customer:{ phone: telWA },
-        shipping_address:{ first_name: nombre.split(" ")[0], address1: dir },
+        customer:{ phone: telWA, email: form.correo.value.trim() },
+        shipping_address:{ first_name: nombre.split(" ")[0], address1: dir, province: form.region.value, city: form.comuna.value, address2: form.referencia.value.trim(), country_code: form.codpais.value },
         order_number: "JG-"+String(Date.now()).slice(-6),
         line_items:[{ title: PRODUCTO, quantity: qty }],
         total_price: String(total)
@@ -344,6 +348,8 @@ form.addEventListener("submit",async e=>{
     if(abandonedSent) sendSheet(Object.assign(currentFormData(),{tipo:"abandonado",estado:"COMPLETADO"}));
     // Píxel de Meta: Purchase (conversión)
     fb("Purchase", { content_name: PRODUCTO, content_ids: ["drainpro"], contents: [{ id: "drainpro", quantity: qty }], value: total, currency: "CLP" });
+    // Píxel de TikTok: CompletePayment (conversión)
+    tt("CompletePayment", { content_id: "drainpro", content_name: PRODUCTO, content_type: "product", contents: [{ content_id: "drainpro", content_name: PRODUCTO, quantity: qty }], value: total, currency: "CLP" });
     form.style.display="none";
     document.querySelector(".packs").style.display="none";
     document.querySelector(".summary").style.display="none";
