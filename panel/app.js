@@ -1504,6 +1504,7 @@ function win(arr,start,n){ if(!arr||!arr.length) return []; var o=[]; for(var k=
 function generarAnuncios(){
   if(!_adFiles.length){ if(typeof toast==='function')toast('Sube al menos un video o imagen'); return; }
   var prod=document.getElementById('adProd').value, desc=document.getElementById('adDesc').value.trim(), pais=document.getElementById('adPais').value, link=(document.getElementById('adLinkProd')||{}).value||'', estudio=(document.getElementById('adEstudio')||{}).value||'';
+  if(_adTarget){ prod=_adTarget.nombre; pais=_adTarget.pais||pais; estudio=(_adTarget.copy||'')+' '+estudio; link=''; }
   var btn=document.getElementById('adGenBtn'); var old=btn.textContent; btn.disabled=true; btn.textContent='Generando… (~30s)';
   var panel=document.getElementById('adGaleriaPanel'); panel.style.display='block';
   document.getElementById('adGaleria').innerHTML='<div class="vacio" style="grid-column:1/-1">La IA está escribiendo los copys… ✍️</div>';
@@ -1636,23 +1637,36 @@ function adToggleDetalle(i){
     det.innerHTML=head+acciones+'<div style="font-weight:700;font-size:12px;color:var(--ink);margin-bottom:5px">Anuncios:</div>'+ads;
   }).catch(function(){ det.innerHTML='<div style="color:#8a93a0;font-size:12px">No se pudo cargar (enciende "Detalle Campaña" en n8n).</div>'; });
 }
+function adGuessPais(nombre){ var P=['Colombia','Paraguay','Ecuador','Argentina','Guatemala','España','México','Mexico','Perú','Peru','Chile']; var n=(nombre||'').toLowerCase(); for(var k=0;k<P.length;k++){ if(n.indexOf(P[k].toLowerCase())>=0){ var v=P[k]; if(v==='Mexico')v='México'; if(v==='Peru')v='Perú'; return v; } } return 'Chile'; }
 function adRefrescar(i){
-  var c=_adCamps[i]; _adTarget={id:c.id,nombre:c.nombre};
+  var c=_adCamps[i];
+  _adTarget={id:c.id,nombre:c.nombre,copy:c.copy||'',objetivo:c.objetivo||'',gasto:c.gasto||0,resultados:c.resultados||0,pais:adGuessPais(c.nombre)};
+  _adFiles=[]; _adAds=[]; _adCopyPool=null;
   document.querySelectorAll('#adModo .minitab').forEach(function(x){x.classList.remove('act');});
   var nb=document.querySelector('#adModo .minitab[data-m="nueva"]'); if(nb) nb.classList.add('act');
   var nu=document.getElementById('adNueva'), ex=document.getElementById('adExistente'); if(nu) nu.style.display=''; if(ex) ex.style.display='none';
-  adTargetBanner(); window.scrollTo({top:0,behavior:'smooth'});
-  if(typeof toast==='function')toast('Refrescando: '+c.nombre+' — sube los creativos nuevos');
+  adRefreshMode(true);
+  var gp=document.getElementById('adGaleriaPanel'); if(gp) gp.style.display='none';
+  adFileRender();
+  window.scrollTo({top:0,behavior:'smooth'});
+  if(typeof toast==='function')toast('Refrescando: '+c.nombre);
 }
-function adTargetBanner(){
-  var host=document.getElementById('adNueva'); if(!host) return;
-  var ex=document.getElementById('adTargetBanner');
-  if(!_adTarget){ if(ex) ex.remove(); return; }
-  if(!ex){ ex=document.createElement('div'); ex.id='adTargetBanner'; host.insertBefore(ex,host.firstChild); }
-  ex.style.cssText='background:#e7f0ff;border:1px solid var(--border);border-radius:9px;padding:9px 12px;margin-bottom:12px;font-size:12.5px;color:#1b74e4;font-weight:700;display:flex;align-items:center;gap:8px';
-  ex.innerHTML='♻️ Refrescando: '+esc2(_adTarget.nombre)+' — sube los creativos nuevos, genera y aprueba. <button type="button" onclick="adTargetClear()" style="margin-left:auto;border:0;background:none;color:#1b74e4;cursor:pointer;font-weight:700;text-decoration:underline">Cancelar</button>';
+function adRefreshMode(on){
+  var grid=document.getElementById('adConfigGrid'), auto=document.getElementById('adAuto'), head=document.getElementById('adRefrescarHeader'), tit=document.getElementById('adFormTitulo');
+  if(on && _adTarget){
+    if(grid) grid.style.display='none'; if(auto) auto.style.display='none'; if(tit) tit.textContent='Refrescar campaña';
+    if(head){ head.style.display='block'; head.innerHTML='<div style="background:#e7f0ff;border:1px solid var(--border);border-radius:9px;padding:11px 13px">'
+      +'<div style="font-weight:800;color:#1b74e4;font-size:13px">♻️ Refrescando: '+esc2(_adTarget.nombre)+'</div>'
+      +'<div style="font-size:12px;color:var(--ink-2);margin-top:3px">Objetivo: '+esc2(_adTarget.objetivo)+' · gasto 14d: '+Number(_adTarget.gasto).toLocaleString('es-CO')+' COP · '+_adTarget.resultados+' resultados · país: '+esc2(_adTarget.pais)+'</div>'
+      +'<div style="font-size:12px;color:var(--ink-2);margin-top:4px">Esta campaña ya tiene su destino, presupuesto y público. Tú solo sube los <b>creativos nuevos</b> → la IA genera los copys (3 de cada) → vista previa → y se agregan a ESTA campaña (pausados).</div>'
+      +'<button type="button" onclick="adVolverExistente()" style="margin-top:8px;border:0;background:none;color:#1b74e4;cursor:pointer;font-weight:700;text-decoration:underline;font-size:12.5px">← Volver a campañas</button></div>'; }
+  } else {
+    if(grid) grid.style.display=''; if(auto) auto.style.display=''; if(tit) tit.textContent='Nueva campaña';
+    if(head){ head.style.display='none'; head.innerHTML=''; }
+  }
 }
-function adTargetClear(){ _adTarget=null; adTargetBanner(); }
+function adTargetClear(){ _adTarget=null; adRefreshMode(false); }
+function adVolverExistente(){ _adTarget=null; adRefreshMode(false); document.querySelectorAll('#adModo .minitab').forEach(function(x){x.classList.remove('act');}); var eb=document.querySelector('#adModo .minitab[data-m="existente"]'); if(eb) eb.classList.add('act'); var nu=document.getElementById('adNueva'),ex=document.getElementById('adExistente'); if(nu)nu.style.display='none'; if(ex)ex.style.display=''; window.scrollTo({top:0,behavior:'smooth'}); }
 function adPausar(i){
   var c=_adCamps[i];
   if(typeof toast==='function')toast('Pausar necesita el permiso de editar de Meta (saldo pendiente)');
@@ -1672,7 +1686,7 @@ document.querySelectorAll('#adModo .minitab').forEach(function(b){ b.addEventLis
   document.querySelectorAll('#adModo .minitab').forEach(function(x){x.classList.remove('act');}); b.classList.add('act');
   document.getElementById('adNueva').style.display=(b.dataset.m==='nueva')?'':'none';
   document.getElementById('adExistente').style.display=(b.dataset.m==='existente')?'':'none';
-  if(b.dataset.m==='nueva'){ _adTarget=null; adTargetBanner(); }
+  if(b.dataset.m==='nueva'){ adTargetClear(); }
 }); });
 document.querySelectorAll('#adDestSeg .adDestBtn').forEach(function(b){ b.addEventListener('click',function(){
   _adDest=b.dataset.d;
