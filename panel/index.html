@@ -387,6 +387,10 @@ tbody tr:hover .chev{color:var(--brand)}
         <svg class="ico" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8"/><path d="M8 10h2M12 10h2M16 10h.01"/><path d="M8 14h2M12 14h2M16 14h.01"/><path d="M8 18h6"/></svg>
         Calculadora
       </div>
+      <div class="nav-i" data-view="anuncios">
+        <svg class="ico" viewBox="0 0 24 24"><path d="M3 11l15-5v12L3 13v-2z"/><path d="M18 8a3 3 0 0 1 0 6"/><path d="M7 13v4a2 2 0 0 0 2 2h1"/></svg>
+        Creador de anuncios
+      </div>
     </nav>
 
     <div class="grouplabel">
@@ -675,6 +679,39 @@ tbody tr:hover .chev{color:var(--brand)}
           <tbody id="calcBody"><tr><td colspan="9" class="vacio">Elige un producto o escribe el costo.</td></tr></tbody>
         </table>
         <div style="font-size:11.5px;color:#8a93a0;padding:8px 4px">Cambia el costo, el flete o el % de ganancia y se recalcula solo. También puedes escribir el precio de venta de cada combo y te muestra la ganancia y el margen.</div>
+      </div>
+    </div>
+
+    <!-- ====== CREADOR DE ANUNCIOS ====== -->
+    <div class="content view" id="view-anuncios">
+      <div class="panel" style="margin-bottom:16px">
+        <div class="tbl-head"><h2>Creador de anuncios IA</h2><span style="font-size:12px;color:#8a93a0">Sube tu video/imagen → Claude escribe varios copys con emojis → eliges los que sirven. Montar y activar campañas se habilita al pagar el saldo de Meta.</span></div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;padding:12px 4px">
+          <label class="calcF">Producto
+            <select id="adProd">
+              <option value="Polvo Limpiador DRAINPRO — destapa cañerías y desagües tapados (grasa, pelos, sarro)">DRAINPRO</option>
+              <option value="Flynew Shilajit Ultra — energía, vitalidad y minerales (60 cápsulas)">Shilajit Ultra</option>
+              <option value="NAD+ Men's Complex — energía, foco y bienestar después de los 40">NAD+ Men's Complex</option>
+            </select></label>
+          <label class="calcF">¿Qué muestra tu video/imagen? (opcional)
+            <input id="adDesc" type="text" placeholder="Ej: el polvo disolviendo grasa, antes/después del desagüe"></label>
+          <label class="calcF">Copy actual (opcional · para que genere distintos)
+            <input id="adActual" type="text" placeholder="Pega aquí tu copy actual"></label>
+        </div>
+        <div style="padding:4px 4px 6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <input type="file" id="adFile" accept="video/*,image/*" style="display:none" onchange="adFilePick()">
+          <button type="button" onclick="document.getElementById('adFile').click()" style="font-size:12.5px;padding:8px 14px;border:1px solid var(--border);border-radius:9px;background:var(--surface-2);color:var(--ink-2);cursor:pointer;font-weight:700">📎 Subir video / imagen</button>
+          <span id="adFileName" style="font-size:12px;color:#8a93a0"></span>
+          <button type="button" id="adGenBtn" onclick="generarCopys()" style="background:var(--brand,#3056c9);color:#fff;border:0;border-radius:9px;padding:9px 20px;font-weight:800;font-size:13.5px;cursor:pointer;margin-left:auto">✨ Generar copys</button>
+        </div>
+      </div>
+      <div class="panel" id="adResultPanel" style="display:none;margin-bottom:16px">
+        <div class="tbl-head"><h2>Opciones de copy</h2><span style="font-size:12px;color:#8a93a0">Marca los que quieras usar y cópialos</span></div>
+        <div id="adResult" style="padding:8px 4px"></div>
+        <div style="padding:6px 4px 10px">
+          <button type="button" onclick="copiarSeleccionados()" style="font-size:13px;padding:9px 16px;border:1px solid var(--border);border-radius:9px;background:var(--surface-2);color:var(--ink);cursor:pointer;font-weight:700">📋 Copiar seleccionados</button>
+          <button type="button" onclick="generarCopys()" style="font-size:13px;padding:9px 16px;border:1px solid var(--border);border-radius:9px;background:var(--surface-2);color:var(--ink-2);cursor:pointer;font-weight:700;margin-left:6px">🔄 Generar más</button>
+        </div>
       </div>
     </div>
 
@@ -990,6 +1027,6 @@ tbody tr:hover .chev{color:var(--brand)}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
-<script src="app.js?v=24"></script>
+<script src="app.js?v=25"></script>
 </body>
 </html>

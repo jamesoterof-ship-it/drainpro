@@ -13,6 +13,7 @@ const URL_IMG='https://web-production-a5adc.up.railway.app/api/jaye/enviar-image
 const URL_HUELLAS=BASE+'/leer-huellas';
 const URL_PEDWEB=BASE+'/leer-pedidos-web';   // pedidos de pagina desde Postgres (no Google)
 const URL_ABANDONADOS=BASE+'/leer-abandonados'; // abandonados desde Postgres (no Google)
+const URL_GENCOPY=BASE+'/generar-copy'; // creador de anuncios: genera copys con IA (Claude)
 window.huellaMap={};
 async function cargarHuellas(){
   try{
@@ -865,6 +866,7 @@ const TITULOS={resumen:['Resumen general','Todos los canales · monedas separada
   abandonados:['Pedidos abandonados','Solo los no completados · recuperación automática'],
   visitas:['Visitas y conversión','Métricas de las páginas'],
   conv:['Conversaciones','WhatsApp'],
+  anuncios:['Creador de anuncios','Sube tu video → la IA escribe los copys → eliges los que sirven'],
   bots:['Ventas y control de bots','WhatsApp · Carlos, James y Ramón'],
   historico:['Histórico','Consulta cualquier mes · todo queda guardado'],
   config:['Configuración','Ajustes del panel']};
@@ -1412,4 +1414,44 @@ function calcPrecio(n,v){ window._calcPrecios[n]= (v===''?null:(+v||0));
   var tds=inp.closest('tr').querySelectorAll('td');
   tds[7].textContent=_fclp(gan); tds[7].style.color=gan>=0?'#0f7a52':'#c0392b';
   tds[8].textContent=mg+'%'; tds[8].style.color=mg>=0?'#0f7a52':'#c0392b';
+}
+
+/* ---------- Creador de anuncios IA ---------- */
+let _adFile=null;
+function adFilePick(){ var f=(document.getElementById('adFile').files||[])[0]; _adFile=f||null; document.getElementById('adFileName').textContent=f?('📎 '+f.name):''; }
+function generarCopys(){
+  var prod=document.getElementById('adProd').value;
+  var desc=document.getElementById('adDesc').value.trim();
+  var actual=document.getElementById('adActual').value.trim();
+  var btn=document.getElementById('adGenBtn'), panel=document.getElementById('adResultPanel'), out=document.getElementById('adResult');
+  var old=btn.textContent; btn.disabled=true; btn.textContent='Generando… (~30s)';
+  panel.style.display='block'; out.innerHTML='<div class="vacio">La IA está escribiendo tus copys… ✍️</div>';
+  fetch(URL_GENCOPY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({producto:prod,descripcion:desc,copy_actual:actual,pais:'Chile'})})
+    .then(function(r){return r.json();}).then(function(j){ renderCopys(j); })
+    .catch(function(){ out.innerHTML='<div class="vacio">Hubo un error generando. Intenta de nuevo.</div>'; })
+    .then(function(){ btn.disabled=false; btn.textContent=old; });
+}
+function _grpCopys(titulo,arr,tipo){
+  if(!arr||!arr.length) return '';
+  var h='<div style="font-weight:800;font-size:13px;margin:14px 0 6px;color:var(--ink)">'+titulo+'</div>';
+  arr.forEach(function(x){
+    var safe=String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+    var attr=String(x).replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+    h+='<label style="display:flex;gap:9px;align-items:flex-start;padding:9px 11px;border:1px solid var(--border);border-radius:9px;margin-bottom:7px;cursor:pointer;background:var(--surface-2)">'
+      +'<input type="checkbox" class="adChk" data-txt="'+attr+'" style="margin-top:3px;flex-shrink:0">'
+      +'<span style="font-size:13px;line-height:1.5;color:var(--ink)">'+safe+'</span></label>';
+  });
+  return h;
+}
+function renderCopys(j){
+  var out=document.getElementById('adResult');
+  if(!j || ((!j.textos||!j.textos.length)&&(!j.titulares||!j.titulares.length)&&(!j.descripciones||!j.descripciones.length))){
+    out.innerHTML='<div class="vacio">No se pudo generar. Revisa el producto e intenta otra vez.</div>'; return; }
+  out.innerHTML=_grpCopys('📝 Textos principales',j.textos,'t')+_grpCopys('🏷️ Titulares',j.titulares,'h')+_grpCopys('🔖 Descripciones',j.descripciones,'d');
+}
+function copiarSeleccionados(){
+  var sel=[].slice.call(document.querySelectorAll('.adChk:checked')).map(function(c){return c.dataset.txt;});
+  if(!sel.length){ if(typeof toast==='function')toast('Marca al menos uno'); return; }
+  var txt=sel.join('\n\n');
+  if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(function(){ if(typeof toast==='function')toast('Copiados '+sel.length+' ✓'); }).catch(function(){}); }
 }
