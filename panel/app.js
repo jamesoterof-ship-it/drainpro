@@ -1434,6 +1434,7 @@ var AD_CTAS_ALL=[{v:'WHATSAPP_MESSAGE',t:'Enviar mensaje (WhatsApp)'},{v:'MESSAG
 var AD_PAGEPIC='https://graph.facebook.com/'+AD_PAGE.id+'/picture?type=square&width=96&height=96';
 var _adAds=[]; var _adCopyPool=null;
 function adCtaUpd(){ var s=document.getElementById('adCta'); if(!s) return; var cur=s.value; if(!s.children.length) s.innerHTML=AD_CTAS_ALL.map(function(c){return '<option value="'+c.v+'">'+c.t+'</option>';}).join(''); if(cur){ s.value=cur; } else { s.value=(_adDest==='whatsapp'?'WHATSAPP_MESSAGE':'SHOP_NOW'); } }
+function adCtaLabel(v){ if(!v) return ''; for(var k=0;k<AD_CTAS_ALL.length;k++){ if(AD_CTAS_ALL[k].v===v) return AD_CTAS_ALL[k].t; } return v; }
 function adFill(){
   var pl=document.getElementById('adPaisList'); if(pl&&!pl.children.length) pl.innerHTML=AD_COUNTRIES.map(function(c){return '<option value="'+c+'">';}).join('');
   var prl=document.getElementById('adProdList'); if(prl&&!prl.children.length) prl.innerHTML=AD_PRODUCTS.map(function(c){return '<option value="'+c+'">';}).join('');
@@ -1524,6 +1525,7 @@ function renderGaleria(){
   if(!_adAds.length){ g.innerHTML='<div class="vacio" style="grid-column:1/-1">Sin anuncios. Sube creativos y dale "Generar anuncios".</div>'; return; }
   var destino=_adDest;
   var ctaEl=document.getElementById('adCta'); var ctaTxt=(ctaEl&&ctaEl.selectedIndex>=0)?ctaEl.options[ctaEl.selectedIndex].text:'Más información';
+  if(_adTarget&&_adTarget.cta) ctaTxt=adCtaLabel(_adTarget.cta)||ctaTxt;
   var dom= destino==='whatsapp' ? 'Mensaje de WhatsApp' : ((document.getElementById('adLink').value||'jaye-group.com').replace(/^https?:\/\//,'').split('/')[0]);
   g.innerHTML=_adAds.map(function(ad,i){
     var f=_adFiles[i]; var crea;
@@ -1531,6 +1533,12 @@ function renderGaleria(){
     else if(f && /video/.test(f.type)) crea='<div style="aspect-ratio:1/1;background:#111;display:flex;align-items:center;justify-content:center;color:#fff;font-size:30px">▶</div>';
     else crea='<div style="aspect-ratio:1/1;background:var(--surface-2);display:flex;align-items:center;justify-content:center;color:#8a93a0;font-size:12px">creativo</div>';
     var ctaBtn= destino==='whatsapp' ? (waSvg('#25D366',13)+' '+esc2(ctaTxt)) : esc2(ctaTxt);
+    var variantes='<details style="border-top:1px solid var(--border)"><summary style="padding:6px 10px;font-size:10.5px;color:#8a93a0;cursor:pointer">📋 Ver los 3 textos · 3 títulos · 3 descripciones (Meta los rota)</summary>'
+      +'<div style="padding:2px 10px 10px;font-size:11px;color:var(--ink-2)">'
+      +'<div style="font-weight:700;color:var(--ink);margin:6px 0 2px">Textos</div>'+(ad.textos||[]).map(function(t,k){return '<div style="margin-bottom:4px;white-space:pre-wrap;border-left:2px solid var(--border);padding-left:7px">'+(k+1)+'. '+esc2(t)+'</div>';}).join('')
+      +'<div style="font-weight:700;color:var(--ink);margin:8px 0 2px">Títulos</div>'+(ad.titulares||[]).map(function(t,k){return '<div style="margin-bottom:4px;border-left:2px solid var(--border);padding-left:7px">'+(k+1)+'. '+esc2(t)+'</div>';}).join('')
+      +'<div style="font-weight:700;color:var(--ink);margin:8px 0 2px">Descripciones</div>'+(ad.descripciones||[]).map(function(t,k){return '<div style="margin-bottom:4px;border-left:2px solid var(--border);padding-left:7px">'+(k+1)+'. '+esc2(t)+'</div>';}).join('')
+      +'</div></details>';
     return '<div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--surface)">'
       +'<div style="display:flex;align-items:center;gap:7px;padding:8px 10px">'
         +'<div style="position:relative;width:30px;height:30px;border-radius:50%;background:#16232e;color:#6cc24a;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;overflow:hidden;flex-shrink:0">JG<img src="'+AD_PAGEPIC+'" onerror="this.remove()" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover"></div>'
@@ -1539,14 +1547,14 @@ function renderGaleria(){
           +'<button type="button" onclick="adAdRegen('+i+')" title="Generar copy nuevo" style="border:1px solid var(--border);background:var(--surface-2);border-radius:7px;width:27px;height:27px;cursor:pointer;font-size:12px">🔄</button>'
           +'<button type="button" onclick="adAdDel('+i+')" title="Quitar anuncio" style="border:1px solid var(--border);background:var(--surface-2);border-radius:7px;width:27px;height:27px;cursor:pointer;font-size:15px;line-height:1;color:#c0392b">×</button>'
         +'</div></div>'
-      +'<div style="padding:0 10px 8px;font-size:12px;line-height:1.4;color:var(--ink);white-space:pre-wrap;max-height:90px;overflow:hidden">'+esc2((ad.textos&&ad.textos[0])||'')+'</div>'
+      +'<div style="padding:0 10px 8px;font-size:12px;line-height:1.45;color:var(--ink);white-space:pre-wrap">'+esc2((ad.textos&&ad.textos[0])||'')+'</div>'
       +crea
       +'<div style="display:flex;align-items:center;gap:8px;padding:9px 10px;background:var(--surface-2)">'
         +'<div style="min-width:0;flex:1"><div style="font-size:9.5px;color:#8a93a0;text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc2(dom)+'</div>'
-        +'<div style="font-weight:700;font-size:12px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc2((ad.titulares&&ad.titulares[0])||'')+'</div>'
-        +'<div style="font-size:10.5px;color:#8a93a0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc2((ad.descripciones&&ad.descripciones[0])||'')+'</div></div>'
+        +'<div style="font-weight:700;font-size:12px;color:var(--ink);line-height:1.3">'+esc2((ad.titulares&&ad.titulares[0])||'')+'</div>'
+        +'<div style="font-size:10.5px;color:#8a93a0;line-height:1.3">'+esc2((ad.descripciones&&ad.descripciones[0])||'')+'</div></div>'
         +'<button type="button" style="display:inline-flex;align-items:center;gap:4px;background:#e7f0ff;color:#1b74e4;border:0;border-radius:7px;padding:7px 10px;font-weight:700;font-size:11.5px;white-space:nowrap;cursor:default">'+ctaBtn+'</button>'
-      +'</div>'+'<div style="padding:5px 10px;font-size:10px;color:#8a93a0;border-top:1px solid var(--border)">📋 3 textos · 3 títulos · 3 descripciones (Meta los prueba)</div></div>';
+      +'</div>'+variantes+'</div>';
   }).join('');
 }
 function adAdDel(i){ _adAds.splice(i,1); _adFiles.splice(i,1); adFileRender(); renderGaleria(); }
@@ -1623,7 +1631,9 @@ function adToggleDetalle(i){
   var c=_adCamps[i];
   fetch(URL_DETALLE+'?id='+encodeURIComponent(c.id)).then(function(r){return r.json();}).then(function(d){
     if(!d||d.error||!d.anuncios){ det.innerHTML='<div style="color:#8a93a0;font-size:12px">No se pudo cargar el detalle (enciende "Detalle Campaña" en n8n).</div>'; return; }
-    var head='<div style="font-size:12px;color:var(--ink-2);margin-bottom:8px">Objetivo: '+esc2(d.objetivo||'')+' · Presupuesto: '+(d.presupuesto?(Number(d.presupuesto).toLocaleString('es-CO')+' COP/día'):'(en el conjunto)')+' · '+(d.num_ads||0)+' anuncios ('+(d.num_activos||0)+' activos)</div>';
+    c._det=d;
+    var dInfo=(d.destino?(' · Dirigido a: <b>'+esc2(d.destino)+'</b>'):'')+(d.cta?(' · Botón: <b>'+esc2(adCtaLabel(d.cta))+'</b>'):'');
+    var head='<div style="font-size:12px;color:var(--ink-2);margin-bottom:8px">Objetivo: '+esc2(d.objetivo||'')+' · Presupuesto: '+(d.presupuesto?(Number(d.presupuesto).toLocaleString('es-CO')+' COP/día'):'(en el conjunto)')+' · '+(d.num_ads||0)+' anuncios ('+(d.num_activos||0)+' activos)'+dInfo+'</div>';
     var acciones='<div style="display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 10px">'
       +'<button type="button" onclick="adRefrescar('+i+')" style="font-size:12px;padding:8px 13px;border:0;border-radius:8px;background:var(--brand,#3056c9);color:#fff;cursor:pointer;font-weight:700">♻️ Refrescar / Agregar anuncios</button>'
       +'<button type="button" onclick="adPausar('+i+')" style="font-size:12px;padding:8px 13px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--ink-2);cursor:pointer;font-weight:700">⏸️ Pausar</button></div>';
@@ -1653,8 +1663,9 @@ function adProdKeyword(nombre){ var n=(nombre||'').toLowerCase();
   return w[0]||(n.split(' ')[0])||'';
 }
 function adRefrescar(i){
-  var c=_adCamps[i];
-  _adTarget={id:c.id,nombre:c.nombre,copy:c.copy||'',objetivo:c.objetivo||'',gasto:c.gasto||0,resultados:c.resultados||0,pais:adGuessPais(c.nombre)};
+  var c=_adCamps[i]; var det=c._det||{};
+  _adTarget={id:c.id,nombre:c.nombre,copy:c.copy||'',objetivo:c.objetivo||'',gasto:c.gasto||0,resultados:c.resultados||0,pais:adGuessPais(c.nombre),destino:(det.destino||''),cta:(det.cta||'')};
+  _adDest=(det.destino==='Página/Link')?'link':'whatsapp';
   _adFiles=[]; _adAds=[]; _adCopyPool=null;
   document.querySelectorAll('#adModo .minitab').forEach(function(x){x.classList.remove('act');});
   var nb=document.querySelector('#adModo .minitab[data-m="nueva"]'); if(nb) nb.classList.add('act');
@@ -1672,6 +1683,7 @@ function adRefreshMode(on){
     if(head){ head.style.display='block'; head.innerHTML='<div style="background:#e7f0ff;border:1px solid var(--border);border-radius:9px;padding:11px 13px">'
       +'<div style="font-weight:800;color:#1b74e4;font-size:13px">♻️ Refrescando: '+esc2(_adTarget.nombre)+'</div>'
       +'<div style="font-size:12px;color:var(--ink-2);margin-top:3px">Objetivo: '+esc2(_adTarget.objetivo)+' · gasto 14d: '+Number(_adTarget.gasto).toLocaleString('es-CO')+' COP · '+_adTarget.resultados+' resultados · país: '+esc2(_adTarget.pais)+'</div>'
+      +'<div style="font-size:12px;color:var(--ink-2);margin-top:3px">Dirigido a: <b>'+esc2(_adTarget.destino||'(según la campaña)')+'</b> · Botón de acción: <b>'+esc2(adCtaLabel(_adTarget.cta)||'(según la campaña)')+'</b></div>'
       +'<div style="font-size:12px;color:var(--ink-2);margin-top:4px">Esta campaña ya tiene su destino, presupuesto y público. Tú solo sube los <b>creativos nuevos</b> → la IA genera los copys (3 de cada) → vista previa → y se agregan a ESTA campaña (pausados).</div>'
       +'<button type="button" onclick="adVolverExistente()" style="margin-top:8px;border:0;background:none;color:#1b74e4;cursor:pointer;font-weight:700;text-decoration:underline;font-size:12.5px">← Volver a campañas</button></div>'; }
   } else {
