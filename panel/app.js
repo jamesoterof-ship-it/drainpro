@@ -1423,11 +1423,12 @@ var AD_PAISES={
   Paraguay:{num:'+595 975 357165',numId:'1114986368370031',pixel:'JAYE PARAGUAY',pixelId:'2162367424167882'}
 };
 var AD_PAGE={nombre:'Jaye Group',id:'1021271641058424'};
-var _adFiles=[];
+var _adFiles=[]; var _adDest='whatsapp';
+function waSvg(color,size){ size=size||15; return '<svg viewBox="0 0 24 24" width="'+size+'" height="'+size+'" fill="'+(color||'currentColor')+'" style="flex-shrink:0;vertical-align:-2px" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>'; }
 function adChip(t){ return '<span style="background:var(--surface-2);border:1px solid var(--border);border-radius:999px;padding:4px 11px;color:var(--ink-2)">'+t+'</span>'; }
 function adPaisUpd(){
   var p=AD_PAISES[(document.getElementById('adPais')||{}).value]||AD_PAISES.Chile;
-  var a=document.getElementById('adAuto'); if(a) a.innerHTML=adChip('📱 '+p.num)+adChip('🎯 Pixel: '+p.pixel)+adChip('📄 Página: '+AD_PAGE.nombre);
+  var a=document.getElementById('adAuto'); if(a) a.innerHTML=adChip(waSvg('#25D366')+' '+p.num)+adChip('🎯 Pixel: '+p.pixel)+adChip('📄 Página: '+AD_PAGE.nombre);
   adNombreSug();
 }
 function adNombreSug(){
@@ -1437,7 +1438,7 @@ function adNombreSug(){
   var d=new Date(); var f=(''+d.getDate()).padStart(2,'0')+'-'+(''+(d.getMonth()+1)).padStart(2,'0');
   nom.value=pais+' · '+prod+' · '+f;
 }
-function adDestUpd(){ var w=document.getElementById('adLinkWrap'); if(w) w.style.display=((document.getElementById('adDestino')||{}).value==='link')?'':'none'; }
+function adDestUpd(){ var w=document.getElementById('adLinkWrap'); if(w) w.style.display=(_adDest==='link')?'':'none'; }
 function adSugPresup(){ document.getElementById('adPresup').value=50000; if(typeof toast==='function')toast('Sugerido: 50.000 COP/día para empezar y que Meta aprenda'); }
 function adFilePick(){
   _adFiles=[].slice.call((document.getElementById('adFile')||{}).files||[]);
@@ -1481,8 +1482,8 @@ function verPreview(){
   var t=document.querySelector('.adsel_t:checked'), h=document.querySelector('.adsel_h:checked');
   if(!t){ if(typeof toast==='function')toast('Marca un texto'); return; }
   var texto=t.dataset.txt, titular=h?h.dataset.txt:'';
-  var destino=document.getElementById('adDestino').value;
-  var cta= destino==='whatsapp' ? 'Enviar mensaje' : 'Comprar';
+  var destino=_adDest;
+  var cta= destino==='whatsapp' ? (waSvg('#25D366',14)+' Enviar mensaje') : 'Comprar';
   var dom= destino==='whatsapp' ? 'WhatsApp · Jaye Group' : ((document.getElementById('adLink').value||'jaye-group.com').replace(/^https?:\/\//,'').split('/')[0]);
   var img=_adFiles.filter(function(f){return /image/.test(f.type);})[0], vid=_adFiles.filter(function(f){return /video/.test(f.type);})[0], crea;
   if(img) crea='<img src="'+URL.createObjectURL(img)+'" style="width:100%;display:block">';
@@ -1497,7 +1498,7 @@ function verPreview(){
     +crea
     +'<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;background:var(--surface-2)">'
       +'<div style="min-width:0"><div style="font-size:11px;color:#8a93a0;text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(dom)+'</div><div style="font-weight:700;font-size:13px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(titular)+'</div></div>'
-      +'<button type="button" style="background:#e7f0ff;color:#1b74e4;border:0;border-radius:7px;padding:8px 12px;font-weight:700;font-size:12px;white-space:nowrap;cursor:default">'+cta+'</button></div>'
+      +'<button type="button" style="display:inline-flex;align-items:center;gap:5px;background:#e7f0ff;color:#1b74e4;border:0;border-radius:7px;padding:8px 12px;font-weight:700;font-size:12px;white-space:nowrap;cursor:default">'+cta+'</button></div>'
     +'</div>';
   document.getElementById('adPreview').innerHTML=card;
   var mm=document.getElementById('adMontaMsg'); if(mm) mm.innerHTML='';
@@ -1507,7 +1508,7 @@ function verPreview(){
 function aprobarMontar(){
   var pais=document.getElementById('adPais').value, p=AD_PAISES[pais];
   var t=document.querySelector('.adsel_t:checked'), h=document.querySelector('.adsel_h:checked');
-  var destino=document.getElementById('adDestino').value;
+  var destino=_adDest;
   if(destino==='link' && !document.getElementById('adLink').value.trim()){ if(typeof toast==='function')toast('Falta la URL de la página'); return; }
   if(!_adFiles.length){ if(typeof toast==='function')toast('Sube al menos un video o imagen'); return; }
   var camp={ pais:pais, producto:document.getElementById('adProd').value, nombre:document.getElementById('adNombre').value,
@@ -1537,5 +1538,11 @@ document.querySelectorAll('#adModo .minitab').forEach(function(b){ b.addEventLis
   document.querySelectorAll('#adModo .minitab').forEach(function(x){x.classList.remove('act');}); b.classList.add('act');
   document.getElementById('adNueva').style.display=(b.dataset.m==='nueva')?'':'none';
   document.getElementById('adExistente').style.display=(b.dataset.m==='existente')?'':'none';
+}); });
+document.querySelectorAll('#adDestSeg .adDestBtn').forEach(function(b){ b.addEventListener('click',function(){
+  _adDest=b.dataset.d;
+  document.querySelectorAll('#adDestSeg .adDestBtn').forEach(function(x){ x.style.background='var(--surface-2)'; x.style.color='var(--ink)'; x.style.borderColor='var(--border)'; });
+  b.style.background='var(--brand,#3056c9)'; b.style.color='#fff'; b.style.borderColor='var(--brand,#3056c9)';
+  adDestUpd();
 }); });
 (function(){ var n=document.getElementById('adNombre'); if(n) n.addEventListener('input',function(){n.dataset.edit='1';}); if(document.getElementById('adPais')) adPaisUpd(); if(document.getElementById('adFile')) adFilePick(); })();
