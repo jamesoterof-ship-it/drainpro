@@ -1638,6 +1638,20 @@ function adToggleDetalle(i){
   }).catch(function(){ det.innerHTML='<div style="color:#8a93a0;font-size:12px">No se pudo cargar (enciende "Detalle Campaña" en n8n).</div>'; });
 }
 function adGuessPais(nombre){ var P=['Colombia','Paraguay','Ecuador','Argentina','Guatemala','España','México','Mexico','Perú','Peru','Chile']; var n=(nombre||'').toLowerCase(); for(var k=0;k<P.length;k++){ if(n.indexOf(P[k].toLowerCase())>=0){ var v=P[k]; if(v==='Mexico')v='México'; if(v==='Peru')v='Perú'; return v; } } return 'Chile'; }
+function adProdKeyword(nombre){ var n=(nombre||'').toLowerCase();
+  if(n.indexOf('nad')>=0) return 'nad';
+  if(n.indexOf('shilajit')>=0) return 'shilajit';
+  if(n.indexOf('drain')>=0||n.indexOf('limpiador')>=0||n.indexOf('tornado')>=0||n.indexOf('polvo')>=0) return 'limpiador';
+  if(n.indexOf('magnesio')>=0) return 'magnesio';
+  if(n.indexOf('colag')>=0||n.indexOf('colág')>=0) return 'colag';
+  if(n.indexOf('creatina')>=0) return 'creatina';
+  if(n.indexOf('lampara')>=0||n.indexOf('lámpara')>=0||n.indexOf('solar')>=0) return 'lampara';
+  if(n.indexOf('sellador')>=0) return 'sellador';
+  if(n.indexOf('probiot')>=0) return 'probiot';
+  if(n.indexOf('crema')>=0) return 'crema';
+  var w=n.replace(/[^a-zñ ]/g,' ').split(/\s+/).filter(function(x){ return x.length>3 && ['campaña','campana','whatssap','whatsapp','chile','nueva','prueba','junio','mayo','abril','marzo','video','imagen','imágenes','imagenes','nuevo','nuevos','creativos','original','ventas','sitio'].indexOf(x)<0; });
+  return w[0]||(n.split(' ')[0])||'';
+}
 function adRefrescar(i){
   var c=_adCamps[i];
   _adTarget={id:c.id,nombre:c.nombre,copy:c.copy||'',objetivo:c.objetivo||'',gasto:c.gasto||0,resultados:c.resultados||0,pais:adGuessPais(c.nombre)};
@@ -1676,8 +1690,8 @@ document.querySelectorAll('#adCampFiltro .minitab').forEach(function(b){ b.addEv
 function adAsesor(i){
   var c=_adCamps[i]; if(!c) return;
   var box=document.getElementById('adRec'+i); if(box){ box.style.display='block'; box.innerHTML='<div style="color:#8a93a0;font-size:12px;margin-top:6px">Analizando con IA… 🤔</div>'; }
-  var pais=(document.getElementById('adPais')||{}).value||'Chile';
-  fetch(URL_ASESORCAMP,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({campana:c,pais:pais})})
+  var pais=adGuessPais(c.nombre); var producto=adProdKeyword(c.nombre);
+  fetch(URL_ASESORCAMP,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({campana:c,pais:pais,producto:producto})})
     .then(function(r){return r.json();}).then(function(j){
       if(box) box.innerHTML='<div style="background:var(--surface-2);border:1px solid var(--border);border-radius:9px;padding:9px 11px;margin-top:7px"><div style="font-weight:800;color:var(--ink);font-size:12.5px">💡 '+esc2(j.titulo||'Recomendación')+'</div><div style="font-size:12px;color:var(--ink);margin-top:3px">'+esc2(j.recomendacion||'')+'</div>'+(j.porque?('<div style="font-size:11px;color:#8a93a0;margin-top:3px">'+esc2(j.porque)+'</div>'):'')+'</div>';
     }).catch(function(){ if(box) box.innerHTML='<div style="color:#8a93a0;font-size:12px;margin-top:6px">No se pudo analizar (enciende "Asesor Campaña" en n8n).</div>'; });
