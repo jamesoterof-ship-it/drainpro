@@ -684,33 +684,78 @@ tbody tr:hover .chev{color:var(--brand)}
 
     <!-- ====== CREADOR DE ANUNCIOS ====== -->
     <div class="content view" id="view-anuncios">
-      <div class="panel" style="margin-bottom:16px">
-        <div class="tbl-head"><h2>Creador de anuncios IA</h2><span style="font-size:12px;color:#8a93a0">Sube tu video/imagen → Claude escribe varios copys con emojis → eliges los que sirven. Montar y activar campañas se habilita al pagar el saldo de Meta.</span></div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;padding:12px 4px">
-          <label class="calcF">Producto
-            <select id="adProd">
-              <option value="Polvo Limpiador DRAINPRO — destapa cañerías y desagües tapados (grasa, pelos, sarro)">DRAINPRO</option>
-              <option value="Flynew Shilajit Ultra — energía, vitalidad y minerales (60 cápsulas)">Shilajit Ultra</option>
-              <option value="NAD+ Men's Complex — energía, foco y bienestar después de los 40">NAD+ Men's Complex</option>
-            </select></label>
-          <label class="calcF">¿Qué muestra tu video/imagen? (opcional)
-            <input id="adDesc" type="text" placeholder="Ej: el polvo disolviendo grasa, antes/después del desagüe"></label>
-          <label class="calcF">Copy actual (opcional · para que genere distintos)
-            <input id="adActual" type="text" placeholder="Pega aquí tu copy actual"></label>
+      <div class="minitabs" id="adModo" style="margin:2px 0 14px">
+        <button class="minitab act" data-m="nueva">🆕 Campaña nueva</button>
+        <button class="minitab" data-m="existente">🔄 Campaña existente</button>
+      </div>
+
+      <!-- MODO NUEVA -->
+      <div id="adNueva">
+        <div class="panel" style="margin-bottom:16px">
+          <div class="tbl-head"><h2>Nueva campaña</h2><span style="font-size:12px;color:#8a93a0">Defines los datos → la IA escribe los copys → ves la vista previa → apruebas y se monta (pausada).</span></div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;padding:12px 4px">
+            <label class="calcF">País
+              <select id="adPais" onchange="adPaisUpd()">
+                <option value="Chile">🇨🇱 Chile</option>
+                <option value="Colombia">🇨🇴 Colombia</option>
+                <option value="Paraguay">🇵🇾 Paraguay</option>
+              </select></label>
+            <label class="calcF">Producto
+              <select id="adProd" onchange="adNombreSug()">
+                <option value="Polvo Limpiador DRAINPRO — destapa cañerías y desagües tapados (grasa, pelos, sarro)">DRAINPRO</option>
+                <option value="Flynew Shilajit Ultra — energía, vitalidad y minerales (60 cápsulas)">Shilajit Ultra</option>
+                <option value="NAD+ Men's Complex — energía, foco y bienestar después de los 40">NAD+ Men's Complex</option>
+              </select></label>
+            <label class="calcF">Nombre de la campaña
+              <input id="adNombre" type="text" placeholder="se genera solo, puedes editarlo"></label>
+            <label class="calcF">Destino del anuncio
+              <select id="adDestino" onchange="adDestUpd()">
+                <option value="whatsapp">💬 WhatsApp</option>
+                <option value="link">🌐 Página / Link</option>
+              </select></label>
+            <label class="calcF" id="adLinkWrap" style="display:none">URL de la página
+              <input id="adLink" type="text" placeholder="https://jaye-group.com/..."></label>
+            <label class="calcF">Presupuesto diario (COP)
+              <span style="display:flex;gap:6px;align-items:center"><input id="adPresup" type="number" inputmode="numeric" placeholder="50000" style="flex:1"><button type="button" onclick="adSugPresup()" title="Consejo de la IA" style="font-size:11px;padding:7px 9px;border:1px solid var(--border);border-radius:7px;background:var(--surface-2);color:var(--ink-2);cursor:pointer;font-weight:700;white-space:nowrap">💡 Sugerir</button></span></label>
+            <label class="calcF">Ubicaciones
+              <input id="adUbic" type="text" value="Todo el país" placeholder="Todo el país, o regiones/comunas"></label>
+            <label class="calcF">¿Qué muestra tu creativo? (opcional)
+              <input id="adDesc" type="text" placeholder="Ej: el polvo disolviendo grasa, antes/después"></label>
+          </div>
+          <div id="adAuto" style="display:flex;gap:8px;flex-wrap:wrap;padding:2px 4px 10px;font-size:12px"></div>
+          <div style="padding:2px 4px 6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <input type="file" id="adFile" accept="video/*,image/*" multiple style="display:none" onchange="adFilePick()">
+            <button type="button" onclick="document.getElementById('adFile').click()" style="font-size:12.5px;padding:8px 14px;border:1px solid var(--border);border-radius:9px;background:var(--surface-2);color:var(--ink-2);cursor:pointer;font-weight:700">📎 Subir videos / imágenes</button>
+            <span id="adFileName" style="font-size:12px;color:#8a93a0"></span>
+            <span id="adCreaTip" style="font-size:12px;color:#8a93a0"></span>
+            <button type="button" id="adGenBtn" onclick="generarCopys()" style="background:var(--brand,#3056c9);color:#fff;border:0;border-radius:9px;padding:9px 20px;font-weight:800;font-size:13.5px;cursor:pointer;margin-left:auto">✨ Generar copys</button>
+          </div>
         </div>
-        <div style="padding:4px 4px 6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          <input type="file" id="adFile" accept="video/*,image/*" style="display:none" onchange="adFilePick()">
-          <button type="button" onclick="document.getElementById('adFile').click()" style="font-size:12.5px;padding:8px 14px;border:1px solid var(--border);border-radius:9px;background:var(--surface-2);color:var(--ink-2);cursor:pointer;font-weight:700">📎 Subir video / imagen</button>
-          <span id="adFileName" style="font-size:12px;color:#8a93a0"></span>
-          <button type="button" id="adGenBtn" onclick="generarCopys()" style="background:var(--brand,#3056c9);color:#fff;border:0;border-radius:9px;padding:9px 20px;font-weight:800;font-size:13.5px;cursor:pointer;margin-left:auto">✨ Generar copys</button>
+
+        <div class="panel" id="adResultPanel" style="display:none;margin-bottom:16px">
+          <div class="tbl-head"><h2>Elige el copy</h2><span style="font-size:12px;color:#8a93a0">Marca 1 texto y 1 titular para la vista previa</span></div>
+          <div id="adResult" style="padding:8px 4px"></div>
+          <div style="padding:6px 4px 10px">
+            <button type="button" onclick="verPreview()" style="background:var(--brand,#3056c9);color:#fff;border:0;border-radius:9px;padding:9px 18px;font-weight:800;font-size:13px;cursor:pointer">👁 Ver vista previa</button>
+            <button type="button" onclick="generarCopys()" style="font-size:13px;padding:9px 16px;border:1px solid var(--border);border-radius:9px;background:var(--surface-2);color:var(--ink-2);cursor:pointer;font-weight:700;margin-left:6px">🔄 Generar más</button>
+          </div>
+        </div>
+
+        <div class="panel" id="adPreviewPanel" style="display:none;margin-bottom:16px">
+          <div class="tbl-head"><h2>Vista previa del anuncio</h2><span style="font-size:12px;color:#8a93a0">Así se verá en Facebook/Instagram. Si te gusta, apruébalo.</span></div>
+          <div id="adPreview" style="padding:14px 4px;display:flex;justify-content:center"></div>
+          <div id="adMontaMsg" style="padding:0 4px 6px;text-align:center;font-size:12px;color:#8a93a0"></div>
+          <div style="padding:4px 4px 12px;text-align:center">
+            <button type="button" onclick="aprobarMontar()" style="background:#1f9d55;color:#fff;border:0;border-radius:9px;padding:11px 26px;font-weight:800;font-size:14px;cursor:pointer">✅ Aprobar y montar</button>
+          </div>
         </div>
       </div>
-      <div class="panel" id="adResultPanel" style="display:none;margin-bottom:16px">
-        <div class="tbl-head"><h2>Opciones de copy</h2><span style="font-size:12px;color:#8a93a0">Marca los que quieras usar y cópialos</span></div>
-        <div id="adResult" style="padding:8px 4px"></div>
-        <div style="padding:6px 4px 10px">
-          <button type="button" onclick="copiarSeleccionados()" style="font-size:13px;padding:9px 16px;border:1px solid var(--border);border-radius:9px;background:var(--surface-2);color:var(--ink);cursor:pointer;font-weight:700">📋 Copiar seleccionados</button>
-          <button type="button" onclick="generarCopys()" style="font-size:13px;padding:9px 16px;border:1px solid var(--border);border-radius:9px;background:var(--surface-2);color:var(--ink-2);cursor:pointer;font-weight:700;margin-left:6px">🔄 Generar más</button>
+
+      <!-- MODO EXISTENTE -->
+      <div id="adExistente" style="display:none">
+        <div class="panel">
+          <div class="tbl-head"><h2>Tus campañas activas</h2><button type="button" onclick="cargarCampanas()" style="font-size:12.5px;padding:8px 14px;border:1px solid var(--border);border-radius:9px;background:var(--surface-2);color:var(--ink-2);cursor:pointer;font-weight:700">🔄 Cargar campañas</button></div>
+          <div id="adCampList" style="padding:10px 4px"><div class="vacio">Dale "Cargar campañas" para traerlas de Meta y que la IA te aconseje qué hacer con cada una.</div></div>
         </div>
       </div>
     </div>
@@ -1027,6 +1072,6 @@ tbody tr:hover .chev{color:var(--brand)}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
-<script src="app.js?v=25"></script>
+<script src="app.js?v=26"></script>
 </body>
 </html>

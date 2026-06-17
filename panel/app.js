@@ -1416,30 +1416,58 @@ function calcPrecio(n,v){ window._calcPrecios[n]= (v===''?null:(+v||0));
   tds[8].textContent=mg+'%'; tds[8].style.color=mg>=0?'#0f7a52':'#c0392b';
 }
 
-/* ---------- Creador de anuncios IA ---------- */
-let _adFile=null;
-function adFilePick(){ var f=(document.getElementById('adFile').files||[])[0]; _adFile=f||null; document.getElementById('adFileName').textContent=f?('📎 '+f.name):''; }
+/* ---------- Creador de anuncios IA (profesional) ---------- */
+var AD_PAISES={
+  Chile:{num:'+56 9 2000 7288',numId:'966653193207908',pixel:'Jaye Hogar',pixelId:'1249894010361489'},
+  Colombia:{num:'+57 314 5021958',numId:'1134195636445391',pixel:'Colombia',pixelId:'963855752775059'},
+  Paraguay:{num:'+595 975 357165',numId:'1114986368370031',pixel:'JAYE PARAGUAY',pixelId:'2162367424167882'}
+};
+var AD_PAGE={nombre:'Jaye Group',id:'1021271641058424'};
+var _adFiles=[];
+function adChip(t){ return '<span style="background:var(--surface-2);border:1px solid var(--border);border-radius:999px;padding:4px 11px;color:var(--ink-2)">'+t+'</span>'; }
+function adPaisUpd(){
+  var p=AD_PAISES[(document.getElementById('adPais')||{}).value]||AD_PAISES.Chile;
+  var a=document.getElementById('adAuto'); if(a) a.innerHTML=adChip('📱 '+p.num)+adChip('🎯 Pixel: '+p.pixel)+adChip('📄 Página: '+AD_PAGE.nombre);
+  adNombreSug();
+}
+function adNombreSug(){
+  var nom=document.getElementById('adNombre'); if(!nom||nom.dataset.edit) return;
+  var pais=(document.getElementById('adPais')||{}).value||'Chile';
+  var ps=document.getElementById('adProd'); var prod=ps?ps.options[ps.selectedIndex].text:'';
+  var d=new Date(); var f=(''+d.getDate()).padStart(2,'0')+'-'+(''+(d.getMonth()+1)).padStart(2,'0');
+  nom.value=pais+' · '+prod+' · '+f;
+}
+function adDestUpd(){ var w=document.getElementById('adLinkWrap'); if(w) w.style.display=((document.getElementById('adDestino')||{}).value==='link')?'':'none'; }
+function adSugPresup(){ document.getElementById('adPresup').value=50000; if(typeof toast==='function')toast('Sugerido: 50.000 COP/día para empezar y que Meta aprenda'); }
+function adFilePick(){
+  _adFiles=[].slice.call((document.getElementById('adFile')||{}).files||[]);
+  var fn=document.getElementById('adFileName'); if(fn) fn.textContent=_adFiles.length?('📎 '+_adFiles.length+' archivo(s)'):'';
+  var nImg=_adFiles.filter(function(f){return /image/.test(f.type);}).length, nVid=_adFiles.filter(function(f){return /video/.test(f.type);}).length;
+  var tip=document.getElementById('adCreaTip'); if(tip) tip.textContent=_adFiles.length?('('+nVid+' video, '+nImg+' imagen) · la IA recomienda 4-6 creativos diversos'):'La IA recomienda 4-6 creativos (videos + imágenes)';
+}
 function generarCopys(){
-  var prod=document.getElementById('adProd').value;
-  var desc=document.getElementById('adDesc').value.trim();
-  var actual=document.getElementById('adActual').value.trim();
+  var prod=document.getElementById('adProd').value, desc=document.getElementById('adDesc').value.trim(), pais=document.getElementById('adPais').value;
   var btn=document.getElementById('adGenBtn'), panel=document.getElementById('adResultPanel'), out=document.getElementById('adResult');
   var old=btn.textContent; btn.disabled=true; btn.textContent='Generando… (~30s)';
   panel.style.display='block'; out.innerHTML='<div class="vacio">La IA está escribiendo tus copys… ✍️</div>';
-  fetch(URL_GENCOPY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({producto:prod,descripcion:desc,copy_actual:actual,pais:'Chile'})})
+  var pv=document.getElementById('adPreviewPanel'); if(pv) pv.style.display='none';
+  fetch(URL_GENCOPY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({producto:prod,descripcion:desc,copy_actual:'',pais:pais})})
     .then(function(r){return r.json();}).then(function(j){ renderCopys(j); })
     .catch(function(){ out.innerHTML='<div class="vacio">Hubo un error generando. Intenta de nuevo.</div>'; })
     .then(function(){ btn.disabled=false; btn.textContent=old; });
 }
 function _grpCopys(titulo,arr,tipo){
   if(!arr||!arr.length) return '';
-  var h='<div style="font-weight:800;font-size:13px;margin:14px 0 6px;color:var(--ink)">'+titulo+'</div>';
-  arr.forEach(function(x){
+  var single=(tipo==='t'||tipo==='h');
+  var h='<div style="font-weight:800;font-size:13px;margin:14px 0 6px;color:var(--ink)">'+titulo+(single?' <span style="font-weight:400;color:#8a93a0">(elige 1)</span>':'')+'</div>';
+  arr.forEach(function(x,i){
     var safe=String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;');
     var attr=String(x).replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+    var inp= single
+      ? '<input type="radio" name="adsel_'+tipo+'" class="adsel_'+tipo+'" data-txt="'+attr+'"'+(i===0?' checked':'')+' style="margin-top:3px;flex-shrink:0">'
+      : '<input type="checkbox" class="adsel_'+tipo+'" data-txt="'+attr+'" style="margin-top:3px;flex-shrink:0">';
     h+='<label style="display:flex;gap:9px;align-items:flex-start;padding:9px 11px;border:1px solid var(--border);border-radius:9px;margin-bottom:7px;cursor:pointer;background:var(--surface-2)">'
-      +'<input type="checkbox" class="adChk" data-txt="'+attr+'" style="margin-top:3px;flex-shrink:0">'
-      +'<span style="font-size:13px;line-height:1.5;color:var(--ink)">'+safe+'</span></label>';
+      +inp+'<span style="font-size:13px;line-height:1.5;color:var(--ink)">'+safe+'</span></label>';
   });
   return h;
 }
@@ -1449,9 +1477,65 @@ function renderCopys(j){
     out.innerHTML='<div class="vacio">No se pudo generar. Revisa el producto e intenta otra vez.</div>'; return; }
   out.innerHTML=_grpCopys('📝 Textos principales',j.textos,'t')+_grpCopys('🏷️ Titulares',j.titulares,'h')+_grpCopys('🔖 Descripciones',j.descripciones,'d');
 }
-function copiarSeleccionados(){
-  var sel=[].slice.call(document.querySelectorAll('.adChk:checked')).map(function(c){return c.dataset.txt;});
-  if(!sel.length){ if(typeof toast==='function')toast('Marca al menos uno'); return; }
-  var txt=sel.join('\n\n');
-  if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(function(){ if(typeof toast==='function')toast('Copiados '+sel.length+' ✓'); }).catch(function(){}); }
+function verPreview(){
+  var t=document.querySelector('.adsel_t:checked'), h=document.querySelector('.adsel_h:checked');
+  if(!t){ if(typeof toast==='function')toast('Marca un texto'); return; }
+  var texto=t.dataset.txt, titular=h?h.dataset.txt:'';
+  var destino=document.getElementById('adDestino').value;
+  var cta= destino==='whatsapp' ? 'Enviar mensaje' : 'Comprar';
+  var dom= destino==='whatsapp' ? 'WhatsApp · Jaye Group' : ((document.getElementById('adLink').value||'jaye-group.com').replace(/^https?:\/\//,'').split('/')[0]);
+  var img=_adFiles.filter(function(f){return /image/.test(f.type);})[0], vid=_adFiles.filter(function(f){return /video/.test(f.type);})[0], crea;
+  if(img) crea='<img src="'+URL.createObjectURL(img)+'" style="width:100%;display:block">';
+  else if(vid) crea='<div style="aspect-ratio:1/1;background:#111;display:flex;align-items:center;justify-content:center;color:#fff;font-size:36px">▶</div>';
+  else crea='<div style="aspect-ratio:1/1;background:var(--surface-2);display:flex;align-items:center;justify-content:center;color:#8a93a0;font-size:13px">Tu video / imagen aquí</div>';
+  var esc=function(s){return String(s).replace(/</g,'&lt;');};
+  var card='<div style="width:344px;max-width:100%;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--surface)">'
+    +'<div style="display:flex;align-items:center;gap:8px;padding:10px 12px">'
+      +'<div style="width:38px;height:38px;border-radius:50%;background:#16232e;color:#6cc24a;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px">JG</div>'
+      +'<div><div style="font-weight:700;font-size:13px;color:var(--ink)">Jaye Group</div><div style="font-size:11px;color:#8a93a0">Patrocinado · 🌐</div></div></div>'
+    +'<div style="padding:0 12px 10px;font-size:13px;line-height:1.5;color:var(--ink);white-space:pre-wrap">'+esc(texto)+'</div>'
+    +crea
+    +'<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;background:var(--surface-2)">'
+      +'<div style="min-width:0"><div style="font-size:11px;color:#8a93a0;text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(dom)+'</div><div style="font-weight:700;font-size:13px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(titular)+'</div></div>'
+      +'<button type="button" style="background:#e7f0ff;color:#1b74e4;border:0;border-radius:7px;padding:8px 12px;font-weight:700;font-size:12px;white-space:nowrap;cursor:default">'+cta+'</button></div>'
+    +'</div>';
+  document.getElementById('adPreview').innerHTML=card;
+  var mm=document.getElementById('adMontaMsg'); if(mm) mm.innerHTML='';
+  document.getElementById('adPreviewPanel').style.display='block';
+  document.getElementById('adPreviewPanel').scrollIntoView({behavior:'smooth',block:'center'});
 }
+function aprobarMontar(){
+  var pais=document.getElementById('adPais').value, p=AD_PAISES[pais];
+  var t=document.querySelector('.adsel_t:checked'), h=document.querySelector('.adsel_h:checked');
+  var destino=document.getElementById('adDestino').value;
+  if(destino==='link' && !document.getElementById('adLink').value.trim()){ if(typeof toast==='function')toast('Falta la URL de la página'); return; }
+  if(!_adFiles.length){ if(typeof toast==='function')toast('Sube al menos un video o imagen'); return; }
+  var camp={ pais:pais, producto:document.getElementById('adProd').value, nombre:document.getElementById('adNombre').value,
+    destino:destino, link:document.getElementById('adLink').value, numero:p.num, numeroId:p.numId, pixel:p.pixel, pixelId:p.pixelId,
+    pageId:AD_PAGE.id, presupuesto:(document.getElementById('adPresup').value||50000), ubicaciones:document.getElementById('adUbic').value,
+    texto:t?t.dataset.txt:'', titular:h?h.dataset.txt:'', creativos:_adFiles.map(function(f){return f.name;}), fecha:new Date().toISOString() };
+  try{ var q=JSON.parse(localStorage.getItem('jaye_camp_aprob')||'[]'); q.push(camp); localStorage.setItem('jaye_camp_aprob',JSON.stringify(q)); }catch(e){}
+  var dest= destino==='whatsapp' ? ('WhatsApp '+p.num) : camp.link;
+  document.getElementById('adMontaMsg').innerHTML='✅ <b>Campaña aprobada y guardada.</b><br>'+esc2(camp.nombre)+' · '+pais+' · '+dest+' · '+Number(camp.presupuesto).toLocaleString('es-CO')+' COP/día · pixel '+p.pixel+'.<br><span style="color:#8a93a0">El motor que la sube a Meta (pausada) se conecta en el siguiente paso.</span>';
+  if(typeof toast==='function')toast('Campaña aprobada ✓');
+}
+function esc2(s){ return String(s||'').replace(/</g,'&lt;'); }
+function cargarCampanas(){
+  var box=document.getElementById('adCampList'); box.innerHTML='<div class="vacio">Cargando campañas de Meta…</div>';
+  fetch(BASE+'/leer-campanas').then(function(r){return r.json();}).then(function(arr){
+    if(!arr||!arr.length||arr[0].vacio){ box.innerHTML='<div class="vacio">No hay campañas (o el lector aún no está encendido).</div>'; return; }
+    box.innerHTML=arr.map(function(c){
+      return '<div style="border:1px solid var(--border);border-radius:10px;padding:11px 13px;margin-bottom:9px">'
+        +'<div style="font-weight:700;color:var(--ink)">'+esc2(c.nombre)+' <span style="font-size:11px;color:#8a93a0">· '+esc2(c.estado)+'</span></div>'
+        +'<div style="font-size:12px;color:var(--ink-2);margin-top:3px">Gasto 14d: '+Number(c.gasto||0).toLocaleString('es-CO')+' COP · Resultados: '+(c.resultados||0)+(c.costo_result?(' · '+Number(c.costo_result).toLocaleString('es-CO')+'/result'):'')+'</div>'
+        +(c.copy?('<div style="font-size:12px;color:#8a93a0;margin-top:4px">Copy actual: '+esc2(String(c.copy).slice(0,120))+'…</div>'):'')
+        +'</div>';
+    }).join('');
+  }).catch(function(){ box.innerHTML='<div class="vacio">No se pudo cargar (el lector "Leer Campañas Meta" aún no está activo).</div>'; });
+}
+document.querySelectorAll('#adModo .minitab').forEach(function(b){ b.addEventListener('click',function(){
+  document.querySelectorAll('#adModo .minitab').forEach(function(x){x.classList.remove('act');}); b.classList.add('act');
+  document.getElementById('adNueva').style.display=(b.dataset.m==='nueva')?'':'none';
+  document.getElementById('adExistente').style.display=(b.dataset.m==='existente')?'':'none';
+}); });
+(function(){ var n=document.getElementById('adNombre'); if(n) n.addEventListener('input',function(){n.dataset.edit='1';}); if(document.getElementById('adPais')) adPaisUpd(); if(document.getElementById('adFile')) adFilePick(); })();
