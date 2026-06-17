@@ -1487,6 +1487,9 @@ function adFilePick(){
   adFileRender();
 }
 function adFileDel(i){ _adFiles.splice(i,1); adFileRender(); }
+function adDragOver(e){ e.preventDefault(); var z=document.getElementById('adDropZone'); if(z) z.style.background='var(--surface)'; }
+function adDragLeave(e){ var z=document.getElementById('adDropZone'); if(z) z.style.background='var(--surface-2)'; }
+function adDrop(e){ e.preventDefault(); adDragLeave(e); var fs=(e.dataTransfer&&e.dataTransfer.files)?[].slice.call(e.dataTransfer.files):[]; fs.forEach(function(f){ if(/image|video/.test(f.type) && !_adFiles.some(function(g){return g.name===f.name&&g.size===f.size;})) _adFiles.push(f); }); adFileRender(); }
 function adFileRender(){
   var nImg=_adFiles.filter(function(f){return /image/.test(f.type);}).length, nVid=_adFiles.filter(function(f){return /video/.test(f.type);}).length;
   var fn=document.getElementById('adFileName'); if(fn) fn.textContent='';
