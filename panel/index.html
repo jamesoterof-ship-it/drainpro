@@ -692,7 +692,7 @@ tbody tr:hover .chev{color:var(--brand)}
       <!-- MODO NUEVA -->
       <div id="adNueva">
         <div class="panel" style="margin-bottom:16px">
-          <div class="tbl-head"><h2>Nueva campaña</h2><span style="font-size:12px;color:#8a93a0">Defines los datos → la IA escribe los copys → ves la vista previa → apruebas y se monta (pausada).</span></div>
+          <div class="tbl-head"><h2>Nueva campaña</h2><span style="font-size:12px;color:#8a93a0">Defines los datos → la IA escribe los copys → ves la vista previa → apruebas y se monta (pausada).</span><button type="button" onclick="adLimpiar()" style="margin-left:auto;font-size:12px;padding:7px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);color:var(--ink-2);cursor:pointer;font-weight:700">🗑️ Limpiar todo</button></div>
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;padding:12px 4px">
             <label class="calcF">País
               <input id="adPais" list="adPaisList" value="Chile" placeholder="Escribe cualquier país…" oninput="adPaisUpd()" autocomplete="off">
@@ -713,6 +713,8 @@ tbody tr:hover .chev{color:var(--brand)}
               <select id="adNum"></select></label>
             <label class="calcF">Pixel
               <select id="adPixel"></select></label>
+            <label class="calcF">Botón (llamado a la acción)
+              <select id="adCta"></select></label>
             <label class="calcF">Presupuesto diario (COP)
               <span style="display:flex;gap:6px;align-items:center"><input id="adPresup" type="number" inputmode="numeric" placeholder="50000" style="flex:1"><button type="button" onclick="adSugPresup()" title="Consejo de la IA" style="font-size:11px;padding:7px 9px;border:1px solid var(--border);border-radius:7px;background:var(--surface-2);color:var(--ink-2);cursor:pointer;font-weight:700;white-space:nowrap">💡 Sugerir</button></span></label>
             <label class="calcF">Ubicaciones (vacío = todo el país)
@@ -728,24 +730,17 @@ tbody tr:hover .chev{color:var(--brand)}
             <button type="button" onclick="document.getElementById('adFile').click()" style="font-size:12.5px;padding:8px 14px;border:1px solid var(--border);border-radius:9px;background:var(--surface-2);color:var(--ink-2);cursor:pointer;font-weight:700">📎 Subir videos / imágenes</button>
             <span id="adFileName" style="font-size:12px;color:#8a93a0"></span>
             <span id="adCreaTip" style="font-size:12px;color:#8a93a0"></span>
-            <button type="button" id="adGenBtn" onclick="generarCopys()" style="background:var(--brand,#3056c9);color:#fff;border:0;border-radius:9px;padding:9px 20px;font-weight:800;font-size:13.5px;cursor:pointer;margin-left:auto">✨ Generar copys</button>
+            <button type="button" id="adGenBtn" onclick="generarAnuncios()" style="background:var(--brand,#3056c9);color:#fff;border:0;border-radius:9px;padding:9px 20px;font-weight:800;font-size:13.5px;cursor:pointer;margin-left:auto">✨ Generar anuncios</button>
           </div>
+          <div id="adFileList" style="padding:0 4px 8px"></div>
         </div>
 
-        <div class="panel" id="adResultPanel" style="display:none;margin-bottom:16px">
-          <div class="tbl-head"><h2>Elige el copy</h2><span style="font-size:12px;color:#8a93a0">Marca 1 texto y 1 titular para la vista previa</span></div>
-          <div id="adResult" style="padding:8px 4px"></div>
-          <div style="padding:6px 4px 10px">
-            <button type="button" onclick="verPreview()" style="background:var(--brand,#3056c9);color:#fff;border:0;border-radius:9px;padding:9px 18px;font-weight:800;font-size:13px;cursor:pointer">👁 Ver vista previa</button>
-            <button type="button" onclick="generarCopys()" style="font-size:13px;padding:9px 16px;border:1px solid var(--border);border-radius:9px;background:var(--surface-2);color:var(--ink-2);cursor:pointer;font-weight:700;margin-left:6px">🔄 Generar más</button>
-          </div>
-        </div>
-
-        <div class="panel" id="adPreviewPanel" style="display:none;margin-bottom:16px">
-          <div class="tbl-head"><h2>Vista previa del anuncio</h2><span style="font-size:12px;color:#8a93a0">Así se verá en Facebook/Instagram. Si te gusta, apruébalo.</span></div>
-          <div id="adPreview" style="padding:14px 4px;display:flex;justify-content:center"></div>
-          <div id="adMontaMsg" style="padding:0 4px 6px;text-align:center;font-size:12px;color:#8a93a0"></div>
+        <div class="panel" id="adGaleriaPanel" style="display:none;margin-bottom:16px">
+          <div class="tbl-head"><h2>Tus anuncios</h2><span style="font-size:12px;color:#8a93a0">Cada cuadro es un anuncio (así se ve en Meta). Quita (×) o regenera (🔄) el copy de cada uno.</span></div>
+          <div id="adGaleria" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;padding:12px 4px"></div>
+          <div id="adMontaMsg" style="padding:0 4px 6px;text-align:center;font-size:12.5px;color:var(--ink-2)"></div>
           <div style="padding:4px 4px 12px;text-align:center">
+            <button type="button" onclick="generarAnuncios()" style="font-size:13px;padding:11px 18px;border:1px solid var(--border);border-radius:9px;background:var(--surface-2);color:var(--ink-2);cursor:pointer;font-weight:700;margin-right:8px">🔄 Regenerar todo</button>
             <button type="button" onclick="aprobarMontar()" style="background:#1f9d55;color:#fff;border:0;border-radius:9px;padding:11px 26px;font-weight:800;font-size:14px;cursor:pointer">✅ Aprobar y montar</button>
           </div>
         </div>
@@ -1072,6 +1067,6 @@ tbody tr:hover .chev{color:var(--brand)}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
-<script src="app.js?v=29"></script>
+<script src="app.js?v=30"></script>
 </body>
 </html>

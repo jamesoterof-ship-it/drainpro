@@ -1428,6 +1428,10 @@ var AD_NUMS=[{id:'966653193207908',label:'🇨🇱 +56 9 2000 7288 (Chile)'},{id
 var AD_PIXELS=[{id:'1249894010361489',label:'Jaye Hogar (Chile)'},{id:'963855752775059',label:'Colombia'},{id:'2162367424167882',label:'JAYE PARAGUAY'},{id:'1503126321234302',label:'GUATEMALA'},{id:'966394032414530',label:'JAYE STORE'}];
 var AD_COUNTRIES='Afganistán,Albania,Alemania,Andorra,Angola,Arabia Saudita,Argelia,Argentina,Armenia,Australia,Austria,Bélgica,Bolivia,Brasil,Bulgaria,Canadá,Chile,China,Chipre,Colombia,Corea del Sur,Costa Rica,Croacia,Cuba,Dinamarca,Ecuador,Egipto,El Salvador,Emiratos Árabes Unidos,Eslovaquia,Eslovenia,España,Estados Unidos,Estonia,Filipinas,Finlandia,Francia,Grecia,Guatemala,Honduras,Hungría,India,Indonesia,Irlanda,Israel,Italia,Japón,Letonia,Lituania,Luxemburgo,Malasia,Marruecos,México,Nicaragua,Nigeria,Noruega,Nueva Zelanda,Países Bajos,Panamá,Paraguay,Perú,Polonia,Portugal,Puerto Rico,Reino Unido,República Checa,República Dominicana,Rumania,Rusia,Singapur,Sudáfrica,Suecia,Suiza,Tailandia,Turquía,Ucrania,Uruguay,Venezuela,Vietnam'.split(',');
 var AD_PRODUCTS=['DRAINPRO','Shilajit Ultra',"NAD+ Men's Complex"];
+var AD_CTAS={ whatsapp:[{v:'WHATSAPP_MESSAGE',t:'Enviar mensaje'}], link:[{v:'SHOP_NOW',t:'Comprar'},{v:'ORDER_NOW',t:'Pedir ahora'},{v:'LEARN_MORE',t:'Más información'},{v:'GET_OFFER',t:'Conseguir oferta'},{v:'SIGN_UP',t:'Registrarte'},{v:'SUBSCRIBE',t:'Suscribirte'},{v:'BOOK_TRAVEL',t:'Reservar'},{v:'CONTACT_US',t:'Contáctanos'}] };
+var AD_PAGEPIC='https://graph.facebook.com/'+AD_PAGE.id+'/picture?type=square&width=96&height=96';
+var _adAds=[]; var _adCopyPool=null;
+function adCtaUpd(){ var s=document.getElementById('adCta'); if(!s) return; var cur=s.value; var list=AD_CTAS[_adDest]||AD_CTAS.link; s.innerHTML=list.map(function(c){return '<option value="'+c.v+'"'+(c.v===cur?' selected':'')+'>'+c.t+'</option>';}).join(''); }
 function adFill(){
   var pl=document.getElementById('adPaisList'); if(pl&&!pl.children.length) pl.innerHTML=AD_COUNTRIES.map(function(c){return '<option value="'+c+'">';}).join('');
   var prl=document.getElementById('adProdList'); if(prl&&!prl.children.length) prl.innerHTML=AD_PRODUCTS.map(function(c){return '<option value="'+c+'">';}).join('');
@@ -1451,7 +1455,7 @@ function adNombreSug(){
   var d=new Date(); var f=(''+d.getDate()).padStart(2,'0')+'-'+(''+(d.getMonth()+1)).padStart(2,'0');
   nom.value=pais+' · '+prod+' · '+f;
 }
-function adDestUpd(){ var w=document.getElementById('adLinkWrap'); if(w) w.style.display=(_adDest==='link')?'':'none'; var nw=document.getElementById('adNumWrap'); if(nw) nw.style.display=(_adDest==='whatsapp')?'':'none'; }
+function adDestUpd(){ var w=document.getElementById('adLinkWrap'); if(w) w.style.display=(_adDest==='link')?'':'none'; var nw=document.getElementById('adNumWrap'); if(nw) nw.style.display=(_adDest==='whatsapp')?'':'none'; adCtaUpd(); if(_adAds.length) renderGaleria(); }
 function adSugPresup(){ document.getElementById('adPresup').value=50000; if(typeof toast==='function')toast('Sugerido: 50.000 COP/día para empezar y que Meta aprenda'); }
 var _adGeos=[]; var _geoTimer=null;
 function adGeoBuscar(){
@@ -1477,87 +1481,104 @@ function adGeoRender(){
   box.innerHTML=_adGeos.map(function(g){ return '<span style="display:inline-flex;align-items:center;gap:5px;background:var(--surface-2);border:1px solid var(--border);border-radius:999px;padding:3px 4px 3px 10px;font-size:12px;color:var(--ink)">'+String(g.name).replace(/</g,'&lt;')+'<button type="button" onclick="adGeoDel(\''+g.key+'\')" style="border:0;background:none;color:#8a93a0;cursor:pointer;font-size:15px;line-height:1;padding:0 3px">×</button></span>'; }).join('');
 }
 function adFilePick(){
-  _adFiles=[].slice.call((document.getElementById('adFile')||{}).files||[]);
-  var fn=document.getElementById('adFileName'); if(fn) fn.textContent=_adFiles.length?('📎 '+_adFiles.length+' archivo(s)'):'';
-  var nImg=_adFiles.filter(function(f){return /image/.test(f.type);}).length, nVid=_adFiles.filter(function(f){return /video/.test(f.type);}).length;
-  var tip=document.getElementById('adCreaTip'); if(tip) tip.textContent=_adFiles.length?('('+nVid+' video, '+nImg+' imagen) · la IA recomienda 4-6 creativos diversos'):'La IA recomienda 4-6 creativos (videos + imágenes)';
+  var sel=[].slice.call((document.getElementById('adFile')||{}).files||[]);
+  sel.forEach(function(f){ if(!_adFiles.some(function(g){return g.name===f.name&&g.size===f.size;})) _adFiles.push(f); });
+  var inp=document.getElementById('adFile'); if(inp) inp.value='';
+  adFileRender();
 }
-function generarCopys(){
+function adFileDel(i){ _adFiles.splice(i,1); adFileRender(); }
+function adFileRender(){
+  var nImg=_adFiles.filter(function(f){return /image/.test(f.type);}).length, nVid=_adFiles.filter(function(f){return /video/.test(f.type);}).length;
+  var fn=document.getElementById('adFileName'); if(fn) fn.textContent='';
+  var tip=document.getElementById('adCreaTip'); if(tip) tip.textContent=_adFiles.length?('('+nVid+' video, '+nImg+' imagen) → '+_adFiles.length+' anuncios'):'La IA recomienda 4-6 creativos (cada uno = un anuncio)';
+  var list=document.getElementById('adFileList');
+  if(list) list.innerHTML=_adFiles.map(function(f,i){ return '<span style="display:inline-flex;align-items:center;gap:6px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:4px 5px 4px 9px;font-size:12px;color:var(--ink);margin:4px 5px 0 0">'+(/video/.test(f.type)?'🎬':'🖼️')+' '+esc2(f.name).slice(0,26)+'<button type="button" onclick="adFileDel('+i+')" title="Quitar" style="border:0;background:none;color:#8a93a0;cursor:pointer;font-size:15px;line-height:1;padding:0 3px">×</button></span>'; }).join('');
+}
+function pick(arr,i){ if(!arr||!arr.length) return ''; return arr[i%arr.length]; }
+function generarAnuncios(){
+  if(!_adFiles.length){ if(typeof toast==='function')toast('Sube al menos un video o imagen'); return; }
   var prod=document.getElementById('adProd').value, desc=document.getElementById('adDesc').value.trim(), pais=document.getElementById('adPais').value;
-  var btn=document.getElementById('adGenBtn'), panel=document.getElementById('adResultPanel'), out=document.getElementById('adResult');
-  var old=btn.textContent; btn.disabled=true; btn.textContent='Generando… (~30s)';
-  panel.style.display='block'; out.innerHTML='<div class="vacio">La IA está escribiendo tus copys… ✍️</div>';
-  var pv=document.getElementById('adPreviewPanel'); if(pv) pv.style.display='none';
+  var btn=document.getElementById('adGenBtn'); var old=btn.textContent; btn.disabled=true; btn.textContent='Generando… (~30s)';
+  var panel=document.getElementById('adGaleriaPanel'); panel.style.display='block';
+  document.getElementById('adGaleria').innerHTML='<div class="vacio" style="grid-column:1/-1">La IA está escribiendo los copys… ✍️</div>';
+  document.getElementById('adMontaMsg').innerHTML='';
   fetch(URL_GENCOPY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({producto:prod,descripcion:desc,copy_actual:'',pais:pais})})
-    .then(function(r){return r.json();}).then(function(j){ renderCopys(j); })
-    .catch(function(){ out.innerHTML='<div class="vacio">Hubo un error generando. Intenta de nuevo.</div>'; })
+    .then(function(r){return r.json();}).then(function(j){
+      if(!j||!j.textos||!j.textos.length){ document.getElementById('adGaleria').innerHTML='<div class="vacio" style="grid-column:1/-1">No se pudo generar. Intenta de nuevo.</div>'; return; }
+      _adCopyPool=j;
+      _adAds=_adFiles.map(function(f,i){ return { texto:pick(j.textos,i), titular:pick(j.titulares,i), descripcion:pick(j.descripciones,i) }; });
+      renderGaleria();
+    })
+    .catch(function(){ document.getElementById('adGaleria').innerHTML='<div class="vacio" style="grid-column:1/-1">Error generando. Intenta de nuevo.</div>'; })
     .then(function(){ btn.disabled=false; btn.textContent=old; });
 }
-function _grpCopys(titulo,arr,tipo){
-  if(!arr||!arr.length) return '';
-  var single=(tipo==='t'||tipo==='h');
-  var h='<div style="font-weight:800;font-size:13px;margin:14px 0 6px;color:var(--ink)">'+titulo+(single?' <span style="font-weight:400;color:#8a93a0">(elige 1)</span>':'')+'</div>';
-  arr.forEach(function(x,i){
-    var safe=String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;');
-    var attr=String(x).replace(/&/g,'&amp;').replace(/"/g,'&quot;');
-    var inp= single
-      ? '<input type="radio" name="adsel_'+tipo+'" class="adsel_'+tipo+'" data-txt="'+attr+'"'+(i===0?' checked':'')+' style="margin-top:3px;flex-shrink:0">'
-      : '<input type="checkbox" class="adsel_'+tipo+'" data-txt="'+attr+'" style="margin-top:3px;flex-shrink:0">';
-    h+='<label style="display:flex;gap:9px;align-items:flex-start;padding:9px 11px;border:1px solid var(--border);border-radius:9px;margin-bottom:7px;cursor:pointer;background:var(--surface-2)">'
-      +inp+'<span style="font-size:13px;line-height:1.5;color:var(--ink)">'+safe+'</span></label>';
-  });
-  return h;
-}
-function renderCopys(j){
-  var out=document.getElementById('adResult');
-  if(!j || ((!j.textos||!j.textos.length)&&(!j.titulares||!j.titulares.length)&&(!j.descripciones||!j.descripciones.length))){
-    out.innerHTML='<div class="vacio">No se pudo generar. Revisa el producto e intenta otra vez.</div>'; return; }
-  out.innerHTML=_grpCopys('📝 Textos principales',j.textos,'t')+_grpCopys('🏷️ Titulares',j.titulares,'h')+_grpCopys('🔖 Descripciones',j.descripciones,'d');
-}
-function verPreview(){
-  var t=document.querySelector('.adsel_t:checked'), h=document.querySelector('.adsel_h:checked');
-  if(!t){ if(typeof toast==='function')toast('Marca un texto'); return; }
-  var texto=t.dataset.txt, titular=h?h.dataset.txt:'';
+function renderGaleria(){
+  var g=document.getElementById('adGaleria'); if(!g) return;
+  if(!_adAds.length){ g.innerHTML='<div class="vacio" style="grid-column:1/-1">Sin anuncios. Sube creativos y dale "Generar anuncios".</div>'; return; }
   var destino=_adDest;
-  var cta= destino==='whatsapp' ? (waSvg('#25D366',14)+' Enviar mensaje') : 'Comprar';
-  var dom= destino==='whatsapp' ? 'WhatsApp · Jaye Group' : ((document.getElementById('adLink').value||'jaye-group.com').replace(/^https?:\/\//,'').split('/')[0]);
-  var img=_adFiles.filter(function(f){return /image/.test(f.type);})[0], vid=_adFiles.filter(function(f){return /video/.test(f.type);})[0], crea;
-  if(img) crea='<img src="'+URL.createObjectURL(img)+'" style="width:100%;display:block">';
-  else if(vid) crea='<div style="aspect-ratio:1/1;background:#111;display:flex;align-items:center;justify-content:center;color:#fff;font-size:36px">▶</div>';
-  else crea='<div style="aspect-ratio:1/1;background:var(--surface-2);display:flex;align-items:center;justify-content:center;color:#8a93a0;font-size:13px">Tu video / imagen aquí</div>';
-  var esc=function(s){return String(s).replace(/</g,'&lt;');};
-  var card='<div style="width:344px;max-width:100%;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--surface)">'
-    +'<div style="display:flex;align-items:center;gap:8px;padding:10px 12px">'
-      +'<div style="width:38px;height:38px;border-radius:50%;background:#16232e;color:#6cc24a;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px">JG</div>'
-      +'<div><div style="font-weight:700;font-size:13px;color:var(--ink)">Jaye Group</div><div style="font-size:11px;color:#8a93a0">Patrocinado · 🌐</div></div></div>'
-    +'<div style="padding:0 12px 10px;font-size:13px;line-height:1.5;color:var(--ink);white-space:pre-wrap">'+esc(texto)+'</div>'
-    +crea
-    +'<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;background:var(--surface-2)">'
-      +'<div style="min-width:0"><div style="font-size:11px;color:#8a93a0;text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(dom)+'</div><div style="font-weight:700;font-size:13px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(titular)+'</div></div>'
-      +'<button type="button" style="display:inline-flex;align-items:center;gap:5px;background:#e7f0ff;color:#1b74e4;border:0;border-radius:7px;padding:8px 12px;font-weight:700;font-size:12px;white-space:nowrap;cursor:default">'+cta+'</button></div>'
-    +'</div>';
-  document.getElementById('adPreview').innerHTML=card;
-  var mm=document.getElementById('adMontaMsg'); if(mm) mm.innerHTML='';
-  document.getElementById('adPreviewPanel').style.display='block';
-  document.getElementById('adPreviewPanel').scrollIntoView({behavior:'smooth',block:'center'});
+  var ctaEl=document.getElementById('adCta'); var ctaTxt=(ctaEl&&ctaEl.selectedIndex>=0)?ctaEl.options[ctaEl.selectedIndex].text:'Más información';
+  var dom= destino==='whatsapp' ? 'Mensaje de WhatsApp' : ((document.getElementById('adLink').value||'jaye-group.com').replace(/^https?:\/\//,'').split('/')[0]);
+  g.innerHTML=_adAds.map(function(ad,i){
+    var f=_adFiles[i]; var crea;
+    if(f && /image/.test(f.type)) crea='<img src="'+URL.createObjectURL(f)+'" style="width:100%;display:block;aspect-ratio:1/1;object-fit:cover">';
+    else if(f && /video/.test(f.type)) crea='<div style="aspect-ratio:1/1;background:#111;display:flex;align-items:center;justify-content:center;color:#fff;font-size:30px">▶</div>';
+    else crea='<div style="aspect-ratio:1/1;background:var(--surface-2);display:flex;align-items:center;justify-content:center;color:#8a93a0;font-size:12px">creativo</div>';
+    var ctaBtn= destino==='whatsapp' ? (waSvg('#25D366',13)+' '+esc2(ctaTxt)) : esc2(ctaTxt);
+    return '<div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--surface)">'
+      +'<div style="display:flex;align-items:center;gap:7px;padding:8px 10px">'
+        +'<div style="position:relative;width:30px;height:30px;border-radius:50%;background:#16232e;color:#6cc24a;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;overflow:hidden;flex-shrink:0">JG<img src="'+AD_PAGEPIC+'" onerror="this.remove()" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover"></div>'
+        +'<div style="line-height:1.15;min-width:0"><div style="font-weight:700;font-size:12px;color:var(--ink)">Jaye Group</div><div style="font-size:10px;color:#8a93a0">Patrocinado</div></div>'
+        +'<div style="margin-left:auto;display:flex;gap:4px;flex-shrink:0">'
+          +'<button type="button" onclick="adAdRegen('+i+')" title="Generar copy nuevo" style="border:1px solid var(--border);background:var(--surface-2);border-radius:7px;width:27px;height:27px;cursor:pointer;font-size:12px">🔄</button>'
+          +'<button type="button" onclick="adAdDel('+i+')" title="Quitar anuncio" style="border:1px solid var(--border);background:var(--surface-2);border-radius:7px;width:27px;height:27px;cursor:pointer;font-size:15px;line-height:1;color:#c0392b">×</button>'
+        +'</div></div>'
+      +'<div style="padding:0 10px 8px;font-size:12px;line-height:1.4;color:var(--ink);white-space:pre-wrap;max-height:90px;overflow:hidden">'+esc2(ad.texto)+'</div>'
+      +crea
+      +'<div style="display:flex;align-items:center;gap:8px;padding:9px 10px;background:var(--surface-2)">'
+        +'<div style="min-width:0;flex:1"><div style="font-size:9.5px;color:#8a93a0;text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc2(dom)+'</div>'
+        +'<div style="font-weight:700;font-size:12px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc2(ad.titular)+'</div>'
+        +'<div style="font-size:10.5px;color:#8a93a0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc2(ad.descripcion)+'</div></div>'
+        +'<button type="button" style="display:inline-flex;align-items:center;gap:4px;background:#e7f0ff;color:#1b74e4;border:0;border-radius:7px;padding:7px 10px;font-weight:700;font-size:11.5px;white-space:nowrap;cursor:default">'+ctaBtn+'</button>'
+      +'</div></div>';
+  }).join('');
+}
+function adAdDel(i){ _adAds.splice(i,1); _adFiles.splice(i,1); adFileRender(); renderGaleria(); }
+function adAdRegen(i){
+  var prod=document.getElementById('adProd').value, desc=document.getElementById('adDesc').value.trim(), pais=document.getElementById('adPais').value;
+  if(typeof toast==='function')toast('Generando copy nuevo…');
+  fetch(URL_GENCOPY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({producto:prod,descripcion:desc,copy_actual:(_adAds[i]?_adAds[i].texto:''),pais:pais})})
+    .then(function(r){return r.json();}).then(function(j){ if(j&&j.textos&&j.textos.length){ _adAds[i]={texto:j.textos[0],titular:(j.titulares&&j.titulares[0])||'',descripcion:(j.descripciones&&j.descripciones[0])||''}; renderGaleria(); if(typeof toast==='function')toast('Copy nuevo ✓'); } })
+    .catch(function(){ if(typeof toast==='function')toast('Error'); });
+}
+function adLimpiar(){
+  _adFiles=[]; _adGeos=[]; _adAds=[]; _adCopyPool=null;
+  var prod=document.getElementById('adProd'); if(prod) prod.value='DRAINPRO';
+  var nom=document.getElementById('adNombre'); if(nom){ nom.value=''; try{ delete nom.dataset.edit; }catch(e){} }
+  ['adLink','adDesc','adUbic','adPresup'].forEach(function(id){ var e=document.getElementById(id); if(e) e.value=''; });
+  var gp=document.getElementById('adGaleriaPanel'); if(gp) gp.style.display='none';
+  var gg=document.getElementById('adGaleria'); if(gg) gg.innerHTML=''; var mm=document.getElementById('adMontaMsg'); if(mm) mm.innerHTML='';
+  adFileRender(); adGeoRender(); adNombreSug();
+  if(typeof toast==='function')toast('Formulario limpio');
 }
 function aprobarMontar(){
-  var pais=document.getElementById('adPais').value;
-  var t=document.querySelector('.adsel_t:checked'), h=document.querySelector('.adsel_h:checked');
+  if(!_adAds.length){ if(typeof toast==='function')toast('Genera los anuncios primero'); return; }
   var destino=_adDest;
   if(destino==='link' && !document.getElementById('adLink').value.trim()){ if(typeof toast==='function')toast('Falta la URL de la página'); return; }
-  if(!_adFiles.length){ if(typeof toast==='function')toast('Sube al menos un video o imagen'); return; }
-  var numEl=document.getElementById('adNum'), pxEl=document.getElementById('adPixel');
+  var pais=document.getElementById('adPais').value;
+  var numEl=document.getElementById('adNum'), pxEl=document.getElementById('adPixel'), ctaEl=document.getElementById('adCta');
   var numTxt=(destino==='whatsapp'&&numEl&&numEl.selectedIndex>=0)?numEl.options[numEl.selectedIndex].text:'';
   var pixelTxt=(pxEl&&pxEl.selectedIndex>=0)?pxEl.options[pxEl.selectedIndex].text:'';
+  var ctaTxt=(ctaEl&&ctaEl.selectedIndex>=0)?ctaEl.options[ctaEl.selectedIndex].text:'';
   var camp={ pais:pais, producto:document.getElementById('adProd').value, nombre:document.getElementById('adNombre').value,
     destino:destino, link:document.getElementById('adLink').value, numeroId:(numEl?numEl.value:''), numero:numTxt,
-    pixelId:(pxEl?pxEl.value:''), pixel:pixelTxt, pageId:AD_PAGE.id, presupuesto:(document.getElementById('adPresup').value||50000),
-    ubicaciones:(_adGeos.length?_adGeos.map(function(g){return g.name;}).join(', '):'Todo el país'), geos:_adGeos.slice(), texto:t?t.dataset.txt:'', titular:h?h.dataset.txt:'',
-    creativos:_adFiles.map(function(f){return f.name;}), fecha:new Date().toISOString() };
+    pixelId:(pxEl?pxEl.value:''), pixel:pixelTxt, ctaId:(ctaEl?ctaEl.value:''), cta:ctaTxt, pageId:AD_PAGE.id,
+    presupuesto:(document.getElementById('adPresup').value||50000),
+    ubicaciones:(_adGeos.length?_adGeos.map(function(g){return g.name;}).join(', '):'Todo el país'), geos:_adGeos.slice(),
+    anuncios:_adAds.map(function(a,i){return {creativo:(_adFiles[i]?_adFiles[i].name:''), texto:a.texto, titular:a.titular, descripcion:a.descripcion};}),
+    fecha:new Date().toISOString() };
   try{ var q=JSON.parse(localStorage.getItem('jaye_camp_aprob')||'[]'); q.push(camp); localStorage.setItem('jaye_camp_aprob',JSON.stringify(q)); }catch(e){}
   var dest= destino==='whatsapp' ? ('WhatsApp '+numTxt) : camp.link;
-  document.getElementById('adMontaMsg').innerHTML='✅ <b>Campaña aprobada y guardada.</b><br>'+esc2(camp.nombre)+' · '+esc2(pais)+' · '+esc2(dest)+' · '+Number(camp.presupuesto).toLocaleString('es-CO')+' COP/día · pixel '+esc2(pixelTxt)+'.<br><span style="color:#8a93a0">El motor que la sube a Meta (pausada) se conecta en el siguiente paso.</span>';
+  document.getElementById('adMontaMsg').innerHTML='✅ <b>Campaña aprobada y guardada.</b><br>'+esc2(camp.nombre)+' · '+esc2(pais)+' · '+esc2(dest)+' · '+camp.anuncios.length+' anuncios · '+Number(camp.presupuesto).toLocaleString('es-CO')+' COP/día · pixel '+esc2(pixelTxt)+'.<br><span style="color:#8a93a0">El motor que la sube a Meta (pausada) se conecta en el siguiente paso.</span>';
   if(typeof toast==='function')toast('Campaña aprobada ✓');
 }
 function esc2(s){ return String(s||'').replace(/</g,'&lt;'); }
@@ -1585,4 +1606,4 @@ document.querySelectorAll('#adDestSeg .adDestBtn').forEach(function(b){ b.addEve
   b.style.background='var(--brand,#3056c9)'; b.style.color='#fff'; b.style.borderColor='var(--brand,#3056c9)';
   adDestUpd();
 }); });
-(function(){ adFill(); var n=document.getElementById('adNombre'); if(n) n.addEventListener('input',function(){n.dataset.edit='1';}); if(document.getElementById('adPais')) adPaisUpd(); adDestUpd(); if(document.getElementById('adFile')) adFilePick(); adGeoRender(); })();
+(function(){ adFill(); var n=document.getElementById('adNombre'); if(n) n.addEventListener('input',function(){n.dataset.edit='1';}); if(document.getElementById('adPais')) adPaisUpd(); adDestUpd(); adFileRender(); adGeoRender(); var cta=document.getElementById('adCta'); if(cta) cta.addEventListener('change',function(){ if(_adAds.length) renderGaleria(); }); })();
