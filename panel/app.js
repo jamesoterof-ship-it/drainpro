@@ -16,6 +16,7 @@ const URL_ABANDONADOS=BASE+'/leer-abandonados'; // abandonados desde Postgres (n
 const URL_GENCOPY=BASE+'/generar-copy'; // creador de anuncios: genera copys con IA (Claude)
 const URL_BUSCAGEO=BASE+'/buscar-geo'; // buscador de ubicaciones de Meta (ciudades/regiones)
 const URL_ASESORCAMP=BASE+'/asesor-campana'; // asesor: recomienda qué hacer con una campaña existente
+const URL_DETALLE=BASE+'/detalle-campana'; // detalle de una campaña (todos sus anuncios)
 window.huellaMap={};
 async function cargarHuellas(){
   try{
@@ -1580,30 +1581,84 @@ function aprobarMontar(){
     presupuesto:(document.getElementById('adPresup').value||50000),
     ubicaciones:(_adGeos.length?_adGeos.map(function(g){return g.name;}).join(', '):'Todo el país'), geos:_adGeos.slice(),
     anuncios:_adAds.map(function(a,i){return {creativo:(_adFiles[i]?_adFiles[i].name:''), textos:a.textos, titulares:a.titulares, descripciones:a.descripciones};}),
+    refrescar:(_adTarget?_adTarget.id:''), refrescarNombre:(_adTarget?_adTarget.nombre:''),
     fecha:new Date().toISOString() };
   try{ var q=JSON.parse(localStorage.getItem('jaye_camp_aprob')||'[]'); q.push(camp); localStorage.setItem('jaye_camp_aprob',JSON.stringify(q)); }catch(e){}
   var dest= destino==='whatsapp' ? ('WhatsApp '+numTxt) : camp.link;
-  document.getElementById('adMontaMsg').innerHTML='✅ <b>Campaña aprobada y guardada.</b><br>'+esc2(camp.nombre)+' · '+esc2(pais)+' · '+esc2(dest)+' · '+camp.anuncios.length+' anuncios · '+Number(camp.presupuesto).toLocaleString('es-CO')+' COP/día · pixel '+esc2(pixelTxt)+'.<br><span style="color:#8a93a0">El motor que la sube a Meta (pausada) se conecta en el siguiente paso.</span>';
+  document.getElementById('adMontaMsg').innerHTML=(_adTarget?('✅ <b>Refresco aprobado para '+esc2(_adTarget.nombre)+'.</b><br>Se le agregarán '+camp.anuncios.length+' anuncios nuevos (pausados).'):('✅ <b>Campaña aprobada y guardada.</b><br>'+esc2(camp.nombre)+' · '+esc2(pais)+' · '+esc2(dest)+' · '+camp.anuncios.length+' anuncios · '+Number(camp.presupuesto).toLocaleString('es-CO')+' COP/día · pixel '+esc2(pixelTxt)+'.'))+'<br><span style="color:#8a93a0">El motor que sube a Meta (pausado) se conecta en el siguiente paso.</span>';
   if(typeof toast==='function')toast('Campaña aprobada ✓');
 }
 function esc2(s){ return String(s||'').replace(/</g,'&lt;'); }
-var _adCamps=[];
+var _adCamps=[]; var _adCampFiltro='ACTIVE'; var _adTarget=null;
 function cargarCampanas(){
-  var box=document.getElementById('adCampList'); box.innerHTML='<div class="vacio">Cargando campañas de Meta…</div>';
+  var box=document.getElementById('adCampList'); box.innerHTML='<div class="vacio">Cargando campañas de Meta… (puede tardar)</div>';
   fetch(BASE+'/leer-campanas').then(function(r){return r.json();}).then(function(arr){
-    if(!arr||!arr.length||arr[0].vacio){ box.innerHTML='<div class="vacio">No hay campañas (o "Leer Campañas Meta" aún no está encendido en n8n).</div>'; return; }
-    _adCamps=arr;
-    box.innerHTML=arr.map(function(c,i){
-      return '<div style="border:1px solid var(--border);border-radius:10px;padding:11px 13px;margin-bottom:9px">'
-        +'<div style="display:flex;align-items:center;gap:8px"><div style="font-weight:700;color:var(--ink);flex:1;min-width:0">'+esc2(c.nombre)+' <span style="font-size:11px;color:#8a93a0">· '+esc2(c.estado)+'</span></div>'
-        +'<button type="button" onclick="adAsesor('+i+')" style="font-size:11.5px;padding:6px 11px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);color:var(--ink);cursor:pointer;font-weight:700;white-space:nowrap">💡 ¿Qué hago?</button></div>'
-        +'<div style="font-size:12px;color:var(--ink-2);margin-top:3px">Gasto 14d: '+Number(c.gasto||0).toLocaleString('es-CO')+' COP · Resultados: '+(c.resultados||0)+(c.costo_result?(' · '+Number(c.costo_result).toLocaleString('es-CO')+'/result'):'')+'</div>'
-        +(c.copy?('<div style="font-size:12px;color:#8a93a0;margin-top:4px">Copy actual: '+esc2(String(c.copy).slice(0,120))+'…</div>'):'')
-        +'<div id="adRec'+i+'" style="display:none"></div>'
-        +'</div>';
-    }).join('');
+    if(!arr||!arr.length||arr[0].vacio){ box.innerHTML='<div class="vacio">No hay campañas (o "Leer Campañas Meta" no está encendido en n8n).</div>'; return; }
+    _adCamps=arr; renderCampList();
   }).catch(function(){ box.innerHTML='<div class="vacio">No se pudo cargar (enciende "Leer Campañas Meta" en n8n).</div>'; });
 }
+function renderCampList(){
+  var box=document.getElementById('adCampList'); if(!box) return;
+  if(!_adCamps.length){ box.innerHTML='<div class="vacio">Dale "Cargar campañas".</div>'; return; }
+  var f=_adCampFiltro;
+  var list=_adCamps.filter(function(c){ if(f==='ALL') return true; if(f==='ACTIVE') return c.estado==='ACTIVE'; return c.estado!=='ACTIVE'; });
+  if(!list.length){ box.innerHTML='<div class="vacio">No hay campañas '+(f==='ACTIVE'?'activas':(f==='PAUSED'?'pausadas':''))+'.</div>'; return; }
+  box.innerHTML=list.map(function(c){ var i=_adCamps.indexOf(c);
+    return '<div style="border:1px solid var(--border);border-radius:10px;margin-bottom:9px;overflow:hidden">'
+      +'<div onclick="adToggleDetalle('+i+')" style="padding:11px 13px;cursor:pointer">'
+        +'<div style="display:flex;align-items:center;gap:8px"><div style="font-weight:700;color:var(--ink);flex:1;min-width:0">'+esc2(c.nombre)+' <span style="font-size:11px;color:'+(c.estado==='ACTIVE'?'#1f9d55':'#8a93a0')+'">· '+esc2(c.estado)+'</span></div>'
+        +'<button type="button" onclick="event.stopPropagation();adAsesor('+i+')" style="font-size:11.5px;padding:6px 11px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);color:var(--ink);cursor:pointer;font-weight:700;white-space:nowrap">💡 ¿Qué hago?</button></div>'
+        +'<div style="font-size:12px;color:var(--ink-2);margin-top:3px">Gasto 14d: '+Number(c.gasto||0).toLocaleString('es-CO')+' COP · Resultados: '+(c.resultados||0)+' · '+(c.num_ads||0)+' anuncios <span style="color:#8a93a0">· clic para ver detalle ▾</span></div>'
+        +'<div id="adRec'+i+'" style="display:none"></div>'
+      +'</div>'
+      +'<div id="adDet'+i+'" style="display:none;border-top:1px solid var(--border);padding:10px 13px;background:var(--surface-2)"></div>'
+      +'</div>';
+  }).join('');
+}
+function adToggleDetalle(i){
+  var det=document.getElementById('adDet'+i); if(!det) return;
+  if(det.style.display!=='none'){ det.style.display='none'; return; }
+  det.style.display='block'; det.innerHTML='<div style="color:#8a93a0;font-size:12px">Cargando anuncios…</div>';
+  var c=_adCamps[i];
+  fetch(URL_DETALLE+'?id='+encodeURIComponent(c.id)).then(function(r){return r.json();}).then(function(d){
+    if(!d||d.error||!d.anuncios){ det.innerHTML='<div style="color:#8a93a0;font-size:12px">No se pudo cargar el detalle (enciende "Detalle Campaña" en n8n).</div>'; return; }
+    var head='<div style="font-size:12px;color:var(--ink-2);margin-bottom:8px">Objetivo: '+esc2(d.objetivo||'')+' · Presupuesto: '+(d.presupuesto?(Number(d.presupuesto).toLocaleString('es-CO')+' COP/día'):'(en el conjunto)')+' · '+(d.num_ads||0)+' anuncios ('+(d.num_activos||0)+' activos)</div>';
+    var acciones='<div style="display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 10px">'
+      +'<button type="button" onclick="adRefrescar('+i+')" style="font-size:12px;padding:8px 13px;border:0;border-radius:8px;background:var(--brand,#3056c9);color:#fff;cursor:pointer;font-weight:700">♻️ Refrescar / Agregar anuncios</button>'
+      +'<button type="button" onclick="adPausar('+i+')" style="font-size:12px;padding:8px 13px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--ink-2);cursor:pointer;font-weight:700">⏸️ Pausar</button></div>';
+    var ads=(d.anuncios||[]).map(function(a){
+      var th=a.thumb?('<img src="'+a.thumb+'" onerror="this.style.display=\'none\'" style="width:46px;height:46px;border-radius:7px;object-fit:cover;flex-shrink:0">'):'<div style="width:46px;height:46px;border-radius:7px;background:var(--surface);flex-shrink:0"></div>';
+      return '<div style="display:flex;gap:9px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:8px;margin-bottom:6px">'+th
+        +'<div style="min-width:0;flex:1"><div style="font-size:12px;font-weight:700;color:var(--ink)">'+esc2(a.nombre||'anuncio')+' <span style="font-size:10px;color:'+(a.estado==='ACTIVE'?'#1f9d55':'#8a93a0')+'">· '+esc2(a.estado)+'</span></div>'
+        +'<div style="font-size:11px;color:var(--ink-2)">Gasto: '+Number(a.gasto||0).toLocaleString('es-CO')+' COP · Result: '+(a.resultados||0)+'</div>'
+        +'<div style="font-size:11px;color:#8a93a0;margin-top:2px;max-height:30px;overflow:hidden">'+esc2(String(a.copy||'').slice(0,90))+'</div></div></div>';
+    }).join('') || '<div style="color:#8a93a0;font-size:12px">Sin anuncios.</div>';
+    det.innerHTML=head+acciones+'<div style="font-weight:700;font-size:12px;color:var(--ink);margin-bottom:5px">Anuncios:</div>'+ads;
+  }).catch(function(){ det.innerHTML='<div style="color:#8a93a0;font-size:12px">No se pudo cargar (enciende "Detalle Campaña" en n8n).</div>'; });
+}
+function adRefrescar(i){
+  var c=_adCamps[i]; _adTarget={id:c.id,nombre:c.nombre};
+  document.querySelectorAll('#adModo .minitab').forEach(function(x){x.classList.remove('act');});
+  var nb=document.querySelector('#adModo .minitab[data-m="nueva"]'); if(nb) nb.classList.add('act');
+  var nu=document.getElementById('adNueva'), ex=document.getElementById('adExistente'); if(nu) nu.style.display=''; if(ex) ex.style.display='none';
+  adTargetBanner(); window.scrollTo({top:0,behavior:'smooth'});
+  if(typeof toast==='function')toast('Refrescando: '+c.nombre+' — sube los creativos nuevos');
+}
+function adTargetBanner(){
+  var host=document.getElementById('adNueva'); if(!host) return;
+  var ex=document.getElementById('adTargetBanner');
+  if(!_adTarget){ if(ex) ex.remove(); return; }
+  if(!ex){ ex=document.createElement('div'); ex.id='adTargetBanner'; host.insertBefore(ex,host.firstChild); }
+  ex.style.cssText='background:#e7f0ff;border:1px solid var(--border);border-radius:9px;padding:9px 12px;margin-bottom:12px;font-size:12.5px;color:#1b74e4;font-weight:700;display:flex;align-items:center;gap:8px';
+  ex.innerHTML='♻️ Refrescando: '+esc2(_adTarget.nombre)+' — sube los creativos nuevos, genera y aprueba. <button type="button" onclick="adTargetClear()" style="margin-left:auto;border:0;background:none;color:#1b74e4;cursor:pointer;font-weight:700;text-decoration:underline">Cancelar</button>';
+}
+function adTargetClear(){ _adTarget=null; adTargetBanner(); }
+function adPausar(i){
+  var c=_adCamps[i];
+  if(typeof toast==='function')toast('Pausar necesita el permiso de editar de Meta (saldo pendiente)');
+  alert('Para pausar "'+c.nombre+'" se necesita el permiso de editar de Meta (está bloqueado por el saldo pendiente). Apenas pagues el saldo, este botón la pausa solo. Por ahora pásala a pausada desde Meta.');
+}
+document.querySelectorAll('#adCampFiltro .minitab').forEach(function(b){ b.addEventListener('click',function(){ document.querySelectorAll('#adCampFiltro .minitab').forEach(function(x){x.classList.remove('act');}); b.classList.add('act'); _adCampFiltro=b.dataset.f; renderCampList(); }); });
 function adAsesor(i){
   var c=_adCamps[i]; if(!c) return;
   var box=document.getElementById('adRec'+i); if(box){ box.style.display='block'; box.innerHTML='<div style="color:#8a93a0;font-size:12px;margin-top:6px">Analizando con IA… 🤔</div>'; }
@@ -1617,6 +1672,7 @@ document.querySelectorAll('#adModo .minitab').forEach(function(b){ b.addEventLis
   document.querySelectorAll('#adModo .minitab').forEach(function(x){x.classList.remove('act');}); b.classList.add('act');
   document.getElementById('adNueva').style.display=(b.dataset.m==='nueva')?'':'none';
   document.getElementById('adExistente').style.display=(b.dataset.m==='existente')?'':'none';
+  if(b.dataset.m==='nueva'){ _adTarget=null; adTargetBanner(); }
 }); });
 document.querySelectorAll('#adDestSeg .adDestBtn').forEach(function(b){ b.addEventListener('click',function(){
   _adDest=b.dataset.d;

@@ -753,8 +753,9 @@ tbody tr:hover .chev{color:var(--brand)}
       <!-- MODO EXISTENTE -->
       <div id="adExistente" style="display:none">
         <div class="panel">
-          <div class="tbl-head"><h2>Tus campañas activas</h2><button type="button" onclick="cargarCampanas()" style="font-size:12.5px;padding:8px 14px;border:1px solid var(--border);border-radius:9px;background:var(--surface-2);color:var(--ink-2);cursor:pointer;font-weight:700">🔄 Cargar campañas</button></div>
-          <div id="adCampList" style="padding:10px 4px"><div class="vacio">Dale "Cargar campañas" para traerlas de Meta y que la IA te aconseje qué hacer con cada una.</div></div>
+          <div class="tbl-head"><h2>Tus campañas</h2><button type="button" onclick="cargarCampanas()" style="font-size:12.5px;padding:8px 14px;border:1px solid var(--border);border-radius:9px;background:var(--surface-2);color:var(--ink-2);cursor:pointer;font-weight:700">🔄 Cargar campañas</button></div>
+          <div class="minitabs" id="adCampFiltro" style="margin:8px 4px 4px"><button class="minitab act" data-f="ACTIVE">Activas</button><button class="minitab" data-f="PAUSED">Pausadas</button><button class="minitab" data-f="ALL">Todas</button></div>
+          <div id="adCampList" style="padding:8px 4px"><div class="vacio">Dale "Cargar campañas" → haz clic en una para ver todos sus anuncios y qué hacer.</div></div>
         </div>
       </div>
     </div>
@@ -1071,6 +1072,6 @@ tbody tr:hover .chev{color:var(--brand)}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
-<script src="app.js?v=34"></script>
+<script src="app.js?v=35"></script>
 </body>
 </html>
