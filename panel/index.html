@@ -695,11 +695,8 @@ tbody tr:hover .chev{color:var(--brand)}
           <div class="tbl-head"><h2>Nueva campaña</h2><span style="font-size:12px;color:#8a93a0">Defines los datos → la IA escribe los copys → ves la vista previa → apruebas y se monta (pausada).</span></div>
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;padding:12px 4px">
             <label class="calcF">País
-              <select id="adPais" onchange="adPaisUpd()">
-                <option value="Chile">🇨🇱 Chile</option>
-                <option value="Colombia">🇨🇴 Colombia</option>
-                <option value="Paraguay">🇵🇾 Paraguay</option>
-              </select></label>
+              <input id="adPais" list="adPaisList" value="Chile" placeholder="Escribe cualquier país…" oninput="adPaisUpd()" autocomplete="off">
+              <datalist id="adPaisList"></datalist></label>
             <label class="calcF">Producto
               <select id="adProd" onchange="adNombreSug()">
                 <option value="Polvo Limpiador DRAINPRO — destapa cañerías y desagües tapados (grasa, pelos, sarro)">DRAINPRO</option>
@@ -715,10 +712,14 @@ tbody tr:hover .chev{color:var(--brand)}
               </div></label>
             <label class="calcF" id="adLinkWrap" style="display:none">URL de la página
               <input id="adLink" type="text" placeholder="https://jaye-group.com/..."></label>
+            <label class="calcF" id="adNumWrap">Número de WhatsApp
+              <select id="adNum"></select></label>
+            <label class="calcF">Pixel
+              <select id="adPixel"></select></label>
             <label class="calcF">Presupuesto diario (COP)
               <span style="display:flex;gap:6px;align-items:center"><input id="adPresup" type="number" inputmode="numeric" placeholder="50000" style="flex:1"><button type="button" onclick="adSugPresup()" title="Consejo de la IA" style="font-size:11px;padding:7px 9px;border:1px solid var(--border);border-radius:7px;background:var(--surface-2);color:var(--ink-2);cursor:pointer;font-weight:700;white-space:nowrap">💡 Sugerir</button></span></label>
             <label class="calcF">Ubicaciones
-              <input id="adUbic" type="text" value="Todo el país" placeholder="Todo el país, o regiones/comunas"></label>
+              <input id="adUbic" type="text" value="Todo el país" placeholder="Todo el país, o región/depto/ciudad (separa con comas)"></label>
             <label class="calcF">¿Qué muestra tu creativo? (opcional)
               <input id="adDesc" type="text" placeholder="Ej: el polvo disolviendo grasa, antes/después"></label>
           </div>
@@ -1072,6 +1073,6 @@ tbody tr:hover .chev{color:var(--brand)}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
-<script src="app.js?v=27"></script>
+<script src="app.js?v=28"></script>
 </body>
 </html>

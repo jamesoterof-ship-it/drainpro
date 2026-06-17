@@ -1423,12 +1423,22 @@ var AD_PAISES={
   Paraguay:{num:'+595 975 357165',numId:'1114986368370031',pixel:'JAYE PARAGUAY',pixelId:'2162367424167882'}
 };
 var AD_PAGE={nombre:'Jaye Group',id:'1021271641058424'};
+var AD_NUMS=[{id:'966653193207908',label:'🇨🇱 +56 9 2000 7288 (Chile)'},{id:'1134195636445391',label:'🇨🇴 +57 314 5021958 (Colombia)'},{id:'1114986368370031',label:'🇵🇾 +595 975 357165 (Paraguay)'}];
+var AD_PIXELS=[{id:'1249894010361489',label:'Jaye Hogar (Chile)'},{id:'963855752775059',label:'Colombia'},{id:'2162367424167882',label:'JAYE PARAGUAY'},{id:'1503126321234302',label:'GUATEMALA'},{id:'966394032414530',label:'JAYE STORE'}];
+var AD_COUNTRIES='Afganistán,Albania,Alemania,Andorra,Angola,Arabia Saudita,Argelia,Argentina,Armenia,Australia,Austria,Bélgica,Bolivia,Brasil,Bulgaria,Canadá,Chile,China,Chipre,Colombia,Corea del Sur,Costa Rica,Croacia,Cuba,Dinamarca,Ecuador,Egipto,El Salvador,Emiratos Árabes Unidos,Eslovaquia,Eslovenia,España,Estados Unidos,Estonia,Filipinas,Finlandia,Francia,Grecia,Guatemala,Honduras,Hungría,India,Indonesia,Irlanda,Israel,Italia,Japón,Letonia,Lituania,Luxemburgo,Malasia,Marruecos,México,Nicaragua,Nigeria,Noruega,Nueva Zelanda,Países Bajos,Panamá,Paraguay,Perú,Polonia,Portugal,Puerto Rico,Reino Unido,República Checa,República Dominicana,Rumania,Rusia,Singapur,Sudáfrica,Suecia,Suiza,Tailandia,Turquía,Ucrania,Uruguay,Venezuela,Vietnam'.split(',');
+function adFill(){
+  var pl=document.getElementById('adPaisList'); if(pl&&!pl.children.length) pl.innerHTML=AD_COUNTRIES.map(function(c){return '<option value="'+c+'">';}).join('');
+  var ns=document.getElementById('adNum'); if(ns&&!ns.children.length) ns.innerHTML=AD_NUMS.map(function(n){return '<option value="'+n.id+'">'+n.label+'</option>';}).join('');
+  var px=document.getElementById('adPixel'); if(px&&!px.children.length) px.innerHTML=AD_PIXELS.map(function(p){return '<option value="'+p.id+'">'+p.label+'</option>';}).join('');
+}
 var _adFiles=[]; var _adDest='whatsapp';
 function waSvg(color,size){ size=size||15; return '<svg viewBox="0 0 24 24" width="'+size+'" height="'+size+'" fill="'+(color||'currentColor')+'" style="flex-shrink:0;vertical-align:-2px" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>'; }
 function adChip(t){ return '<span style="background:var(--surface-2);border:1px solid var(--border);border-radius:999px;padding:4px 11px;color:var(--ink-2)">'+t+'</span>'; }
 function adPaisUpd(){
-  var p=AD_PAISES[(document.getElementById('adPais')||{}).value]||AD_PAISES.Chile;
-  var a=document.getElementById('adAuto'); if(a) a.innerHTML=adChip(waSvg('#25D366')+' '+p.num)+adChip('🎯 Pixel: '+p.pixel)+adChip('📄 Página: '+AD_PAGE.nombre);
+  var pais=(document.getElementById('adPais')||{}).value||'';
+  var def=AD_PAISES[pais];
+  if(def){ var ns=document.getElementById('adNum'); if(ns) ns.value=def.numId; var px=document.getElementById('adPixel'); if(px) px.value=def.pixelId; }
+  var a=document.getElementById('adAuto'); if(a) a.innerHTML=adChip('📄 Página: '+AD_PAGE.nombre)+adChip('💡 Elige número y pixel arriba (puedes cambiarlos)');
   adNombreSug();
 }
 function adNombreSug(){
@@ -1438,7 +1448,7 @@ function adNombreSug(){
   var d=new Date(); var f=(''+d.getDate()).padStart(2,'0')+'-'+(''+(d.getMonth()+1)).padStart(2,'0');
   nom.value=pais+' · '+prod+' · '+f;
 }
-function adDestUpd(){ var w=document.getElementById('adLinkWrap'); if(w) w.style.display=(_adDest==='link')?'':'none'; }
+function adDestUpd(){ var w=document.getElementById('adLinkWrap'); if(w) w.style.display=(_adDest==='link')?'':'none'; var nw=document.getElementById('adNumWrap'); if(nw) nw.style.display=(_adDest==='whatsapp')?'':'none'; }
 function adSugPresup(){ document.getElementById('adPresup').value=50000; if(typeof toast==='function')toast('Sugerido: 50.000 COP/día para empezar y que Meta aprenda'); }
 function adFilePick(){
   _adFiles=[].slice.call((document.getElementById('adFile')||{}).files||[]);
@@ -1506,18 +1516,22 @@ function verPreview(){
   document.getElementById('adPreviewPanel').scrollIntoView({behavior:'smooth',block:'center'});
 }
 function aprobarMontar(){
-  var pais=document.getElementById('adPais').value, p=AD_PAISES[pais];
+  var pais=document.getElementById('adPais').value;
   var t=document.querySelector('.adsel_t:checked'), h=document.querySelector('.adsel_h:checked');
   var destino=_adDest;
   if(destino==='link' && !document.getElementById('adLink').value.trim()){ if(typeof toast==='function')toast('Falta la URL de la página'); return; }
   if(!_adFiles.length){ if(typeof toast==='function')toast('Sube al menos un video o imagen'); return; }
+  var numEl=document.getElementById('adNum'), pxEl=document.getElementById('adPixel');
+  var numTxt=(destino==='whatsapp'&&numEl&&numEl.selectedIndex>=0)?numEl.options[numEl.selectedIndex].text:'';
+  var pixelTxt=(pxEl&&pxEl.selectedIndex>=0)?pxEl.options[pxEl.selectedIndex].text:'';
   var camp={ pais:pais, producto:document.getElementById('adProd').value, nombre:document.getElementById('adNombre').value,
-    destino:destino, link:document.getElementById('adLink').value, numero:p.num, numeroId:p.numId, pixel:p.pixel, pixelId:p.pixelId,
-    pageId:AD_PAGE.id, presupuesto:(document.getElementById('adPresup').value||50000), ubicaciones:document.getElementById('adUbic').value,
-    texto:t?t.dataset.txt:'', titular:h?h.dataset.txt:'', creativos:_adFiles.map(function(f){return f.name;}), fecha:new Date().toISOString() };
+    destino:destino, link:document.getElementById('adLink').value, numeroId:(numEl?numEl.value:''), numero:numTxt,
+    pixelId:(pxEl?pxEl.value:''), pixel:pixelTxt, pageId:AD_PAGE.id, presupuesto:(document.getElementById('adPresup').value||50000),
+    ubicaciones:document.getElementById('adUbic').value, texto:t?t.dataset.txt:'', titular:h?h.dataset.txt:'',
+    creativos:_adFiles.map(function(f){return f.name;}), fecha:new Date().toISOString() };
   try{ var q=JSON.parse(localStorage.getItem('jaye_camp_aprob')||'[]'); q.push(camp); localStorage.setItem('jaye_camp_aprob',JSON.stringify(q)); }catch(e){}
-  var dest= destino==='whatsapp' ? ('WhatsApp '+p.num) : camp.link;
-  document.getElementById('adMontaMsg').innerHTML='✅ <b>Campaña aprobada y guardada.</b><br>'+esc2(camp.nombre)+' · '+pais+' · '+dest+' · '+Number(camp.presupuesto).toLocaleString('es-CO')+' COP/día · pixel '+p.pixel+'.<br><span style="color:#8a93a0">El motor que la sube a Meta (pausada) se conecta en el siguiente paso.</span>';
+  var dest= destino==='whatsapp' ? ('WhatsApp '+numTxt) : camp.link;
+  document.getElementById('adMontaMsg').innerHTML='✅ <b>Campaña aprobada y guardada.</b><br>'+esc2(camp.nombre)+' · '+esc2(pais)+' · '+esc2(dest)+' · '+Number(camp.presupuesto).toLocaleString('es-CO')+' COP/día · pixel '+esc2(pixelTxt)+'.<br><span style="color:#8a93a0">El motor que la sube a Meta (pausada) se conecta en el siguiente paso.</span>';
   if(typeof toast==='function')toast('Campaña aprobada ✓');
 }
 function esc2(s){ return String(s||'').replace(/</g,'&lt;'); }
@@ -1545,4 +1559,4 @@ document.querySelectorAll('#adDestSeg .adDestBtn').forEach(function(b){ b.addEve
   b.style.background='var(--brand,#3056c9)'; b.style.color='#fff'; b.style.borderColor='var(--brand,#3056c9)';
   adDestUpd();
 }); });
-(function(){ var n=document.getElementById('adNombre'); if(n) n.addEventListener('input',function(){n.dataset.edit='1';}); if(document.getElementById('adPais')) adPaisUpd(); if(document.getElementById('adFile')) adFilePick(); })();
+(function(){ adFill(); var n=document.getElementById('adNombre'); if(n) n.addEventListener('input',function(){n.dataset.edit='1';}); if(document.getElementById('adPais')) adPaisUpd(); adDestUpd(); if(document.getElementById('adFile')) adFilePick(); })();
