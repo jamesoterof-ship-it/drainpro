@@ -273,6 +273,9 @@ function sendSheet(payload){
   if(typeof SHEET_URL==="undefined" || !SHEET_URL) return;
   try{ fetch(SHEET_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(payload)}).catch(function(){}); }catch(e){}
 }
+function postAbandono(payload){
+  try{ fetch("https://n8n-production-8a42.up.railway.app/webhook/abandonado",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)}).catch(function(){}); }catch(e){}
+}
 function currentFormData(){
   return {
     sid:ORDER_SID, producto:PRODUCTO,
@@ -287,7 +290,7 @@ let abandonedSent=false, abTimer, leadTracked=false;
 function captureAbandoned(){
   if(form.telefono.value.replace(/\D/g,"").length < 8) return;   // solo con teléfono válido
   abandonedSent=true;
-  sendSheet(Object.assign(currentFormData(),{tipo:"abandonado",estado:"INCOMPLETO"}));
+  postAbandono(Object.assign(currentFormData(),{estado:"INCOMPLETO"}));
   if(!leadTracked){ leadTracked=true; fb("Lead", { content_name: PRODUCTO, value: current?parseInt(current.dataset.price,10):17000, currency: "CLP" }); }
 }
 ["telefono","nombre","correo","direccion","referencia"].forEach(function(id){
@@ -345,7 +348,7 @@ form.addEventListener("submit",async e=>{
       })}).catch(function(){});
     }
     // marcar el pedido abandonado como COMPLETADO (misma fila por sid)
-    if(abandonedSent) sendSheet(Object.assign(currentFormData(),{tipo:"abandonado",estado:"COMPLETADO"}));
+    if(abandonedSent) postAbandono(Object.assign(currentFormData(),{estado:"COMPLETADO"}));
     // Píxel de Meta: Purchase (conversión)
     fb("Purchase", { content_name: PRODUCTO, content_ids: ["drainpro"], contents: [{ id: "drainpro", quantity: qty }], value: total, currency: "CLP" });
     // Píxel de TikTok: CompletePayment (conversión)

@@ -12,6 +12,7 @@ const URL_APROBAR=BASE+'/aprobar-pedido';
 const URL_IMG='https://web-production-a5adc.up.railway.app/api/jaye/enviar-imagen';
 const URL_HUELLAS=BASE+'/leer-huellas';
 const URL_PEDWEB=BASE+'/leer-pedidos-web';   // pedidos de pagina desde Postgres (no Google)
+const URL_ABANDONADOS=BASE+'/leer-abandonados'; // abandonados desde Postgres (no Google)
 window.huellaMap={};
 async function cargarHuellas(){
   try{
@@ -226,12 +227,13 @@ async function cargarPaginas(){
   let peds=[], abs=[], vis=[], pedsArch=[], visArch=[];
   // PEDIDOS DE PAGINA: desde Postgres (confiable, no Google)
   try{ const pr=await fetch(URL_PEDWEB); const pj=await pr.json(); (pj.pedidos||[]).forEach(r=>peds.push(r)); }catch(e){}
-  if(!conectadas.length){ pedidosWeb=peds.map(mapPedido).sort((a,b)=>b.orden-a.orden); renderPedidosWeb(); renderAbandonadosWeb(); if(typeof renderAprobar==='function') renderAprobar(); return; }
+  // ABANDONADOS: desde Postgres (no Google)
+  try{ const ar=await fetch(URL_ABANDONADOS); const aj=await ar.json(); (aj.abandonados||[]).forEach(r=>{ const pg=PAGINAS.find(x=>x.id===r.pagina); abs.push(Object.assign({color:pg?pg.color:'#3060ea'},r)); }); }catch(e){}
+  // VISITAS + HISTORICO: todavia de Apps Script (pendiente migrar)
   for(const p of conectadas){
     try{
       const res=await fetch(p.url+(p.url.includes('?')?'&':'?')+'datos=json');
       const j=await res.json();
-      (j.abandonados||[]).forEach(r=>abs.push(Object.assign({pagina:p.id,producto:p.nombre,color:p.color},r)));
       (j.visitas||[]).forEach(r=>vis.push(Object.assign({pagina:p.id,producto:p.nombre,color:p.color},r)));
       (j.pedidosArch||[]).forEach(r=>pedsArch.push(Object.assign({pagina:p.id,producto:p.nombre,color:p.color},r)));
       (j.visitasArch||[]).forEach(r=>visArch.push(Object.assign({pagina:p.id,producto:p.nombre,color:p.color},r)));
