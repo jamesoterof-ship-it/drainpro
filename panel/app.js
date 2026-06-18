@@ -17,6 +17,7 @@ const URL_GENCOPY=BASE+'/generar-copy'; // creador de anuncios: genera copys con
 const URL_BUSCAGEO=BASE+'/buscar-geo'; // buscador de ubicaciones de Meta (ciudades/regiones)
 const URL_ASESORCAMP=BASE+'/asesor-campana'; // asesor: recomienda qué hacer con una campaña existente
 const URL_DETALLE=BASE+'/detalle-campana'; // detalle de una campaña (todos sus anuncios)
+const URL_MONTAR=BASE+'/montar-campana'; // motor: sube la campaña/anuncios a Meta
 window.huellaMap={};
 async function cargarHuellas(){
   try{
@@ -1575,6 +1576,8 @@ function adLimpiar(){
   adFileRender(); adGeoRender(); adNombreSug();
   if(typeof toast==='function')toast('Formulario limpio');
 }
+function adLzUpd(){ var p=(document.querySelector('input[name="adLz"]:checked')||{}).value; var w=document.getElementById('adLzFechaWrap'); if(w) w.style.display=(p==='programada')?'block':'none'; }
+function _adFileB64(f){ return new Promise(function(res){ if(!f){res('');return;} var r=new FileReader(); r.onload=function(){ var s=String(r.result||''); var c=s.indexOf(','); res(c>=0?s.slice(c+1):s); }; r.onerror=function(){res('');}; r.readAsDataURL(f); }); }
 function aprobarMontar(){
   if(!_adAds.length){ if(typeof toast==='function')toast('Genera los anuncios primero'); return; }
   var destino=_adDest;
@@ -1582,20 +1585,36 @@ function aprobarMontar(){
   var pais=document.getElementById('adPais').value;
   var numEl=document.getElementById('adNum'), pxEl=document.getElementById('adPixel'), ctaEl=document.getElementById('adCta');
   var numTxt=(destino==='whatsapp'&&numEl&&numEl.selectedIndex>=0)?numEl.options[numEl.selectedIndex].text:'';
-  var pixelTxt=(pxEl&&pxEl.selectedIndex>=0)?pxEl.options[pxEl.selectedIndex].text:'';
-  var ctaTxt=(ctaEl&&ctaEl.selectedIndex>=0)?ctaEl.options[ctaEl.selectedIndex].text:'';
-  var camp={ pais:pais, producto:document.getElementById('adProd').value, nombre:document.getElementById('adNombre').value,
-    destino:destino, link:document.getElementById('adLink').value, numeroId:(numEl?numEl.value:''), numero:numTxt,
-    pixelId:(pxEl?pxEl.value:''), pixel:pixelTxt, ctaId:(ctaEl?ctaEl.value:''), cta:ctaTxt, pageId:AD_PAGE.id,
-    presupuesto:(document.getElementById('adPresup').value||50000),
-    ubicaciones:(_adGeos.length?_adGeos.map(function(g){return g.name;}).join(', '):'Todo el país'), geos:_adGeos.slice(),
-    anuncios:_adAds.map(function(a,i){return {creativo:(_adFiles[i]?_adFiles[i].name:''), textos:a.textos, titulares:a.titulares, descripciones:a.descripciones};}),
-    refrescar:(_adTarget?_adTarget.id:''), refrescarNombre:(_adTarget?_adTarget.nombre:''),
-    fecha:new Date().toISOString() };
-  try{ var q=JSON.parse(localStorage.getItem('jaye_camp_aprob')||'[]'); q.push(camp); localStorage.setItem('jaye_camp_aprob',JSON.stringify(q)); }catch(e){}
-  var dest= destino==='whatsapp' ? ('WhatsApp '+numTxt) : camp.link;
-  document.getElementById('adMontaMsg').innerHTML=(_adTarget?('✅ <b>Refresco aprobado para '+esc2(_adTarget.nombre)+'.</b><br>Se le agregarán '+camp.anuncios.length+' anuncios nuevos (pausados).'):('✅ <b>Campaña aprobada y guardada.</b><br>'+esc2(camp.nombre)+' · '+esc2(pais)+' · '+esc2(dest)+' · '+camp.anuncios.length+' anuncios · '+Number(camp.presupuesto).toLocaleString('es-CO')+' COP/día · pixel '+esc2(pixelTxt)+'.'))+'<br><span style="color:#8a93a0">El motor que sube a Meta (pausado) se conecta en el siguiente paso.</span>';
-  if(typeof toast==='function')toast('Campaña aprobada ✓');
+  var lzModo=(document.querySelector('input[name="adLz"]:checked')||{}).value||'pausada';
+  var startTime='';
+  if(lzModo==='programada'){ var dt=(document.getElementById('adLzFecha')||{}).value; if(!dt){ if(typeof toast==='function')toast('Elige la fecha y hora'); return; } try{ startTime=new Date(dt).toISOString(); }catch(e){} }
+  var ccMap={Chile:'CL',Colombia:'CO',Paraguay:'PY','México':'MX',Mexico:'MX','Perú':'PE',Peru:'PE',Ecuador:'EC',Argentina:'AR',Guatemala:'GT','España':'ES',Espana:'ES'};
+  var cc=ccMap[pais]||'CL';
+  var msg=document.getElementById('adMontaMsg'), btn=document.getElementById('adMontarBtn');
+  if(btn){ btn.disabled=true; btn.textContent='Montando en Meta…'; }
+  if(msg) msg.innerHTML='Subiendo a Meta… (puede tardar unos segundos)';
+  Promise.all(_adFiles.map(_adFileB64)).then(function(datas){
+    var anuncios=_adAds.map(function(a,i){ return { mime:(_adFiles[i]?_adFiles[i].type:''), data:datas[i]||'', textos:a.textos, titulares:a.titulares, descripciones:a.descripciones }; }).filter(function(an){ return an.data; });
+    if(!anuncios.length){ throw new Error('sin imagenes'); }
+    var payload={ modo:(_adTarget?'refresco':'nueva'), pais:pais, cc:cc, producto:document.getElementById('adProd').value, nombre:(document.getElementById('adNombre').value||(_adTarget?_adTarget.nombre:'Campaña')),
+      destino:destino, link:document.getElementById('adLink').value, numero:numTxt, pixelId:(pxEl?pxEl.value:''), cta:(ctaEl?ctaEl.value:''), pageId:AD_PAGE.id,
+      presupuesto:parseInt(document.getElementById('adPresup').value||50000,10),
+      geos:_adGeos.map(function(g){ return {key:g.key, type:g.type}; }),
+      anuncios:anuncios,
+      lanzamiento:{ modo:lzModo, start_time:startTime },
+      refrescar:(_adTarget?{campaignId:_adTarget.id, adsetId:(_adTarget.adsetId||'')}:null) };
+    return fetch(URL_MONTAR,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  }).then(function(r){ return r.json(); }).then(function(res){
+    if(btn){ btn.disabled=false; btn.textContent='✅ Aprobar y montar'; }
+    if(res && res.ok){
+      var est = res.estado==='ACTIVE' ? (res.programado?('PROGRAMADA para '+new Date(res.programado).toLocaleString('es-CO')):'ACTIVA'):'PAUSADA';
+      msg.innerHTML='✅ <b>Montada en Meta — '+est+'.</b><br>'+(res.ads?res.ads.length:0)+' anuncio(s) · campaña '+esc2(res.campaignId||'')+'.'+((res.errores&&res.errores.length)?('<br><span style="color:#c0392b">Avisos: '+esc2(res.errores.join(' · '))+'</span>'):'');
+      if(typeof toast==='function')toast('Montada en Meta ✓');
+    } else {
+      msg.innerHTML='<span style="color:#c0392b">No se pudo montar: '+esc2((res&&res.errores&&res.errores.join(' · '))||'enciende "Montar Campaña" en n8n')+'</span>';
+      if(typeof toast==='function')toast('Error al montar');
+    }
+  }).catch(function(){ if(btn){ btn.disabled=false; btn.textContent='✅ Aprobar y montar'; } if(msg) msg.innerHTML='<span style="color:#c0392b">No se pudo conectar (enciende \"Montar Campaña\" en n8n).</span>'; });
 }
 function esc2(s){ return String(s||'').replace(/</g,'&lt;'); }
 var _adCamps=[]; var _adCampFiltro='ACTIVE'; var _adTarget=null;
