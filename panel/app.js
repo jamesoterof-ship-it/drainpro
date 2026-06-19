@@ -1580,7 +1580,7 @@ function adLimpiar(){
 function adLzUpd(){ var p=(document.querySelector('input[name="adLz"]:checked')||{}).value; var w=document.getElementById('adLzFechaWrap'); if(w) w.style.display=(p==='programada')?'block':'none'; }
 function _adFileB64(f){ return new Promise(function(res){ if(!f){res('');return;} var r=new FileReader(); r.onload=function(){ var s=String(r.result||''); var c=s.indexOf(','); res(c>=0?s.slice(c+1):s); }; r.onerror=function(){res('');}; r.readAsDataURL(f); }); }
 // Sube un video en binario a /subir-video (streaming, no revienta memoria de n8n) y devuelve el video_id de Meta
-function _adSubirVideo(f){ return new Promise(function(res){ if(!f){res('');return;} var fd=new FormData(); fd.append('data', f, (f.name||'v.mp4')); fetch(URL_SUBVID,{method:'POST',body:fd}).then(function(r){return r.json();}).then(function(j){ res((j&&j.video_id)||''); }).catch(function(){ res(''); }); }); }
+function _adSubirVideo(f){ return new Promise(function(res){ if(!f){res('');return;} if(f._vid){res(f._vid);return;} var fd=new FormData(); fd.append('data', f, (f.name||'v.mp4')); fetch(URL_SUBVID,{method:'POST',body:fd}).then(function(r){return r.json();}).then(function(j){ var v=(j&&j.video_id)||''; if(v) f._vid=v; res(v); }).catch(function(){ res(''); }); }); }
 function aprobarMontar(){
   if(!_adAds.length){ if(typeof toast==='function')toast('Genera los anuncios primero'); return; }
   var destino=_adDest;
@@ -1735,7 +1735,8 @@ function adAsesor(i){
   var c=_adCamps[i]; if(!c) return;
   var box=document.getElementById('adRec'+i); if(box){ box.style.display='block'; box.innerHTML='<div style="color:#8a93a0;font-size:12px;margin-top:6px">Analizando con IA… 🤔</div>'; }
   var pais=adGuessPais(c.nombre); var producto=adProdKeyword(c.nombre);
-  fetch(URL_ASESORCAMP,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({campana:c,pais:pais,producto:producto})})
+  var destino=(c._det&&c._det.destino)||c.destino||'';
+  fetch(URL_ASESORCAMP,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({campana:c,pais:pais,producto:producto,destino:destino})})
     .then(function(r){return r.json();}).then(function(j){
       if(box) box.innerHTML='<div style="background:var(--surface-2);border:1px solid var(--border);border-radius:9px;padding:9px 11px;margin-top:7px"><div style="font-weight:800;color:var(--ink);font-size:12.5px">💡 '+esc2(j.titulo||'Recomendación')+'</div><div style="font-size:12px;color:var(--ink);margin-top:3px">'+esc2(j.recomendacion||'')+'</div>'+(j.porque?('<div style="font-size:11px;color:#8a93a0;margin-top:3px">'+esc2(j.porque)+'</div>'):'')+'</div>';
     }).catch(function(){ if(box) box.innerHTML='<div style="color:#8a93a0;font-size:12px;margin-top:6px">No se pudo analizar (enciende "Asesor Campaña" en n8n).</div>'; });
