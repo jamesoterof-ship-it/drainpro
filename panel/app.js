@@ -17,6 +17,7 @@ const URL_GENCOPY=BASE+'/generar-copy'; // creador de anuncios: genera copys con
 const URL_BUSCAGEO=BASE+'/buscar-geo'; // buscador de ubicaciones de Meta (ciudades/regiones)
 const URL_ASESORCAMP=BASE+'/asesor-campana'; // asesor: recomienda qué hacer con una campaña existente
 const URL_DETALLE=BASE+'/detalle-campana'; // detalle de una campaña (todos sus anuncios)
+const URL_LEERVIS=BASE+'/leer-visitas'; // visitas de TODAS las páginas desde Postgres (no Google) — cualquier página nueva aparece sola
 const URL_MONTAR=BASE+'/montar-campana'; // motor: sube la campaña/anuncios a Meta
 const URL_SUBVID=BASE+'/subir-video'; // sube el video en binario (streaming, sin reventar memoria) y devuelve video_id
 window.huellaMap={};
@@ -235,16 +236,16 @@ async function cargarPaginas(){
   try{ const pr=await fetch(URL_PEDWEB); const pj=await pr.json(); (pj.pedidos||[]).forEach(r=>peds.push(r)); }catch(e){}
   // ABANDONADOS: desde Postgres (no Google)
   try{ const ar=await fetch(URL_ABANDONADOS); const aj=await ar.json(); (aj.abandonados||[]).forEach(r=>{ const pg=PAGINAS.find(x=>x.id===r.pagina); abs.push(Object.assign({color:pg?pg.color:'#3060ea'},r)); }); }catch(e){}
-  // VISITAS + HISTORICO: todavia de Apps Script (pendiente migrar)
-  for(const p of conectadas){
-    try{
-      const res=await fetch(p.url+(p.url.includes('?')?'&':'?')+'datos=json');
-      const j=await res.json();
-      (j.visitas||[]).forEach(r=>vis.push(Object.assign({pagina:p.id,producto:p.nombre,color:p.color},r)));
-      (j.pedidosArch||[]).forEach(r=>pedsArch.push(Object.assign({pagina:p.id,producto:p.nombre,color:p.color},r)));
-      (j.visitasArch||[]).forEach(r=>visArch.push(Object.assign({pagina:p.id,producto:p.nombre,color:p.color},r)));
-    }catch(e){}
-  }
+  // VISITAS: desde Postgres (NO Google). Cualquier página que reporte aparece sola.
+  const COLORVIS={shilajit:'#0e8074',drainpro:'#3060ea',nad:'#b8860b'};
+  const COLORROT=['#6cc24a','#9b59b6','#e67e22','#16a085','#c0392b','#2980b9'];
+  try{
+    const vr=await fetch(URL_LEERVIS); const vj=await vr.json();
+    const rows=Array.isArray(vj)?vj:(vj.visitas||vj.data||[]);
+    let ci=0; const ck={};
+    rows.forEach(r=>{ const slug=r.pagina||'otro'; let col=COLORVIS[slug]; if(!col){ if(!ck[slug])ck[slug]=COLORROT[(ci++)%COLORROT.length]; col=ck[slug]; }
+      vis.push({pagina:slug,producto:r.nombre||slug,color:col,fecha:r.dia,visitas:r.visitas,formulario:r.formularios}); });
+  }catch(e){}
   pedidosWeb=peds.map(mapPedido).sort((a,b)=>b.orden-a.orden);
   pedidosArchivo=pedsArch.map(mapPedido);                 // meses ya archivados (solo para Histórico)
   visitasArchivo=visArch;
@@ -428,10 +429,13 @@ function verAbandonado(i){
 
 /* ---------- VISITAS ---------- */
 let fPagV='todas';
+window.setPagV=function(id){ fPagV=id; renderVisitas(); };
+function pagesVis(){ var m={}; (visitasWeb||[]).forEach(function(v){ if(v&&v.pagina&&!m[v.pagina]) m[v.pagina]={id:v.pagina,nombre:v.producto||v.pagina,color:v.color||'#6cc24a'}; }); var a=Object.keys(m).map(function(k){return m[k];}); return a.length?a:PAGINAS.filter(p=>p.url); }
 function renderVisitas(){
   const box=document.getElementById('visitasBox'); if(!box) return;
   const lbl=TXT_RANGO[Rvis.tipo]||'';
-  const conectadas=PAGINAS.filter(p=>p.url);
+  const conectadas=pagesVis();
+  var _sp=document.getElementById('segPagV'); if(_sp){ _sp.innerHTML='<button class="'+(fPagV==='todas'?'act':'')+'" onclick="setPagV(\'todas\')">Todas</button>'+conectadas.map(function(p){return '<button class="'+(fPagV===p.id?'act':'')+'" onclick="setPagV(\''+p.id+'\')"><span style="width:8px;height:8px;border-radius:50%;background:'+p.color+';display:inline-block"></span>'+esc2(p.nombre)+'</button>';}).join(''); }
   const pgs=conectadas.filter(p=>fPagV==='todas'||p.id===fPagV);
   // agregados por página, en el rango
   const data=pgs.map(p=>{
@@ -469,7 +473,7 @@ function renderVisitas(){
   });
   const vc=document.getElementById('visChart');
   if(vc) vc.innerHTML=`<svg viewBox="0 0 620 220" width="100%" height="210" preserveAspectRatio="none" font-family="Inter"><g stroke="var(--grid)" stroke-width="1"><line x1="40" y1="20" x2="610" y2="20"/><line x1="40" y1="65" x2="610" y2="65"/><line x1="40" y1="110" x2="610" y2="110"/><line x1="40" y1="155" x2="610" y2="155"/><line x1="40" y1="186" x2="610" y2="186"/></g>${bars}${labels}</svg>`;
-  const vcs=document.getElementById('visChartSub'); if(vcs) vcs.textContent=(fPagV==='todas'?'Ambas páginas':data[0]?data[0].nombre:'')+' · '+lbl;
+  const vcs=document.getElementById('visChartSub'); if(vcs) vcs.textContent=(fPagV==='todas'?'Todas las páginas':data[0]?data[0].nombre:'')+' · '+lbl;
 
   // embudo
   const fun=document.getElementById('visFunnel');

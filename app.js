@@ -13,8 +13,7 @@ const clp = n => "$" + Math.round(n).toLocaleString("es-CL");
 
 /* ---------- Contador de visitas (para el panel) ---------- */
 function trackPanel(tipo){
-  if(!PANEL_URL) return;
-  try{ fetch(PANEL_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({tipo:tipo})}).catch(function(){}); }catch(e){}
+  try{ fetch("https://n8n-production-8a42.up.railway.app/webhook/track-visita",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({pagina:PRODUCTO,producto:PRODUCTO,tipo:tipo})}).catch(function(){}); }catch(e){}
 }
 // una visita por sesión (no recuenta si recarga en la misma pestaña)
 try{ if(!sessionStorage.getItem("jaye_vis")){ sessionStorage.setItem("jaye_vis","1"); trackPanel("visita"); } }catch(e){ trackPanel("visita"); }
