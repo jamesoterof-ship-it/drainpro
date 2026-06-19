@@ -18,6 +18,7 @@ const URL_BUSCAGEO=BASE+'/buscar-geo'; // buscador de ubicaciones de Meta (ciuda
 const URL_ASESORCAMP=BASE+'/asesor-campana'; // asesor: recomienda qué hacer con una campaña existente
 const URL_DETALLE=BASE+'/detalle-campana'; // detalle de una campaña (todos sus anuncios)
 const URL_MONTAR=BASE+'/montar-campana'; // motor: sube la campaña/anuncios a Meta
+const URL_SUBVID=BASE+'/subir-video'; // sube el video en binario (streaming, sin reventar memoria) y devuelve video_id
 window.huellaMap={};
 async function cargarHuellas(){
   try{
@@ -1578,6 +1579,8 @@ function adLimpiar(){
 }
 function adLzUpd(){ var p=(document.querySelector('input[name="adLz"]:checked')||{}).value; var w=document.getElementById('adLzFechaWrap'); if(w) w.style.display=(p==='programada')?'block':'none'; }
 function _adFileB64(f){ return new Promise(function(res){ if(!f){res('');return;} var r=new FileReader(); r.onload=function(){ var s=String(r.result||''); var c=s.indexOf(','); res(c>=0?s.slice(c+1):s); }; r.onerror=function(){res('');}; r.readAsDataURL(f); }); }
+// Sube un video en binario a /subir-video (streaming, no revienta memoria de n8n) y devuelve el video_id de Meta
+function _adSubirVideo(f){ return new Promise(function(res){ if(!f){res('');return;} var fd=new FormData(); fd.append('data', f, (f.name||'v.mp4')); fetch(URL_SUBVID,{method:'POST',body:fd}).then(function(r){return r.json();}).then(function(j){ res((j&&j.video_id)||''); }).catch(function(){ res(''); }); }); }
 function aprobarMontar(){
   if(!_adAds.length){ if(typeof toast==='function')toast('Genera los anuncios primero'); return; }
   var destino=_adDest;
@@ -1593,9 +1596,17 @@ function aprobarMontar(){
   var msg=document.getElementById('adMontaMsg'), btn=document.getElementById('adMontarBtn');
   if(btn){ btn.disabled=true; btn.textContent='Montando en Meta…'; }
   if(msg) msg.innerHTML='Subiendo a Meta… (puede tardar unos segundos)';
-  Promise.all(_adFiles.map(_adFileB64)).then(function(datas){
-    var anuncios=_adAds.map(function(a,i){ return { mime:(_adFiles[i]?_adFiles[i].type:''), data:datas[i]||'', textos:a.textos, titulares:a.titulares, descripciones:a.descripciones }; }).filter(function(an){ return an.data; });
-    if(!anuncios.length){ throw new Error('sin imagenes'); }
+  if(msg) msg.innerHTML='Subiendo creativos a Meta… (los videos pueden tardar un poco más)';
+  Promise.all(_adAds.map(function(a,i){
+    var f=_adFiles[i];
+    var isVid=f && /^video\//.test(f.type||'');
+    if(isVid){
+      return _adSubirVideo(f).then(function(vid){ return vid?{ video_id:vid, textos:a.textos, titulares:a.titulares, descripciones:a.descripciones }:null; });
+    }
+    return _adFileB64(f).then(function(d){ return d?{ mime:(f?f.type:''), data:d, textos:a.textos, titulares:a.titulares, descripciones:a.descripciones }:null; });
+  })).then(function(arr){
+    var anuncios=arr.filter(function(an){ return an && (an.data || an.video_id); });
+    if(!anuncios.length){ throw new Error('sin creativos (¿el video no terminó de subir?)'); }
     var payload={ modo:(_adTarget?'refresco':'nueva'), pais:pais, cc:cc, producto:document.getElementById('adProd').value, nombre:(document.getElementById('adNombre').value||(_adTarget?_adTarget.nombre:'Campaña')),
       destino:destino, link:document.getElementById('adLink').value, numero:numTxt, pixelId:(pxEl?pxEl.value:''), cta:(ctaEl?ctaEl.value:''), pageId:AD_PAGE.id,
       presupuesto:parseInt(document.getElementById('adPresup').value||50000,10),
