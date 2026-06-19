@@ -1508,19 +1508,21 @@ function generarAnuncios(){
   if(!_adFiles.length){ if(typeof toast==='function')toast('Sube al menos un video o imagen'); return; }
   var prod=document.getElementById('adProd').value, desc=document.getElementById('adDesc').value.trim(), pais=document.getElementById('adPais').value, link=(document.getElementById('adLinkProd')||{}).value||'', estudio=(document.getElementById('adEstudio')||{}).value||'';
   if(_adTarget){ prod=_adTarget.nombre; pais=_adTarget.pais||pais; estudio=(_adTarget.copy||'')+' '+estudio; link=''; }
-  var btn=document.getElementById('adGenBtn'); var old=btn.textContent; btn.disabled=true; btn.textContent='Generando… (~30s)';
+  var btn=document.getElementById('adGenBtn'); var old=btn.textContent; btn.disabled=true; btn.textContent='Mirando creativos… 👀';
   var panel=document.getElementById('adGaleriaPanel'); panel.style.display='block';
-  document.getElementById('adGaleria').innerHTML='<div class="vacio" style="grid-column:1/-1">La IA está escribiendo los copys… ✍️</div>';
+  document.getElementById('adGaleria').innerHTML='<div class="vacio" style="grid-column:1/-1">La IA está mirando cada imagen/video y escribiendo el copy de cada uno… 👀✍️</div>';
   document.getElementById('adMontaMsg').innerHTML='';
-  fetch(URL_GENCOPY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({producto:prod,descripcion:desc,copy_actual:'',pais:pais,link:link,estudio:estudio})})
-    .then(function(r){return r.json();}).then(function(j){
-      if(!j||!j.textos||!j.textos.length){ document.getElementById('adGaleria').innerHTML='<div class="vacio" style="grid-column:1/-1">No se pudo generar. Intenta de nuevo.</div>'; return; }
-      _adCopyPool=j;
-      _adAds=_adFiles.map(function(f,i){ return { textos:win(j.textos,i,3), titulares:win(j.titulares,i,3), descripciones:win(j.descripciones,i,3) }; });
-      renderGaleria();
-    })
-    .catch(function(){ document.getElementById('adGaleria').innerHTML='<div class="vacio" style="grid-column:1/-1">Error generando. Intenta de nuevo.</div>'; })
-    .then(function(){ btn.disabled=false; btn.textContent=old; });
+  // un copy POR creativo: la IA VE la imagen (o un fotograma del video) y escribe el copy que coincide con ESE visual
+  _adAds=_adFiles.map(function(){ return { textos:['…'], titulares:[''], descripciones:[''], cargando:true }; });
+  renderGaleria();
+  Promise.all(_adFiles.map(function(f,i){
+    return _adVisualImg(f).then(function(img){
+      return fetch(URL_GENCOPY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({producto:prod,descripcion:desc,copy_actual:'',pais:pais,link:link,estudio:estudio,img:img})})
+        .then(function(r){return r.json();})
+        .then(function(j){ if(j&&j.textos&&j.textos.length){ _adAds[i]={ textos:win(j.textos,0,3), titulares:win(j.titulares,0,3), descripciones:win(j.descripciones,0,3) }; } else { _adAds[i]={ textos:['(no se pudo, dale 🔄)'], titulares:[''], descripciones:[''] }; } renderGaleria(); })
+        .catch(function(){ _adAds[i]={ textos:['(error, dale 🔄)'], titulares:[''], descripciones:[''] }; renderGaleria(); });
+    });
+  })).then(function(){ btn.disabled=false; btn.textContent=old; renderGaleria(); });
 }
 function renderGaleria(){
   var g=document.getElementById('adGaleria'); if(!g) return;
@@ -1562,10 +1564,13 @@ function renderGaleria(){
 function adAdDel(i){ _adAds.splice(i,1); _adFiles.splice(i,1); adFileRender(); renderGaleria(); }
 function adAdRegen(i){
   var prod=document.getElementById('adProd').value, desc=document.getElementById('adDesc').value.trim(), pais=document.getElementById('adPais').value, link=(document.getElementById('adLinkProd')||{}).value||'', estudio=(document.getElementById('adEstudio')||{}).value||'';
-  if(typeof toast==='function')toast('Generando copy nuevo…');
-  fetch(URL_GENCOPY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({producto:prod,descripcion:desc,copy_actual:'',pais:pais,link:link,estudio:estudio})})
-    .then(function(r){return r.json();}).then(function(j){ if(j&&j.textos&&j.textos.length){ _adAds[i]={textos:win(j.textos,0,3),titulares:win(j.titulares,0,3),descripciones:win(j.descripciones,0,3)}; renderGaleria(); if(typeof toast==='function')toast('Copy nuevo ✓'); } })
-    .catch(function(){ if(typeof toast==='function')toast('Error'); });
+  if(_adTarget){ prod=_adTarget.nombre; pais=_adTarget.pais||pais; estudio=(_adTarget.copy||'')+' '+estudio; link=''; }
+  var f=_adFiles[i];
+  if(typeof toast==='function')toast('Mirando el creativo y reescribiendo… 👀');
+  _adVisualImg(f).then(function(img){
+    return fetch(URL_GENCOPY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({producto:prod,descripcion:desc,copy_actual:'',pais:pais,link:link,estudio:estudio,img:img,variante:true})})
+      .then(function(r){return r.json();}).then(function(j){ if(j&&j.textos&&j.textos.length){ _adAds[i]={textos:win(j.textos,0,3),titulares:win(j.titulares,0,3),descripciones:win(j.descripciones,0,3)}; renderGaleria(); if(typeof toast==='function')toast('Copy nuevo ✓'); } else { if(typeof toast==='function')toast('No se pudo, reintenta'); } });
+  }).catch(function(){ if(typeof toast==='function')toast('Error'); });
 }
 function adLimpiar(){
   _adFiles=[]; _adGeos=[]; _adAds=[]; _adCopyPool=null;
@@ -1579,6 +1584,17 @@ function adLimpiar(){
 }
 function adLzUpd(){ var p=(document.querySelector('input[name="adLz"]:checked')||{}).value; var w=document.getElementById('adLzFechaWrap'); if(w) w.style.display=(p==='programada')?'block':'none'; }
 function _adFileB64(f){ return new Promise(function(res){ if(!f){res('');return;} var r=new FileReader(); r.onload=function(){ var s=String(r.result||''); var c=s.indexOf(','); res(c>=0?s.slice(c+1):s); }; r.onerror=function(){res('');}; r.readAsDataURL(f); }); }
+// Saca una imagen JPEG (máx ~1024px) del creativo para que la IA lo VEA con Vision: imagen directa, o un fotograma del video. Devuelve {mime,data} o null.
+function _adVisualImg(f){
+  return new Promise(function(res){
+    if(!f){ res(null); return; }
+    var url=URL.createObjectURL(f);
+    function fromEl(el,w,h){ try{ var max=1024, sc=Math.min(1,max/Math.max(w||max,h||max)); var cw=Math.max(1,Math.round((w||max)*sc)), ch=Math.max(1,Math.round((h||max)*sc)); var cv=document.createElement('canvas'); cv.width=cw; cv.height=ch; cv.getContext('2d').drawImage(el,0,0,cw,ch); var d=cv.toDataURL('image/jpeg',0.82); var ci=d.indexOf(','); res({mime:'image/jpeg',data:ci>=0?d.slice(ci+1):d}); }catch(e){ res(null); } }
+    if(/image/.test(f.type)){ var im=new Image(); im.onload=function(){ fromEl(im,im.naturalWidth,im.naturalHeight); URL.revokeObjectURL(url); }; im.onerror=function(){ res(null); URL.revokeObjectURL(url); }; im.src=url; }
+    else if(/video/.test(f.type)){ var v=document.createElement('video'); v.muted=true; v.playsInline=true; v.onloadeddata=function(){ var cap=false; var go=function(){ if(cap)return; cap=true; fromEl(v,v.videoWidth,v.videoHeight); URL.revokeObjectURL(url); }; v.onseeked=go; setTimeout(go,2500); try{ v.currentTime=Math.min(1,(v.duration||2)/3)||0.1; }catch(e){ go(); } }; v.onerror=function(){ res(null); URL.revokeObjectURL(url); }; v.src=url; v.load(); }
+    else { res(null); URL.revokeObjectURL(url); }
+  });
+}
 // Sube un video en binario a /subir-video (streaming, no revienta memoria de n8n) y devuelve el video_id de Meta
 function _adSubirVideo(f){ return new Promise(function(res){ if(!f){res('');return;} if(f._vid){res(f._vid);return;} var fd=new FormData(); fd.append('data', f, (f.name||'v.mp4')); fetch(URL_SUBVID,{method:'POST',body:fd}).then(function(r){return r.json();}).then(function(j){ var v=(j&&j.video_id)||''; if(v) f._vid=v; res(v); }).catch(function(){ res(''); }); }); }
 function aprobarMontar(){
