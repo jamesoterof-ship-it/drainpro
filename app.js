@@ -6,6 +6,9 @@ const PRODUCTO = "Polvo Limpiador DRAINPRO";
 const DROPI_ID = "69746";   // ID del producto DRAINPRO en Dropi
 const N8N_CONFIRM = "https://n8n-production-8a42.up.railway.app/webhook/d4f51138-9611-4f93-9c51-e137fea97dcc"; // confirmación WhatsApp
 const PANEL_URL = "https://script.google.com/macros/s/AKfycbwRayJ1bThod83lMlvOWSdE8MAedTPLbaxIcrDN301PYUk7SWZoen6pFE5rScYiuvra/exec"; // panel: visitas/conversión
+/* ---- seguimiento de campaña: captura ?cmp del anuncio (Meta) para atribución exacta por teléfono ---- */
+try{ var _qsC=new URLSearchParams(location.search); var _cmpV=_qsC.get("cmp")||_qsC.get("utm_campaign")||""; if(_cmpV){ try{localStorage.setItem("_cmp",_cmpV);}catch(e){} window._CMP=_cmpV; } else { try{ window._CMP=localStorage.getItem("_cmp")||""; }catch(e){ window._CMP=""; } } }catch(e){ window._CMP=""; }
+window._trackVenta=function(phone){ try{ if(window._CMP&&phone) fetch("https://n8n-production-8a42.up.railway.app/webhook/track-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({phone:phone,cmp:window._CMP,producto:PRODUCTO,canal:"pagina"})}).catch(function(){}); }catch(e){} };
 const clp = n => "$" + Math.round(n).toLocaleString("es-CL");
 
 /* ---------- Contador de visitas (para el panel) ---------- */
@@ -338,7 +341,7 @@ form.addEventListener("submit",async e=>{
     } else { console.warn("SHEET_URL vacío: configúralo en app.js para guardar pedidos."); }
     // Confirmación por WhatsApp (n8n) — formato que espera el flujo
     if(N8N_CONFIRM){
-      var telWA = (form.codpais.value+"").replace(/\D/g,"") + telLimpio();
+      var telWA = (form.codpais.value+"").replace(/\D/g,"") + telLimpio(); window._trackVenta&&window._trackVenta(telWA);
       fetch(N8N_CONFIRM,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
         customer:{ phone: telWA, email: form.correo.value.trim() },
         shipping_address:{ first_name: nombre.split(" ")[0], address1: dir, province: form.region.value, city: form.comuna.value, address2: form.referencia.value.trim(), country_code: form.codpais.value },
