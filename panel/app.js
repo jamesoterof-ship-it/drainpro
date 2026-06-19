@@ -1663,7 +1663,12 @@ function renderCampList(){
       +'<div onclick="adToggleDetalle('+i+')" style="padding:11px 13px;cursor:pointer">'
         +'<div style="display:flex;align-items:center;gap:8px"><div style="font-weight:700;color:var(--ink);flex:1;min-width:0">'+esc2(c.nombre)+' <span style="font-size:11px;color:'+(c.estado==='ACTIVE'?'#1f9d55':'#8a93a0')+'">· '+esc2(c.estado)+'</span></div>'
         +'<button type="button" onclick="event.stopPropagation();adAsesor('+i+')" style="font-size:11.5px;padding:6px 11px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);color:var(--ink);cursor:pointer;font-weight:700;white-space:nowrap">💡 ¿Qué hago?</button></div>'
-        +'<div style="font-size:12px;color:var(--ink-2);margin-top:3px">Gasto 14d: '+Number(c.gasto||0).toLocaleString('es-CO')+' COP · Resultados: '+(c.resultados||0)+' · '+(c.num_ads||0)+' anuncios <span style="color:#8a93a0">· clic para ver detalle ▾</span></div>'
+        +'<div style="font-size:12px;color:var(--ink-2);margin-top:3px">Gasto 14d: <b>'+Number(c.gasto||0).toLocaleString('es-CO')+' COP</b> · '+(c.num_ads||0)+' anuncios · <span style="color:#8a93a0">Meta dice: '+(c.resultados||0)+' (inflado)</span></div>'
+        +'<div style="font-size:12px;margin-top:5px;display:flex;gap:9px;flex-wrap:wrap;align-items:center">'
+          +'<span style="background:#e8f6ec;color:#1f7a3d;border-radius:6px;padding:2px 7px;font-weight:700">✅ '+(c.ventas_reales||0)+' ventas reales <span style="font-weight:400;opacity:.8">'+(c.canal==='whatsapp'?'(bot Carlos)':'(Dropi)')+'</span></span>'
+          +(c.ventas_reales? ('<span style="color:var(--ink)">Costo real/venta: <b>'+Number(c.costo_real||0).toLocaleString('es-CO')+' COP</b></span>'+'<span style="color:'+((c.roas_real||0)>=1.5?'#1f7a3d':((c.roas_real||0)>=1?'#b8860b':'#c0392b'))+';font-weight:800">ROAS real: '+(c.roas_real||0)+'x</span>') : '<span style="color:#c0392b;font-weight:700">sin ventas reales aún</span>')
+        +'</div>'
+        +'<div style="font-size:11px;color:#8a93a0;margin-top:3px">clic para ver detalle ▾</div>'
         +'<div id="adRec'+i+'" style="display:none"></div>'
       +'</div>'
       +'<div id="adDet'+i+'" style="display:none;border-top:1px solid var(--border);padding:10px 13px;background:var(--surface-2)"></div>'
