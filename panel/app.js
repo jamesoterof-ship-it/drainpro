@@ -1532,7 +1532,7 @@ function renderGaleria(){
   g.innerHTML=_adAds.map(function(ad,i){
     var f=_adFiles[i]; var crea;
     if(f && /image/.test(f.type)) crea='<img src="'+URL.createObjectURL(f)+'" style="width:100%;display:block;aspect-ratio:1/1;object-fit:cover">';
-    else if(f && /video/.test(f.type)) crea='<div style="aspect-ratio:1/1;background:#111;display:flex;align-items:center;justify-content:center;color:#fff;font-size:30px">▶</div>';
+    else if(f && /video/.test(f.type)) crea='<video src="'+URL.createObjectURL(f)+'" controls muted playsinline preload="metadata" style="width:100%;height:auto;display:block;background:#000"></video>';
     else crea='<div style="aspect-ratio:1/1;background:var(--surface-2);display:flex;align-items:center;justify-content:center;color:#8a93a0;font-size:12px">creativo</div>';
     var ctaBtn= destino==='whatsapp' ? (waSvg('#25D366',13)+' '+esc2(ctaTxt)) : esc2(ctaTxt);
     var variantes='<details style="border-top:1px solid var(--border)"><summary style="padding:6px 10px;font-size:10.5px;color:#8a93a0;cursor:pointer">📋 Ver los 3 textos · 3 títulos · 3 descripciones (Meta los rota)</summary>'
