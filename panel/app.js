@@ -1667,7 +1667,9 @@ function renderCampList(){
         +'<div style="font-size:12px;margin-top:5px;display:flex;gap:9px;flex-wrap:wrap;align-items:center">'
           +'<span style="background:#e8f6ec;color:#1f7a3d;border-radius:6px;padding:2px 7px;font-weight:700">✅ '+(c.ventas_reales||0)+' ventas reales <span style="font-weight:400;opacity:.8">'+(c.canal==='whatsapp'?'(bot Carlos)':'(Dropi)')+'</span></span>'
           +(c.ventas_reales? ('<span style="color:var(--ink)">Costo real/venta: <b>'+Number(c.costo_real||0).toLocaleString('es-CO')+' COP</b></span>'+'<span style="color:'+((c.roas_real||0)>=1.5?'#1f7a3d':((c.roas_real||0)>=1?'#b8860b':'#c0392b'))+';font-weight:800">ROAS real: '+(c.roas_real||0)+'x</span>') : '<span style="color:#c0392b;font-weight:700">sin ventas reales aún</span>')
+          +(c.ventas_desde?'<span style="color:#8a93a0;font-size:11px">(ventas desde '+esc2(c.ventas_desde)+')</span>':'')
         +'</div>'
+        +(c.compartida?'<div style="font-size:11px;color:#b8860b;margin-top:3px">⚠️ Hay varias campañas activas de este producto: este número es del producto, no se puede separar por campaña sin seguimiento por enlace.</div>':'')
         +'<div style="font-size:11px;color:#8a93a0;margin-top:3px">clic para ver detalle ▾</div>'
         +'<div id="adRec'+i+'" style="display:none"></div>'
       +'</div>'
