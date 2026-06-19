@@ -1694,9 +1694,10 @@ function adProdKeyword(nombre){ var n=(nombre||'').toLowerCase();
 }
 function adRefrescar(i){
   var c=_adCamps[i]; var det=c._det||{};
-  _adTarget={id:c.id,nombre:c.nombre,copy:c.copy||'',objetivo:c.objetivo||'',gasto:c.gasto||0,resultados:c.resultados||0,pais:adGuessPais(c.nombre),destino:(det.destino||''),cta:(det.cta||''),link:(det.link||'')};
+  var _detLink=(det.link||'').replace('jamesoterof-ship-it.github.io/drainpro','jayegroupchile.github.io/drainpro');
+  _adTarget={id:c.id,nombre:c.nombre,copy:c.copy||'',objetivo:c.objetivo||'',gasto:c.gasto||0,resultados:c.resultados||0,pais:adGuessPais(c.nombre),destino:(det.destino||''),cta:(det.cta||''),link:_detLink};
   _adDest=(det.destino==='Página/Link')?'link':'whatsapp';
-  var _lkEl=document.getElementById('adLink'); if(_lkEl) _lkEl.value=(det.link||'');
+  var _lkEl=document.getElementById('adLink'); if(_lkEl) _lkEl.value=_detLink;
   _adFiles=[]; _adAds=[]; _adCopyPool=null;
   document.querySelectorAll('#adModo .minitab').forEach(function(x){x.classList.remove('act');});
   var nb=document.querySelector('#adModo .minitab[data-m="nueva"]'); if(nb) nb.classList.add('act');
