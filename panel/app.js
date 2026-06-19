@@ -1584,7 +1584,7 @@ function _adSubirVideo(f){ return new Promise(function(res){ if(!f){res('');retu
 function aprobarMontar(){
   if(!_adAds.length){ if(typeof toast==='function')toast('Genera los anuncios primero'); return; }
   var destino=_adDest;
-  if(destino==='link' && !document.getElementById('adLink').value.trim()){ if(typeof toast==='function')toast('Falta la URL de la página'); return; }
+  if(destino==='link' && !document.getElementById('adLink').value.trim() && !_adTarget){ if(typeof toast==='function')toast('Falta la URL de la página'); return; }
   var pais=document.getElementById('adPais').value;
   var numEl=document.getElementById('adNum'), pxEl=document.getElementById('adPixel'), ctaEl=document.getElementById('adCta');
   var numTxt=(destino==='whatsapp'&&numEl&&numEl.selectedIndex>=0)?numEl.options[numEl.selectedIndex].text:'';
