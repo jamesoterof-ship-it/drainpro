@@ -215,7 +215,7 @@ async function cargarVentas(){
         precioNum:precio,precio:esR?fmtGS(precio):esJ?fmtCOP(precio)+' COP':fmtCLP(precio),
         dir:r.DIRECCION||'—',zona:r.COMUNA||r.CIUDAD||'—',region:r.REGION||r.DEPARTAMENTO||'—',
         bot:esR?'Ramon':esJ?'James':'Carlos',loc:esR?'PY':esJ?'CO':'CL',estado:r.ESTADO||'—',
-        conf:true,/* venta de WhatsApp = el cliente ya confirmó en el chat con el bot */
+        conf:!/abono pendiente/i.test(String(r.ESTADO||'')),abono:/abono pendiente/i.test(String(r.ESTADO||'')),/* abono pendiente = NO confirmada hasta que pague el anticipo */
         montado:/montad/i.test(String(r.ESTADO||'')),
         ordenDropi:(String(r.ESTADO||'').match(/#(\d+)/)||[])[1]||'',
         fecha:r.FECHA||'',hora:r.HORA||'',orden:fechaOrden(r.FECHA,r.HORA)});
@@ -362,7 +362,7 @@ function renderPedidosWeb(){
       <td>${esc(o.comuna)}</td>
       <td>${o.cant}</td>
       <td class="money">${o.total}</td>
-      <td>${o.conf?'<span class="st st-ok"><i></i>Confirmado</span>':'<span class="st st-rec"><i></i>Pendiente</span>'}</td>
+      <td>${o.abono?'<span class="st st-rec"><i></i>Abono pendiente</span>':(o.conf?'<span class="st st-ok"><i></i>Confirmado</span>':'<span class="st st-rec"><i></i>Pendiente</span>')}</td>
       <td class="cell-aprob" onclick="event.stopPropagation()">${celdaAprob(keyPag(o), o.dropi?'<span class="st st-ok"><i></i>Montado</span>':'')}</td>
       <td><svg class="ico-sm chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></td>
     </tr>`).join('');
@@ -376,7 +376,7 @@ function verPedido(i){
     fila('Canal','Página · '+o.prod)+fila('Producto',o.prod)+fila('Cantidad',o.cant+' unidades')+
     fila('Teléfono','+'+o.tel)+(o.correo?fila('Correo',o.correo):'')+fila('Dirección',o.dir)+
     (o.ref?fila('Referencia',o.ref):'')+fila('Comuna',o.comuna)+fila('Región',o.region)+
-    fila('Confirmación del cliente',o.conf?'CONFIRMADO':'Pendiente')+fila('Dropi',o.dropi?'ENVIADO':'Pendiente')+fila('Fecha',o.fecha);
+    fila('Confirmación del cliente',o.abono?'ABONO PENDIENTE (esperando comprobante)':(o.conf?'CONFIRMADO':'Pendiente'))+fila('Dropi',o.dropi?'ENVIADO':'Pendiente')+fila('Fecha',o.fecha);
   document.getElementById('mTotal').textContent=o.total+' CLP';
   window._ventaAbierta={cli:o.cli,dir:o.dir+(o.ref?' - '+o.ref:''),region:o.region,tel:o.tel,prod:o.prod,cant:o.cant,precio:o.total};
   document.getElementById('ov').classList.add('open');
@@ -548,7 +548,7 @@ function renderVentasBot(){
       <td>${esc(o.zona)}</td>
       <td>${o.cant}</td>
       <td class="money">${o.precio}</td>
-      <td>${o.conf?'<span class="st st-ok"><i></i>Confirmado</span>':'<span class="st st-rec"><i></i>Pendiente</span>'}</td>
+      <td>${o.abono?'<span class="st st-rec"><i></i>Abono pendiente</span>':(o.conf?'<span class="st st-ok"><i></i>Confirmado</span>':'<span class="st st-rec"><i></i>Pendiente</span>')}</td>
       <td class="cell-aprob" onclick="event.stopPropagation()">${celdaAprob(keyWa(o), o.montado?'<span class="st st-ok"><i></i>Montado'+(o.ordenDropi?' #'+o.ordenDropi:'')+'</span>':'')}</td>
       <td><svg class="ico-sm chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></td>
     </tr>`).join('');
@@ -679,7 +679,7 @@ function renderVentasWA(){
       <td><span class="flag ${FLAG[o.loc]}"></span></td>
       <td>${o.cant}</td>
       <td class="money">${o.precio}</td>
-      <td>${o.conf?'<span class="st st-ok"><i></i>Confirmado</span>':'<span class="st st-rec"><i></i>Pendiente</span>'}</td>
+      <td>${o.abono?'<span class="st st-rec"><i></i>Abono pendiente</span>':(o.conf?'<span class="st st-ok"><i></i>Confirmado</span>':'<span class="st st-rec"><i></i>Pendiente</span>')}</td>
       <td class="cell-aprob" onclick="event.stopPropagation()">${celdaAprob(keyWa(o), o.montado?'<span class="st st-ok"><i></i>Montado'+(o.ordenDropi?' #'+o.ordenDropi:'')+'</span>':'')}</td>
       <td><svg class="ico-sm chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></td>
     </tr>`).join('');
@@ -693,7 +693,7 @@ function verVenta(i){
     fila('Canal','WhatsApp · '+BOTNOM[o.bot])+fila('País',{CL:'Chile',CO:'Colombia',PY:'Paraguay'}[o.loc])+
     fila('Producto',o.prod)+fila('Cantidad',o.cant+' unidades')+fila('Teléfono','+'+o.tel)+
     fila('Dirección',o.dir)+fila('Comuna / Ciudad',o.zona)+fila('Región / Depto.',o.region)+
-    fila('Confirmación del cliente',o.conf?'CONFIRMADO':'Pendiente')+fila('Montado en Dropi',o.montado?('SÍ'+(o.ordenDropi?' · orden #'+o.ordenDropi:'')):'Pendiente')+
+    fila('Confirmación del cliente',o.abono?'ABONO PENDIENTE (esperando comprobante)':(o.conf?'CONFIRMADO':'Pendiente'))+fila('Montado en Dropi',o.montado?('SÍ'+(o.ordenDropi?' · orden #'+o.ordenDropi:'')):'Pendiente')+
     fila('Fecha',o.fecha+' '+(o.hora||''));
   document.getElementById('mTotal').textContent=o.precio;
   window._ventaAbierta=o;
@@ -849,7 +849,7 @@ function verAprob(i){
       fila('Canal','Página · '+o.prod)+fila('Producto',o.prod)+fila('Cantidad',o.cant+' unidades')+
       fila('Teléfono','+'+o.tel)+(o.correo?fila('Correo',o.correo):'')+fila('Dirección',o.dir)+
       (o.ref?fila('Referencia',o.ref):'')+fila('Comuna',o.comuna)+fila('Región',o.region)+
-      fila('Confirmación del cliente',o.conf?'CONFIRMADO':'Pendiente')+fila('Dropi',o.dropi?'ENVIADO':'Pendiente')+fila('Fecha',o.fecha);
+      fila('Confirmación del cliente',o.abono?'ABONO PENDIENTE (esperando comprobante)':(o.conf?'CONFIRMADO':'Pendiente'))+fila('Dropi',o.dropi?'ENVIADO':'Pendiente')+fila('Fecha',o.fecha);
     document.getElementById('mTotal').textContent=o.total+' CLP';
     window._ventaAbierta={cli:o.cli,dir:o.dir+(o.ref?' - '+o.ref:''),region:o.region,tel:o.tel,prod:o.prod,cant:o.cant,precio:o.total};
   }else{
@@ -857,7 +857,7 @@ function verAprob(i){
       fila('Canal','WhatsApp · '+(BOTNOM[o.bot]||''))+fila('País',{CL:'Chile',CO:'Colombia',PY:'Paraguay'}[o.loc]||'—')+
       fila('Producto',o.prod)+fila('Cantidad',o.cant+' unidades')+fila('Teléfono','+'+o.tel)+
       fila('Dirección',o.dir)+fila('Comuna / Ciudad',o.zona)+fila('Región / Depto.',o.region)+
-      fila('Confirmación del cliente',o.conf?'CONFIRMADO':'Pendiente')+fila('Montado en Dropi',o.montado?('SÍ'+(o.ordenDropi?' · orden #'+o.ordenDropi:'')):'Pendiente')+
+      fila('Confirmación del cliente',o.abono?'ABONO PENDIENTE (esperando comprobante)':(o.conf?'CONFIRMADO':'Pendiente'))+fila('Montado en Dropi',o.montado?('SÍ'+(o.ordenDropi?' · orden #'+o.ordenDropi:'')):'Pendiente')+
       fila('Fecha',o.fecha+' '+(o.hora||''));
     document.getElementById('mTotal').textContent=o.precio;
     window._ventaAbierta=o;
