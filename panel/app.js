@@ -463,6 +463,7 @@ function verAbandonado(i){
 let fPagV='todas';
 window.setPagV=function(id){ fPagV=id; renderVisitas(); };
 function pagesVis(){ var m={}; (visitasWeb||[]).forEach(function(v){ if(v&&v.pagina&&!m[v.pagina]) m[v.pagina]={id:v.pagina,nombre:v.producto||v.pagina,color:v.color||'#6cc24a'}; }); var a=Object.keys(m).map(function(k){return m[k];}); return a.length?a:PAGINAS.filter(p=>p.url); }
+const npV=s=>/^nad/i.test(String(s||''))?'nad':String(s||'');  // nad/nadplus = misma pagina (visitas usan 'nad', pedidos 'nadplus')
 function renderVisitas(){
   const box=document.getElementById('visitasBox'); if(!box) return;
   const lbl=TXT_RANGO[Rvis.tipo]||'';
@@ -472,8 +473,8 @@ function renderVisitas(){
   // agregados por página, en el rango
   const data=pgs.map(p=>{
     let vis=0,form=0;
-    visitasWeb.filter(v=>v.pagina===p.id&&enRangoDe(fechaOrden(v.fecha,''),Rvis)).forEach(v=>{vis+=numero(v.visitas);form+=numero(v.formulario);});
-    const peds=pedidosWeb.filter(o=>o.pagina===p.id&&enRangoDe(o.orden,Rvis)).length;
+    visitasWeb.filter(v=>npV(v.pagina)===npV(p.id)&&enRangoDe(fechaOrden(v.fecha,''),Rvis)).forEach(v=>{vis+=numero(v.visitas);form+=numero(v.formulario);});
+    const peds=pedidosWeb.filter(o=>npV(o.pagina)===npV(p.id)&&enRangoDe(o.orden,Rvis)).length;
     return {id:p.id,nombre:p.nombre,color:p.color,vis,form,peds};
   });
   const tVis=data.reduce((a,b)=>a+b.vis,0), tForm=data.reduce((a,b)=>a+b.form,0), tPed=data.reduce((a,b)=>a+b.peds,0);
@@ -491,8 +492,8 @@ function renderVisitas(){
   const nD = Rvis.tipo==='30d'?30:(Rvis.tipo==='hoy'||Rvis.tipo==='ayer'?7:7);
   const dias=[];
   for(let i=nD-1;i>=0;i--){const d=new Date(inicioDia(i));dias.push({key:d.toDateString(),lbl:i===0?'Hoy':d.toLocaleDateString('es-CL',{weekday:'short'}),v:0,f:0,p:0});}
-  visitasWeb.filter(v=>fPagV==='todas'||v.pagina===fPagV).forEach(v=>{const t=fechaOrden(v.fecha,'');if(!t)return;const d=dias.find(x=>x.key===new Date(t).toDateString());if(d){d.v+=numero(v.visitas);d.f+=numero(v.formulario);}});
-  pedidosWeb.filter(o=>fPagV==='todas'||o.pagina===fPagV).forEach(o=>{const d=dias.find(x=>x.key===new Date(o.orden).toDateString());if(d)d.p++;});
+  visitasWeb.filter(v=>fPagV==='todas'||npV(v.pagina)===npV(fPagV)).forEach(v=>{const t=fechaOrden(v.fecha,'');if(!t)return;const d=dias.find(x=>x.key===new Date(t).toDateString());if(d){d.v+=numero(v.visitas);d.f+=numero(v.formulario);}});
+  pedidosWeb.filter(o=>fPagV==='todas'||npV(o.pagina)===npV(fPagV)).forEach(o=>{const d=dias.find(x=>x.key===new Date(o.orden).toDateString());if(d)d.p++;});
   const max=Math.max(4,...dias.map(d=>d.v));
   const W=620,m=40,slot=(W-m-10)/nD,bw=Math.min(11,slot*0.24);
   let bars='',labels='';
