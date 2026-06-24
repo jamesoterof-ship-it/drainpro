@@ -140,7 +140,7 @@ function fechaOrden(f,h){
   const s=String(f||'').trim(); let d=null;
   let m=s.match(/(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})/);
   if(m) d=new Date(+m[3],+m[2]-1,+m[1]);
-  else { const t=Date.parse(s); if(!isNaN(t)) d=new Date(t); }
+  else { const iso=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/); if(iso) d=new Date(+iso[1],+iso[2]-1,+iso[3]); else { const t=Date.parse(s); if(!isNaN(t)) d=new Date(t); } }
   if(!d||isNaN(d)) return 0;
   const full=String(h||'')+' '+s;
   const hm=full.match(/(\d{1,2}):(\d{2})/);
