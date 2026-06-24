@@ -12,6 +12,7 @@ const URL_APROBAR=BASE+'/aprobar-pedido';
 const URL_IMG='https://web-production-a5adc.up.railway.app/api/jaye/enviar-imagen';
 const URL_HUELLAS=BASE+'/leer-huellas';
 const URL_PEDWEB=BASE+'/leer-pedidos-web';   // pedidos de pagina desde Postgres (no Google)
+const URL_EDITPED=BASE+'/editar-pedido-web'; // guardar edicion de un pedido de pagina (datos + estado)
 const URL_ABANDONADOS=BASE+'/leer-abandonados'; // abandonados desde Postgres (no Google)
 const URL_GENCOPY=BASE+'/generar-copy'; // creador de anuncios: genera copys con IA (Claude)
 const URL_BUSCAGEO=BASE+'/buscar-geo'; // buscador de ubicaciones de Meta (ciudades/regiones)
@@ -224,7 +225,7 @@ async function cargarVentas(){
     renderVentasWA(); renderVentasBot(); renderBots(); renderResumen(); renderConvStats(); if(typeof renderAprobar==='function') renderAprobar();
   }catch(e){}
 }
-const mapPedido=r=>({fecha:r.fecha||'',cli:r.nombre||'—',tel:soloNum((r.indicativo||'')+(r.telefono||'')),
+const mapPedido=r=>({fecha:r.fecha||'',cli:r.nombre||'—',tel:soloNum((r.indicativo||'')+(r.telefono||'')),telRaw:r.telefono||'',
     prod:r.producto,color:r.color,pagina:r.pagina,dir:r.direccion||'—',ref:r.referencia||'',comuna:r.comuna||'—',
     region:r.region||'—',correo:r.correo||'',cant:numero(r.cantidad)||1,totalNum:numero(r.total),
     total:fmtCLP(numero(r.total)),conf:String(r.confirmado||'').toUpperCase()==='SI',
@@ -376,10 +377,41 @@ function verPedido(i){
     fila('Canal','Página · '+o.prod)+fila('Producto',o.prod)+fila('Cantidad',o.cant+' unidades')+
     fila('Teléfono','+'+o.tel)+(o.correo?fila('Correo',o.correo):'')+fila('Dirección',o.dir)+
     (o.ref?fila('Referencia',o.ref):'')+fila('Comuna',o.comuna)+fila('Región',o.region)+
-    fila('Confirmación del cliente',o.abono?'ABONO PENDIENTE (esperando comprobante)':(o.conf?'CONFIRMADO':'Pendiente'))+fila('Dropi',o.dropi?'ENVIADO':'Pendiente')+fila('Fecha',o.fecha);
+    fila('Confirmación del cliente',o.abono?'ABONO PENDIENTE (esperando comprobante)':(o.conf?'CONFIRMADO':'Pendiente'))+fila('Dropi',o.dropi?'ENVIADO':'Pendiente')+fila('Fecha',o.fecha)+
+    (o.dropi?'<div style="margin-top:12px;font-size:12px;color:var(--ink-3)">Este pedido ya está montado en Dropi. Para cambiar la dirección se edita directo en Dropi.</div>':'<button onclick="editarPedido()" style="width:100%;margin-top:12px;padding:11px;border:1px solid var(--grid);border-radius:10px;background:var(--card);color:var(--ink);font-weight:600;cursor:pointer">✏️ Editar pedido / estado</button>');
   document.getElementById('mTotal').textContent=o.total+' CLP';
+  window._pedEdit=o; window._pedEditIdx=i;
   window._ventaAbierta={cli:o.cli,dir:o.dir+(o.ref?' - '+o.ref:''),region:o.region,tel:o.tel,prod:o.prod,cant:o.cant,precio:o.total};
   document.getElementById('ov').classList.add('open');
+}
+function editarPedido(){
+  const o=window._pedEdit; if(!o) return;
+  const inS='width:100%;padding:9px 11px;border:1px solid var(--grid);border-radius:9px;font-size:14px;background:var(--card);color:var(--ink);box-sizing:border-box';
+  const row=(k,label,sel)=>'<div style="margin:9px 0"><label style="display:block;font-size:12px;color:var(--ink-3);margin-bottom:4px">'+label+'</label>'+(sel||('<input id="ed_'+k+'" style="'+inS+'">'))+'</div>';
+  document.getElementById('mTitulo').textContent='Editar pedido';
+  document.getElementById('mBody').innerHTML=
+    row('nombre','Nombre')+row('tel','Teléfono')+row('dir','Dirección')+row('ref','Referencia (opcional)')+
+    row('comuna','Comuna')+row('region','Región')+row('cant','Cantidad')+
+    row('conf','Estado','<select id="ed_conf" style="'+inS+'"><option value="NO">Pendiente</option><option value="SI">Confirmado</option></select>')+
+    '<div style="display:flex;gap:8px;margin-top:14px"><button onclick="guardarEdicion()" style="flex:1;padding:11px;border:0;border-radius:10px;background:#6cc24a;color:#fff;font-weight:700;cursor:pointer">Guardar cambios</button><button onclick="verPedido(window._pedEditIdx)" style="padding:11px 16px;border:1px solid var(--grid);border-radius:10px;background:var(--card);color:var(--ink);cursor:pointer">Cancelar</button></div>';
+  const sv=(k,v)=>{const e=document.getElementById('ed_'+k); if(e) e.value=(v==null||v==='—')?'':String(v);};
+  sv('nombre',o.cli); sv('tel',o.telRaw||o.tel); sv('dir',o.dir); sv('ref',o.ref);
+  sv('comuna',o.comuna); sv('region',o.region); sv('cant',o.cant);
+  document.getElementById('ed_conf').value=o.conf?'SI':'NO';
+}
+async function guardarEdicion(){
+  const o=window._pedEdit; if(!o||!o.fila){ toast('Falta el número de pedido'); return; }
+  const g=k=>{const e=document.getElementById('ed_'+k); return e?String(e.value||'').trim():'';};
+  const payload={order_number:o.fila,nombre:g('nombre'),telefono:g('tel').replace(/\D/g,''),direccion:g('dir'),
+    referencia:g('ref'),comuna:g('comuna'),region:g('region'),cantidad:g('cant').replace(/\D/g,''),
+    confirmado:(document.getElementById('ed_conf')||{}).value||''};
+  try{
+    const r=await fetch(URL_EDITPED,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    let j=null; try{ j=await r.json(); }catch(e){}
+    const ok = r.ok && (Array.isArray(j)? j.length>0 : (!j || j.ok!==false));
+    if(ok){ toast('Pedido actualizado ✓'); closeM(); cargarPaginas(); }
+    else { toast('No se pudo guardar el pedido'); }
+  }catch(e){ toast('Error de conexión al guardar'); }
 }
 async function toggleDropi(i){
   const o=(window._pedidosF||pedidosWeb)[i]; if(!o) return;
