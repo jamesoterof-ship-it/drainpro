@@ -178,13 +178,13 @@ function normConv(r){
 }
 function parseHist(txt){
   if(!txt) return [];
-  const parts=String(txt).split(/(?=(?:Cliente|Asistente|Ramón|Ramon|Carlos|James|Agente)\s*:)/g);
+  const parts=String(txt).split(/(?=(?:Cliente|Asistente|Ramón|Ramon|Carlos|James|Agente)\s*(?:\[[^\]]*\])?\s*:)/g);
   const out=[];
   parts.forEach(p=>{p=p.trim();if(!p)return;
-    const m=p.match(/^(Cliente|Asistente|Ramón|Ramon|Carlos|James|Agente)\s*:\s*([\s\S]*)$/);
-    if(m){const lbl=m[1],body=m[2].trim();if(!body)return;
-      const from=lbl==='Cliente'?'cliente':(lbl==='Agente'?'agente':'bot');out.push({from,text:body});}
-    else out.push({from:'cliente',text:p});
+    const m=p.match(/^(Cliente|Asistente|Ramón|Ramon|Carlos|James|Agente)\s*(?:\[([^\]]*)\])?\s*:\s*([\s\S]*)$/);
+    if(m){const lbl=m[1],time=(m[2]||'').trim(),body=m[3].trim();if(!body)return;
+      const from=lbl==='Cliente'?'cliente':(lbl==='Agente'?'agente':'bot');out.push({from,text:body,time:time});}
+    else out.push({from:'cliente',text:p,time:''});
   });
   return out;
 }
@@ -639,7 +639,7 @@ function renderBubbles(c){
   box.innerHTML=c.msgs.map(m=>{
     const cls=m.from==='cliente'?'m-cli':(m.from==='agente'?'m-ag':'m-bot');
     const who=m.from==='cliente'?'Cliente':(m.from==='agente'?'Tú · Agente':BOTNOM[c.bot].split(' ·')[0]+' · Bot');
-    return `<div class="msg ${cls}"><div class="who">${who}</div>${cuerpoMensaje(m)}</div>`;
+    return `<div class="msg ${cls}"><div class="who">${who}</div>${cuerpoMensaje(m)}${m.time?'<div style="font-size:11px;opacity:.5;margin-top:3px">'+esc(m.time)+'</div>':''}</div>`;
   }).join('');
   box.scrollTop=box.scrollHeight;
 }
