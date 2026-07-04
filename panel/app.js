@@ -180,11 +180,12 @@ function parseHist(txt){
   if(!txt) return [];
   const parts=String(txt).split(/(?=(?:Cliente|Asistente|Ramón|Ramon|Carlos|James|Agente)\s*(?:\[[^\]]*\])?\s*:)/g);
   const out=[];
+  const _quitaSistema=s=>String(s).replace(/\n?\s*Sistema\s*:[^\n]*/g,'').trim();
   parts.forEach(p=>{p=p.trim();if(!p)return;
     const m=p.match(/^(Cliente|Asistente|Ramón|Ramon|Carlos|James|Agente)\s*(?:\[([^\]]*)\])?\s*:\s*([\s\S]*)$/);
-    if(m){const lbl=m[1],time=(m[2]||'').trim(),body=m[3].trim();if(!body)return;
+    if(m){const lbl=m[1],time=(m[2]||'').trim(),body=_quitaSistema(m[3]);if(!body)return;
       const from=lbl==='Cliente'?'cliente':(lbl==='Agente'?'agente':'bot');out.push({from,text:body,time:time});}
-    else out.push({from:'cliente',text:p,time:''});
+    else {const body=_quitaSistema(p);if(!body)return;out.push({from:'cliente',text:body,time:''});}
   });
   return out;
 }
