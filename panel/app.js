@@ -1027,7 +1027,7 @@ const esMovil=()=>window.matchMedia('(max-width:760px)').matches;
 const URL_PEDIDOS_DROPI=BASE+'/leer-pedidos-dropi';
 const URL_GASTO_META=BASE+'/leer-gasto-meta';
 const URL_PL_PRODUCTO=BASE+'/leer-pl-producto';
-window._finPedidos=[]; window._finMeta=[]; window._finPLProd=[]; window._finRango='mes'; window._finEstado=''; window._finBuscar=''; window._finCargado=false; window._fDesde=''; window._fHasta='';
+window._finPedidos=[]; window._finMeta=[]; window._finPLProd=[]; window._finRango='15'; window._finEstado=''; window._finBuscar=''; window._finCargado=false; window._fDesde=''; window._fHasta='';
 var _finCG=null,_finCD=null;
 function _cop(n){return '$'+Math.round(+n||0).toLocaleString('es-CO');}
 function _finDesde(){ if(window._fDesde) return window._fDesde; var r=window._finRango; if(r==='all') return '2000-01-01'; var d=new Date(); if(r==='mes'){ d.setDate(1); } else if(r!=='hoy'){ d.setDate(d.getDate()-(parseInt(r,10)-1)); } return d.toISOString().slice(0,10); }
