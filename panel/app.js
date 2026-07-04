@@ -552,11 +552,17 @@ function renderConvStats(){
     '<div class="cs acc"><div class="lbl">Conversión</div><div class="val">'+conv.toFixed(1)+'%</div></div>'+
     '<div class="cs"><div class="lbl">Atendidas por agente</div><div class="val">'+conAgente+'</div></div>';
 }
+function pedWebDe(tel){ try{ var t=soloNum(tel); return (pedidosWeb||[]).find(function(p){return soloNum(p.tel)===t;})||null; }catch(e){ return null; } }
+function confBadgeHTML(pw){ if(!pw) return ''; return pw.conf ? '<span style="display:inline-block;background:#e6f4ea;color:#0f7a52;font-weight:700;font-size:9.5px;padding:1px 6px;border-radius:6px;margin-right:5px">✅ Confirmó</span>' : '<span style="display:inline-block;background:#fdecea;color:#c0392b;font-weight:700;font-size:9.5px;padding:1px 6px;border-radius:6px;margin-right:5px">⏳ Sin confirmar</span>'; }
 function renderConvList(){
   renderConvStats();
   const cont=document.getElementById('clist'); if(!cont) return;
+  if((!pedidosWeb||!pedidosWeb.length) && !window._pwTried){ window._pwTried=true; if(typeof cargarPaginas==='function'){ try{ cargarPaginas().then(function(){ renderConvList(); }); }catch(e){} } }
   const q=(document.getElementById('cbuscar')?.value||'').toLowerCase();
-  let arr=convos.filter(c=>c.bot===fBot && enRangoDe(c.orden,Rconv));
+  // fusionar pedidos web que aún no tienen conversación (para ver los pendientes de confirmar)
+  var _base=convos.slice(), _seen={}; _base.forEach(function(c){ _seen[soloNum(c.tel)]=1; });
+  (pedidosWeb||[]).forEach(function(p){ var t=soloNum(p.tel); if(t && !_seen[t]){ _seen[t]=1; _base.push({tel:t, n:p.cli||t, bot:'carlos', estado:'activa', ultimo:'📦 Pedido web · '+(p.conf?'confirmado ✅':'esperando confirmación ⏳'), hora:'', fecha:p.fecha||'', orden:p.orden||0}); } });
+  let arr=_base.filter(c=>c.bot===fBot && enRangoDe(c.orden,Rconv));
   if(fEst!=='todas') arr=arr.filter(c=>c.estado===fEst);
   if(q) arr=arr.filter(c=>(c.n+' '+c.tel).toLowerCase().includes(q));
   if(!arr.length){cont.innerHTML='<div class="vacio">Sin conversaciones aquí.</div>';return;}
@@ -565,7 +571,7 @@ function renderConvList(){
       <div class="cav" style="background:${BOTCOLOR[c.bot]}">${inicialesDe(c.n)}<span class="bdot ${c.estado==='activa'?'bdot-on':'bdot-paused'}"></span></div>
       <div class="cinfo">
         <div class="l1"><span class="nm">${esc(c.n)}</span><span class="tm">${esc(c.hora||c.fecha)}</span></div>
-        <div class="l2">${esc(c.ultimo)||'—'}</div>
+        <div class="l2">${confBadgeHTML(pedWebDe(c.tel))}${esc(c.ultimo)||'—'}</div>
       </div>
       <span class="ctag ${c.estado==='activa'?'ctag-bot':'ctag-ag'}">${c.estado==='activa'?'Bot':'Agente'}</span>
     </div>`).join('');
@@ -599,7 +605,9 @@ function setTabConv(t){
 }
 function pintarChatHead(c){
   document.getElementById('chNom').textContent=c.n;
-  document.getElementById('chTel').innerHTML='+'+c.tel+' · atendida por <b>'+BOTNOM[c.bot]+'</b>';
+  var _pw=pedWebDe(c.tel);
+  var _st=_pw?(_pw.conf?' · <b style="color:#0f7a52">✅ Confirmó su pedido</b>':' · <b style="color:#c0392b">⏳ PENDIENTE de confirmar</b>'):'';
+  document.getElementById('chTel').innerHTML='+'+c.tel+' · atendida por <b>'+BOTNOM[c.bot]+'</b>'+_st;
   const av=document.getElementById('chAv'); av.style.background=BOTCOLOR[c.bot]; av.textContent=inicialesDe(c.n);
   const b=document.getElementById('btnPausa'), t=document.getElementById('pauseTxt');
   if(c.estado==='pausada'){b.classList.add('btn-resume');t.textContent='Activar bot';}
@@ -607,7 +615,9 @@ function pintarChatHead(c){
 }
 async function abrirChat(tel){
   selTel=tel; renderConvList();
-  const c=convos.find(x=>x.tel===tel); if(!c) return;
+  var c=convos.find(x=>x.tel===tel);
+  if(!c){ var _p=pedWebDe(tel); if(_p){ c={tel:soloNum(tel), n:_p.cli||tel, bot:'carlos', estado:'activa', loc:'chile', loaded:true, msgs:[{from:'bot', time:'', text:'📦 Pedido web: '+_p.cant+'x '+_p.prod+' · '+_p.total+' · '+(_p.comuna||'')+'\n'+(_p.conf?'✅ El cliente CONFIRMÓ su pedido.':'⏳ Esperando que el cliente confirme (se le envió la plantilla con botones Confirmar / Modificar).')}]}; } }
+  if(!c) return;
   document.getElementById('chatwin').style.display='flex';
   document.getElementById('chatEmpty').style.display='none';
   const g=document.querySelector('#view-conv .convgrid'); if(g) g.classList.add('ver-chat');  // móvil: muestra el chat
