@@ -1426,9 +1426,24 @@ async function agEjecutar(a,d){ var b=d.querySelector('.agAccB'); b.innerHTML='<
 const URL_RADAR='https://web-production-a5adc.up.railway.app/api/jaye/radar';
 const RADAR_CAT={Colombia:'https://app.dropi.co/dashboard/search',
                  Chile:'https://app.dropi.cl/dashboard/search'};
-const RADAR_BANDERA={Colombia:'🇨🇴',Chile:'🇨🇱',Paraguay:'🇵🇾','México':'🇲🇽',Ecuador:'🇪🇨',
-                     'Perú':'🇵🇪',Panamá:'🇵🇦',Guatemala:'🇬🇹','España':'🇪🇸'};
-var radarPais='Colombia', radarFecha='', radarVentana=7, radarDatos=null;
+/* El enlace REAL al producto: el catálogo de Dropi lee el parámetro ?q= y busca.
+   (No existe una URL directa a la ficha del producto — se probaron
+   /dashboard/product-details/ID y similares y todas rebotan al inicio.) */
+function radDropiURL(nombre){
+  return (RADAR_CAT[radarPais]||RADAR_CAT.Colombia)+'?q='+encodeURIComponent(nombre||'');
+}
+/* Banderas DIBUJADAS, no emoji: Windows no pinta los emoji de bandera y salían
+   como cuadros vacíos. */
+const RADAR_BANDERA={
+  Colombia:'<svg width="18" height="12" viewBox="0 0 6 4" style="border-radius:2px;vertical-align:-1px">'
+    +'<rect width="6" height="2" fill="#FCD116"/><rect y="2" width="6" height="1" fill="#003893"/>'
+    +'<rect y="3" width="6" height="1" fill="#CE1126"/></svg>',
+  Chile:'<svg width="18" height="12" viewBox="0 0 9 6" style="border-radius:2px;vertical-align:-1px">'
+    +'<rect width="9" height="3" fill="#fff"/><rect y="3" width="9" height="3" fill="#D52B1E"/>'
+    +'<rect width="3" height="3" fill="#0039A6"/>'
+    +'<path d="M1.5 0.6l.28.86h.9l-.73.53.28.86-.73-.53-.73.53.28-.86-.73-.53h.9z" fill="#fff"/></svg>'
+};
+var radarPais='Colombia', radarFecha='', radarVentana=14, radarDatos=null;
 
 function radNum(v){ return Number(v||0).toLocaleString('es-CO'); }
 function radPlata(v){ return (radarPais==='Chile'?'$':'$')+Number(v||0).toLocaleString(radarPais==='Chile'?'es-CL':'es-CO'); }
@@ -1471,7 +1486,7 @@ function radarPintaPaises(){
   c.innerHTML=lista.map(function(x){
     var act=x.p===radarPais;
     return '<button class="rad-pais'+(act?' on':'')+'" onclick="radarVerPais(\''+x.p+'\')">'
-      +(RADAR_BANDERA[x.p]||'')+' '+x.p+'</button>';
+      +(RADAR_BANDERA[x.p]||'')+' <span style="margin-left:5px">'+x.p+'</span></button>';
   }).join('');
 }
 function radarVerPais(p){ radarPais=p; radarFecha=''; cargarRadar(); }
@@ -1519,6 +1534,24 @@ function radarPintaFechas(d){
 }
 function radarVerFecha(f){ radarFecha=f; cargarRadar(); }
 
+/* Barritas de los últimos días + flecha de tendencia. Si todavía no hay con qué
+   comparar (un solo día medido) se muestra "—", nunca una flecha inventada. */
+function radarTendencia(p){
+  var s=p.serie||[], t=p.tendencia;
+  var color = t==null ? '#8a93a0' : (t>0?'#1e8e5a':t<0?'#c0392b':'#8a93a0');
+  var texto = t==null ? (s.length<2?'primer día':'estable')
+            : (t>0?'▲ +':t<0?'▼ ':'')+(t===0?'estable':Math.abs(t)+'%');
+  var barras='';
+  if(s.length){
+    var max=Math.max.apply(null,s)||1;
+    barras='<span class="rad-spark" style="color:'+color+'">'
+      + s.slice(-7).map(function(v){
+          return '<i style="height:'+Math.max(3,Math.round(v/max*20))+'px"></i>'; }).join('')
+      +'</span>';
+  }
+  return '<div style="font-size:11px;font-weight:750;color:'+color+'">'+texto+'</div>'+barras;
+}
+
 function radarFilaProducto(p,i,derecha){
   return '<tr onclick="abrirFichaRadar('+p.id+')">'
     +'<td><div class="'+radMedalla(i)+'">'+(i+1)+'</div></td>'
@@ -1526,8 +1559,12 @@ function radarFilaProducto(p,i,derecha){
       +'<div class="rad-nom">'+radEsc(p.nombre)+'</div>'
       +'<div class="rad-meta">'+radEsc(p.proveedor||'')+(p.ciudad?' · '+radEsc(p.ciudad):'')+'</div>'
     +'</div></div></td>'
+    +'<td>'+radarTendencia(p)+'</td>'
     +'<td style="text-align:right"><div class="rad-und">'+radNum(p.vendidas)+'</div>'
-      +'<div style="font-size:10.5px;color:#8a93a0">'+derecha(p)+'</div></td></tr>';
+      +'<div style="font-size:10.5px;color:#8a93a0">'+derecha(p)+'</div></td>'
+    +'<td style="text-align:right"><a href="'+radDropiURL(p.nombre)+'" target="_blank" rel="noopener"'
+      +' onclick="event.stopPropagation()" title="Abrir en Dropi"'
+      +' style="color:#8a6d10;text-decoration:none;font-size:15px">↗</a></td></tr>';
 }
 
 function radarPintaDia(d){
@@ -1538,7 +1575,7 @@ function radarPintaDia(d){
   var b=document.getElementById('radarDia');
   b.innerHTML=lista.length
     ? lista.map(function(p,i){ return radarFilaProducto(p,i,function(x){ return radPlata(x.precio); }); }).join('')
-    : '<tr><td colspan="3" class="vacio">Ningún producto se movió ese día.</td></tr>';
+    : '<tr><td colspan="5" class="vacio">Ningún producto se movió ese día.</td></tr>';
   document.getElementById('radarDiaSub').textContent=d.fecha+' · '+radNum((d.resumen||{}).productos)+' con movimiento';
   document.getElementById('radarDiaPie').innerHTML='Mostrando '+lista.length
     +' · todos con nombre, proveedor y precio a la vista';
@@ -1546,11 +1583,15 @@ function radarPintaDia(d){
 
 function radarPintaTop(d){
   var lista=d.top||[], b=document.getElementById('radarTop');
+  // El ranking viene ordenado por PROMEDIO DIARIO de la ventana (no por el pico de
+  // un día): ganador es el que sostiene ventas, y por eso se muestra el promedio.
   b.innerHTML=lista.length
     ? lista.map(function(p,i){ return radarFilaProducto(p,i,function(x){
-        return x.margen==null?'—':x.margen+'%'; }); }).join('')
-    : '<tr><td colspan="3" class="vacio">Todavía no hay ventana de '+radarVentana+' días.</td></tr>';
-  document.getElementById('radarTopPie').innerHTML='Desde el '+radEsc(d.ventana_desde||'')
+        return x.promedio+'/día'+(x.margen==null?'':' · '+x.margen+'%'); }); }).join('')
+    : '<tr><td colspan="5" class="vacio">Todavía no hay ventana de '+radarVentana+' días.</td></tr>';
+  var dm=lista.length?(lista[0].dias_medidos||1):0;
+  document.getElementById('radarTopPie').innerHTML='Ordenado por promedio diario · ventana desde el '
+    +radEsc(d.ventana_desde||'')+' ('+dm+' día'+(dm===1?'':'s')+' medido'+(dm===1?'':'s')+')'
     +' · sin candados: aquí no se oculta nada';
 }
 
@@ -1569,7 +1610,7 @@ async function abrirFichaRadar(id){
 function cerrarFicha(){ document.getElementById('radarVelo').classList.remove('on'); }
 
 function radarFichaHTML(d){
-  var p=d.producto, t=d.totales, enlace=RADAR_CAT[radarPais]||RADAR_CAT.Colombia;
+  var p=d.producto, t=d.totales, enlace=radDropiURL(p.nombre);
   var chip=function(x){ return '<span style="font-size:10.5px;border:1px solid var(--border);border-radius:6px;padding:2px 8px;color:var(--ink-2)">'+x+'</span>'; };
   var filas=d.serie.slice().reverse().map(function(s,i,arr){
     var prev=arr[i+1], cambio='—', col='#8a93a0';
