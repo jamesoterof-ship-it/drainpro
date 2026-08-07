@@ -913,6 +913,7 @@ function verAprob(i){
 const TITULOS={resumen:['Resumen general','Todos los canales · monedas separadas por país'],
   finanzas:['Finanzas','P&L, costos, devoluciones y rentabilidad por producto · Chile · en COP'],
   dropi:['Dropi · Guías','Estado de cada guía actualizado con Dropi · seguimiento'],
+  radar:['Radar de productos','Lo que se está vendiendo en Dropi, medido por el inventario que se mueve'],
   calc:['Calculadora de combos','Costo y precio de venta por combo (1/2/3) en CLP · flete repartido'],
   aprobar:['Aprobación de ventas','Página + WhatsApp · solo lo que apruebes se monta en Dropi'],
   pedidos:['Pedidos de páginas','Shilajit y DRAINPRO · confirmación y estado Dropi'],
@@ -945,6 +946,7 @@ function mostrarVista(v){
   if(v==='visitas') renderVisitas();
   if(v==='finanzas'||v==='dropi'){ if(!window._finCargado){ cargarFinanzas(); } else { renderFinanzas(); _renderFinTabla(window._finPedidos); } }
   if(v==='calc') cargarCalc();
+  if(v==='radar') cargarRadar();
   if(typeof cerrarDrawer==='function') cerrarDrawer();
   if(typeof volverLista==='function') volverLista();   // vuelve a la lista al cambiar de vista
   ajustarStickyTop();
@@ -1415,6 +1417,69 @@ async function agEjecutar(a,d){ var b=d.querySelector('.agAccB'); b.innerHTML='<
     var j=await r.json(); var ok=j&&j.ok;
     b.innerHTML='<span class="agAccMsg" style="color:'+(ok?'#0f7a52':'#c0392b')+'">'+agEsc(j&&j.mensaje?j.mensaje:(ok?'Listo':'No se pudo'))+'</span>';
   }catch(e){ b.innerHTML='<span class="agAccMsg" style="color:#c0392b">No me pude conectar para ejecutar.</span>'; } }
+
+/* ====================== RADAR DE PRODUCTOS (Dropi) ======================
+   Los números salen del backend de Konecta (misma Postgres), que guarda cada
+   madrugada una foto del inventario de Dropi. Unidades vendidas = stock de la
+   foto vieja menos el de la nueva. Nada estimado.
+   ====================================================================== */
+const URL_RADAR='https://web-production-a5adc.up.railway.app/api/jaye/radar';
+const RADAR_CATALOGO={Colombia:'https://app.dropi.co/dashboard/search',
+                      Chile:'https://app.dropi.cl/dashboard/search'};
+
+function radarMoneda(pais,v){
+  if(v===null||v===undefined||v==='') return '—';
+  const n=Number(v)||0;
+  return pais==='Chile' ? '$'+n.toLocaleString('es-CL') : '$'+n.toLocaleString('es-CO');
+}
+
+async function cargarRadar(){
+  const cuerpo=document.getElementById('radarBody'); if(!cuerpo) return;
+  const pais=(document.getElementById('radarPais')||{}).value||'Colombia';
+  const dias=(document.getElementById('radarDias')||{}).value||'1';
+  const orden=(document.getElementById('radarOrden')||{}).value||'vendidas';
+  const buscar=((document.getElementById('radarBuscar')||{}).value||'').trim();
+  const nota=document.getElementById('radarNota');
+  cuerpo.innerHTML='<tr><td colspan="8" class="vacio">Cargando…</td></tr>';
+  try{
+    const u=URL_RADAR+'?pais='+encodeURIComponent(pais)+'&dias='+dias+'&orden='+orden
+            +'&limite=60'+(buscar?'&buscar='+encodeURIComponent(buscar):'');
+    const d=await (await fetch(u)).json();
+    if(!d.listo){
+      if(nota) nota.textContent=d.mensaje||'Sin datos todavía.';
+      cuerpo.innerHTML='<tr><td colspan="8" class="vacio">'+(d.mensaje||'Todavía no hay dos fotos para comparar.')+'</td></tr>';
+      return;
+    }
+    if(nota) nota.textContent=d.vigilados.toLocaleString('es-CO')+' productos vigilados · '
+      +d.proveedores+' proveedores · comparando '+d.desde+' contra '+d.hasta
+      +(d.barrido && !d.barrido.terminado ? ' · catálogo aún incompleto' : '');
+    if(!d.productos.length){
+      cuerpo.innerHTML='<tr><td colspan="8" class="vacio">Ningún producto se movió entre esas dos fotos.</td></tr>';
+      return;
+    }
+    const enlace=RADAR_CATALOGO[pais]||RADAR_CATALOGO.Colombia;
+    cuerpo.innerHTML=d.productos.map((p,i)=>{
+      const foto=p.imagen
+        ? '<img src="'+p.imagen+'" alt="" loading="lazy" style="width:44px;height:44px;object-fit:cover;border-radius:8px;border:1px solid var(--border)">'
+        : '<div style="width:44px;height:44px;border-radius:8px;border:1px solid var(--border);background:var(--surface-2)"></div>';
+      const marg=p.margen_pct===null?'<span style="color:#8a93a0">—</span>'
+        :'<b style="color:'+(p.margen_pct>=40?'#1e8e5a':p.margen_pct>=25?'#b8860b':'#c0392b')+'">'+p.margen_pct+'%</b>';
+      return '<tr style="cursor:pointer" onclick="window.open(\''+enlace+'\',\'_blank\',\'noopener\')">'
+        +'<td style="width:52px">'+foto+'</td>'
+        +'<td><div style="font-weight:600">'+(i+1)+'. '+(p.nombre||'')+'</div>'
+        +'<div style="font-size:11.5px;color:#8a93a0">'+(p.proveedor||'')+(p.ciudad?' · '+p.ciudad:'')+(p.categoria?' · '+p.categoria:'')+'</div></td>'
+        +'<td><b style="font-size:15px">'+p.vendidas+'</b></td>'
+        +'<td>'+(p.stock!==null?Number(p.stock).toLocaleString('es-CO'):'—')+'</td>'
+        +'<td>'+radarMoneda(pais,p.precio)+'</td>'
+        +'<td>'+(p.sugerido>p.precio?radarMoneda(pais,p.sugerido):'<span style="color:#8a93a0">sin fijar</span>')+'</td>'
+        +'<td>'+marg+'</td>'
+        +'<td style="font-size:11.5px;color:#8a93a0;white-space:nowrap">ver en Dropi ↗</td></tr>';
+    }).join('');
+  }catch(e){
+    if(nota) nota.textContent='No me pude conectar con el radar.';
+    cuerpo.innerHTML='<tr><td colspan="8" class="vacio">No me pude conectar con el radar.</td></tr>';
+  }
+}
 
 /* ====================== CALCULADORA DE COMBOS ====================== */
 const URL_CALC=BASE+'/calc-productos';
