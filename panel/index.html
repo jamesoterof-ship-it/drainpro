@@ -656,35 +656,109 @@ tbody tr:hover .chev{color:var(--brand)}
          que se mueve. La foto del catálogo se toma cada madrugada; el stock de ayer
          menos el de hoy son las unidades que salieron. -->
     <div class="content view" id="view-radar">
-      <div class="panel" style="margin-bottom:16px">
-        <div class="tbl-head">
-          <h2>Radar de productos</h2>
-          <span id="radarNota" style="font-size:12px;color:#8a93a0">Cargando…</span>
+      <style>
+        .rad-paises{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+        .rad-pais{border:1px solid var(--border);background:var(--surface);color:var(--ink-2);
+          border-radius:8px;padding:6px 13px;font-size:13px;font-weight:600;cursor:pointer}
+        .rad-pais.on{border-color:#c9a227;color:#8a6d10;background:#faf5e4}
+        .rad-pais small{color:var(--ink-3);font-weight:500;margin-left:5px}
+        .rad-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+        .rad-cp{display:flex;align-items:center;gap:8px;background:var(--surface);
+          border:1px solid var(--border);border-radius:999px;padding:7px 15px;font-size:12.5px;color:var(--ink-2)}
+        .rad-cp b{color:var(--ink);font-size:14px}
+        .rad-cp .et{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+        .rad-sube{color:#1e8e5a;font-weight:700} .rad-baja{color:#c0392b;font-weight:700}
+        .rad-titular{display:flex;gap:13px;align-items:center;background:var(--surface);
+          border:1px solid var(--border);border-left:3px solid #c9a227;border-radius:10px;
+          padding:14px 17px;margin-bottom:14px}
+        .rad-titular h3{margin:0;font-size:18px;font-weight:800}
+        .rad-titular p{margin:3px 0 0;font-size:13px;color:var(--ink-2)}
+        .rad-cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+        @media (max-width:1000px){ .rad-cols{grid-template-columns:1fr} }
+        .rad-fechas{display:flex;gap:5px;overflow-x:auto;padding:10px 12px;border-bottom:1px solid var(--border)}
+        .rad-fe{border:1px solid var(--border);background:transparent;color:var(--ink-2);border-radius:7px;
+          padding:5px 9px;min-width:46px;text-align:center;cursor:pointer;flex:none}
+        .rad-fe span{display:block;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3)}
+        .rad-fe b{font-size:14px}
+        .rad-fe.on{background:#c9a227;border-color:#c9a227;color:#fff}
+        .rad-fe.on span{color:#fff;opacity:.85}
+        .rad-scroll{max-height:560px;overflow-y:auto}
+        .rad-scroll thead th{position:sticky;top:0;z-index:1;background:var(--surface-2)}
+        .rad-med{width:26px;height:26px;border-radius:6px;display:grid;place-items:center;
+          font-size:11.5px;font-weight:800;background:var(--surface-2);color:var(--ink-2);border:1px solid var(--border)}
+        .rad-med.o1{background:#c9a227;color:#fff;border-color:#c9a227}
+        .rad-med.o2{background:#e8d79a;color:#4a3c08;border-color:#d9c46f}
+        .rad-med.o3{background:#f2e9cd;color:#6b5714}
+        .rad-foto{width:36px;height:36px;border-radius:7px;object-fit:cover;border:1px solid var(--border);flex:none;background:var(--surface-2)}
+        .rad-prod{display:flex;align-items:center;gap:9px}
+        .rad-nom{font-weight:640;font-size:13px;line-height:1.25}
+        .rad-meta{font-size:10.5px;color:var(--ink-3)}
+        .rad-und{font-size:15px;font-weight:800}
+        .rad-spark{display:inline-flex;align-items:flex-end;gap:2px;height:20px}
+        .rad-spark i{width:3.5px;border-radius:1px;display:block;background:currentColor;opacity:.42}
+        .rad-spark i:last-child{opacity:1}
+        .rad-velo{position:fixed;inset:0;background:rgba(15,20,28,.55);z-index:900;display:none;
+          align-items:flex-start;justify-content:center;padding:26px 14px;overflow-y:auto}
+        .rad-velo.on{display:flex}
+        .rad-ficha{background:var(--surface);border:1px solid var(--border);border-radius:12px;
+          width:min(1020px,100%);position:relative;box-shadow:0 22px 60px rgba(15,20,28,.28)}
+        .rad-x{position:absolute;top:11px;right:12px;width:30px;height:30px;border:1px solid var(--border);
+          border-radius:7px;background:var(--surface-2);color:var(--ink-2);cursor:pointer;font-size:15px}
+        .rad-k{background:var(--surface-2);border:1px solid var(--border);border-left:2px solid #c9a227;
+          border-radius:8px;padding:10px 12px}
+        .rad-k .r{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);display:block}
+        .rad-k .v{font-size:21px;font-weight:800;display:block;line-height:1.2}
+        .rad-k .p{font-size:11px;color:var(--ink-2)}
+        .rad-seg{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+        .rad-seg button{border:0;background:transparent;color:var(--ink-2);font:inherit;font-size:11.5px;
+          font-weight:650;padding:5px 11px;cursor:pointer}
+        .rad-seg button.on{background:#c9a227;color:#fff}
+      </style>
+
+      <div class="rad-paises" id="radarPaises"></div>
+      <div class="rad-chips" id="radarChips"></div>
+      <div class="rad-titular" id="radarTitular" style="display:none">
+        <div id="radarTitIco" style="width:36px;height:36px;border-radius:50%;display:grid;place-items:center;flex:none;font-size:16px"></div>
+        <div><h3 id="radarTitH"></h3><p id="radarTitP"></p></div>
+      </div>
+
+      <div class="rad-cols">
+        <div class="panel">
+          <div class="tbl-head"><h2>Ventas por día</h2><span id="radarDiaSub" style="font-size:12px;color:#8a93a0"></span></div>
+          <div class="rad-fechas" id="radarFechas"></div>
+          <input id="radarBuscar" type="search" placeholder="Buscar producto, proveedor o ciudad…"
+                 style="margin:10px 12px;width:calc(100% - 24px);padding:7px 11px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);color:var(--ink)">
+          <div class="rad-scroll">
+            <table>
+              <thead><tr><th></th><th>Producto</th><th style="text-align:right">Ventas<br><span style="font-weight:400;text-transform:none;letter-spacing:0">costo</span></th></tr></thead>
+              <tbody id="radarDia"><tr><td colspan="3" class="vacio">Cargando…</td></tr></tbody>
+            </table>
+          </div>
+          <div id="radarDiaPie" style="font-size:11px;color:#8a93a0;padding:8px 12px"></div>
         </div>
-        <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:12px 4px">
-          <label class="calcF" style="min-width:150px">País
-            <select id="radarPais" onchange="cargarRadar()"><option>Colombia</option><option>Chile</option></select></label>
-          <label class="calcF" style="min-width:150px">Comparar contra
-            <select id="radarDias" onchange="cargarRadar()">
-              <option value="1">El día anterior</option>
-              <option value="3">Hace 3 días</option>
-              <option value="7">Hace 7 días</option>
-            </select></label>
-          <label class="calcF" style="min-width:150px">Ordenar por
-            <select id="radarOrden" onchange="cargarRadar()">
-              <option value="vendidas">Más vendidos</option>
-              <option value="margen">Mejor margen</option>
-            </select></label>
-          <label class="calcF" style="flex:1;min-width:190px">Buscar
-            <input id="radarBuscar" type="search" placeholder="producto o proveedor…" onkeyup="if(event.key==='Enter')cargarRadar()"></label>
+
+        <div class="panel">
+          <div class="tbl-head"><h2>🏆 Top 25 ganadores</h2>
+            <span class="rad-seg" id="radarVentana">
+              <button class="on" data-d="7">7D</button><button data-d="14">14D</button><button data-d="30">30D</button>
+            </span>
+          </div>
+          <div class="rad-scroll">
+            <table>
+              <thead><tr><th></th><th>Producto</th><th style="text-align:right">Ventas<br><span style="font-weight:400;text-transform:none;letter-spacing:0">margen</span></th></tr></thead>
+              <tbody id="radarTop"><tr><td colspan="3" class="vacio">Cargando…</td></tr></tbody>
+            </table>
+          </div>
+          <div id="radarTopPie" style="font-size:11px;color:#8a93a0;padding:8px 12px"></div>
         </div>
       </div>
-      <div class="panel" style="margin-bottom:16px">
-        <table>
-          <thead><tr><th></th><th>Producto</th><th>Vendidas</th><th>Stock</th><th>Costo</th><th>Sugerido</th><th>Margen</th><th></th></tr></thead>
-          <tbody id="radarBody"><tr><td colspan="8" class="vacio">Cargando…</td></tr></tbody>
-        </table>
-        <div style="font-size:11.5px;color:#8a93a0;padding:8px 4px">Las unidades salen de comparar el inventario entre dos días: nada estimado. Al hacer clic en un producto se abre el catálogo de Dropi.</div>
+    </div>
+
+    <!-- ficha del producto: se abre al hacer clic en cualquier fila -->
+    <div class="rad-velo" id="radarVelo" onclick="if(event.target===this)cerrarFicha()">
+      <div class="rad-ficha">
+        <button class="rad-x" onclick="cerrarFicha()" aria-label="Cerrar">✕</button>
+        <div id="radarFicha" style="padding:16px"><div class="vacio">Cargando…</div></div>
       </div>
     </div>
 
@@ -1123,6 +1197,6 @@ tbody tr:hover .chev{color:var(--brand)}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
-<script src="app.js?v=60"></script>
+<script src="app.js?v=61"></script>
 </body>
 </html>

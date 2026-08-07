@@ -1419,67 +1419,233 @@ async function agEjecutar(a,d){ var b=d.querySelector('.agAccB'); b.innerHTML='<
   }catch(e){ b.innerHTML='<span class="agAccMsg" style="color:#c0392b">No me pude conectar para ejecutar.</span>'; } }
 
 /* ====================== RADAR DE PRODUCTOS (Dropi) ======================
-   Los números salen del backend de Konecta (misma Postgres), que guarda cada
-   madrugada una foto del inventario de Dropi. Unidades vendidas = stock de la
-   foto vieja menos el de la nueva. Nada estimado.
+   Nuestro "Dropdata": el backend guarda cada madrugada una foto del inventario
+   del catálogo de Dropi, y el stock que baja de un día a otro son las unidades
+   que se vendieron. Nada estimado. Dropi no publica ventas por ningún lado.
    ====================================================================== */
 const URL_RADAR='https://web-production-a5adc.up.railway.app/api/jaye/radar';
-const RADAR_CATALOGO={Colombia:'https://app.dropi.co/dashboard/search',
-                      Chile:'https://app.dropi.cl/dashboard/search'};
+const RADAR_CAT={Colombia:'https://app.dropi.co/dashboard/search',
+                 Chile:'https://app.dropi.cl/dashboard/search'};
+const RADAR_BANDERA={Colombia:'🇨🇴',Chile:'🇨🇱',Paraguay:'🇵🇾','México':'🇲🇽',Ecuador:'🇪🇨',
+                     'Perú':'🇵🇪',Panamá:'🇵🇦',Guatemala:'🇬🇹','España':'🇪🇸'};
+var radarPais='Colombia', radarFecha='', radarVentana=7, radarDatos=null;
 
-function radarMoneda(pais,v){
-  if(v===null||v===undefined||v==='') return '—';
-  const n=Number(v)||0;
-  return pais==='Chile' ? '$'+n.toLocaleString('es-CL') : '$'+n.toLocaleString('es-CO');
-}
+function radNum(v){ return Number(v||0).toLocaleString('es-CO'); }
+function radPlata(v){ return (radarPais==='Chile'?'$':'$')+Number(v||0).toLocaleString(radarPais==='Chile'?'es-CL':'es-CO'); }
+function radEsc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+function radMedalla(i){ return 'rad-med'+(i===0?' o1':i===1?' o2':i===2?' o3':''); }
+function radFoto(p){ return p.imagen
+  ? '<img class="rad-foto" loading="lazy" src="'+radEsc(p.imagen)+'" alt="">'
+  : '<div class="rad-foto"></div>'; }
 
+/* ---------- carga principal ---------- */
 async function cargarRadar(){
-  const cuerpo=document.getElementById('radarBody'); if(!cuerpo) return;
-  const pais=(document.getElementById('radarPais')||{}).value||'Colombia';
-  const dias=(document.getElementById('radarDias')||{}).value||'1';
-  const orden=(document.getElementById('radarOrden')||{}).value||'vendidas';
-  const buscar=((document.getElementById('radarBuscar')||{}).value||'').trim();
-  const nota=document.getElementById('radarNota');
-  cuerpo.innerHTML='<tr><td colspan="8" class="vacio">Cargando…</td></tr>';
+  var cont=document.getElementById('radarDia'); if(!cont) return;
+  cont.innerHTML='<tr><td colspan="3" class="vacio">Cargando…</td></tr>';
   try{
-    const u=URL_RADAR+'?pais='+encodeURIComponent(pais)+'&dias='+dias+'&orden='+orden
-            +'&limite=60'+(buscar?'&buscar='+encodeURIComponent(buscar):'');
-    const d=await (await fetch(u)).json();
+    var u=URL_RADAR+'/panel?pais='+encodeURIComponent(radarPais)
+         +'&dias='+radarVentana+'&limite_dia=50&limite_top=25'
+         +(radarFecha?'&fecha='+radarFecha:'');
+    var d=await (await fetch(u)).json();
+    radarDatos=d;
+    radarPintaPaises();
     if(!d.listo){
-      if(nota) nota.textContent=d.mensaje||'Sin datos todavía.';
-      cuerpo.innerHTML='<tr><td colspan="8" class="vacio">'+(d.mensaje||'Todavía no hay dos fotos para comparar.')+'</td></tr>';
+      document.getElementById('radarChips').innerHTML=
+        '<div class="rad-cp">'+radEsc(d.mensaje||'Sin datos todavía')+'</div>';
+      cont.innerHTML='<tr><td colspan="3" class="vacio">'+radEsc(d.mensaje||'Todavía no hay dos fotos para comparar.')+'</td></tr>';
+      document.getElementById('radarTop').innerHTML='<tr><td colspan="3" class="vacio">—</td></tr>';
       return;
     }
-    if(nota) nota.textContent=d.vigilados.toLocaleString('es-CO')+' productos vigilados · '
-      +d.proveedores+' proveedores · comparando '+d.desde+' contra '+d.hasta
-      +(d.barrido && !d.barrido.terminado ? ' · catálogo aún incompleto' : '');
-    if(!d.productos.length){
-      cuerpo.innerHTML='<tr><td colspan="8" class="vacio">Ningún producto se movió entre esas dos fotos.</td></tr>';
-      return;
-    }
-    const enlace=RADAR_CATALOGO[pais]||RADAR_CATALOGO.Colombia;
-    cuerpo.innerHTML=d.productos.map((p,i)=>{
-      const foto=p.imagen
-        ? '<img src="'+p.imagen+'" alt="" loading="lazy" style="width:44px;height:44px;object-fit:cover;border-radius:8px;border:1px solid var(--border)">'
-        : '<div style="width:44px;height:44px;border-radius:8px;border:1px solid var(--border);background:var(--surface-2)"></div>';
-      const marg=p.margen_pct===null?'<span style="color:#8a93a0">—</span>'
-        :'<b style="color:'+(p.margen_pct>=40?'#1e8e5a':p.margen_pct>=25?'#b8860b':'#c0392b')+'">'+p.margen_pct+'%</b>';
-      return '<tr style="cursor:pointer" onclick="window.open(\''+enlace+'\',\'_blank\',\'noopener\')">'
-        +'<td style="width:52px">'+foto+'</td>'
-        +'<td><div style="font-weight:600">'+(i+1)+'. '+(p.nombre||'')+'</div>'
-        +'<div style="font-size:11.5px;color:#8a93a0">'+(p.proveedor||'')+(p.ciudad?' · '+p.ciudad:'')+(p.categoria?' · '+p.categoria:'')+'</div></td>'
-        +'<td><b style="font-size:15px">'+p.vendidas+'</b></td>'
-        +'<td>'+(p.stock!==null?Number(p.stock).toLocaleString('es-CO'):'—')+'</td>'
-        +'<td>'+radarMoneda(pais,p.precio)+'</td>'
-        +'<td>'+(p.sugerido>p.precio?radarMoneda(pais,p.sugerido):'<span style="color:#8a93a0">sin fijar</span>')+'</td>'
-        +'<td>'+marg+'</td>'
-        +'<td style="font-size:11.5px;color:#8a93a0;white-space:nowrap">ver en Dropi ↗</td></tr>';
-    }).join('');
+    radarFecha=d.fecha;
+    radarPintaChips(d); radarPintaTitular(d); radarPintaFechas(d);
+    radarPintaDia(d); radarPintaTop(d);
   }catch(e){
-    if(nota) nota.textContent='No me pude conectar con el radar.';
-    cuerpo.innerHTML='<tr><td colspan="8" class="vacio">No me pude conectar con el radar.</td></tr>';
+    cont.innerHTML='<tr><td colspan="3" class="vacio">No me pude conectar con el radar.</td></tr>';
   }
 }
+
+function radarPintaPaises(){
+  var c=document.getElementById('radarPaises'); if(!c) return;
+  var lista=[{p:'Colombia'},{p:'Chile'}];
+  c.innerHTML=lista.map(function(x){
+    var act=x.p===radarPais;
+    return '<button class="rad-pais'+(act?' on':'')+'" onclick="radarVerPais(\''+x.p+'\')">'
+      +(RADAR_BANDERA[x.p]||'')+' '+x.p+'</button>';
+  }).join('');
+}
+function radarVerPais(p){ radarPais=p; radarFecha=''; cargarRadar(); }
+
+function radarPintaChips(d){
+  var r=d.resumen||{}, c=document.getElementById('radarChips'); if(!c) return;
+  var cambio=r.cambio_pct;
+  var cb=cambio===null||cambio===undefined ? ''
+    : ' <span class="'+(cambio>=0?'rad-sube':'rad-baja')+'">'+(cambio>=0?'▲':'▼')+' '+Math.abs(cambio)+'%</span>';
+  var cob=(r.catalogo&&r.barrido_completo)?'<span class="rad-sube">completo</span>'
+    :'<span class="rad-baja">barriendo</span>';
+  c.innerHTML=
+     '<div class="rad-cp"><span class="et">'+radEsc(d.fecha)+' · '+radEsc(d.pais)+'</span></div>'
+    +'<div class="rad-cp" style="border-color:#c9a227"><span class="et">Unidades</span> <b>'+radNum(r.unidades)+'</b>'+cb+'</div>'
+    +'<div class="rad-cp"><span class="et">Productos con venta</span> <b>'+radNum(r.productos)+'</b></div>'
+    +'<div class="rad-cp"><span class="et">Proveedores activos</span> <b>'+radNum(r.proveedores)+'</b></div>'
+    +'<div class="rad-cp"><span class="et">Costo promedio</span> <b>'+radPlata(r.ticket)+'</b></div>'
+    +'<div class="rad-cp"><span class="et">Catálogo vigilado</span> <b>'+radNum(r.catalogo)+'</b> '+cob+'</div>';
+}
+
+function radarPintaTitular(d){
+  var r=d.resumen||{}, box=document.getElementById('radarTitular'); if(!box) return;
+  var c=r.cambio_pct;
+  box.style.display='flex';
+  var ico=document.getElementById('radarTitIco');
+  if(c===null||c===undefined){ ico.textContent='•'; ico.style.background='#eef1f5'; ico.style.color='#8a93a0'; }
+  else if(c>=0){ ico.textContent='▲'; ico.style.background='#e6f6ee'; ico.style.color='#1e8e5a'; }
+  else { ico.textContent='▼'; ico.style.background='#fdecea'; ico.style.color='#c0392b'; }
+  document.getElementById('radarTitH').textContent=
+    c===null||c===undefined ? d.pais+': '+radNum(r.unidades)+' unidades el '+d.fecha
+    : d.pais+(c>=0?' subió ':' bajó ')+Math.abs(c)+'% frente al día anterior';
+  document.getElementById('radarTitP').textContent=
+    radNum(r.unidades)+' unidades en '+radNum(r.productos)+' productos activos, de '
+    +radNum(r.proveedores)+' proveedores. Comparado contra el '+d.compara_con+'.';
+}
+
+function radarPintaFechas(d){
+  var c=document.getElementById('radarFechas'); if(!c) return;
+  var dias=['dom','lun','mar','mié','jue','vie','sáb'];
+  c.innerHTML=(d.fechas||[]).slice(0,14).map(function(f){
+    var p=f.split('-'), fe=new Date(+p[0],+p[1]-1,+p[2]);
+    return '<button class="rad-fe'+(f===d.fecha?' on':'')+'" onclick="radarVerFecha(\''+f+'\')">'
+      +'<span>'+dias[fe.getDay()]+'</span><b>'+(+p[2])+'</b></button>';
+  }).join('');
+}
+function radarVerFecha(f){ radarFecha=f; cargarRadar(); }
+
+function radarFilaProducto(p,i,derecha){
+  return '<tr onclick="abrirFichaRadar('+p.id+')">'
+    +'<td><div class="'+radMedalla(i)+'">'+(i+1)+'</div></td>'
+    +'<td><div class="rad-prod">'+radFoto(p)+'<div>'
+      +'<div class="rad-nom">'+radEsc(p.nombre)+'</div>'
+      +'<div class="rad-meta">'+radEsc(p.proveedor||'')+(p.ciudad?' · '+radEsc(p.ciudad):'')+'</div>'
+    +'</div></div></td>'
+    +'<td style="text-align:right"><div class="rad-und">'+radNum(p.vendidas)+'</div>'
+      +'<div style="font-size:10.5px;color:#8a93a0">'+derecha(p)+'</div></td></tr>';
+}
+
+function radarPintaDia(d){
+  var lista=d.dia||[], q=(document.getElementById('radarBuscar')||{}).value||'';
+  if(q.trim()){ var s=q.trim().toLowerCase();
+    lista=lista.filter(function(p){ return (p.nombre||'').toLowerCase().indexOf(s)>=0
+      || (p.proveedor||'').toLowerCase().indexOf(s)>=0 || (p.ciudad||'').toLowerCase().indexOf(s)>=0; }); }
+  var b=document.getElementById('radarDia');
+  b.innerHTML=lista.length
+    ? lista.map(function(p,i){ return radarFilaProducto(p,i,function(x){ return radPlata(x.precio); }); }).join('')
+    : '<tr><td colspan="3" class="vacio">Ningún producto se movió ese día.</td></tr>';
+  document.getElementById('radarDiaSub').textContent=d.fecha+' · '+radNum((d.resumen||{}).productos)+' con movimiento';
+  document.getElementById('radarDiaPie').innerHTML='Mostrando '+lista.length
+    +' · todos con nombre, proveedor y precio a la vista';
+}
+
+function radarPintaTop(d){
+  var lista=d.top||[], b=document.getElementById('radarTop');
+  b.innerHTML=lista.length
+    ? lista.map(function(p,i){ return radarFilaProducto(p,i,function(x){
+        return x.margen==null?'—':x.margen+'%'; }); }).join('')
+    : '<tr><td colspan="3" class="vacio">Todavía no hay ventana de '+radarVentana+' días.</td></tr>';
+  document.getElementById('radarTopPie').innerHTML='Desde el '+radEsc(d.ventana_desde||'')
+    +' · sin candados: aquí no se oculta nada';
+}
+
+/* ---------- la ficha del producto ---------- */
+async function abrirFichaRadar(id){
+  var velo=document.getElementById('radarVelo'), caja=document.getElementById('radarFicha');
+  velo.classList.add('on'); caja.innerHTML='<div class="vacio">Cargando…</div>';
+  try{
+    var d=await (await fetch(URL_RADAR+'/producto?id='+id+'&pais='+encodeURIComponent(radarPais)
+                             +'&dias='+radarVentana)).json();
+    if(!d.encontrado){ caja.innerHTML='<div class="vacio">No encontré ese producto.</div>'; return; }
+    caja.innerHTML=radarFichaHTML(d);
+    radarDibujaCurva(d.serie);
+  }catch(e){ caja.innerHTML='<div class="vacio">No me pude conectar.</div>'; }
+}
+function cerrarFicha(){ document.getElementById('radarVelo').classList.remove('on'); }
+
+function radarFichaHTML(d){
+  var p=d.producto, t=d.totales, enlace=RADAR_CAT[radarPais]||RADAR_CAT.Colombia;
+  var chip=function(x){ return '<span style="font-size:10.5px;border:1px solid var(--border);border-radius:6px;padding:2px 8px;color:var(--ink-2)">'+x+'</span>'; };
+  var filas=d.serie.slice().reverse().map(function(s,i,arr){
+    var prev=arr[i+1], cambio='—', col='#8a93a0';
+    if(s.vendidas!=null && prev && prev.vendidas){
+      var c=Math.round((s.vendidas-prev.vendidas)/prev.vendidas*100);
+      cambio=(c>=0?'▲ ':'▼ ')+Math.abs(c)+'%'; col=c>=0?'#1e8e5a':'#c0392b';
+    }
+    return '<tr><td>'+s.fecha.slice(5).split('-').reverse().join('/')+'</td>'
+      +'<td style="text-align:right">'+radNum(s.stock)+'</td>'
+      +'<td style="text-align:right"><b>'+(s.vendidas==null?'—':radNum(s.vendidas))+'</b></td>'
+      +'<td style="text-align:right;color:'+col+';font-weight:700">'+cambio+'</td></tr>';
+  }).join('');
+  return ''
+   +'<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding-bottom:12px;border-bottom:1px solid var(--border)">'
+   + (p.imagen?'<img class="rad-foto" style="width:54px;height:54px" src="'+radEsc(p.imagen)+'" alt="">':'<div class="rad-foto" style="width:54px;height:54px"></div>')
+   +'<div><h3 style="margin:0;font-size:16px;font-weight:780">'+radEsc(p.nombre)+'</h3>'
+   +'<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:5px">'
+   + chip(radEsc(p.proveedor||'—')) + (p.ciudad?chip(radEsc(p.ciudad)):'') + (p.categoria?chip(radEsc(p.categoria)):'')
+   + chip(radPlata(p.precio)+' costo') + (p.margen!=null?chip(p.margen+'% margen'):'')
+   + (p.stock!=null?chip(radNum(p.stock)+' en stock'):'')
+   +'</div></div></div>'
+   +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:9px;padding:13px 0;border-bottom:1px solid var(--border)">'
+   +'<div class="rad-k"><span class="r">Total vendido</span><span class="v">'+radNum(t.vendidas)+'</span><span class="p">en '+t.dias+' día(s)</span></div>'
+   +'<div class="rad-k"><span class="r">Promedio diario</span><span class="v">'+t.promedio+'</span><span class="p">por día</span></div>'
+   +'<div class="rad-k"><span class="r">Máximo diario</span><span class="v">'+radNum(t.maximo)+'</span><span class="p">'+(t.dia_maximo||'—')+'</span></div>'
+   +'<div class="rad-k"><span class="r">Días con venta</span><span class="v">'+t.dias_con_venta+' / '+t.dias+'</span><span class="p">'+(t.dias&&t.dias_con_venta===t.dias?'vende todos los días':'con movimiento')+'</span></div>'
+   +'</div>'
+   +'<div style="display:grid;grid-template-columns:1.4fr 1fr;gap:14px;padding-top:13px" id="radarFichaBody">'
+   +'<div><div style="font-size:13px;font-weight:750;margin-bottom:6px">Tendencia de ventas</div>'
+   +'<canvas id="radarCurva" height="150"></canvas></div>'
+   +'<div><div style="font-size:13px;font-weight:750;margin-bottom:6px">Detalle diario</div>'
+   +'<table style="font-size:12px"><thead><tr><th>Fecha</th><th style="text-align:right">Stock</th>'
+   +'<th style="text-align:right">Ventas</th><th style="text-align:right">Cambio</th></tr></thead>'
+   +'<tbody>'+filas+'</tbody></table></div></div>'
+   +'<div style="display:flex;gap:8px;flex-wrap:wrap;padding-top:13px;margin-top:13px;border-top:1px solid var(--border)">'
+   +'<a href="'+enlace+'" target="_blank" rel="noopener" style="border:1px solid #c9a227;color:#8a6d10;'
+   +'border-radius:8px;padding:7px 15px;font-size:12.5px;font-weight:650;text-decoration:none">Ver en Dropi ↗</a>'
+   +'<button onclick="cerrarFicha()" style="border:1px solid var(--border);background:var(--surface-2);'
+   +'color:var(--ink-2);border-radius:8px;padding:7px 15px;font-size:12.5px;font-weight:650;cursor:pointer">Cerrar</button>'
+   +'</div>';
+}
+
+function radarDibujaCurva(serie){
+  var cv=document.getElementById('radarCurva'); if(!cv||!cv.getContext) return;
+  var datos=serie.filter(function(s){ return s.vendidas!=null; });
+  if(!datos.length){ return; }
+  var an=cv.parentNode.clientWidth||420, al=150;
+  cv.width=an*2; cv.height=al*2; cv.style.width=an+'px'; cv.style.height=al+'px';
+  var g=cv.getContext('2d'); g.scale(2,2); g.clearRect(0,0,an,al);
+  var max=Math.max.apply(null,datos.map(function(s){return s.vendidas;}))||1;
+  var px=function(i){ return datos.length<2?an/2:12+i*((an-24)/(datos.length-1)); };
+  var py=function(v){ return al-22-(v/max)*(al-40); };
+  g.strokeStyle='#e3e8ee'; g.lineWidth=1; g.setLineDash([3,4]);
+  [0.25,0.5,0.75].forEach(function(f){ var y=al-22-(f*(al-40));
+    g.beginPath(); g.moveTo(10,y); g.lineTo(an-10,y); g.stroke(); });
+  g.setLineDash([]);
+  g.strokeStyle='#1e8e5a'; g.lineWidth=2.5; g.lineJoin='round'; g.beginPath();
+  datos.forEach(function(s,i){ i?g.lineTo(px(i),py(s.vendidas)):g.moveTo(px(i),py(s.vendidas)); });
+  g.stroke();
+  g.fillStyle='#c9a227';
+  g.beginPath(); g.arc(px(datos.length-1),py(datos[datos.length-1].vendidas),4,0,7); g.fill();
+  g.fillStyle='#8a93a0'; g.font='10px Segoe UI';
+  datos.forEach(function(s,i){ if(i===0||i===datos.length-1||datos.length<6)
+    g.fillText(s.fecha.slice(8)+'/'+s.fecha.slice(5,7),px(i)-11,al-6); });
+}
+
+document.addEventListener('DOMContentLoaded',function(){
+  var b=document.getElementById('radarBuscar');
+  if(b) b.addEventListener('input',function(){ if(radarDatos&&radarDatos.listo) radarPintaDia(radarDatos); });
+  var v=document.getElementById('radarVentana');
+  if(v) v.addEventListener('click',function(e){
+    var t=e.target.closest('button'); if(!t) return;
+    v.querySelectorAll('button').forEach(function(x){ x.classList.toggle('on',x===t); });
+    radarVentana=+t.dataset.d||7; cargarRadar(); });
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape') cerrarFicha(); });
+});
 
 /* ====================== CALCULADORA DE COMBOS ====================== */
 const URL_CALC=BASE+'/calc-productos';
