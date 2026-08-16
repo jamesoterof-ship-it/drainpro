@@ -1423,7 +1423,10 @@ async function agEjecutar(a,d){ var b=d.querySelector('.agAccB'); b.innerHTML='<
    del catálogo de Dropi, y el stock que baja de un día a otro son las unidades
    que se vendieron. Nada estimado. Dropi no publica ventas por ningún lado.
    ====================================================================== */
-const URL_RADAR='https://web-production-a5adc.up.railway.app/api/jaye/radar';
+/* El radar vive en su PROPIO servicio (repo jamesoterof-ship-it/radar-jaye), aparte
+   de Konecta: el 10-ago-2026 un barrido dentro del backend de clientes congeló
+   producción 30 min. Servicio, repo y base propios — no comparte nada. */
+const URL_RADAR='https://radar-jaye-production.up.railway.app/api/jaye/radar';
 const RADAR_CAT={Colombia:'https://app.dropi.co/dashboard/search',
                  Chile:'https://app.dropi.cl/dashboard/search'};
 /* El enlace REAL al producto: el catálogo de Dropi lee el parámetro ?q= y busca.
