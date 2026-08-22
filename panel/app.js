@@ -2105,167 +2105,177 @@ document.querySelectorAll('#adDestSeg .adDestBtn').forEach(function(b){ b.addEve
 (function(){ adFill(); var n=document.getElementById('adNombre'); if(n) n.addEventListener('input',function(){n.dataset.edit='1';}); if(document.getElementById('adPais')) adPaisUpd(); adDestUpd(); adFileRender(); adGeoRender(); var cta=document.getElementById('adCta'); if(cta) cta.addEventListener('change',function(){ if(_adAds.length) renderGaleria(); }); })();
 
 /* ==================== MÉTRICAS DE CAMPAÑA ====================
-   Meta sabe lo que cuesta traer al cliente; Dropi sabe si compró y cuánto costó
-   el flete. Cruzados dan el CPA, el ROAS y el neto de verdad. Todo en COP, que
-   es la moneda de la pauta: el backend convierte las ventas chilenas con la tasa
-   del día. Lo único calculado y no medido es el neto proyectado, que castiga por
-   la tasa de devolución. */
-const URL_METRICAS = 'https://radar-jaye-production.up.railway.app/api/jaye/metricas';
+   Sale de los MISMOS datos reales que ya usa Finanzas: los pedidos de Dropi y el
+   gasto de Meta, ambos por webhook de n8n. Nada estimado y nada de servicios
+   aparte: si Finanzas carga, esto carga.
+
+   Lo que agrega sobre Finanzas: la devolución REAL medida por producto (no un
+   promedio), el flete comparado por transportadora, y el margen que queda por
+   unidad después de producto, flete y pauta. Todo en COP, como el resto del panel. */
 var _metCargado = false;
 
-function _mCop(n){ return '$' + Math.round(n||0).toLocaleString('es-CO'); }
-function _mPct(n){ return ((n||0)*100).toFixed(1) + '%'; }
-function _mEsc(s){ return String(s==null?'':s).replace(/[&<>"]/g, function(c){
+function _mC(n){ return '$' + Math.round(n||0).toLocaleString('es-CO'); }
+function _mP(n){ return (isFinite(n) ? (n*100).toFixed(1) : '0.0') + '%'; }
+function _mE(s){ return String(s==null?'':s).replace(/[&<>"]/g, function(c){
   return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+function _mBucket(e){
+  var s = String(e||'').toUpperCase();
+  if(/ENTREG/.test(s)) return 'entregado';
+  if(/DEVOL|DEVUEL|RECHAZ/.test(s)) return 'devuelto';
+  if(/CANCEL/.test(s)) return 'cancelado';
+  return 'en_camino';
+}
+/* Respeta el filtro de período del panel si existe; si no, toma todo. */
+function _mEnRango(f){ try{ return (typeof _enR === 'function') ? _enR(f) : true; }catch(e){ return true; } }
 
 async function cargarMetricas(){
   var caja = document.getElementById('metCuerpo');
   if(!caja || _metCargado) return;
   caja.innerHTML = '<div class="met-cargando">Cargando métricas…</div>';
   try{
-    var d = await (await fetch(URL_METRICAS + '?pais=Chile')).json();
-    if(d.error){
-      caja.innerHTML = '<div class="met-cargando">No pude cargar las métricas: ' + _mEsc(d.error) + '</div>';
-      return;
-    }
-    caja.innerHTML = _metRender(d);
+    if(!window._finCargado && typeof cargarFinanzas === 'function') await cargarFinanzas();
+    var ped = window._finPedidos || [], meta = window._finMeta || [];
+    if(!ped.length){ caja.innerHTML = '<div class="met-cargando">No llegaron pedidos. ¿Está activo el webhook en n8n?</div>'; return; }
+    caja.innerHTML = _metRender(ped, meta);
     _metCargado = true;
   }catch(e){
-    caja.innerHTML = '<div class="met-cargando">No pude conectar con el servicio de métricas.</div>';
+    caja.innerHTML = '<div class="met-cargando">No pude armar las métricas: ' + _mE(e.message) + '</div>';
   }
 }
 
-function _metRender(d){
-  var t = d.total || {}, cs = d.campanas || [], ps = d.pedidos || [];
-  var fleteProm = t.pedidos ? Math.round(t.flete / t.pedidos) : 0;
-  var gen = String(d.generado || '').replace('T',' ').replace('Z',' UTC');
-  var h = '';
+function _metRender(pedTodos, metaTodos){
+  var ped = pedTodos.filter(function(p){ return _mEnRango(p.creado_en); });
+  var meta = metaTodos.filter(function(m){ return _mEnRango(m.fecha); });
+  var pauta = meta.reduce(function(a,m){ return a + (+m.gasto||0); }, 0);
 
+  var T = {n:0, ent:0, dev:0, cam:0, can:0, rec:0, cos:0, fle:0};
+  var porProd = {}, porTrans = {};
+  ped.forEach(function(p){
+    var b = _mBucket(p.estado), rec = +p.recaudo||0, cos = +p.costo||0, fle = +p.flete||0;
+    T.n++; T.fle += fle;
+    if(b==='entregado'){ T.ent++; T.rec += rec; T.cos += cos; }
+    else if(b==='devuelto') T.dev++;
+    else if(b==='cancelado') T.can++;
+    else T.cam++;
+
+    var k = String(p.producto||'Sin nombre').trim();
+    var g = porProd[k] || (porProd[k] = {n:0, ent:0, dev:0, cam:0, rec:0, cos:0, fle:0});
+    g.n++; g.fle += fle;
+    if(b==='entregado'){ g.ent++; g.rec += rec; g.cos += cos; }
+    else if(b==='devuelto') g.dev++;
+    else if(b!=='cancelado') g.cam++;
+
+    var t = String(p.transportadora||'—').trim().toUpperCase();
+    var h = porTrans[t] || (porTrans[t] = {n:0, fle:0, ent:0, dev:0});
+    h.n++; h.fle += fle;
+    if(b==='entregado') h.ent++; else if(b==='devuelto') h.dev++;
+  });
+
+  var cerrados = T.ent + T.dev;
+  var pctDev = cerrados ? T.dev/cerrados : 0;
+  var neto = T.rec - T.cos - T.fle - pauta;
+  var cpa = T.ent ? pauta/T.ent : 0;
+  var roas = pauta ? T.rec/pauta : 0;
+  var fleteProm = T.n ? T.fle/T.n : 0;
+
+  var h = '';
   h += '<div class="met-cab">'
      + '<div><h2>Métricas de <span>campaña</span></h2>'
-     + '<p>Meta cruzado con Dropi · ' + _mEsc(d.pais||'Chile') + ' · desde el inicio de cada campaña</p></div>'
-     + '<div class="met-sello">Todo en <b>COP</b>, la moneda de la pauta<br>'
-     + '1 ' + _mEsc((d.tasa||{}).de || 'CLP') + ' = <b>' + ((d.tasa||{}).factor||0) + ' COP</b> · tasa del día<br>'
-     + _mEsc(gen) + '</div></div>';
+     + '<p>' + T.n + ' pedidos de Dropi cruzados con el gasto real de Meta · ' + _mE(typeof _periodoLabel==='function'?_periodoLabel():'todo el histórico') + '</p></div>'
+     + '<div class="met-sello">Todo en <b>COP</b><br>Los mismos datos de Finanzas<br>Nada estimado</div></div>';
 
-  if(t.pedidos){
-    h += '<div class="met-aviso"><h3>Lo que se lleva el flete</h3><p>'
-       + 'Cada envío cuesta <b>' + _mCop(fleteProm) + '</b> en promedio, y una devolución te cobra ese flete '
-       + 'completo sin que entre un peso. Con la tasa de devolución del <b>' + _mPct(d.devolucion) + '</b>, '
-       + 'el neto real no es ' + _mCop(t.neto) + ' sino <b>' + _mCop(t.neto_proyectado) + '</b>.'
+  if(cerrados){
+    h += '<div class="met-aviso"><h3>Lo que se lleva el flete y la devolución</h3><p>'
+       + 'Cada envío cuesta <b>' + _mC(fleteProm) + '</b> en promedio y se paga igual si el pedido se devuelve. '
+       + 'De ' + cerrados + ' pedidos ya cerrados, <b>' + T.dev + ' se devolvieron</b> — un <b>' + _mP(pctDev) + '</b>. '
+       + 'Eso son <b>' + _mC(T.dev * fleteProm) + '</b> de flete pagado sin que entrara un peso.'
        + '</p></div>';
   }
 
   h += '<div class="met-kpis">'
-     + _metK(_mCop(t.gasto), 'Invertido en pauta')
-     + _metK(t.conversaciones||0, 'Conversaciones<br>' + _mCop(t.costo_conversacion) + ' cada una')
-     + _metK(t.pedidos||0, 'Pedidos<br>' + _mPct(t.cierre) + ' de cierre')
-     + _metK((t.roas||0) + 'x', 'ROAS<br>' + _mCop(t.ingreso) + ' vendidos')
-     + _metK(_mCop(t.cpa), 'CPA<br>costo por venta')
-     + _metK(_mCop(t.neto_proyectado), 'Neto proyectado<br>tras flete y devoluciones',
-             (t.neto_proyectado||0) >= 0 ? 'pos' : 'neg')
+     + _metK(T.n, 'Pedidos montados')
+     + _metK(T.ent, 'Entregados<br>' + T.cam + ' todavía en camino')
+     + _metK(_mP(pctDev), 'Devolución real<br>medida, no estimada', pctDev > 0.30 ? 'mal' : '')
+     + _metK(_mC(T.rec), 'Ingreso cobrado<br>solo lo entregado')
+     + _metK(_mC(pauta), 'Pauta de Meta')
+     + _metK(_mC(neto), 'Neto real<br>tras producto, flete y pauta', neto >= 0 ? 'bien' : 'mal')
      + '</div>';
 
-  var imp = t.impresiones||0, alc = t.alcance||0, cl = t.clics||0, cv = t.conversaciones||0, pe = t.pedidos||0;
-  var anch = function(v){ return imp ? Math.max(0.35, (v/imp)*100) : 0; };
-  var frec = alc ? (imp/alc).toFixed(2) : '—';
-  h += '<div class="met-h">Dónde se cae la gente <small>de la impresión al pedido</small></div>'
-     + '<div class="met-emb">'
-     + _metPaso('Impresiones', 100, imp.toLocaleString('es-CO'), '')
-     + _metPaso('Personas', anch(alc), alc.toLocaleString('es-CO'), 'frecuencia ' + frec)
-     + _metPaso('Clics', anch(cl), cl.toLocaleString('es-CO'), imp ? ((cl/imp)*100).toFixed(2) + '% CTR' : '')
-     + _metPaso('Conversaciones', anch(cv), cv, cl ? ((cv/cl)*100).toFixed(1) + '% de los clics' : '')
-     + _metPaso('Pedidos', anch(pe), pe, cv ? _mPct(pe/cv) + ' de las conversaciones' : '')
-     + '</div>';
-
-  h += '<div class="met-h">Campaña por campaña</div><div class="met-tarj">';
-  cs.slice().sort(function(a,b){ return (b.gasto||0) - (a.gasto||0); }).forEach(function(c){
-    var chip = (c.estado === 'ACTIVE')
-      ? '<span class="met-chip">Activa</span>'
-      : '<span class="met-chip off">Pausada</span>';
-    if(c.pedidos > 0) chip += ' <span class="met-chip">' + (c.roas||0) + 'x ROAS</span>';
-    else if((c.gasto||0) > 0) chip += ' <span class="met-chip mal">Sin ventas</span>';
-    h += '<div class="met-c"><div class="hd"><h4>' + _mEsc(c.nombre) + '</h4><div>' + chip + '</div></div>'
-       + '<div class="met-rej">'
-       + _metCd('Gasto', _mCop(c.gasto), 'COP')
-       + _metCd('Alcance', (c.alcance||0).toLocaleString('es-CO'), 'frecuencia ' + (c.frecuencia||0))
-       + _metCd('CPM', _mCop(c.cpm), 'por mil vistas')
-       + _metCd('CTR', (c.ctr||0) + '%', (c.clics||0) + ' clics')
-       + _metCd('Conversac.', c.conversaciones||0, _mCop(c.costo_conversacion) + ' c/u')
-       + _metCd('Cierre', c.conversaciones ? _mPct(c.cierre) : '—', (c.pedidos||0) + ' pedidos')
-       + _metCd('CPA', c.pedidos ? _mCop(c.cpa) : '—', 'por venta')
-       + _metCd('Neto proy.', c.pedidos ? _mCop(c.neto_proyectado) : _mCop(c.neto), 'tras devoluciones')
-       + '</div>'
-       + '<div class="met-ver">' + _metVeredicto(c) + '</div></div>';
+  /* ---- por producto ---- */
+  var prods = Object.keys(porProd).map(function(k){ return [k, porProd[k]]; })
+    .sort(function(a,b){ return b[1].n - a[1].n; });
+  h += '<div class="met-h">Devolución real por producto <small>el número que decide si un producto sirve</small></div>'
+     + '<div class="met-tabla"><table><thead><tr><th>Producto</th>'
+     + '<th style="text-align:right">Pedidos</th><th style="text-align:right">Entregados</th>'
+     + '<th style="text-align:right">Devueltos</th><th style="text-align:right">% devolución</th>'
+     + '<th style="text-align:right">Flete prom.</th><th style="text-align:right">Margen x entrega</th>'
+     + '</tr></thead><tbody>';
+  prods.forEach(function(x){
+    var k = x[0], v = x[1], c = v.ent + v.dev;
+    var pd = c ? v.dev/c : null;
+    var fl = v.n ? v.fle/v.n : 0;
+    /* margen por entrega: lo cobrado menos producto, menos TODO el flete (el de las
+       devueltas también lo pagan las entregadas), repartido entre las entregadas */
+    var mg = v.ent ? (v.rec - v.cos - v.fle)/v.ent : null;
+    h += '<tr><td>' + _mE(k.slice(0,38)) + '</td>'
+       + '<td class="n">' + v.n + '</td><td class="n">' + v.ent + '</td><td class="n">' + v.dev + '</td>'
+       + '<td class="n"' + (pd!==null && pd>0.30 ? ' style="color:var(--rojo)"' : '') + '>' + (pd===null?'—':_mP(pd)) + '</td>'
+       + '<td class="n">' + _mC(fl) + '</td>'
+       + '<td class="n"' + (mg!==null && mg<0 ? ' style="color:var(--rojo)"' : '') + '>' + (mg===null?'—':_mC(mg)) + '</td></tr>';
   });
-  h += '</div>';
+  h += '<tfoot><tr><td>Global</td><td class="n">' + T.n + '</td><td class="n">' + T.ent + '</td>'
+     + '<td class="n">' + T.dev + '</td><td class="n">' + _mP(pctDev) + '</td>'
+     + '<td class="n">' + _mC(fleteProm) + '</td>'
+     + '<td class="n">' + (T.ent ? _mC((T.rec-T.cos-T.fle)/T.ent) : '—') + '</td></tr></tfoot></table></div>';
 
-  if(ps.length){
-    h += '<div class="met-h">Pedidos <small>flete real de Dropi, no estimado</small></div>'
-       + '<div class="met-tabla"><table><thead><tr>'
-       + '<th>Pedido</th><th>Cliente</th><th>Comuna</th><th>Estado</th>'
-       + '<th style="text-align:right">Recaudo</th><th style="text-align:right">Producto</th>'
-       + '<th style="text-align:right">Flete</th><th style="text-align:right">Margen</th>'
-       + '</tr></thead><tbody>';
-    ps.forEach(function(p){
-      h += '<tr><td>#' + _mEsc(p.id) + '</td><td>' + _mEsc(p.cliente) + '</td><td>' + _mEsc(p.comuna) + '</td>'
-         + '<td>' + _mEsc(p.estado) + '</td>'
-         + '<td class="n">' + _mCop(p.recaudo) + '</td><td class="n">' + _mCop(p.costo) + '</td>'
-         + '<td class="n">' + _mCop(p.flete) + '</td>'
-         + '<td class="n">' + _mCop(p.recaudo - p.costo - p.flete) + '</td></tr>';
+  /* ---- transportadoras ---- */
+  var trans = Object.keys(porTrans).map(function(k){ return [k, porTrans[k]]; })
+    .filter(function(x){ return x[1].n >= 3; })
+    .sort(function(a,b){ return (a[1].fle/a[1].n) - (b[1].fle/b[1].n); });
+  if(trans.length > 1){
+    var masBarata = trans[0], masCara = trans[trans.length-1];
+    var dif = (masCara[1].fle/masCara[1].n) - (masBarata[1].fle/masBarata[1].n);
+    h += '<div class="met-h">Flete por transportadora <small>la misma entrega, distinto precio</small></div>'
+       + '<div class="met-tabla"><table><thead><tr><th>Transportadora</th>'
+       + '<th style="text-align:right">Envíos</th><th style="text-align:right">Flete prom.</th>'
+       + '<th style="text-align:right">% devolución</th></tr></thead><tbody>';
+    trans.forEach(function(x){
+      var v = x[1], c = v.ent + v.dev;
+      h += '<tr><td>' + _mE(x[0]) + '</td><td class="n">' + v.n + '</td>'
+         + '<td class="n">' + _mC(v.fle/v.n) + '</td>'
+         + '<td class="n">' + (c ? _mP(v.dev/c) : '—') + '</td></tr>';
     });
-    h += '</tbody><tfoot><tr><td colspan="4">Total · antes de pauta</td>'
-       + '<td class="n">' + _mCop(t.ingreso) + '</td><td class="n">' + _mCop(t.costo) + '</td>'
-       + '<td class="n">' + _mCop(t.flete) + '</td>'
-       + '<td class="n">' + _mCop((t.ingreso||0)-(t.costo||0)-(t.flete||0)) + '</td></tr></tfoot></table></div>';
+    h += '</tbody></table></div>'
+       + '<p class="sub"><b>' + _mE(masBarata[0]) + '</b> sale <b>' + _mC(dif) + '</b> más barata por envío que '
+       + _mE(masCara[0]) + '. Sobre ' + T.n + ' pedidos eso es <b>' + _mC(dif * T.n) + '</b>.</p>';
   }
 
+  /* ---- glosario ---- */
   h += '<div class="met-h">Qué significa cada número <small>con tus cifras</small></div><div class="met-glo">'
-     + _metDef('CPM','costo por mil','Lo que Meta cobra por mostrar el anuncio mil veces. Sube cuando hay más competencia por tu público o cuando el anuncio ya aburre.',
-         cs.map(function(c){ return _mEsc(_metCorto(c.nombre)) + ' ' + _mCop(c.cpm); }).join(' · '))
-     + _metDef('CTR','clics ÷ impresiones','De cada 100 veces que se muestra, cuántas hacen clic. Mide si el creativo engancha. Por debajo de 1% el anuncio no está funcionando.',
-         cs.map(function(c){ return _mEsc(_metCorto(c.nombre)) + ' ' + (c.ctr||0) + '%'; }).join(' · '))
-     + _metDef('Frecuencia','impresiones ÷ personas','Cuántas veces vio el anuncio la misma persona. Pasando de 3 la gente se cansa, el CTR cae y el CPM sube: ahí toca cambiar creativo o abrir público.',
-         'Ahora vas en <b>' + frec + '</b>')
-     + _metDef('Costo por conversación','','Lo que pagas para que alguien te escriba al WhatsApp. Es lo que Meta optimiza. No es una venta todavía, es una puerta abierta.',
-         '<b>' + _mCop(t.costo_conversacion) + '</b> en promedio')
-     + _metDef('Cierre','pedidos ÷ conversaciones','De los que escriben, cuántos compran. Este número no depende de Meta: depende del bot, del precio y de que haya stock.',
-         '<b>' + _mPct(t.cierre) + '</b> general')
-     + _metDef('CPA','pauta ÷ pedidos','Lo que cuesta conseguir una venta. Tiene que quedar por debajo de tu margen, o cada venta te cuesta plata en vez de dártela.',
-         '<b>' + _mCop(t.cpa) + '</b> por venta')
-     + _metDef('ROAS','ventas ÷ pauta','Por cada peso de pauta, cuántos entran de venta. Engaña: no descuenta producto, ni flete, ni devoluciones. Un ROAS de 4x puede ser pérdida.',
-         '<b>' + (t.roas||0) + 'x</b> · no lo mires solo')
-     + _metDef('Neto proyectado','','Recaudo menos producto, menos flete, menos pauta, y castigado por lo que se devuelve. Es el único que dice si el negocio gana.',
-         '<b>' + _mCop(t.neto_proyectado) + '</b>')
+     + _metDef('Devolución real','devueltos ÷ cerrados','De los pedidos que ya terminaron, cuántos volvieron. Es el número que decide si un producto deja plata o la quema.',
+         '<b>' + _mP(pctDev) + '</b> sobre ' + cerrados + ' pedidos cerrados')
+     + _metDef('Flete promedio','','Lo que cuesta mandar un pedido. Se paga igual si se devuelve, por eso pesa el doble de lo que parece.',
+         '<b>' + _mC(fleteProm) + '</b> por envío')
+     + _metDef('CPA','pauta ÷ entregados','Lo que cuesta conseguir una venta que de verdad se entregó. Tiene que quedar debajo del margen.',
+         '<b>' + _mC(cpa) + '</b> por entrega')
+     + _metDef('ROAS','ingreso ÷ pauta','Por cada peso de pauta, cuántos entran. Engaña: no descuenta producto, flete ni devoluciones.',
+         '<b>' + roas.toFixed(1) + 'x</b> · no lo mires solo')
+     + _metDef('Margen por entrega','','Lo cobrado menos producto y menos TODO el flete, incluido el de las devueltas, repartido entre las que sí llegaron.',
+         '<b>' + (T.ent ? _mC((T.rec-T.cos-T.fle)/T.ent) : '—') + '</b> por pedido entregado')
+     + _metDef('Neto real','','Ingreso cobrado menos producto, flete y pauta. El único que dice si el negocio gana.',
+         '<b>' + _mC(neto) + '</b>')
      + '</div>';
 
-  h += '<div class="met-nota">Pauta desde la cuenta de anuncios de Jaye Group, en COP. '
-     + 'Ventas, costo de producto y flete salen de Dropi — ninguno es estimado. '
-     + 'Las ventas se atribuyen a la campaña ' + _mEsc(d.atribucion || 'por producto') + '. '
-     + 'La tasa de devolución usada es ' + _mPct(d.devolucion) + '.</div>';
+  h += '<div class="met-nota">Pedidos y flete salen de Dropi; la pauta, de Meta. Los mismos webhooks que alimentan '
+     + 'Finanzas — si un número no cuadra, no cuadra en los dos lados. El ingreso cuenta solo lo ENTREGADO '
+     + '(en contra entrega no hay plata hasta que llega). El flete cuenta TODOS los envíos, entregados y devueltos, '
+     + 'porque se paga igual.</div>';
 
   return h;
 }
 
-function _metCorto(n){ var p = String(n||'').split('·'); return (p.length>1 ? p[1] : p[0]).trim().slice(0,18); }
 function _metK(v,n,cls){ return '<div class="met-k"><div class="v' + (cls?' '+cls:'') + '">' + v + '</div><div class="n">' + n + '</div></div>'; }
-function _metPaso(nm,ancho,dato,nota){
-  return '<div class="met-paso"><div class="nm">' + nm + '</div>'
-       + '<div class="met-bar"><i style="width:' + ancho + '%"></i></div>'
-       + '<div class="dt">' + dato + (nota ? '<em>' + nota + '</em>' : '') + '</div></div>';
-}
-function _metCd(e,c,p){ return '<div class="met-cd"><div class="e">' + e + '</div><div class="c">' + c + '</div><div class="p">' + (p||'') + '</div></div>'; }
 function _metDef(t,cod,txt,tuyo){
   return '<div class="met-d"><h5>' + t + (cod ? '<code>' + cod + '</code>' : '') + '</h5><p>' + txt + '</p>'
        + (tuyo ? '<div class="tu">' + tuyo + '</div>' : '') + '</div>';
-}
-function _metVeredicto(c){
-  if(!c.pedidos && (c.gasto||0) > 0){
-    return 'Lleva <b>' + _mCop(c.gasto) + '</b> de pauta y <b>' + (c.conversaciones||0) + '</b> conversaciones sin cerrar ninguna venta. '
-         + 'Si el CTR está bien, el problema no es el anuncio: es precio, stock o lo que responde el bot.';
-  }
-  if(!c.pedidos) return 'Todavía sin gasto suficiente para leer nada.';
-  return 'Cierra <b>' + _mPct(c.cierre) + '</b> de las conversaciones. Cada venta cuesta <b>' + _mCop(c.cpa) + '</b> '
-       + 'y deja <b>' + _mCop(Math.round((c.ingreso - c.costo - c.flete) / c.pedidos)) + '</b> de margen bruto antes de pauta. '
-       + 'Neto proyectado <b>' + _mCop(c.neto_proyectado) + '</b>.';
 }
