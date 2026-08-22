@@ -2148,11 +2148,13 @@ function _metRender(pedTodos, metaTodos){
   var meta = metaTodos.filter(function(m){ return _mEnRango(m.fecha); });
   var pauta = meta.reduce(function(a,m){ return a + (+m.gasto||0); }, 0);
 
-  var T = {n:0, ent:0, dev:0, cam:0, can:0, rec:0, cos:0, fle:0};
+  var T = {n:0, ent:0, dev:0, cam:0, can:0, rec:0, cos:0, fle:0, vta:0, vtaCam:0};
   var porProd = {}, porTrans = {};
   ped.forEach(function(p){
     var b = _mBucket(p.estado), rec = +p.recaudo||0, cos = +p.costo||0, fle = +p.flete||0;
     T.n++; T.fle += fle;
+    if(b!=='cancelado') T.vta += rec;          // valor de venta montado
+    if(b==='en_camino') T.vtaCam += rec;       // lo que todavia no se cobra
     if(b==='entregado'){ T.ent++; T.rec += rec; T.cos += cos; }
     else if(b==='devuelto') T.dev++;
     else if(b==='cancelado') T.can++;
@@ -2196,8 +2198,10 @@ function _metRender(pedTodos, metaTodos){
      + _metK(T.n, 'Pedidos montados')
      + _metK(T.ent, 'Entregados<br>' + T.cam + ' todavía en camino')
      + _metK(_mP(pctDev), 'Devolución real<br>medida, no estimada', pctDev > 0.30 ? 'mal' : '')
-     + _metK(_mC(T.rec), 'Ingreso cobrado<br>solo lo entregado')
-     + _metK(_mC(pauta), 'Pauta de Meta')
+     + _metK(_mC(T.vta), 'Valor de venta<br>todo lo montado')
+     + _metK(_mC(T.rec), 'Ya cobrado<br>solo lo entregado')
+     + _metK(_mC(T.vtaCam), 'Por cobrar<br>' + T.cam + ' en camino')
+     + _metK(_mC(pauta), 'Pauta de Meta<br>' + meta.length + ' dias con gasto')
      + _metK(_mC(neto), 'Neto real<br>tras producto, flete y pauta', neto >= 0 ? 'bien' : 'mal')
      + '</div>';
 
