@@ -1080,7 +1080,15 @@ function renderFinanzas(){
   var ganancia=ingresos-costo-flete-ads, resueltos=entregados+devueltos;
   var pctDev=resueltos?Math.round(devueltos/resueltos*100):0, margen=ingresos?Math.round(ganancia/ingresos*100):0;
   // PROYECCIÓN: aplico la tasa histórica de entrega del propio cohorte a lo que está en proceso
-  var tasaEnt=resueltos?entregados/resueltos:0;
+  // Tasa de entrega del período; si el período aún no tiene pedidos cerrados
+  // (todo va en camino), se usa la HISTÓRICA de todos los pedidos: asumir 0%
+  // de entrega proyectaba pérdida total con 6 pedidos recién montados.
+  var _hEnt=0,_hDev=0;
+  (window._finPedidos||[]).forEach(function(q){var e2=(q.estado||'').toUpperCase();
+    if(/ENTREGAD/.test(e2))_hEnt++; else if(/DEVOL|RECHAZ/.test(e2))_hDev++;});
+  var tasaHist=(_hEnt+_hDev)?_hEnt/(_hEnt+_hDev):0.7;
+  var tasaEnt=resueltos?entregados/resueltos:tasaHist;
+  var tasaEsHist=!resueltos;
   // todas las en-proceso pagan flete (se entreguen o se devuelvan); ingreso y costo solo en las que se proyecta entregar
   var ganProy=ganancia + (procVal*tasaEnt) - (procCosto*tasaEnt) - procFlete;
   // COSTO DE OPERACIÓN PROMEDIO por venta ENTREGADA: producto + flete (incl. devoluciones) + pauta, todo ÷ entregados
@@ -1094,10 +1102,10 @@ function renderFinanzas(){
     kpi('Devueltos',devueltos+' · '+pctDev+'%',pctDev>20?'#c0392b':'#1a2433','% de resueltos')+
     kpi('En camino',enCamino,'#185fa5',_cop(procVal)+' en proceso')+
     kpi('Cancelados',cancelados,'#8a93a0')+
-    kpi('Ingresos (realizado)',_cop(ingresos),'#1a2433','solo entregados')+kpi('Costo producto',_cop(costo))+kpi('Flete',_cop(flete),'#1a2433','entregas + devol.')+kpi('Publicidad',_cop(ads))+
+    kpi('Ingresos (realizado)',_cop(ingresos),'#1a2433','solo entregados')+kpi('Costo producto',_cop(costo),'#1a2433',procCosto?('+ '+_cop(procCosto)+' en camino'):'')+kpi('Flete',_cop(flete),'#1a2433',procFlete?('entregas + devol. · + '+_cop(procFlete)+' en camino'):'entregas + devol.')+kpi('Publicidad',_cop(ads))+
     kpi('Costo op. prom/venta',_cop(opProm),'#b06a00','prod '+_cop(opProd)+' · flete '+_cop(opFlete)+' · meta '+_cop(opMeta)+' · dev '+pctDev+'% cargado')+
     kpi('Ganancia neta',_cop(ganancia),ganancia>=0?'#0f7a52':'#c0392b','margen '+margen+'%')+
-    kpi('Ganancia proyectada',_cop(ganProy),ganProy>=0?'#0f7a52':'#c0392b','al cerrar lo en proceso ('+Math.round(tasaEnt*100)+'% entrega)');
+    kpi('Ganancia proyectada',_cop(ganProy),ganProy>=0?'#0f7a52':'#c0392b','al cerrar lo en proceso ('+Math.round(tasaEnt*100)+'% entrega'+(tasaEsHist?' histórica':'')+')');
   _renderFinCharts(ped,meta,_finDesde());
   _renderPL(ingresos,costo,flete,ads);
   _renderDevBars(ped);
