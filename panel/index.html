@@ -387,6 +387,10 @@ tbody tr:hover .chev{color:var(--brand)}
         <svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><path d="M12 12l6.5-4.5"/></svg>
         Radar de productos
       </div>
+      <div class="nav-i" data-view="metricas">
+        <svg class="ico" viewBox="0 0 24 24"><path d="M4 19h16"/><rect x="5" y="11" width="3.4" height="7"/><rect x="10.3" y="7" width="3.4" height="11"/><rect x="15.6" y="13" width="3.4" height="5"/></svg>
+        Métricas de campaña
+      </div>
       <div class="nav-i" data-view="calc">
         <svg class="ico" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8"/><path d="M8 10h2M12 10h2M16 10h.01"/><path d="M8 14h2M12 14h2M16 14h.01"/><path d="M8 18h6"/></svg>
         Calculadora
@@ -652,6 +656,86 @@ tbody tr:hover .chev{color:var(--brand)}
     </div>
 
     <!-- ====== CALCULADORA DE COMBOS ====== -->
+    <!-- MÉTRICAS DE CAMPAÑA: Meta sabe lo que cuesta traer al cliente, Dropi sabe si
+         compró. Solas no dicen nada; cruzadas dan el CPA, el ROAS y el neto de verdad.
+         Identidad de Jaye: negro y dorado. -->
+    <div class="content view" id="view-metricas">
+      <style>
+        #view-metricas{--oro:#c9a227;--oro-claro:#e3c766;--oro-tenue:#f7f0d9;--negro:#12100b;--negro-2:#1d1a12}
+        .met-cab{background:linear-gradient(180deg,var(--negro) 0%,var(--negro-2) 100%);
+          border-radius:14px;padding:20px 22px;margin-bottom:14px;
+          display:flex;flex-wrap:wrap;gap:14px;justify-content:space-between;align-items:flex-end;
+          border:1px solid #2c2718;border-bottom:3px solid var(--oro)}
+        .met-cab h2{margin:0;color:#fff;font-size:21px;font-weight:800;letter-spacing:-.01em}
+        .met-cab h2 span{color:var(--oro)}
+        .met-cab p{margin:5px 0 0;color:#9d9madd;color:rgba(255,255,255,.62);font-size:12.5px}
+        .met-sello{text-align:right;color:rgba(255,255,255,.7);font-size:11.5px;line-height:1.7}
+        .met-sello b{color:var(--oro-claro);font-weight:700}
+        .met-aviso{background:var(--negro);border:1px solid #2c2718;border-left:4px solid var(--oro);
+          border-radius:12px;padding:16px 19px;margin-bottom:14px}
+        .met-aviso h3{margin:0 0 6px;color:var(--oro);font-size:15px;font-weight:800}
+        .met-aviso p{margin:0;color:rgba(255,255,255,.78);font-size:13.5px;line-height:1.6;max-width:74ch}
+        .met-aviso b{color:#fff}
+        .met-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:10px;margin-bottom:16px}
+        .met-k{background:var(--negro);border:1px solid #2c2718;border-radius:12px;padding:15px 16px}
+        .met-k .v{color:var(--oro);font-size:25px;font-weight:800;line-height:1;letter-spacing:-.02em;
+          font-variant-numeric:tabular-nums}
+        .met-k .v.neg{color:#e8776b} .met-k .v.pos{color:#63c79c}
+        .met-k .n{color:rgba(255,255,255,.58);font-size:11.5px;margin-top:7px;line-height:1.45}
+        .met-h{margin:22px 0 10px;font-size:15px;font-weight:800;color:var(--ink);
+          display:flex;align-items:center;gap:9px}
+        .met-h:before{content:'';width:16px;height:3px;background:var(--oro);border-radius:2px}
+        .met-h small{font-weight:500;color:var(--ink-3);font-size:12px}
+        .met-emb{display:flex;flex-direction:column;gap:7px;background:var(--surface);
+          border:1px solid var(--border);border-radius:12px;padding:15px 17px}
+        .met-paso{display:grid;grid-template-columns:112px 1fr auto;gap:12px;align-items:center}
+        .met-paso .nm{font-size:12.5px;color:var(--ink-2);font-weight:600}
+        .met-bar{height:26px;background:var(--surface-2);border-radius:5px;overflow:hidden}
+        .met-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--oro),var(--oro-claro));border-radius:5px}
+        .met-paso .dt{font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--ink);font-weight:600}
+        .met-paso .dt em{font-style:normal;color:var(--ink-3);font-weight:500;font-size:11.5px;margin-left:6px}
+        .met-tarj{display:flex;flex-direction:column;gap:12px}
+        .met-c{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+        .met-c > .hd{display:flex;flex-wrap:wrap;gap:9px;align-items:center;justify-content:space-between;
+          padding:13px 17px;background:var(--negro);border-bottom:2px solid var(--oro)}
+        .met-c > .hd h4{margin:0;color:#fff;font-size:15px;font-weight:700}
+        .met-chip{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+          padding:4px 9px;border-radius:5px;background:rgba(201,162,39,.16);color:var(--oro-claro);border:1px solid rgba(201,162,39,.4)}
+        .met-chip.off{background:rgba(255,255,255,.07);color:rgba(255,255,255,.6);border-color:rgba(255,255,255,.16)}
+        .met-chip.mal{background:rgba(224,68,75,.15);color:#f0918a;border-color:rgba(224,68,75,.4)}
+        .met-rej{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:1px;background:var(--border)}
+        .met-cd{background:var(--surface);padding:12px 14px}
+        .met-cd .e{font-size:9.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)}
+        .met-cd .c{font-size:16px;font-weight:800;margin-top:4px;font-variant-numeric:tabular-nums;color:var(--ink)}
+        .met-cd .p{font-size:11px;color:var(--ink-3);margin-top:2px}
+        .met-ver{padding:12px 17px;border-top:1px solid var(--border);font-size:13px;color:var(--ink-2);line-height:1.6}
+        .met-ver b{color:var(--ink)}
+        .met-tabla{overflow-x:auto;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
+        .met-tabla table{border-collapse:collapse;width:100%;min-width:640px;font-size:13px}
+        .met-tabla th{background:var(--negro);color:var(--oro-claro);font-size:10px;letter-spacing:.09em;
+          text-transform:uppercase;font-weight:700;padding:10px 13px;text-align:left;white-space:nowrap}
+        .met-tabla td{padding:10px 13px;border-bottom:1px solid var(--border);white-space:nowrap;color:var(--ink-2)}
+        .met-tabla td.n{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink);font-weight:600}
+        .met-tabla tbody tr:last-child td{border-bottom:none}
+        .met-tabla tfoot td{background:var(--surface-2);font-weight:800;color:var(--ink);border-top:2px solid var(--oro)}
+        .met-glo{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:11px}
+        .met-d{background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--oro);
+          border-radius:11px;padding:14px 15px}
+        .met-d h5{margin:0 0 6px;font-size:13.5px;font-weight:800;color:var(--ink)}
+        .met-d h5 code{font-size:10.5px;font-weight:600;color:#8a6d10;background:var(--oro-tenue);
+          padding:2px 6px;border-radius:4px;margin-left:6px}
+        .met-d p{margin:0;font-size:12.5px;color:var(--ink-2);line-height:1.55}
+        .met-d .tu{margin-top:9px;padding-top:8px;border-top:1px dashed var(--border);
+          font-size:12px;color:var(--ink);font-variant-numeric:tabular-nums}
+        .met-d .tu b{color:#8a6d10}
+        .met-nota{margin-top:16px;padding-top:13px;border-top:1px solid var(--border);
+          font-size:11.5px;color:var(--ink-3);line-height:1.7}
+        .met-cargando{padding:40px;text-align:center;color:var(--ink-3);font-size:13.5px}
+        html[data-theme="dark"] .met-d h5 code{background:rgba(201,162,39,.18);color:#e3c766}
+      </style>
+      <div id="metCuerpo"><div class="met-cargando">Cargando métricas…</div></div>
+    </div>
+
     <!-- RADAR DE PRODUCTOS: qué se está vendiendo en Dropi, medido por el inventario
          que se mueve. La foto del catálogo se toma cada madrugada; el stock de ayer
          menos el de hoy son las unidades que salieron. -->
