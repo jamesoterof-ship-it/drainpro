@@ -174,7 +174,9 @@ function normConv(r){
   const esR=bot.includes('ramon'); const esJ=bot.includes('james');
   return {n:r.NOMBRE||tel||'Sin nombre',tel,ultimo:r.ULTIMO_MENSAJE||'',hora:r.HORA||'',fecha:r.FECHA||'',
     orden:fechaOrden(r.FECHA,r.HORA),bot:esR?'Ramon':esJ?'James':'Carlos',loc:esR?'PY':esJ?'CO':'CL',
-    estado:modo==='agente'?'pausada':'activa',msgs:[],loaded:false};
+    estado:modo==='agente'?'pausada':'activa',msgs:[],loaded:false,
+    /* huella del último mensaje: si cambia, el historial cacheado ya no sirve */
+    sig:String(r.FECHA||'')+'|'+String(r.HORA||'')+'|'+String(r.ULTIMO_MENSAJE||'')};
 }
 function parseHist(txt){
   if(!txt) return [];
@@ -195,11 +197,12 @@ async function cargarConvos(){
   try{
     const res=await fetch(URL_CONV); const data=await res.json();
     const rows=Array.isArray(data)?data:(data.body||[]);
-    const previo={}; convos.forEach(c=>{previo[c.tel]={msgs:c.msgs,loaded:c.loaded};});
+    const previo={}; convos.forEach(c=>{previo[c.tel]={msgs:c.msgs,loaded:c.loaded,sig:c.sig};});
     convos=rows.filter(r=>r&&r.TELEFONO).map(normConv).sort((a,b)=>b.orden-a.orden);
-    convos.forEach(c=>{const p=previo[c.tel];if(p&&p.loaded){c.msgs=p.msgs;c.loaded=true;}});
+    // solo reusamos lo cacheado si el último mensaje es el mismo; si llegó uno nuevo, se recarga
+    convos.forEach(c=>{const p=previo[c.tel];if(p&&p.loaded&&p.sig===c.sig){c.msgs=p.msgs;c.loaded=true;}});
     renderConvList(); renderBots(); renderResumen();
-    if(selTel){const c=convos.find(x=>x.tel===selTel); if(c) pintarChatHead(c);}
+    if(selTel){const c=convos.find(x=>x.tel===selTel); if(c){ pintarChatHead(c); if(!c.loaded) refrescarChat(c); }}
   }catch(e){
     const el=document.getElementById('clist');
     if(el && !convos.length) el.innerHTML='<div class="vacio">No pude cargar conversaciones. Reintento…</div>';
@@ -626,16 +629,25 @@ async function abrirChat(tel){
   pintarChatHead(c);
   const box=document.getElementById('chmsgs');
   if(!c.loaded){ box.innerHTML='<div class="vacio">Cargando historial…</div>';
-    try{
-      const res=await fetch(URL_HIST+'?telefono='+soloNum(c.tel)+'&pais='+c.loc);
-      const data=await res.json();
-      const arr=Array.isArray(data)?data:(data?[data]:[]);
-      const row=arr.find(r=>r&&soloNum(r.telefono)===soloNum(c.tel))||arr[0];
-      c.msgs=parseHist(row&&row.historial); c.loaded=true;
-    }catch(e){ box.innerHTML='<div class="vacio">No pude cargar el historial.</div>'; return; }
+    if(!await traerHist(c)){ box.innerHTML='<div class="vacio">No pude cargar el historial.</div>'; return; }
+    renderBubbles(c); return;
   }
   renderBubbles(c);
+  refrescarChat(c);   // estaba cacheado: lo pedimos otra vez por si entraron mensajes nuevos
 }
+// trae el historial de verdad desde n8n. Devuelve true si pudo.
+async function traerHist(c){
+  try{
+    const res=await fetch(URL_HIST+'?telefono='+soloNum(c.tel)+'&pais='+(c.loc||'CL')+'&t='+Date.now());
+    const data=await res.json();
+    const arr=Array.isArray(data)?data:(data?[data]:[]);
+    const row=arr.find(r=>r&&r.historial&&soloNum(r.telefono)===soloNum(c.tel))||arr.find(r=>r&&r.historial);
+    if(!row) return c.loaded;              // respuesta vacía: dejamos lo que ya había
+    c.msgs=parseHist(row.historial); c.loaded=true; return true;
+  }catch(e){ return false; }
+}
+// refresca en segundo plano el chat abierto cuando entra un mensaje nuevo
+async function refrescarChat(c){ if(await traerHist(c) && selTel===c.tel) renderBubbles(c); }
 const RE_IMG=/(data:image\/[^\s)]+|https?:\/\/[^\s)]+\.(?:png|jpe?g|webp|gif)(?:\?[^\s)]*)?|https?:\/\/[^\s)]*(?:lookaside|fbcdn|googleusercontent|cloudfront|githubusercontent|jaye-bots\/fotos)[^\s)]*)/ig;
 function cuerpoMensaje(m){
   if(m.img) return '<img class="msgimg" src="'+m.img+'" onclick="ampliarImg(this)" alt="imagen">';
