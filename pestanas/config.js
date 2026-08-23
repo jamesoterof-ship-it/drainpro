@@ -36,7 +36,7 @@ window.CONFIG = {
 
   /* ---- Imágenes ---- */
   img: {
-    logo:    "img/logo.webp",
+    logo:    "",
     hero:    "img/hero.webp",
     oferta:  "img/oferta.webp",
     galeria: ["img/c1.webp","img/c2.webp","img/c3.webp","img/c4.webp"],
