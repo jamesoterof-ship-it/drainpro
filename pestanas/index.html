@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="only light">
+<title data-cfg="seoTitle">Jaye Group</title>
+<meta name="description" data-cfg="seoDesc" content="">
+<meta property="og:type" content="product">
+
+<!-- Meta Pixel -->
+<script>
+!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+fbq('init','1249894010361489');
+fbq('track','PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=1249894010361489&ev=PageView&noscript=1"/></noscript>
+<!-- Fin Meta Pixel -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- MARQUEE -->
+<div class="marquee"><div class="mq__t" id="mq1"></div></div>
+
+<!-- HEADER (logo centrado + carrito, estilo Shilajit, transparente al scroll) -->
+<header class="header">
+  <div class="wrap">
+    <button class="ham" id="ham" aria-label="Menú"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <a class="brand" data-scroll="#hero"><span class="bj">JAYE</span><span class="bsep"></span><span class="bgold">GROUP</span></a>
+    <div class="hicons">
+      <span class="ico" data-scroll="#resenas" role="button" aria-label="Reseñas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.6" y1="15.6" x2="21" y2="21"/></svg></span>
+      <span class="ico cart" data-scroll="#pedido" role="button" aria-label="Ver pedido"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M6 8h12l-1 12H7L6 8z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg></span>
+    </div>
+  </div>
+  <nav class="nav" id="nav">
+    <a data-scroll="#pedido"><svg class="mi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12l-1 12H7L6 8z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg>Comprar ahora</a>
+    <a data-scroll="#resenas"><svg class="mi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M12 3.5l2.6 5.2 5.8.9-4.2 4 1 5.7-5.2-2.7-5.2 2.7 1-5.7-4.2-4 5.8-.9z"/></svg>Reseñas</a>
+    <a data-scroll="#faq"><svg class="mi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.3 9.2a2.8 2.8 0 0 1 5.4 1c0 1.9-2.7 2.1-2.7 4"/></svg>Preguntas frecuentes</a>
+    <a id="navWa" target="_blank" rel="noopener"><svg class="mi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 3.5z"/></svg>WhatsApp</a>
+  </nav>
+</header>
+
+<!-- HERO full-bleed -->
+<section class="hero" id="hero">
+  <img id="heroImg" class="hero__bg" alt="" fetchpriority="high">
+  <canvas class="hero__fx" id="heroFx" aria-hidden="true"></canvas>
+  <div class="hero__scrim"></div>
+  <div class="hero__in">
+    <div class="hero__top">
+      <span class="kicker" id="heroKicker"></span>
+      <h1 id="heroTitle"></h1>
+      <p class="lead" id="heroLead"></p>
+    </div>
+  </div>
+</section>
+
+<!-- SELLOS (franja propia bajo el hero — no tocan el producto) -->
+<div class="ministrip">
+  <div class="hero__mini">
+    <div class="hm"><svg viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.5 8.5 8 10 4.5-1.5 8-5 8-10V5z"/><path d="m9 12 2 2 4-4"/></svg><span>Volumen real</span></div>
+    <div class="hm"><svg viewBox="0 0 24 24"><path d="M12 2 3 6v6c0 5.5 3.8 9.5 9 11 5.2-1.5 9-5.5 9-11V6z"/><circle cx="12" cy="11" r="3"/></svg><span>A prueba de agua</span></div>
+    <div class="hm"><svg viewBox="0 0 24 24"><circle cx="12" cy="7" r="3.2"/><path d="M5.5 21a6.5 6.5 0 0 1 13 0"/></svg><span>Cero grumos</span></div>
+  </div>
+</div>
+
+<!-- INTRO PRODUCTO (formato Shilajit: producto + 2 propuestas + precio) -->
+<section class="intro">
+  <div class="wrap">
+    <h2 class="intro__prod" data-rv>Máscara Flamenco Mega Volume</h2>
+    <p class="intro__claim" data-rv>Pestañas largas y con volumen, sin postizas</p>
+    <div class="vp" data-rv>
+      <h3>Alarga de verdad</h3>
+      <p>Microfibras que se adhieren a cada pestaña y la extienden visiblemente.</p>
+    </div>
+    <div class="vp" data-rv>
+      <h3>Aguanta el día entero</h3>
+      <p>A prueba de agua y humedad: no se corre, no mancha, no se agrieta.</p>
+    </div>
+    <p class="intro__price" data-rv>Pack de 2 unidades <b id="introPrice">$24.500</b> <span>CLP</span></p>
+  </div>
+</section>
+
+<!-- TARJETAS CON IMÁGENES (1c · 2c · 3c) -->
+<section class="imgcards">
+  <div class="wrap">
+    <div class="imgcard" data-rv>
+      <div class="imgcard__ph"><img src="img/card1.webp" alt="Volumen de impacto en tus pestañas" loading="lazy"></div>
+      <h3>Volumen de impacto</h3>
+      <p>El efecto pestañas postizas, sin postizas ni extensiones.</p>
+    </div>
+    <div class="imgcard" data-rv>
+      <div class="imgcard__ph"><img src="img/card2.webp" alt="Cepillo que separa pestaña por pestaña" loading="lazy"></div>
+      <h3>Cepillo que separa una a una</h3>
+      <p>Abanico limpio y definido, sin bloques ni pestañas pegadas.</p>
+    </div>
+    <div class="imgcard" data-rv>
+      <div class="imgcard__ph"><img src="img/card3.webp" alt="Resultado que dura todo el día" loading="lazy"></div>
+      <h3>Mirada que dura todo el día</h3>
+      <p>De la mañana a la noche intacta, y de noche sale con agua tibia.</p>
+    </div>
+  </div>
+</section>
+
+<!-- OFERTA 2x (justo debajo de las tarjetas) -->
+<section class="offsec">
+  <div class="wrap" data-rv="zoom">
+    <div class="offer">
+      <h2 id="offerTitle"></h2>
+      <p id="offerSub" style="opacity:.92"></p>
+      <img class="offer__img" src="img/oferta.webp" alt="Máscara Flamenco Mega Volume en oferta" loading="lazy">
+      <div class="prices"><span class="was" id="offerWas"></span><span class="new pulse" id="offerNew"></span></div>
+      <button class="btn btn--acc" data-scroll="#pedido" data-qty="2">Aprovechar la promoción</button>
+      <p class="cd-title" id="cdTitle">La oferta termina en</p>
+      <div class="cd" id="cd">
+        <div class="u"><div class="b"><b id="cd-d">00</b></div><span>Días</span></div>
+        <div class="u"><div class="b"><b id="cd-h">00</b></div><span>Horas</span></div>
+        <div class="u"><div class="b"><b id="cd-m">00</b></div><span>Min</span></div>
+        <div class="u"><div class="b sec"><b id="cd-s">00</b></div><span>Seg</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- INGREDIENTES (sección clara, estilo ejemplo) -->
+<section class="ingredients">
+  <div class="wrap">
+    <span class="eyebrow">La fórmula</span>
+    <h2 class="sec" data-rv>Fibras que construyen volumen real.</h2>
+    <p class="sec-sub" data-rv>Microfibras + cepillo separador profesional: el combo que las máscaras comunes no tienen.</p>
+    <div class="ing-grid">
+      <div class="ing" data-rv><div class="cir"><svg viewBox="0 0 24 24"><circle cx="6" cy="7" r="2.2"/><circle cx="18" cy="9" r="2.2"/><circle cx="11" cy="17" r="2.2"/><path d="M7.9 8.2 9.8 15M7.8 7.6 16 8.6M16.6 10.8 12.5 15.4"/></svg></div><div><b>Microfibras de volumen</b><p>Se pegan a cada pestaña y la alargan y engrosan de verdad.</p></div></div>
+      <div class="ing" data-rv><div class="cir"><svg viewBox="0 0 24 24"><path d="M4 20C4 11 11 4 20 4c0 9-7 16-16 16z"/><path d="M9 15c2-3 5-5 8-6"/></svg></div><div><b>Cepillo separador</b><p>Diseñado para peinar pestaña por pestaña, sin grumos.</p></div></div>
+      <div class="ing" data-rv><div class="cir"><svg viewBox="0 0 24 24"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg></div><div><b>Fórmula waterproof</b><p>Resiste agua, humedad y lágrimas sin correrse.</p></div></div>
+      <div class="ing" data-rv><div class="cir"><svg viewBox="0 0 24 24"><path d="M12 3c4 5 6 8 6 11a6 6 0 0 1-12 0c0-3 2-6 6-11z"/></svg></div><div><b>Negro intenso</b><p>Pigmento profundo que hace ver la pestaña más gruesa.</p></div></div>
+      <div class="ing" data-rv><div class="cir"><svg viewBox="0 0 24 24"><path d="M12 2C8 7 6 11 6 14a6 6 0 0 0 12 0c0-3-2-7-6-12z"/><path d="M12 6v12"/></svg></div><div><b>Ligera en la pestaña</b><p>Construye volumen sin apelmazar ni pesar.</p></div></div>
+      <div class="ing" data-rv><div class="cir"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3"/><path d="M12 11v9M8 15c-3 0-4-3-4-3M16 15c3 0 4-3 4-3"/></svg></div><div><b>Fácil de retirar</b><p>De noche sale con agua tibia y tu limpiador de siempre.</p></div></div>
+      <div class="ing" data-rv><div class="cir"><svg viewBox="0 0 24 24"><path d="M4 20C4 11 11 4 20 4c0 9-7 16-16 16z"/><path d="M9 15c2-3 5-5 8-6"/></svg></div><div><b>Para todo tipo de pestañas</b><p>Cortas, ralas o rectas: las fibras hacen el trabajo.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- CÓMO ACTÚA / CIENCIA -->
+<section class="science">
+  <div class="wrap center">
+    <span class="eyebrow">Así se usa</span>
+    <h2 class="sec" data-rv id="howTitle"></h2>
+    <p class="lead-c" data-rv id="howIntro" style="margin-left:auto;margin-right:auto"></p>
+    <div class="steps" id="howSteps"></div>
+  </div>
+</section>
+
+
+<!-- BENEFICIOS: lista vertical con íconos de línea -->
+<section>
+  <div class="wrap">
+    <span class="eyebrow">Beneficios</span>
+    <h2 class="sec" data-rv>Pestañas que hablan<br>por ti.</h2>
+    <div class="benefits">
+      <div class="bi" data-rv data-rv-d="0"><div class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="2.2"/><ellipse cx="12" cy="12" rx="10" ry="4.4"/><ellipse cx="12" cy="12" rx="10" ry="4.4" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="10" ry="4.4" transform="rotate(120 12 12)"/></svg></div><div class="txt"><h3>Volumen real</h3><p>Fibras que construyen grosor visible desde la primera pasada.</p></div></div>
+      <div class="bi" data-rv data-rv-d="80"><div class="ico"><svg viewBox="0 0 24 24"><circle cx="10" cy="14" r="6"/><path d="M14.5 9.5 21 3M16 3h5v5"/></svg></div><div class="txt"><h3>Largo que se nota</h3><p>Pestañas visiblemente más largas, sin extensiones ni salón.</p></div></div>
+      <div class="bi" data-rv data-rv-d="160"><div class="ico"><svg viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.5 8.5 8 10 4.5-1.5 8-5 8-10V5z"/><path d="m9 12 2 2 4-4"/></svg></div><div class="txt"><h3>Cero grumos</h3><p>El cepillo separa cada pestaña: abanico limpio y definido.</p></div></div>
+      <div class="bi" data-rv data-rv-d="240"><div class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.5"/><path d="M12 1v3M12 20v3M1 12h3M20 12h3"/></svg></div><div class="txt"><h3>A prueba de agua</h3><p>Aguanta lluvia, lágrimas y humedad sin correrse ni manchar.</p></div></div>
+      <div class="bi" data-rv data-rv-d="320"><div class="ico"><svg viewBox="0 0 24 24"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg></div><div class="txt"><h3>Se retira fácil</h3><p>Con agua tibia sale completa, sin maltratar tus pestañas.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- BOTÓN PUENTE (rebote) entre beneficios y carrusel -->
+<div class="midcta"><button class="btn btn--acc bounce" data-scroll="#pedido">Pedir ahora — paga al recibir</button></div>
+
+<!-- CARRUSEL DE IMÁGENES (cinta en movimiento constante) -->
+<section>
+  <div class="wrap">
+    <div class="carousel">
+      <div class="carousel__track">
+        <div class="imgcard"><img src="img/c1.webp" onerror="this.src='img/hero.webp'" alt="Máscara Flamenco Mega Volume" loading="lazy"></div>
+        <div class="imgcard"><img src="img/c2.webp" onerror="this.src='img/hero.webp'" alt="Energía celular" loading="lazy"></div>
+        <div class="imgcard"><img src="img/c3.webp" onerror="this.src='img/hero.webp'" alt="Pestañas con volumen real" loading="lazy"></div>
+        <div class="imgcard"><img src="img/c4.webp" onerror="this.src='img/hero.webp'" alt="Vitalidad total" loading="lazy"></div>
+        <div class="imgcard" aria-hidden="true"><img src="img/c1.webp" onerror="this.src='img/hero.webp'" alt="" loading="lazy"></div>
+        <div class="imgcard" aria-hidden="true"><img src="img/c2.webp" onerror="this.src='img/hero.webp'" alt="" loading="lazy"></div>
+        <div class="imgcard" aria-hidden="true"><img src="img/c3.webp" onerror="this.src='img/hero.webp'" alt="" loading="lazy"></div>
+        <div class="imgcard" aria-hidden="true"><img src="img/c4.webp" onerror="this.src='img/hero.webp'" alt="" loading="lazy"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS (claro) -->
+<section class="light">
+  <div class="wrap center">
+    <span class="eyebrow">Resultados</span>
+    <h2 class="sec" data-rv id="statTitle">Resultados que hablan</h2>
+    <div class="statgrid" id="stats"></div>
+  </div>
+</section>
+
+<!-- COMPARATIVA -->
+<section class="compare">
+  <div class="wrap">
+    <h2 class="sec" data-rv id="cmpTitle">¿Qué nos hace diferentes?</h2>
+    <table data-rv>
+      <colgroup><col><col class="c-us"><col class="c-ot"></colgroup>
+      <thead><tr><th>Característica</th><th class="us" id="cmpUs">Nosotros</th><th>Otros</th></tr></thead>
+      <tbody id="compare"></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- RESEÑAS (formato Shilajit) -->
+<section class="reviews light" id="resenas">
+  <div class="wrap">
+    <h2 class="rev-title" data-rv>Experiencias reales <span class="stars">★★★★★</span></h2>
+    <div class="rev-score" data-rv><span class="big" id="revScore">4.8</span><span class="cnt"><span id="revCount">180</span> reseñas</span></div>
+
+    <div class="rev-bars" data-rv>
+      <div class="bar"><span class="lvl">5 ★</span><div class="track"><i style="width:85%"></i></div><b>153</b></div>
+      <div class="bar"><span class="lvl">4 ★</span><div class="track"><i style="width:11%"></i></div><b>20</b></div>
+      <div class="bar"><span class="lvl">3 ★</span><div class="track"><i style="width:3%"></i></div><b>5</b></div>
+      <div class="bar"><span class="lvl">2 ★</span><div class="track"><i style="width:1%"></i></div><b>1</b></div>
+      <div class="bar"><span class="lvl">1 ★</span><div class="track"><i style="width:1%"></i></div><b>1</b></div>
+    </div>
+
+    <button class="btn-write" id="btnWrite">Escribir una reseña</button>
+    <div class="rev-list" id="revList"></div>
+    <p class="rev-auto-label">Más experiencias de nuestros clientes</p>
+    <div class="rev-auto"><div class="rev-auto__track" id="revAuto"></div></div>
+  </div>
+</section>
+
+<!-- MODAL RESEÑA -->
+<div class="modal" id="revModal" hidden>
+  <div class="box">
+    <button class="close" id="revClose">×</button>
+    <h3>Escribir una reseña</h3>
+    <p class="sec-sub" style="margin:4px 0 0;text-align:left" id="revAsk">¿Cómo lo calificarías?</p>
+    <div class="starpick" id="starPick"><span data-v="1">★</span><span data-v="2">★</span><span data-v="3">★</span><span data-v="4">★</span><span data-v="5">★</span></div>
+    <input id="revName" placeholder="Tu nombre">
+    <textarea id="revText" rows="4" placeholder="Cuéntanos tu experiencia…"></textarea>
+    <button class="btn btn--pri btn--block" id="revSubmit">Enviar reseña</button>
+    <p class="rev-msg" id="revMsg"></p>
+  </div>
+</div>
+
+<!-- ANTES / DESPUÉS -->
+<section class="ba-sec">
+  <div class="wrap">
+    <div class="center">
+      <span class="eyebrow">El cambio</span>
+      <h2 class="sec" data-rv>El antes y después que se nota</h2>
+      <p class="sec-sub" data-rv>De pestañas cortas y ralas a un abanico largo y con volumen. Sin postizas, sin pegamento, sin salón.</p>
+    </div>
+    <div class="ba-img" data-rv><img src="img/antes-despues.webp" alt="Antes y después con la Máscara Flamenco Mega Volume" loading="lazy"></div>
+    <div class="midcta midcta--in"><button class="btn btn--green bounce" data-scroll="#pedido">Quiero ese cambio</button></div>
+  </div>
+</section>
+
+<!-- GARANTÍA -->
+<section class="garantia light">
+  <div class="wrap center">
+    <div class="gseal" data-rv>
+      <svg viewBox="0 0 220 220" role="img" aria-label="Garantía de devolución de 30 días">
+        <defs>
+          <linearGradient id="gsealg" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="var(--pri)"/><stop offset="1" stop-color="var(--acc)"/>
+          </linearGradient>
+          <path id="gtop" fill="none" d="M44 110a66 66 0 0 1 132 0"/>
+          <path id="gbot" fill="none" d="M48 118a62 62 0 0 0 124 0"/>
+        </defs>
+        <circle cx="110" cy="110" r="98" fill="url(#gsealg)" opacity=".16"/>
+        <circle cx="110" cy="110" r="92" fill="url(#gsealg)"/>
+        <circle cx="110" cy="110" r="84" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="2" stroke-dasharray="1.5 6" stroke-linecap="round"/>
+        <text font-family="Sora,sans-serif" font-weight="700" font-size="14.5" letter-spacing="2.4" fill="#fff"><textPath href="#gtop" startOffset="50%" text-anchor="middle">GARANTÍA TOTAL</textPath></text>
+        <text font-family="Sora,sans-serif" font-weight="700" font-size="12.5" letter-spacing="1.8" fill="#fff"><textPath href="#gbot" startOffset="50%" text-anchor="middle">DEVOLUCIÓN 100%</textPath></text>
+        <circle cx="110" cy="110" r="55" fill="#fff"/>
+        <text id="garDias" x="110" y="105" text-anchor="middle" font-family="Sora,sans-serif" font-weight="800" font-size="44" fill="#0c1526">30</text>
+        <text x="110" y="131" text-anchor="middle" font-family="Sora,sans-serif" font-weight="700" font-size="15" letter-spacing="3" fill="#0c1526">DÍAS</text>
+      </svg>
+    </div>
+    <h2 class="sec" id="garTitle" data-rv>Garantía total de satisfacción</h2>
+    <p class="sec-sub" id="garText" data-rv></p>
+    <div class="gtrust" data-rv>
+      <div class="gt"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v4h4"/></svg>Devolución 100%</div>
+      <div class="gt"><svg viewBox="0 0 24 24"><path d="M12 3 4 6v5c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/><path d="m9 11 2 2 4-4"/></svg>Sin preguntas</div>
+      <div class="gt"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="11" rx="2"/><circle cx="12" cy="12.5" r="2.4"/></svg>Pago al recibir</div>
+    </div>
+  </div>
+</section>
+
+<!-- TU SEGURO DE VIDA -->
+<section>
+  <div class="wrap">
+    <div class="center">
+      <span class="eyebrow">Tu inversión</span>
+      <h2 class="sec" data-rv>Flamenco Mega Volume: tu mirada, todos los días</h2>
+    </div>
+    <ul class="seguro" data-rv>
+      <li><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6"/></svg>Volumen y largo reales desde la primera aplicación.</li>
+      <li><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6"/></svg>Reemplaza postizas, extensiones y salón: te ahorras plata cada mes.</li>
+      <li><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6"/></svg>A prueba de agua: maquillaje intacto todo el día.</li>
+      <li><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6"/></svg>Cada tubo dura semanas de uso diario.</li>
+    </ul>
+    <div class="midcta midcta--in"><button class="btn btn--green bounce" data-scroll="#pedido">Compra y paga al recibir</button></div>
+    <div class="trustbx">
+      <div class="tb"><svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Compra segura</div>
+      <div class="tb"><svg viewBox="0 0 24 24"><path d="M3 7h11v8H3zM14 10h4l3 3v2h-7z"/><circle cx="7" cy="17" r="1.6"/><circle cx="17.5" cy="17" r="1.6"/></svg>Envío rápido</div>
+      <div class="tb"><svg viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.2 5.8.9-4.2 4 1 5.7-5.2-2.7-5.2 2.7 1-5.7-4.2-4 5.8-.9z"/></svg>Garantía de calidad</div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="faq" id="faq">
+  <div class="wrap">
+    <h2 class="sec" data-rv>Preguntas frecuentes</h2>
+    <div id="faqList" data-rv></div>
+  </div>
+</section>
+
+<!-- CTA FINAL (oscuro) — arriba del formulario -->
+<section class="ctafinal">
+  <div class="wrap center">
+    <span class="eyebrow">Flamenco Mega Volume</span>
+    <h2 class="sec" data-rv>Tus pestañas, en su mejor versión.</h2>
+    <p class="sec-sub" data-rv style="margin-left:auto;margin-right:auto">Volumen. Largo. Cero grumos. Paga al recibir.</p>
+    <button class="btn btn--acc btn--lg" data-scroll="#pedido">Comprar ahora</button>
+  </div>
+</section>
+
+<!-- FORMULARIO COD -->
+<section class="order light" id="pedido">
+  <div class="wrap center">
+    <span class="eyebrow">Pedido</span>
+    <h2 class="sec" data-rv>Compra hoy y paga en casa</h2>
+    <p class="sec-sub" data-rv style="margin-left:auto;margin-right:auto">Sin pagos por adelantado · recíbelo y paga en efectivo</p>
+    <div class="formcard" data-rv="zoom" style="text-align:left">
+      <div class="cod-badge"><svg style="width:14px;height:14px;vertical-align:-2px;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="10" rx="2.5"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10"/></svg> Pago 100% seguro contra entrega</div>
+      <div class="packs" id="packs"></div>
+      <div class="summary">
+        <div class="r"><span>Subtotal</span><span id="sumSub"></span></div>
+        <div class="r"><span>Descuento</span><span id="sumDisc" style="color:var(--rojo)"></span></div>
+        <div class="r"><span>Envío</span><span class="free">Gratis</span></div>
+        <div class="r tot"><span>Total a pagar al recibir</span><span id="sumTot"></span></div>
+      </div>
+      <form id="orderForm" novalidate>
+        <div class="field"><label for="nombre">Nombre completo</label><input id="nombre" name="nombre" autocomplete="name" placeholder="Ej: María González"><div class="err">Escribe tu nombre.</div></div>
+        <div class="field"><label for="telefono">Celular / WhatsApp</label>
+          <div class="telrow">
+            <div class="cc" id="cc">
+              <button type="button" class="cc-btn" id="ccBtn">
+                <img class="cc-flag" id="ccFlag" src="https://flagcdn.com/cl.svg" alt="">
+                <span class="cc-code" id="ccCode">+56</span>
+                <svg class="cc-caret" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 4.5L6 7.5L9 4.5"/></svg>
+              </button>
+              <div class="cc-list" id="ccList" hidden></div>
+              <input type="hidden" id="codpais" name="codpais" value="+56">
+            </div>
+            <input id="telefono" name="telefono" type="tel" inputmode="numeric" autocomplete="tel" placeholder="9 1234 5678">
+          </div>
+          <div class="err">Escribe un teléfono válido.</div>
+        </div>
+        <div class="field"><label for="direccion">Dirección</label><input id="direccion" name="direccion" autocomplete="street-address" placeholder="Calle y número"><div class="err">Escribe tu dirección.</div></div>
+        <div class="field"><label for="referencia">Referencia <span style="font-weight:400;opacity:.7">(opcional)</span></label><input id="referencia" name="referencia" placeholder="Entre calles, color de casa, etc."></div>
+        <div class="row2">
+          <div class="field"><label for="region" id="lblRegion">Región</label><select id="region" name="region"><option value="">Selecciona…</option></select><div class="err">Selecciona tu región.</div></div>
+          <div class="field"><label for="comuna" id="lblComuna">Comuna</label><select id="comuna" name="comuna" disabled><option value="">Selecciona…</option></select><div class="err">Selecciona tu comuna.</div></div>
+        </div>
+        <div class="field"><label for="correo">Correo (opcional)</label><input id="correo" name="correo" type="email" inputmode="email" autocomplete="email" placeholder="Ej: maria@gmail.com"></div>
+        <button type="submit" class="btn btn--acc" id="submitBtn" style="display:flex;margin:0 auto">Comprar — pago al recibir</button>
+        <p class="formnote">No pagas nada ahora. Te contactamos por WhatsApp para coordinar la entrega.</p>
+      </form>
+      <div class="carriers" id="carriers" hidden>
+        <span class="cl">Despachamos con</span>
+        <div class="cbadges" id="cbadges"></div>
+      </div>
+      <div class="ok" id="okMsg">
+        <div class="ic"><svg style="width:46px;height:46px;margin:0 auto;fill:none;stroke:#0f8a55;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="m8 12.5 2.7 2.7L16.5 9"/></svg></div>
+        <h3>¡Pedido recibido!</h3>
+        <p>Gracias <b id="okName"></b>. Te contactaremos por WhatsApp para confirmar la entrega.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MARQUEE 2 -->
+<div class="marquee marquee--acc"><div class="mq__t" id="mq2"></div></div>
+
+<!-- SUSCRIPCIÓN DE CORREO (formato Shilajit) -->
+<section class="newsletter light">
+  <div class="wrap">
+    <h2>Suscríbete a nuestros correos</h2>
+    <p>Conoce las nuevas colecciones y las ofertas exclusivas antes que nadie.</p>
+    <form class="inp" onsubmit="return false">
+      <input type="email" placeholder="Correo electrónico" aria-label="Correo electrónico">
+      <button type="submit" aria-label="Suscribir">→</button>
+    </form>
+  </div>
+</section>
+
+<!-- FOOTER (idéntico a Shilajit) -->
+<footer class="footer">
+  <div class="wrap">
+    <h3 class="ftitle">JAYE GROUP - CHILE</h3>
+    <p><b>Dirección:</b> Av. Providencia 1208, Oficina 16, Santiago, RM.</p>
+    <p><b>Correo:</b> <a href="mailto:gerencia@jayegroup.com.co">gerencia@jayegroup.com.co</a></p>
+    <p><b>WhatsApp:</b> <a href="https://wa.me/56920007288">+56 9 2000 7288</a></p>
+
+    <div class="social">
+      <a href="https://www.facebook.com/share/18bZZKscMB/" target="_blank" rel="noopener" aria-label="Facebook">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#1877F2"/><path fill="#fff" d="M13.4 21v-7.1h2.4l.4-2.8h-2.8V9.3c0-.8.2-1.4 1.4-1.4h1.5V5.4c-.3 0-1.2-.1-2.2-.1-2.2 0-3.7 1.3-3.7 3.8v2H8v2.8h2.4V21h3z"/></svg>
+      </a>
+      <a href="https://www.instagram.com/jaye.group?igsh=aXB6eHhzMzhoazg4" target="_blank" rel="noopener" aria-label="Instagram">
+        <svg viewBox="0 0 24 24"><defs><linearGradient id="ig" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#feda75"/><stop offset=".35" stop-color="#fa7e1e"/><stop offset=".62" stop-color="#d62976"/><stop offset="1" stop-color="#962fbf"/></linearGradient></defs><rect x="1" y="1" width="22" height="22" rx="6.5" fill="url(#ig)"/><rect x="6" y="6" width="12" height="12" rx="4" fill="none" stroke="#fff" stroke-width="1.7"/><circle cx="12" cy="12" r="3.1" fill="none" stroke="#fff" stroke-width="1.7"/><circle cx="16.8" cy="7.2" r="1.05" fill="#fff"/></svg>
+      </a>
+      <a href="https://tiktok.com/@jaye.group" target="_blank" rel="noopener" aria-label="TikTok">
+        <svg viewBox="0 0 24 24"><path fill="#25F4EE" d="M15.5 1.8c.3 1.9 1.3 3.3 3.4 3.5v2.7c-1.2 0-2.2-.3-3.2-.9v5.3c0 4-2.9 6.3-6.2 5.5-2.5-.6-3.9-2.7-3.7-5.1.2-2.5 2.4-4.3 5.3-3.9v2.8c-.4-.1-.8-.1-1.2 0-1.1.2-1.9 1-1.9 2.1 0 1.3 1 2.3 2.3 2.3s2.3-1 2.3-2.5V1.8h2.6z"/><path fill="#FE2C55" d="M17.5 3.8c.3 1.9 1.3 3.3 3.4 3.5v2.7c-1.2 0-2.2-.3-3.2-.9v5.3c0 4-2.9 6.3-6.2 5.5-2.5-.6-3.9-2.7-3.7-5.1.2-2.5 2.4-4.3 5.3-3.9v2.8c-.4-.1-.8-.1-1.2 0-1.1.2-1.9 1-1.9 2.1 0 1.3 1 2.3 2.3 2.3s2.3-1 2.3-2.5V3.8h2.6z"/><path fill="#fff" d="M16.5 2.8c.3 1.9 1.3 3.3 3.4 3.5v2.7c-1.2 0-2.2-.3-3.2-.9v5.3c0 4-2.9 6.3-6.2 5.5-2.5-.6-3.9-2.7-3.7-5.1.2-2.5 2.4-4.3 5.3-3.9v2.8c-.4-.1-.8-.1-1.2 0-1.1.2-1.9 1-1.9 2.1 0 1.3 1 2.3 2.3 2.3s2.3-1 2.3-2.5V2.8h2.6z"/></svg>
+      </a>
+    </div>
+
+    <div class="paylabel">Formas de pago</div>
+    <div class="paycards">
+      <span class="pc pc-amex">AMEX</span>
+      <span class="pc pc-diners"><i></i>Diners</span>
+      <span class="pc pc-mc"><i class="c1"></i><i class="c2"></i></span>
+      <span class="pc pc-visa">VISA</span>
+    </div>
+
+    <div class="links">
+      <a href="privacidad.html">Política de privacidad</a> ·
+      <a href="reembolso.html">Política de reembolso</a> ·
+      <a href="terminos.html">Términos del servicio</a> ·
+      <a href="envio.html">Política de envío</a> ·
+      <a href="contacto.html">Información de contacto</a>
+    </div>
+    <div class="legal">© <span id="year"></span>, JAYE GROUP</div>
+  </div>
+</footer>
+
+<!-- FLOAT WA -->
+<a class="wa" id="waFloat" target="_blank" rel="noopener" aria-label="WhatsApp"><svg viewBox="0 0 32 32"><path d="M16 .4C7.4.4.5 7.3.5 15.9c0 2.8.7 5.4 2.1 7.8L.3 31.6l8.1-2.1c2.3 1.3 4.9 1.9 7.6 1.9 8.6 0 15.5-6.9 15.5-15.5S24.6.4 16 .4zm0 28.3c-2.4 0-4.7-.6-6.7-1.9l-.5-.3-4.8 1.3 1.3-4.7-.3-.5c-1.4-2.1-2.1-4.6-2.1-7 0-7.1 5.8-12.9 12.9-12.9S28.9 8.8 28.9 15.9 23.1 28.7 16 28.7zm7.1-9.6c-.4-.2-2.3-1.1-2.6-1.3-.4-.1-.6-.2-.9.2-.3.4-1 1.3-1.2 1.5-.2.2-.4.3-.8.1-.4-.2-1.6-.6-3.1-1.9-1.1-1-1.9-2.3-2.1-2.7-.2-.4 0-.6.2-.8.2-.2.4-.4.6-.7.2-.2.3-.4.4-.7.1-.3 0-.5 0-.7-.1-.2-.9-2.1-1.2-2.9-.3-.8-.6-.7-.9-.7h-.8c-.2 0-.7.1-1 .5-.3.4-1.3 1.3-1.3 3.1s1.3 3.6 1.5 3.8c.2.2 2.6 4 6.3 5.6.9.4 1.6.6 2.1.8.9.3 1.7.2 2.3.1.7-.1 2.3-.9 2.6-1.8.3-.9.3-1.6.2-1.8-.1-.2-.3-.3-.7-.5z"/></svg></a>
+
+<!-- STICKY CTA -->
+<div class="stickycta" id="stickycta"><button class="btn btn--acc" data-scroll="#pedido">Pedir ahora — pago contra entrega</button></div>
+
+<script src="config.js"></script>
+<script src="chile-regiones.js"></script>
+<script src="app.js?v=2"></script>
+<script defer src="lib/gsap.min.js"></script>
+<script defer src="lib/SplitText.min.js"></script>
+<script defer src="lib/vanilla-tilt.min.js"></script>
+<script defer src="lib/confetti.browser.min.js"></script>
+<script defer src="motors.js"></script>
+</body>
+</html>
