@@ -9,6 +9,7 @@ const URL_PAUSA=BASE+'/pausar-activar';
 const URL_RESP=BASE+'/responder';
 const URL_VENTAS=BASE+'/ventas';
 const URL_APROBAR=BASE+'/aprobar-pedido';
+const URL_EDITARWA=BASE+'/editar-pedido-wa';
 const URL_IMG='https://web-production-a5adc.up.railway.app/api/jaye/enviar-imagen';
 const URL_HUELLAS=BASE+'/leer-huellas';
 const URL_PEDWEB=BASE+'/leer-pedidos-web';   // pedidos de pagina desde Postgres (no Google)
@@ -216,7 +217,7 @@ async function cargarVentas(){
     rows.forEach(r=>{ if(!r||(!r.NOMBRE&&!r.PRODUCTO))return;
       const bot=String(r.BOT||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
       const esR=bot.includes('ramon'); const esJ=bot.includes('james'); const precio=numero(r.PRECIO);
-      ords.push({cli:r.NOMBRE||'—',tel:soloNum(r.TELEFONO),prod:r.PRODUCTO||'—',cant:numero(r.CANTIDAD)||1,
+      ords.push({rid:r.row_number||'',cli:r.NOMBRE||'—',tel:soloNum(r.TELEFONO),prod:r.PRODUCTO||'—',cant:numero(r.CANTIDAD)||1,
         precioNum:precio,precio:esR?fmtGS(precio):esJ?fmtCOP(precio)+' COP':fmtCLP(precio),
         dir:r.DIRECCION||'—',zona:r.COMUNA||r.CIUDAD||'—',region:r.REGION||r.DEPARTAMENTO||'—',
         bot:esR?'Ramon':esJ?'James':'Carlos',loc:esR?'PY':esJ?'CO':'CL',estado:r.ESTADO||'—',
@@ -914,11 +915,40 @@ function verAprob(i){
       fila('Producto',o.prod)+fila('Cantidad',o.cant+' unidades')+fila('Teléfono','+'+o.tel)+
       fila('Dirección',o.dir)+fila('Comuna / Ciudad',o.zona)+fila('Región / Depto.',o.region)+
       fila('Confirmación del cliente',o.abono?'ABONO PENDIENTE (esperando comprobante)':(o.conf?'CONFIRMADO':'Pendiente'))+fila('Montado en Dropi',o.montado?('SÍ'+(o.ordenDropi?' · orden #'+o.ordenDropi:'')):'Pendiente')+
-      fila('Fecha',o.fecha+' '+(o.hora||''));
+      fila('Fecha',o.fecha+' '+(o.hora||''))+
+      (o.rid&&!o.montado?'<div style="margin-top:10px"><button class="b-copy" onclick="editarAprob('+i+')">✎ Editar datos</button></div>':'');
     document.getElementById('mTotal').textContent=o.precio;
     window._ventaAbierta=o;
   }
   document.getElementById('ov').classList.add('open');
+}
+/* editar un pedido de WhatsApp antes de aprobarlo (los montados en Dropi ya no se tocan desde acá) */
+function editarAprob(i){
+  const x=(window._aprobF||[])[i]; if(!x) return; const o=x.raw||{};
+  const f=(k,id)=>'<div class="dl"><span class="k">'+k+'</span><span class="v" style="flex:1"><input id="'+id+'" style="width:100%;box-sizing:border-box;padding:7px 9px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);color:inherit;font:inherit"></span></div>';
+  document.getElementById('mBody').innerHTML=
+    f('Nombre','edN')+f('Dirección (con depto, edificio y referencias)','edD')+f('Comuna','edC')+f('Región','edR')+f('Cantidad','edQ')+f('Total CLP','edP')+
+    '<div style="display:flex;gap:8px;margin-top:12px"><button class="b-apr" onclick="guardarAprob('+i+')">💾 Guardar cambios</button><button class="b-rech" style="width:auto;padding:0 14px" onclick="verAprob('+i+')">Cancelar</button></div>';
+  const set=(id,v)=>{document.getElementById(id).value=v==null?'':String(v);};
+  set('edN',o.cli); set('edD',o.dir); set('edC',o.zona); set('edR',o.region); set('edQ',o.cant); set('edP',o.precioNum);
+}
+async function guardarAprob(i){
+  const x=(window._aprobF||[])[i]; if(!x) return; const o=x.raw||{};
+  const val=id=>document.getElementById(id).value.trim();
+  const body={id:String(o.rid||''),nombre:val('edN'),direccion:val('edD'),comuna:val('edC'),region:val('edR'),cantidad:val('edQ'),precio:val('edP')};
+  try{
+    const r=await fetch(URL_EDITARWA,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(!r.ok) throw 0;
+    if(body.nombre) o.cli=body.nombre;
+    if(body.direccion) o.dir=body.direccion;
+    if(body.comuna) o.zona=body.comuna;
+    if(body.region) o.region=body.region;
+    if(body.cantidad) o.cant=numero(body.cantidad)||o.cant;
+    if(body.precio){ o.precioNum=numero(body.precio); o.precio=fmtCLP(o.precioNum); }
+    renderAprobar(); if(typeof renderVentasWA==='function') renderVentasWA();
+    const ni=(window._aprobF||[]).findIndex(y=>y.k===x.k);
+    verAprob(ni>=0?ni:i);
+  }catch(e){ alert('No pude guardar los cambios. Revisa la conexión e intenta de nuevo.'); }
 }
 
 /* ---------- navegación ---------- */
