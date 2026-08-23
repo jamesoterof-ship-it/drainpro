@@ -29,8 +29,8 @@ window.CONFIG = {
   /* ---- Precios / packs (escalera aprobada, la misma de Camila) ---- */
   precioUnidad: 23500,
   packs: [
-    { qty:2, price:23500, was:23500, label:"2 unidades", sub:"El par para empezar", tag:"" },
-    { qty:4, price:34900, was:47000, label:"4 unidades", sub:"Ahorra 26%", tag:"MÁS VENDIDO" },
+    { qty:2, price:23500, was:23500, label:"2 unidades", sub:"La promo del anuncio", tag:"MÁS VENDIDO" },
+    { qty:4, price:34900, was:47000, label:"4 unidades", sub:"Ahorra 26%", tag:"" },
     { qty:6, price:44900, was:70500, label:"6 unidades", sub:"Ahorra 36%", tag:"MEJOR PRECIO" }
   ],
 
@@ -71,10 +71,10 @@ window.CONFIG = {
   ],
 
   /* ---- Oferta ---- */
-  offerTitle: "Pack 4 unidades en oferta",
-  offerSub: "El más pedido: dos para ti y dos de repuesto o para regalar — paga al recibir.",
-  offerWas: 47000,
-  offerNew: 34900,
+  offerTitle: "La promo del anuncio: 2 máscaras",
+  offerSub: "2 unidades por $23.500, envío gratis y pagas al recibir en tu casa.",
+  offerWas: 0,
+  offerNew: 23500,
 
   /* ---- Stats (contadores) ---- */
   statTitle: "Resultados que se notan",

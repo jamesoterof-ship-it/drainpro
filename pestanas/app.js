@@ -84,7 +84,7 @@ html("howSteps", (C.howSteps||[]).map(function(s,i){
 /* ---------- 8) OFERTA ---------- */
 set("offerTitle", C.offerTitle||"");
 set("offerSub", C.offerSub||"");
-set("offerWas", money(C.offerWas||0));
+if(C.offerWas>C.offerNew){ set("offerWas", money(C.offerWas)); } else { var _ow=$("#offerWas"); if(_ow) _ow.style.display="none"; }
 set("offerNew", money(C.offerNew||0)+" CLP");
 var oImg=$("#offerImg"); if(oImg && C.img){ oImg.src=C.img.oferta||C.img.hero||""; oImg.alt=C.offerTitle||""; }
 
@@ -129,7 +129,7 @@ var packsWrap = $("#packs");
 html("packs", (C.packs||[]).map(function(p,i){
   var sel = (i===1 || (C.packs.length===1));
   var thumb = i===0 ? (C.img&&C.img.packThumb1) : (C.img&&C.img.packThumb2);
-  return '<label class="pack'+(sel?' sel':'')+'" data-qty="'+p.qty+'" data-price="'+p.price+'">'+
+  return '<label class="pack'+(sel?' sel':'')+'" data-qty="'+p.qty+'" data-price="'+p.price+'" data-was="'+(p.was||p.price)+'">'+
     (p.tag?'<span class="tag">'+p.tag+'</span>':'')+
     '<span class="radio"></span>'+
     (thumb?'<img class="thumb" src="'+thumb+'" alt="" onerror="this.style.display=\'none\'">':'')+
@@ -150,7 +150,7 @@ packs.forEach(function(p){ p.addEventListener("click",function(e){ e.preventDefa
 function refresh(){
   if(!current) return;
   var qty=parseInt(current.dataset.qty,10), price=parseInt(current.dataset.price,10);
-  var unit=C.precioUnidad||price, sub=unit*qty, disc=sub-price;
+  var was=parseInt(current.dataset.was,10)||price, sub=was, disc=sub-price;
   set("sumSub", money(sub)); set("sumDisc", "-"+money(disc)); set("sumTot", money(price));
 }
 refresh();
