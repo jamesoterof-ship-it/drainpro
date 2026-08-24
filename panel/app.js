@@ -39,7 +39,7 @@ function huellaBadge(tel){
   var rc, sym, t;
   if(!h){ rc='#9aa4b2'; sym='+'; t='Cliente nuevo (sin historial)'; }
   else {
-    rc={'Segura':'#1d9e75','Probable':'#caa000','Riesgosa':'#d8782e','Crítica':'#e24b4a'}[h.risk_label] || ((+h.n_dev||0)>0?'#d8782e':'#8a93a0');
+    rc={'Segura':'#1d9e75','Probable':'#caa000','Riesgosa':'#e24b4a','Crítica':'#b71c1c'}[h.risk_label] || ((+h.n_dev||0)>0?'#e24b4a':'#8a93a0');
     sym=(h.risk_label==='Segura' && (+h.n_dev||0)===0)?'✓':'!'; t='Ver alerta del cliente';
   }
   return '<button class="hbtn" onclick="event.stopPropagation();verHuella(this,\''+k+'\')" title="'+t+'" style="border:0;cursor:pointer;width:19px;height:19px;border-radius:50%;background:'+rc+';color:#fff;font-weight:700;font-size:12px;line-height:1;display:inline-flex;align-items:center;justify-content:center;padding:0;margin-left:6px;vertical-align:middle">'+sym+'</button>';
@@ -402,7 +402,7 @@ function verPedido(i){
     fila('Canal','Página · '+o.prod)+fila('Producto',o.prod)+fila('Cantidad',o.cant+' unidades')+
     fila('Teléfono','+'+o.tel)+(o.correo?fila('Correo',o.correo):'')+fila('Dirección',o.dir)+
     (o.ref?fila('Referencia',o.ref):'')+fila('Comuna',o.comuna)+fila('Región',o.region)+
-    fila('Confirmación del cliente',o.abono?'ABONO PENDIENTE (esperando comprobante)':(o.conf?'CONFIRMADO':'Pendiente'))+fila('Dropi',o.dropi?'ENVIADO':'Pendiente')+fila('Fecha',o.fecha)+
+    (o.abono?'<div class="dl"><span class="k">Confirmación del cliente</span><span class="v" style="color:#c62828;font-weight:800">🔴 ABONO PENDIENTE — no aprobar hasta ver el comprobante</span></div>':fila('Confirmación del cliente',o.conf?'CONFIRMADO':'Pendiente'))+fila('Dropi',o.dropi?'ENVIADO':'Pendiente')+fila('Fecha',o.fecha)+
     (o.dropi?'<div style="margin-top:12px;font-size:12px;color:var(--ink-3)">Este pedido ya está montado en Dropi. Para cambiar la dirección se edita directo en Dropi.</div>':'<button onclick="editarPedido()" style="width:100%;margin-top:12px;padding:11px;border:1px solid var(--grid);border-radius:10px;background:var(--card);color:var(--ink);font-weight:600;cursor:pointer">✏️ Editar pedido / estado</button>');
   document.getElementById('mTotal').textContent=o.total+' CLP';
   window._pedEdit=o; window._pedEditIdx=i;
@@ -681,7 +681,7 @@ function renderBubbles(c){
   const box=document.getElementById('chmsgs');
   if(!c.msgs.length){box.innerHTML='<div class="vacio">Sin mensajes todavía.</div>';return;}
   box.innerHTML=c.msgs.map(m=>{
-    if(m.from==='sistema') return `<div class="msg m-sys"><div class="who">⚠ Sistema</div>${cuerpoMensaje(m)}</div>`;
+    if(m.from==='sistema'){const rojo=/link de pago|anticipo|abono|riesgo/i.test(m.text||'');return `<div class="msg m-sys${rojo?' m-sys-rojo':''}"><div class="who">${rojo?'⛔':'⚠'} Sistema</div>${cuerpoMensaje(m)}</div>`;}
     const cls=m.from==='cliente'?'m-cli':(m.from==='agente'?'m-ag':'m-bot');
     const who=m.from==='cliente'?'Cliente':(m.from==='agente'?'Tú · Agente':BOTNOM[c.bot].split(' ·')[0]+' · Bot');
     return `<div class="msg ${cls}"><div class="who">${who}</div>${cuerpoMensaje(m)}${m.time?'<div style="font-size:11px;opacity:.5;margin-top:3px">'+esc(m.time)+'</div>':''}</div>`;
@@ -771,7 +771,7 @@ function verVenta(i){
     fila('Canal','WhatsApp · '+BOTNOM[o.bot])+fila('País',{CL:'Chile',CO:'Colombia',PY:'Paraguay'}[o.loc])+
     fila('Producto',o.prod)+fila('Cantidad',o.cant+' unidades')+fila('Teléfono','+'+o.tel)+
     fila('Dirección',o.dir)+fila('Comuna / Ciudad',o.zona)+fila('Región / Depto.',o.region)+
-    fila('Confirmación del cliente',o.abono?'ABONO PENDIENTE (esperando comprobante)':(o.conf?'CONFIRMADO':'Pendiente'))+fila('Montado en Dropi',o.montado?('SÍ'+(o.ordenDropi?' · orden #'+o.ordenDropi:'')):'Pendiente')+
+    (o.abono?'<div class="dl"><span class="k">Confirmación del cliente</span><span class="v" style="color:#c62828;font-weight:800">🔴 ABONO PENDIENTE — no aprobar hasta ver el comprobante</span></div>':fila('Confirmación del cliente',o.conf?'CONFIRMADO':'Pendiente'))+fila('Montado en Dropi',o.montado?('SÍ'+(o.ordenDropi?' · orden #'+o.ordenDropi:'')):'Pendiente')+
     fila('Fecha',o.fecha+' '+(o.hora||''));
   document.getElementById('mTotal').textContent=o.precio;
   window._ventaAbierta=o;
@@ -890,11 +890,11 @@ function renderAprobar(){
   const dosDias=Date.now()-2*864e5;
   const items=[];
   (pedidosWeb||[]).forEach(o=>{ if(!o.conf) return; const k=keyPag(o);
-    items.push({k,raw:o,canal:'Página',cli:o.cli,tel:o.tel,fecha:o.fecha,prod:o.prod,color:o.color,comuna:o.comuna,cant:o.cant,total:o.total,orden:o.orden,
+    items.push({k,raw:o,canal:'Página',cli:o.cli,tel:o.tel,fecha:o.fecha,prod:o.prod,color:o.color,comuna:o.comuna,cant:o.cant,total:o.total,orden:o.orden,abono:!!(o.abono||/abono pendiente/i.test(String(o.estado||''))),
       st:o.dropi?'montado':(esAprobado(k)?'aprobado':(esRechazado(k)?'rechazado':'pendiente'))});
   });
   (ordenes||[]).forEach(o=>{ if(o.loc!=='CL') return; if(o.orden<dosDias && !o.montado) return; const k=keyWa(o);
-    items.push({k,raw:o,canal:'WhatsApp',cli:o.cli,tel:o.tel,fecha:o.fecha,prod:o.prod,color:'#0e8074',comuna:o.zona,cant:o.cant,total:o.precio,orden:o.orden,
+    items.push({k,raw:o,canal:'WhatsApp',cli:o.cli,tel:o.tel,fecha:o.fecha,prod:o.prod,color:'#0e8074',comuna:o.zona,cant:o.cant,total:o.precio,orden:o.orden,abono:!!o.abono,
       st:o.montado?'montado':(esAprobado(k)?'aprobado':(esRechazado(k)?'rechazado':'pendiente'))});
   });
   const nPend=items.filter(x=>x.st==='pendiente').length;
@@ -906,8 +906,8 @@ function renderAprobar(){
   window._aprobF=arr;
   if(!arr.length){ tb.innerHTML='<tr><td colspan="8" class="vacio">'+(fAprob==='pend'?'Nada por aprobar. 🎉':'Sin ventas recientes.')+'</td></tr>'; return; }
   tb.innerHTML=arr.slice(0,100).map((x,i)=>`
-    <tr onclick="verAprob(${i})">
-      <td class="cli">${esc(x.cli)}${huellaBadge(x.tel)}<small>${esc(x.fecha)} · +${x.tel}</small></td>
+    <tr onclick="verAprob(${i})"${x.abono?' style="background:#fdecea"':''}>
+      <td class="cli">${esc(x.cli)}${huellaBadge(x.tel)}${x.abono?'<span style="display:inline-block;margin-left:6px;background:#c62828;color:#fff;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;vertical-align:middle">ANTICIPO SIN PAGAR</span>':''}<small>${esc(x.fecha)} · +${x.tel}</small></td>
       <td>${x.canal}</td>
       <td><span class="pchip"><i style="background:${x.color}"></i>${esc(x.prod)}</span></td>
       <td>${esc(x.comuna||'—')}</td>
@@ -927,7 +927,7 @@ function verAprob(i){
       fila('Canal','Página · '+o.prod)+fila('Producto',o.prod)+fila('Cantidad',o.cant+' unidades')+
       fila('Teléfono','+'+o.tel)+(o.correo?fila('Correo',o.correo):'')+fila('Dirección',o.dir)+
       (o.ref?fila('Referencia',o.ref):'')+fila('Comuna',o.comuna)+fila('Región',o.region)+
-      fila('Confirmación del cliente',o.abono?'ABONO PENDIENTE (esperando comprobante)':(o.conf?'CONFIRMADO':'Pendiente'))+fila('Dropi',o.dropi?'ENVIADO':'Pendiente')+fila('Fecha',o.fecha);
+      (o.abono?'<div class="dl"><span class="k">Confirmación del cliente</span><span class="v" style="color:#c62828;font-weight:800">🔴 ABONO PENDIENTE — no aprobar hasta ver el comprobante</span></div>':fila('Confirmación del cliente',o.conf?'CONFIRMADO':'Pendiente'))+fila('Dropi',o.dropi?'ENVIADO':'Pendiente')+fila('Fecha',o.fecha);
     document.getElementById('mTotal').textContent=o.total+' CLP';
     window._ventaAbierta={cli:o.cli,dir:o.dir+(o.ref?' - '+o.ref:''),region:o.region,tel:o.tel,prod:o.prod,cant:o.cant,precio:o.total};
   }else{
@@ -935,7 +935,7 @@ function verAprob(i){
       fila('Canal','WhatsApp · '+(BOTNOM[o.bot]||''))+fila('País',{CL:'Chile',CO:'Colombia',PY:'Paraguay'}[o.loc]||'—')+
       fila('Producto',o.prod)+fila('Cantidad',o.cant+' unidades')+fila('Teléfono','+'+o.tel)+
       fila('Dirección',o.dir)+fila('Comuna / Ciudad',o.zona)+fila('Región / Depto.',o.region)+
-      fila('Confirmación del cliente',o.abono?'ABONO PENDIENTE (esperando comprobante)':(o.conf?'CONFIRMADO':'Pendiente'))+fila('Montado en Dropi',o.montado?('SÍ'+(o.ordenDropi?' · orden #'+o.ordenDropi:'')):'Pendiente')+
+      (o.abono?'<div class="dl"><span class="k">Confirmación del cliente</span><span class="v" style="color:#c62828;font-weight:800">🔴 ABONO PENDIENTE — no aprobar hasta ver el comprobante</span></div>':fila('Confirmación del cliente',o.conf?'CONFIRMADO':'Pendiente'))+fila('Montado en Dropi',o.montado?('SÍ'+(o.ordenDropi?' · orden #'+o.ordenDropi:'')):'Pendiente')+
       fila('Fecha',o.fecha+' '+(o.hora||''))+
       (o.rid&&!o.montado?'<div style="margin-top:10px"><button class="b-copy" onclick="editarAprob('+i+')">✎ Editar datos</button></div>':'');
     document.getElementById('mTotal').textContent=o.precio;
