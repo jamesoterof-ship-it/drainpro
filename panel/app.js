@@ -84,13 +84,39 @@ function rechazSet(){ try{ return new Set(JSON.parse(localStorage.getItem('jaye_
 function guardarSet(n,s){ try{ localStorage.setItem(n, JSON.stringify([...s])); }catch(e){} }
 function esAprobado(k){ return aprobSet().has(k); }
 function esRechazado(k){ return rechazSet().has(k); }
+async function sincronizarAprob(){
+  /* la verdad vive en el servidor: así ves lo mismo desde el celular y el computador */
+  try{
+    const r=await fetch(BASE+'/leer-aprobados',{cache:'no-store'});
+    if(!r.ok) return;
+    const j=await r.json();
+    const claves=(j.aprobados||j.keys||[]).map(String);
+    if(!claves.length) return;
+    guardarSet('jaye_aprob', new Set(claves));
+    refrescarAprob();
+  }catch(e){}
+}
 function refrescarAprob(){ if(typeof renderPedidosWeb==='function') renderPedidosWeb(); if(typeof renderVentasWA==='function') renderVentasWA(); if(typeof renderVentasBot==='function') renderVentasBot(); if(typeof renderAprobar==='function') renderAprobar(); }
 function aprobar(k){
   var a=aprobSet(); a.add(k); guardarSet('jaye_aprob',a);
   var r=rechazSet(); if(r.delete(k)) guardarSet('jaye_rechaz',r);   // aprobar manda sobre rechazar
-  fetch(URL_APROBAR,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:k,accion:'aprobar'})}).catch(function(){});
-  if(typeof toast==='function') toast('Aprobado ✓ — se montará en Dropi en el próximo ciclo');
   refrescarAprob();
+  /* El servidor es el que manda: si no confirma, se reintenta y se avisa.
+     Antes el error se tragaba en silencio y el pedido quedaba "Aprobado" sin montarse. */
+  enviarAprob(k,'aprobar',2);
+}
+function enviarAprob(k,accion,intentos){
+  fetch(URL_APROBAR,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:k,accion:accion})})
+    .then(function(res){
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      if(accion==='aprobar' && typeof toast==='function') toast('Aprobado ✓ — se monta en el próximo ciclo');
+    })
+    .catch(function(){
+      if(intentos>0){ setTimeout(function(){ enviarAprob(k,accion,intentos-1); }, 2500); return; }
+      /* se deshace el visto local para que NO te muestre aprobado algo que el servidor no tiene */
+      var s=aprobSet(); s.delete(k); guardarSet('jaye_aprob',s); refrescarAprob();
+      if(typeof toast==='function') toast('⚠ No se pudo aprobar: sin conexión. Intenta otra vez.');
+    });
 }
 function rechazar(k){
   var r=rechazSet(); r.add(k); guardarSet('jaye_rechaz',r);
@@ -1397,8 +1423,9 @@ document.addEventListener('change',function(e){ if(e.target&&(e.target.id==='fin
 document.addEventListener('input',function(e){ if(e.target&&e.target.id==='finBuscar'){ window._finBuscar=e.target.value; _renderFinTabla(window._finPedidos); } });
 setInterval(function(){ var f=document.getElementById('view-finanzas'),d=document.getElementById('view-dropi'); if((f&&f.classList.contains('act'))||(d&&d.classList.contains('act'))) cargarFinanzas(); }, 180000);
 
-cargarConvos(); cargarVentas(); cargarPaginas(); cargarHuellas();
+cargarConvos(); cargarVentas(); cargarPaginas(); cargarHuellas(); sincronizarAprob();
 setInterval(()=>{cargarConvos();cargarVentas();cargarPaginas();},15000);
+setInterval(sincronizarAprob,30000);   // las aprobaciones se leen del servidor, no del navegador
 setInterval(cargarHuellas,300000);
 document.getElementById('fechaHead').textContent=new Date().toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'});
 
