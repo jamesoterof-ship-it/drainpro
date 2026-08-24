@@ -13,6 +13,7 @@ const URL_EDITARWA=BASE+'/editar-pedido-wa';
 const URL_IMG='https://web-production-a5adc.up.railway.app/api/jaye/enviar-imagen';
 const URL_HUELLAS=BASE+'/leer-huellas';
 const URL_PEDWEB=BASE+'/leer-pedidos-web';   // pedidos de pagina desde Postgres (no Google)
+const URL_PEDLANDING=BASE+'/leer-pedidos-landing'; // pedidos de las landings nuevas (bot 'Camila Web')
 const URL_EDITPED=BASE+'/editar-pedido-web'; // guardar edicion de un pedido de pagina (datos + estado)
 const URL_ABANDONADOS=BASE+'/leer-abandonados'; // abandonados desde Postgres (no Google)
 const URL_GENCOPY=BASE+'/generar-copy'; // creador de anuncios: genera copys con IA (Claude)
@@ -240,6 +241,8 @@ async function cargarPaginas(){
   let peds=[], abs=[], vis=[], pedsArch=[], visArch=[];
   // PEDIDOS DE PAGINA: desde Postgres (confiable, no Google)
   try{ const pr=await fetch(URL_PEDWEB); const pj=await pr.json(); (pj.pedidos||[]).forEach(r=>peds.push(r)); }catch(e){}
+  // pedidos de las landings nuevas: mismo canal PAGINA, nunca se mezclan con WhatsApp
+  try{ const lr=await fetch(URL_PEDLANDING); const lj=await lr.json(); (lj.pedidos||[]).forEach(r=>peds.push(Object.assign({},r,{confirmado:'SI',fila:'wa'+r.id,dropi:/montada/i.test(String(r.estado||''))?'ENVIADO':''}))); }catch(e){}
   // ABANDONADOS: desde Postgres (no Google)
   try{ const ar=await fetch(URL_ABANDONADOS); const aj=await ar.json(); (aj.abandonados||[]).forEach(r=>{ const pg=PAGINAS.find(x=>x.id===r.pagina); abs.push(Object.assign({color:pg?pg.color:'#3060ea'},r)); }); }catch(e){}
   // VISITAS: desde Postgres (NO Google). Cualquier página que reporte aparece sola.
