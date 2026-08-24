@@ -216,6 +216,7 @@ async function cargarVentas(){
     const rows=Array.isArray(data)?data:(data.body||[]);
     const ords=[];
     rows.forEach(r=>{ if(!r||(!r.NOMBRE&&!r.PRODUCTO))return;
+      if(/web/i.test(String(r.BOT||''))) return;   // los pedidos de las landings son canal PAGINA, no WhatsApp
       const bot=String(r.BOT||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
       const esR=bot.includes('ramon'); const esJ=bot.includes('james'); const precio=numero(r.PRECIO);
       ords.push({rid:r.row_number||'',cli:r.NOMBRE||'—',tel:soloNum(r.TELEFONO),prod:r.PRODUCTO||'—',cant:numero(r.CANTIDAD)||1,
