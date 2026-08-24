@@ -231,8 +231,9 @@ async function cargarVentas(){
     renderVentasWA(); renderVentasBot(); renderBots(); renderResumen(); renderConvStats(); if(typeof renderAprobar==='function') renderAprobar();
   }catch(e){}
 }
+const nombreCortoProd=s=>{var t=String(s||'');return /pesta|masc/i.test(t)?'Máscara Pestañas':/antena/i.test(t)?'Antena TV':/lente/i.test(t)?'Lentes One Power':/carga|bater/i.test(t)?'Cargador 12V':t.split('+')[0].trim();};
 const mapPedido=r=>({fecha:r.fecha||'',cli:r.nombre||'—',tel:soloNum((r.indicativo||'')+(r.telefono||'')),telRaw:r.telefono||'',
-    prod:r.producto,color:r.color,pagina:r.pagina,dir:r.direccion||'—',ref:r.referencia||'',comuna:r.comuna||'—',
+    prod:r.producto,prodCorto:nombreCortoProd(r.producto),color:r.color||'#c9a227',pagina:r.pagina,dir:r.direccion||'—',ref:r.referencia||'',comuna:r.comuna||'—',
     region:r.region||'—',correo:r.correo||'',cant:numero(r.cantidad)||1,totalNum:numero(r.total),
     total:fmtCLP(numero(r.total)),conf:String(r.confirmado||'').toUpperCase()==='SI',
     dropi:String(r.dropi||'').toUpperCase()==='ENVIADO',fila:r.fila,orden:fechaOrden(r.fecha,'')});
@@ -356,9 +357,18 @@ function renderPaises(){
 }
 
 /* ---------- PEDIDOS WEB ---------- */
+function chipsPedidosWeb(){
+  const cont=document.getElementById('segProdP'); if(!cont) return;
+  const vistas={}; (pedidosWeb||[]).forEach(o=>{ if(o.pagina&&!vistas[o.pagina]) vistas[o.pagina]={id:o.pagina,nombre:o.prodCorto||o.prod||o.pagina,color:o.color||'#c9a227'}; });
+  PAGINAS.filter(p=>p.url).forEach(p=>{ if(!vistas[p.id]) vistas[p.id]={id:p.id,nombre:p.nombre,color:p.color}; });
+  const lista=Object.values(vistas);
+  cont.innerHTML='<button class="minitab'+(fProdP==='todos'?' act':'')+'" data-pp="todos">Todos</button>'+
+    lista.map(p=>'<button class="minitab'+(fProdP===p.id?' act':'')+'" data-pp="'+p.id+'"><span style="width:8px;height:8px;border-radius:50%;background:'+p.color+';display:inline-block;margin-right:5px"></span>'+esc(p.nombre)+'</button>').join('');
+  cont.querySelectorAll('.minitab').forEach(b=>b.addEventListener('click',()=>{ fProdP=b.dataset.pp; chipsPedidosWeb(); renderPedidosWeb(); }));
+}
 function renderPedidosWeb(){
   const tb=document.getElementById('tbodyPedidos'); if(!tb) return;
-  if(!PAGINAS.some(p=>p.url)){tb.innerHTML='<tr><td colspan="9" class="vacio">Esperando conexión de las planillas…</td></tr>';return;}
+  chipsPedidosWeb();
   const q=(document.getElementById('pbuscar')?.value||'').toLowerCase();
   let arr=pedidosWeb;
   if(fProdP!=='todos') arr=arr.filter(o=>o.pagina===fProdP);
