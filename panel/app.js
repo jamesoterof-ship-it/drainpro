@@ -182,14 +182,20 @@ function normConv(r){
 }
 function parseHist(txt){
   if(!txt) return [];
-  const parts=String(txt).split(/(?=(?:Cliente|Asistente|Ramón|Ramon|Carlos|James|Agente)\s*(?:\[[^\]]*\])?\s*:)/g);
+  const parts=String(txt).split(/(?=(?:Cliente|Asistente|Ramón|Ramon|Carlos|James|Agente|Sistema)\s*(?:\[[^\]]*\])?\s*:)/g);
   const out=[];
-  const _quitaSistema=s=>String(s).replace(/\n?\s*Sistema\s*:[^\n]*/g,'').trim();
+  /* las notas "Sistema:" ahora se muestran como aviso en la conversación (antes se ocultaban
+     y cosas importantes como el link del anticipo quedaban invisibles) */
+  const _sacaSistema=s=>{const notas=[];const limpio=String(s).replace(/\n?\s*Sistema\s*:([^\n]*)/g,(_,n)=>{if(n.trim())notas.push(n.trim());return '';}).trim();return {limpio,notas};};
   parts.forEach(p=>{p=p.trim();if(!p)return;
-    const m=p.match(/^(Cliente|Asistente|Ramón|Ramon|Carlos|James|Agente)\s*(?:\[([^\]]*)\])?\s*:\s*([\s\S]*)$/);
-    if(m){const lbl=m[1],time=(m[2]||'').trim(),body=_quitaSistema(m[3]);if(!body)return;
-      const from=lbl==='Cliente'?'cliente':(lbl==='Agente'?'agente':'bot');out.push({from,text:body,time:time});}
-    else {const body=_quitaSistema(p);if(!body)return;out.push({from:'cliente',text:body,time:''});}
+    const m=p.match(/^(Cliente|Asistente|Ramón|Ramon|Carlos|James|Agente|Sistema)\s*(?:\[([^\]]*)\])?\s*:\s*([\s\S]*)$/);
+    if(m){const lbl=m[1],time=(m[2]||'').trim();
+      if(lbl==='Sistema'){const b=m[3].trim();if(b)out.push({from:'sistema',text:b,time:time});return;}
+      const {limpio,notas}=_sacaSistema(m[3]);
+      const from=lbl==='Cliente'?'cliente':(lbl==='Agente'?'agente':'bot');
+      if(limpio)out.push({from,text:limpio,time:time});
+      notas.forEach(n=>out.push({from:'sistema',text:n,time:''}));}
+    else {const {limpio,notas}=_sacaSistema(p);if(limpio)out.push({from:'cliente',text:limpio,time:''});notas.forEach(n=>out.push({from:'sistema',text:n,time:''}));}
   });
   return out;
 }
@@ -675,6 +681,7 @@ function renderBubbles(c){
   const box=document.getElementById('chmsgs');
   if(!c.msgs.length){box.innerHTML='<div class="vacio">Sin mensajes todavía.</div>';return;}
   box.innerHTML=c.msgs.map(m=>{
+    if(m.from==='sistema') return `<div class="msg m-sys"><div class="who">⚠ Sistema</div>${cuerpoMensaje(m)}</div>`;
     const cls=m.from==='cliente'?'m-cli':(m.from==='agente'?'m-ag':'m-bot');
     const who=m.from==='cliente'?'Cliente':(m.from==='agente'?'Tú · Agente':BOTNOM[c.bot].split(' ·')[0]+' · Bot');
     return `<div class="msg ${cls}"><div class="who">${who}</div>${cuerpoMensaje(m)}${m.time?'<div style="font-size:11px;opacity:.5;margin-top:3px">'+esc(m.time)+'</div>':''}</div>`;
