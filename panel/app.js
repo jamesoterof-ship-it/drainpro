@@ -105,14 +105,14 @@ function aprobar(k){
      Antes el error se tragaba en silencio y el pedido quedaba "Aprobado" sin montarse. */
   enviarAprob(k,'aprobar',2);
 }
-function enviarAprob(k,accion,intentos){
-  fetch(URL_APROBAR,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:k,accion:accion})})
+function enviarAprob(k,accion,intentos,rid){
+  fetch(URL_APROBAR,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:k,accion:accion,venta_id:rid||''})})
     .then(function(res){
       if(!res.ok) throw new Error('HTTP '+res.status);
       if(typeof toast==='function') toast(accion==='aprobar' ? 'Aprobado ✓ — se monta en el próximo ciclo' : (accion==='eliminar' ? 'Eliminado ✓ — no se montará' : 'Listo ✓'));
     })
     .catch(function(){
-      if(intentos>0){ setTimeout(function(){ enviarAprob(k,accion,intentos-1); }, 2500); return; }
+      if(intentos>0){ setTimeout(function(){ enviarAprob(k,accion,intentos-1,rid); }, 2500); return; }
       /* se deshace el visto local para que NO te muestre aprobado algo que el servidor no tiene */
       var s=aprobSet(); s.delete(k); guardarSet('jaye_aprob',s);
       var s2=rechazSet(); if(accion==='eliminar'){ s2.delete(k); guardarSet('jaye_rechaz',s2); }
@@ -126,12 +126,12 @@ function rechazar(k){ eliminar(k); }
    OJO: va con reintentos y avisa si falla. Antes era fetch().catch(){}: el
    panel decia "Rechazado" aunque el servidor no se hubiera enterado, y el
    pedido se montaba igual. Asi se fue el de Flory. */
-function eliminar(k){
+function eliminar(k,rid){
   if(typeof confirm==='function' && !confirm('¿Eliminar este pedido?\n\nNo se montará en Dropi y sale de la lista. Se puede deshacer.')) return;
   var r=rechazSet(); r.add(k); guardarSet('jaye_rechaz',r);
   var a=aprobSet(); if(a.delete(k)) guardarSet('jaye_aprob',a);
   refrescarAprob();
-  enviarAprob(k,'eliminar',2);
+  enviarAprob(k,'eliminar',2,rid);
 }
 function deshacerRechazo(k){
   var r=rechazSet(); r.delete(k); guardarSet('jaye_rechaz',r);
@@ -140,11 +140,11 @@ function deshacerRechazo(k){
   refrescarAprob();
 }
 var BTN_APROB='background:var(--brand,#3056c9);color:#fff;border:0;border-radius:8px;padding:5px 12px;font-weight:700;font-size:12.5px;cursor:pointer';
-function celdaAprob(k,montadoHtml){
+function celdaAprob(k,montadoHtml,rid){
   if(montadoHtml) return montadoHtml;
   if(esAprobado(k)) return '<span class="st st-rec"><i></i>Aprobado ⏳</span>';
   if(esRechazado(k)) return '<span class="st st-ab"><i></i>Eliminado</span><button class="b-desh" onclick="deshacerRechazo(&quot;'+k+'&quot;)">Deshacer</button>';
-  return '<button class="b-apr" onclick="aprobar(&quot;'+k+'&quot;)">✓ Aprobar</button><button class="b-rech" title="Eliminar — sale de la lista y no se monta en Dropi" onclick="eliminar(&quot;'+k+'&quot;)">🗑</button>';
+  return '<button class="b-apr" onclick="aprobar(&quot;'+k+'&quot;)">✓ Aprobar</button><button class="b-rech" title="Eliminar — sale de la lista y no se monta en Dropi" onclick="eliminar(&quot;'+k+'&quot;,&quot;'+(rid||'')+'&quot;)">🗑</button>';
 }
 
 const PAGINAS=[
@@ -660,7 +660,7 @@ function renderVentasBot(){
       <td>${o.cant}</td>
       <td class="money">${o.precio}</td>
       <td>${o.abono?'<span class="st st-rec"><i></i>Abono pendiente</span>':(o.conf?'<span class="st st-ok"><i></i>Confirmado</span>':'<span class="st st-rec"><i></i>Pendiente</span>')}</td>
-      <td class="cell-aprob" onclick="event.stopPropagation()">${celdaAprob(keyWa(o), o.montado?'<span class="st st-ok"><i></i>Montado'+(o.ordenDropi?' #'+o.ordenDropi:'')+'</span>':'')}</td>
+      <td class="cell-aprob" onclick="event.stopPropagation()">${celdaAprob(keyWa(o), o.montado?'<span class="st st-ok"><i></i>Montado'+(o.ordenDropi?' #'+o.ordenDropi:'')+'</span>':'', o.rid)}</td>
       <td><svg class="ico-sm chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></td>
     </tr>`).join('');
   window._ventasBotF=arr;
@@ -805,7 +805,7 @@ function renderVentasWA(){
       <td>${o.cant}</td>
       <td class="money">${o.precio}</td>
       <td>${o.abono?'<span class="st st-rec"><i></i>Abono pendiente</span>':(o.conf?'<span class="st st-ok"><i></i>Confirmado</span>':'<span class="st st-rec"><i></i>Pendiente</span>')}</td>
-      <td class="cell-aprob" onclick="event.stopPropagation()">${celdaAprob(keyWa(o), o.montado?'<span class="st st-ok"><i></i>Montado'+(o.ordenDropi?' #'+o.ordenDropi:'')+'</span>':'')}</td>
+      <td class="cell-aprob" onclick="event.stopPropagation()">${celdaAprob(keyWa(o), o.montado?'<span class="st st-ok"><i></i>Montado'+(o.ordenDropi?' #'+o.ordenDropi:'')+'</span>':'', o.rid)}</td>
       <td><svg class="ico-sm chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></td>
     </tr>`).join('');
   window._ventasF=arr;
