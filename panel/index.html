@@ -399,6 +399,22 @@ tbody tr:hover .chev{color:var(--brand)}
 .crm-mini:hover{border-color:var(--ink)}
 .crm-mini.wa{background:#25d366;color:#fff;border-color:#25d366}
 .crm-vacio{padding:22px 12px;text-align:center;color:var(--ink-3);font-size:13px}
+
+.crm-modal{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9998;display:flex;align-items:center;justify-content:center;padding:16px}
+.crm-panel{background:var(--card);border:1px solid var(--grid);border-radius:14px;max-width:560px;width:100%;max-height:88vh;overflow:auto;padding:18px}
+.crm-ph{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.crm-ph h3{margin:0;font-size:17px;color:var(--ink)}
+.crm-x{border:1px solid var(--grid);background:var(--bg-2,#f4f6f8);border-radius:8px;width:30px;height:30px;cursor:pointer;font-size:17px;color:var(--ink)}
+.crm-sec{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin:14px 0 6px}
+.crm-datos{background:var(--bg-2,#f7f8fa);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:4px}
+.crm-chat{background:var(--bg-2,#f4f6f8);border-radius:10px;padding:10px;max-height:300px;overflow:auto}
+.crm-row{display:flex;flex-direction:column;align-items:flex-start}
+.crm-row.r{align-items:flex-end}
+.crm-b{display:inline-block;max-width:82%;padding:7px 10px;border-radius:10px;font-size:12.5px;margin:3px 0;white-space:pre-wrap;line-height:1.5}
+.crm-b.cli{background:var(--card);border:1px solid var(--grid);color:var(--ink)}
+.crm-b.neg{background:#dcf8c6;color:#111}
+.crm-b .msgimg{max-width:170px;border-radius:8px;display:block;cursor:pointer}
+.crm-mini.on{background:var(--ink);color:#fff;border-color:var(--ink)}
 </style>
 </head>
 <body>
@@ -1275,7 +1291,7 @@ tbody tr:hover .chev{color:var(--brand)}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
-<script src="app.js?v=82"></script>
+<script src="app.js?v=83"></script>
 </body>
 </html>
 
