@@ -1048,7 +1048,7 @@ function mostrarVista(v){
 window.addEventListener('resize', ajustarStickyTop);
 setTimeout(ajustarStickyTop, 300);
 document.querySelectorAll('.nav-i[data-view]').forEach(n=>n.addEventListener('click',()=>{
-  if(n.dataset.bot){ irConvBot(n.dataset.bot); return; }
+  if(n.dataset.bot){ irConvBot(n.dataset.bot); if(n.dataset.tab==='ventas') setTabConv('ventas'); return; }
   document.querySelectorAll('.nav-i[data-bot]').forEach(x=>x.classList.remove('subact'));
   mostrarVista(n.dataset.view);
 }));
