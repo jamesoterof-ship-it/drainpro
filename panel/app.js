@@ -2423,7 +2423,7 @@ async function crmFicha(id){
   }).join('');
   m.innerHTML='<div class="crm-panel" onclick="event.stopPropagation()">'+
     '<div class="crm-ph">'+
-      '<div><h3>'+esc(x.nombre||('+'+tel))+'</h3><div class="crm-tel">+'+esc(_telLargo(tel))+'</div></div>'+
+      '<div><h3>'+esc(x.nombre||('+'+tel))+'</h3><div class="crm-tel">+'+esc(_telLargo(x))+'</div></div>'+
       '<button class="crm-x" onclick="document.getElementById(\'crm-modal\').remove()">×</button>'+
     '</div>'+
     '<div class="crm-acc"><button class="crm-mini wa" onclick="event.stopPropagation();crmAbrir(\''+_telLargo(x)+'\')">Abrir conversación</button>'+mover+'</div>'+
