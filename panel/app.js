@@ -254,13 +254,24 @@ async function cargarVentas(){
   try{
     const res=await fetch(URL_VENTAS); const data=await res.json();
     const rows=Array.isArray(data)?data:(data.body||[]);
-    const ords=[];
+    const ords=[]; const _vistas={};
     rows.forEach(r=>{ if(!r||(!r.NOMBRE&&!r.PRODUCTO))return;
       if(/web/i.test(String(r.BOT||''))) return;   // los pedidos de las landings son canal PAGINA, no WhatsApp
       const bot=String(r.BOT||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
       const esR=bot.includes('ramon'); const esJ=bot.includes('james');
       const esRedes=bot.includes('redes');   // ventas que cierra Camila en Facebook e Instagram
       const precio=numero(r.PRECIO);
+      /* Dos candados antes de contarla como venta:
+         1. las ELIMINADAS no existen para el panel ni para los contadores
+         2. el mismo telefono + el mismo precio + el mismo dia es UNA venta.
+            No se compara el nombre del producto a proposito: Camila lo escribe
+            distinto entre un registro y otro ("Baterías" / "Baterias") y por eso
+            los duplicados se colaban. Paso con Rodrigo Gonzalez: dos filas con
+            un segundo de diferencia contaban como dos ventas. */
+      if(/^ELIMINAD/i.test(String(r.ESTADO||''))) return;
+      const _dupK=soloNum(r.TELEFONO).slice(-8)+'|'+precio+'|'+String(r.FECHA||'').split(',')[0];
+      if(_vistas[_dupK]) return;
+      _vistas[_dupK]=1;
       ords.push({rid:r.row_number||'',cli:r.NOMBRE||'—',tel:soloNum(r.TELEFONO),prod:r.PRODUCTO||'—',cant:numero(r.CANTIDAD)||1,
         precioNum:precio,precio:esR?fmtGS(precio):esJ?fmtCOP(precio)+' COP':fmtCLP(precio),
         dir:r.DIRECCION||'—',zona:r.COMUNA||r.CIUDAD||'—',region:r.REGION||r.DEPARTAMENTO||'—',
