@@ -201,6 +201,8 @@ tbody tr:hover .chev{color:var(--brand)}
 .actinfo .n2{font-size:12px;color:var(--ink-3);margin-top:1px}
 .actcanal{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;flex:0 0 auto}
 .act-wa{background:var(--green-tint);color:var(--green)}
+.act-redes{background:#fce7f0;color:#c2185b}
+.icn-r{background:#fce7f0;color:#c2185b}
 .act-web{background:var(--blue-tint);color:var(--blue)}
 .actmoney{font-weight:700;font-size:13.5px;text-align:right;white-space:nowrap;flex:0 0 auto}
 .convbar .cstep{display:flex;align-items:center;gap:12px;margin-bottom:14px}
@@ -501,6 +503,7 @@ tbody tr:hover .chev{color:var(--brand)}
           <button class="act" data-c="todos">Todos los canales</button>
           <button data-c="web">Páginas</button>
           <button data-c="wa">WhatsApp</button>
+          <button data-c="redes">Redes</button>
         </div>
         <div class="seg alt spacer" id="rangeSeg">
           <button data-r="hoy" class="act">Hoy</button>
@@ -525,7 +528,12 @@ tbody tr:hover .chev{color:var(--brand)}
         <div class="kpi">
           <div class="top-r"><span class="lbl" id="lWa">Ventas por WhatsApp (hoy)</span><span class="icn icn-g"><svg class="ico-sm" viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.6A8.4 8.4 0 1 1 21 11.5z"/></svg></span></div>
           <div class="val" id="kWa">…</div>
-          <div class="meta">cerradas por Carlos, James, Ramón y Camila Redes</div>
+          <div class="meta">cerradas por Carlos, James y Ramón</div>
+        </div>
+        <div class="kpi">
+          <div class="top-r"><span class="lbl" id="lRed">Ventas por redes (hoy)</span><span class="icn icn-r"><svg class="ico-sm" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" stroke="none"/></svg></span></div>
+          <div class="val" id="kRed">—</div>
+          <div class="meta" id="kRedMeta">cerradas por Camila en Facebook e Instagram</div>
         </div>
         <div class="kpi">
           <div class="top-r"><span class="lbl" id="lWeb">Ventas por página (hoy)</span><span class="icn icn-b"><svg class="ico-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></span></div>
@@ -1217,6 +1225,6 @@ tbody tr:hover .chev{color:var(--brand)}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
-<script src="app.js?v=75"></script>
+<script src="app.js?v=76"></script>
 </body>
 </html>

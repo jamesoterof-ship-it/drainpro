@@ -310,17 +310,25 @@ async function cargarPaginas(){
 /* ---------- RESUMEN (canal + rango funcionales) ---------- */
 function renderResumen(){
   const el=id=>document.getElementById(id);
-  const waR =ordenes.filter(o=>enRango(o.orden));
+  const enR  =ordenes.filter(o=>enRango(o.orden));
+  const waR  =enR.filter(o=>o.bot!=='Redes');       // WhatsApp puro
+  const redR =enR.filter(o=>o.bot==='Redes');       // Facebook e Instagram
   const webR=pedidosWeb.filter(o=>enRango(o.orden));
-  const usaWA = fCanal!=='web', usaWeb = fCanal!=='wa';
+  const usaWA = fCanal==='todos'||fCanal==='wa', usaWeb = fCanal==='todos'||fCanal==='web';
+  const usaRed = fCanal==='todos'||fCanal==='redes';
   const lbl=rangoTxt();
   ['lTot','lWa','lWeb','lMon'].forEach((id,i)=>{ if(el(id)) el(id).textContent=['Ventas totales ('+lbl+')','Ventas por WhatsApp ('+lbl+')','Ventas por página ('+lbl+')','Ventas '+lbl+' · por moneda'][i]; });
-  if(el('kTot')) el('kTot').textContent=(usaWA?waR.length:0)+(usaWeb?webR.length:0);
+  if(el('lRed')) el('lRed').textContent='Ventas por redes ('+lbl+')';
+  if(el('kRed')) el('kRed').textContent=usaRed?redR.length:'—';
+  if(el('kRedMeta')) el('kRedMeta').textContent=usaRed&&redR.length?(fmtCLP(redR.reduce((a,b)=>a+b.precioNum,0))+' CLP'):'—';
+  if(el('kTot')) el('kTot').textContent=(usaWA?waR.length:0)+(usaRed?redR.length:0)+(usaWeb?webR.length:0);
   if(el('kWa'))  el('kWa').textContent=usaWA?waR.length:'—';
   if(el('kWeb')) el('kWeb').textContent=usaWeb?(PAGINAS.some(p=>p.url)?webR.length:'—'):'—';
   if(el('kWebMeta')) el('kWebMeta').textContent=usaWeb&&PAGINAS.some(p=>p.url)?(fmtCLP(webR.reduce((a,b)=>a+b.totalNum,0))+' CLP'):'—';
   if(el('kMonedas')){
-    const tCL=(usaWA?waR.filter(o=>o.loc==='CL').reduce((a,b)=>a+b.precioNum,0):0)+(usaWeb?webR.reduce((a,b)=>a+b.totalNum,0):0);
+    const tCL=(usaWA?waR.filter(o=>o.loc==='CL').reduce((a,b)=>a+b.precioNum,0):0)
+             +(usaRed?redR.reduce((a,b)=>a+b.precioNum,0):0)
+             +(usaWeb?webR.reduce((a,b)=>a+b.totalNum,0):0);
     const tCO=usaWA?waR.filter(o=>o.loc==='CO').reduce((a,b)=>a+b.precioNum,0):0;
     const tPY=usaWA?waR.filter(o=>o.loc==='PY').reduce((a,b)=>a+b.precioNum,0):0;
     el('kMonedas').innerHTML=
@@ -332,18 +340,18 @@ function renderResumen(){
 }
 function renderActividad(){
   const cont=document.getElementById('actividadReciente'); if(!cont) return;
-  const wa=ordenes.map(o=>({cli:o.cli,canal:'wa',prod:o.prod,loc:o.loc,bot:o.bot,money:o.precio,orden:o.orden,
+  const wa=ordenes.map(o=>({cli:o.cli,canal:o.bot==='Redes'?'redes':'wa',prod:o.prod,loc:o.loc,bot:o.bot,money:o.precio,orden:o.orden,
     fecha:o.fecha,hora:o.hora}));
   const web=pedidosWeb.map(o=>({cli:o.cli,canal:'web',prod:o.prod,loc:'CL',color:o.color,money:o.total+' CLP',orden:o.orden,fecha:o.fecha}));
   const todo=wa.concat(web).sort((a,b)=>b.orden-a.orden).slice(0,8);
   if(!todo.length){cont.innerHTML='<div class="vacio">Aún no hay ventas.</div>';return;}
   cont.innerHTML='<div class="actfeed">'+todo.map(a=>{
-    const bg=a.canal==='wa'?(BOTCOLOR[a.bot]||'#0e8074'):(a.color||'#3060ea');
+    const bg=(a.canal==='wa'||a.canal==='redes')?(BOTCOLOR[a.bot]||'#0e8074'):(a.color||'#3060ea');
     const ini=String(a.cli||'?').trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase()||'·';
     return '<div class="actrow"><div class="actav" style="background:'+bg+'">'+esc(ini)+'</div>'+
       '<div class="actinfo"><div class="n1">'+esc(a.cli&&a.cli!=='—'?a.cli:'Cliente')+'</div>'+
       '<div class="n2">'+esc(a.prod)+' · '+esc(a.fecha)+(a.hora?' '+esc(a.hora):'')+'</div></div>'+
-      '<span class="actcanal '+(a.canal==='wa'?'act-wa':'act-web')+'">'+(a.canal==='wa'?'WhatsApp':'Página')+'</span>'+
+      '<span class="actcanal '+(a.canal==='wa'?'act-wa':a.canal==='redes'?'act-redes':'act-web')+'">'+(a.canal==='wa'?'WhatsApp':a.canal==='redes'?'Redes':'Página')+'</span>'+
       '<div class="actmoney">'+esc(a.money)+'</div></div>';
   }).join('')+'</div>';
 }
