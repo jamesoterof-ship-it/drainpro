@@ -151,9 +151,9 @@ const fmtCOP=n=>'$'+Math.round(n).toLocaleString('es-CO');
 const fmtGS=n=>'Gs '+Math.round(n).toLocaleString('es-PY');
 const numero=v=>{const n=parseFloat(String(v??'').replace(/[^\d.,-]/g,'').replace(/\./g,'').replace(',','.'));return isNaN(n)?0:n;};
 const FLAG={CL:'flag-cl',CO:'flag-co',PY:'flag-py'};
-const BOTNOM={Carlos:'Carlos · Chile',James:'James · Colombia',Ramon:'Ramón · Paraguay'};
-const BOTLOC={Carlos:'CL',James:'CO',Ramon:'PY'};
-const BOTCOLOR={Carlos:'linear-gradient(135deg,#0e8074,#3aa897)',James:'linear-gradient(135deg,#3060ea,#6a92f5)',Ramon:'linear-gradient(135deg,#7c4dd8,#a98aec)'};
+const BOTNOM={Carlos:'Carlos · Chile',James:'James · Colombia',Ramon:'Ramón · Paraguay',Redes:'Camila Redes · Chile'};
+const BOTLOC={Carlos:'CL',James:'CO',Ramon:'PY',Redes:'CL'};
+const BOTCOLOR={Carlos:'linear-gradient(135deg,#0e8074,#3aa897)',James:'linear-gradient(135deg,#3060ea,#6a92f5)',Ramon:'linear-gradient(135deg,#7c4dd8,#a98aec)',Redes:'linear-gradient(135deg,#d8256b,#f0699b)'};
 
 let convos=[], ordenes=[], pedidosWeb=[], abandonadosWeb=[], visitasWeb=[], selTel=null;
 let pedidosArchivo=[], visitasArchivo=[];   // meses ya archivados (solo Histórico)
@@ -250,17 +250,22 @@ async function cargarVentas(){
     rows.forEach(r=>{ if(!r||(!r.NOMBRE&&!r.PRODUCTO))return;
       if(/web/i.test(String(r.BOT||''))) return;   // los pedidos de las landings son canal PAGINA, no WhatsApp
       const bot=String(r.BOT||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
-      const esR=bot.includes('ramon'); const esJ=bot.includes('james'); const precio=numero(r.PRECIO);
+      const esR=bot.includes('ramon'); const esJ=bot.includes('james');
+      const esRedes=bot.includes('redes');   // ventas que cierra Camila en Facebook e Instagram
+      const precio=numero(r.PRECIO);
       ords.push({rid:r.row_number||'',cli:r.NOMBRE||'—',tel:soloNum(r.TELEFONO),prod:r.PRODUCTO||'—',cant:numero(r.CANTIDAD)||1,
         precioNum:precio,precio:esR?fmtGS(precio):esJ?fmtCOP(precio)+' COP':fmtCLP(precio),
         dir:r.DIRECCION||'—',zona:r.COMUNA||r.CIUDAD||'—',region:r.REGION||r.DEPARTAMENTO||'—',
-        bot:esR?'Ramon':esJ?'James':'Carlos',loc:esR?'PY':esJ?'CO':'CL',estado:r.ESTADO||'—',
+        bot:esR?'Ramon':esJ?'James':esRedes?'Redes':'Carlos',loc:esR?'PY':esJ?'CO':'CL',estado:r.ESTADO||'—',
         conf:!/abono pendiente/i.test(String(r.ESTADO||'')),abono:/abono pendiente/i.test(String(r.ESTADO||'')),/* abono pendiente = NO confirmada hasta que pague el anticipo */
         montado:/montad/i.test(String(r.ESTADO||'')),
         ordenDropi:(String(r.ESTADO||'').match(/#(\d+)/)||[])[1]||'',
         fecha:r.FECHA||'',hora:r.HORA||'',orden:fechaOrden(r.FECHA,r.HORA)});
     });
     ordenes=ords.sort((a,b)=>b.orden-a.orden);   // (3) recientes primero
+    // contador del canal de redes en el menu
+    var _b=document.getElementById('redesBadge');
+    if(_b){ var _n=ordenes.filter(o=>o.bot==='Redes').length; _b.textContent=_n; _b.style.display=_n?'':'none'; }
     renderVentasWA(); renderVentasBot(); renderBots(); renderResumen(); renderConvStats(); if(typeof renderAprobar==='function') renderAprobar();
   }catch(e){}
 }
