@@ -2235,104 +2235,139 @@ document.querySelectorAll('#adDestSeg .adDestBtn').forEach(function(b){ b.addEve
 (function(){ adFill(); var n=document.getElementById('adNombre'); if(n) n.addEventListener('input',function(){n.dataset.edit='1';}); if(document.getElementById('adPais')) adPaisUpd(); adDestUpd(); adFileRender(); adGeoRender(); var cta=document.getElementById('adCta'); if(cta) cta.addEventListener('change',function(){ if(_adAds.length) renderGaleria(); }); })();
 
 
-/* ==================== CRM ====================
-   Siete tarjetas, todas de datos que ya existen. Sin IA.
-   El backend es un solo endpoint: /webhook/crm-jaye  */
-const URL_CRM = BASE + '/crm-jaye';
+
+/* ==================== CRM · tablero ====================
+   Molde del CRM de Konecta: columnas, tarjetas que se arrastran y el estado
+   guardado en el servidor. Aca las columnas son de TRABAJO (por hacer, en
+   proceso, resuelto), no etapas de venta: lo que el dueno necesita es
+   despachar problemas, no mover un embudo.
+   El boton NO manda a wa.me: abre la conversacion del panel, para seguir
+   el chat sin salirse. */
+const URL_CRM   = BASE + '/crm-jaye';
+const URL_CRMMV = BASE + '/crm-mover';
 const CRM_TABS = [
-  { k:'novedades',   t:'Novedades urgentes' },
-  { k:'garantias',   t:'Garantías y reclamos' },
-  { k:'avisos',      t:'Avisos del cliente' },
-  { k:'seguimiento', t:'Seguimiento de ventas' },
-  { k:'nuevos',      t:'Clientes nuevos' },
-  { k:'frios',       t:'Clientes en frío' },
+  { k:'novedades',   t:'Novedades',   urg:true },
+  { k:'garantias',   t:'Garantías',   urg:true },
+  { k:'avisos',      t:'Avisos',      urg:true },
+  { k:'seguimiento', t:'Seguimiento' },
+  { k:'nuevos',      t:'Nuevos' },
+  { k:'frios',       t:'En frío' },
   { k:'postventa',   t:'Post-venta' },
 ];
-let _crm = null, _crmTab = 'novedades';
+const CRM_COLS = [
+  { k:'por_hacer',  t:'Por hacer',  c:'#e1283c' },
+  { k:'en_proceso', t:'En proceso', c:'#d98324' },
+  { k:'resuelto',   t:'Resuelto',   c:'#1f9d55' },
+];
+let _crm=null, _crmTab='novedades', _crmEst={}, _crmArr=null;
+
+function crmId(k,x){ return k+'|'+String(x.tel||'').replace(/\D/g,''); }
 
 async function cargarCrm(){
-  const cuerpo = document.getElementById('crmCuerpo');
-  if(!_crm && cuerpo) cuerpo.innerHTML = '<div class="crm-vacio">Cargando…</div>';
-  try{
-    const r = await fetch(URL_CRM, {cache:'no-store'});
-    _crm = await r.json();
-  }catch(e){
-    if(cuerpo) cuerpo.innerHTML = '<div class="crm-vacio">No pude cargar el CRM. Reintento al volver a entrar.</div>';
-    return;
-  }
+  const cont=document.getElementById('crmCuerpo');
+  if(!_crm && cont) cont.innerHTML='<div class="crm-vacio">Cargando…</div>';
+  try{ _crm=await (await fetch(URL_CRM,{cache:'no-store'})).json(); }
+  catch(e){ if(cont) cont.innerHTML='<div class="crm-vacio">No pude cargar el CRM.</div>'; return; }
+  try{ _crmEst=JSON.parse(localStorage.getItem('jaye_crm_est')||'{}'); }catch(e){ _crmEst={}; }
   renderCrm();
-  /* el numerito rojo del menu: lo que de verdad urge */
-  const urg = (_crm.novedades||[]).length + (_crm.garantias||[]).length + (_crm.avisos||[]).length;
-  const b = document.getElementById('badgeCrm');
-  if(b){ b.textContent = urg; b.style.display = urg ? '' : 'none'; }
+  const urg=(_crm.novedades||[]).length+(_crm.garantias||[]).length+(_crm.avisos||[]).length;
+  const b=document.getElementById('badgeCrm');
+  if(b){ b.textContent=urg; b.style.display=urg?'':'none'; }
+}
+
+function crmCol(k,x){ return _crmEst[crmId(k,x)] || 'por_hacer'; }
+
+async function crmMover(id, columna){
+  const [tar,tel]=id.split('|');
+  _crmEst[id]=columna;
+  try{ localStorage.setItem('jaye_crm_est',JSON.stringify(_crmEst)); }catch(e){}
+  renderCrm();
+  try{
+    await fetch(URL_CRMMV,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({id:id,tarjeta:tar,telefono:tel,columna:columna})});
+    if(typeof toast==='function') toast('Movida a "'+(CRM_COLS.find(c=>c.k===columna)||{}).t+'"');
+  }catch(e){ if(typeof toast==='function') toast('No se pudo guardar el cambio','err'); }
+}
+
+function crmDragStart(ev,id){ _crmArr=id; try{ev.dataTransfer.setData('text/plain',id);}catch(e){} ev.currentTarget.classList.add('arrastrando'); }
+function crmDragEnd(ev){ ev.currentTarget.classList.remove('arrastrando'); }
+function crmOver(ev){ ev.preventDefault(); ev.currentTarget.classList.add('crm-drop'); }
+function crmLeave(ev){ ev.currentTarget.classList.remove('crm-drop'); }
+function crmDrop(ev,col){
+  ev.preventDefault(); ev.currentTarget.classList.remove('crm-drop');
+  let id=_crmArr; try{ const d=ev.dataTransfer.getData('text/plain'); if(d) id=d; }catch(e){}
+  if(id) crmMover(id,col);
+}
+
+/* Abre la conversacion en el panel, no en wa.me */
+function crmAbrir(tel){
+  const t=String(tel||'').replace(/\D/g,'');
+  if(typeof irConvBot==='function') irConvBot('Carlos');
+  setTimeout(function(){ if(typeof abrirChat==='function') abrirChat(t); }, 260);
 }
 
 function renderCrm(){
   if(!_crm) return;
-  const tabs = document.getElementById('crmTabs');
-  if(tabs) tabs.innerHTML = CRM_TABS.map(function(x){
-    var n = (_crm[x.k]||[]).length;
-    var urg = (x.k==='novedades'||x.k==='garantias'||x.k==='avisos') && n>0;
-    return '<button data-k="'+x.k+'" class="'+(x.k===_crmTab?'act':'')+'">'+x.t+
-           (n?'<b'+(urg?'':' style="background:var(--ink-3)"')+'>'+n+'</b>':'')+'</button>';
-  }).join('');
-  if(tabs) tabs.querySelectorAll('button').forEach(function(b){
-    b.addEventListener('click', function(){ _crmTab=b.dataset.k; renderCrm(); });
-  });
-
-  var arr = _crm[_crmTab]||[];
-  var cont = document.getElementById('crmCuerpo');
+  const tabs=document.getElementById('crmTabs');
+  if(tabs){
+    tabs.innerHTML=CRM_TABS.map(function(x){
+      const arr=_crm[x.k]||[];
+      const pend=arr.filter(function(y){ return crmCol(x.k,y)!=='resuelto'; }).length;
+      return '<button data-k="'+x.k+'" class="'+(x.k===_crmTab?'act':'')+'">'+x.t+
+             (pend?'<b'+(x.urg?'':' style="background:var(--ink-3)"')+'>'+pend+'</b>':'')+'</button>';
+    }).join('');
+    tabs.querySelectorAll('button').forEach(function(b){
+      b.addEventListener('click',function(){ _crmTab=b.dataset.k; renderCrm(); });
+    });
+  }
+  const arr=_crm[_crmTab]||[];
+  const cont=document.getElementById('crmCuerpo');
   if(!cont) return;
-  if(!arr.length){ cont.innerHTML='<div class="crm-vacio">Nada por aquí. '+
-    (_crmTab==='novedades'?'Ningún pedido con novedad.':
-     _crmTab==='garantias'?'Ningún reclamo abierto.':
-     _crmTab==='avisos'?'Ningún cliente pidió cambios.':'Sin registros.')+'</div>'; return; }
-  cont.innerHTML = '<div class="crm-grid">'+arr.map(fichaCrm).join('')+'</div>';
+  if(!arr.length){ cont.innerHTML='<div class="crm-vacio">Nada por aquí.</div>'; return; }
+  cont.innerHTML='<div class="crm-board">'+CRM_COLS.map(function(col){
+    const lista=arr.filter(function(x){ return crmCol(_crmTab,x)===col.k; });
+    const cards=lista.map(function(x){ return fichaCrm(x,col.k); }).join('') || '<div class="crm-vacio">—</div>';
+    return '<div class="crm-col">'+
+      '<div class="crm-colhead" style="border-top:3px solid '+col.c+';background:'+col.c+'14">'+
+        '<span>'+col.t+'</span><span class="crm-count">'+lista.length+'</span></div>'+
+      '<div class="crm-cards" ondragover="crmOver(event)" ondragleave="crmLeave(event)" ondrop="crmDrop(event,\''+col.k+'\')">'+cards+'</div>'+
+    '</div>';
+  }).join('')+'</div>';
 }
 
-function _wa(t){ return 'https://wa.me/'+String(t||'').replace(/\D/g,'').replace(/^(?!56)/,'56'); }
 function _riesgo(r){
   if(!r) return '';
-  var mal = /RIESG|CR[IÍ]TIC|ALTO/i.test(r);
-  return '<span class="et '+(mal?'rojo':'gris')+'">'+esc(r)+'</span>';
+  return '<span class="crm-et '+(/RIESG|CR[IÍ]TIC|ALTO/i.test(r)?'rojo':'gris')+'">'+esc(r)+'</span>';
 }
 
-function fichaCrm(x){
-  var tel = x.tel||'';
-  var cab = '<div class="top"><div class="nm">'+esc(x.nombre||('+'+tel))+
-            '<div class="tel">+'+esc(tel)+'</div></div>'+_riesgo(x.riesgo)+'</div>';
-  var li = function(a,b){ return b===undefined||b===null||b===''?'':'<div class="li"><span>'+a+'</span><b>'+esc(String(b))+'</b></div>'; };
-  var cuerpo = '';
-
+function fichaCrm(x,col){
+  const id=crmId(_crmTab,x), tel=String(x.tel||'').replace(/\D/g,'');
+  const li=function(a,b){ return (b===undefined||b===null||b==='')?'':'<div class="crm-li"><span>'+a+'</span><b>'+esc(String(b))+'</b></div>'; };
+  let cuerpo='';
   if(_crmTab==='novedades'){
-    cuerpo = '<span class="et rojo">'+esc(x.motivo||x.estado)+'</span>'+
-      li('Producto', x.producto)+li('Guía', x.guia)+li('Transportadora', x.transportadora)+
-      li('A cobrar', x.recaudo?('$'+Number(x.recaudo).toLocaleString('es-CL')):'')+
-      li('Abierta hace', x.horas+' h');
-  } else if(_crmTab==='garantias'){
-    cuerpo = '<span class="et ambar">Reclamo · '+x.horas+' h</span>'+
-      li('Producto', x.producto)+li('Guía', x.guia)+
-      (x.modo==='agente'?'<span class="et gris">bot pausado</span>':'')+
-      '<div class="dijo">'+esc(x.dijo||'')+'</div>';
-  } else if(_crmTab==='avisos'){
-    cuerpo = '<span class="et ambar">'+esc(x.tipo)+'</span>'+
-      li('Producto', x.producto)+li('Guía', x.guia)+li('Estado en Dropi', x.estado_dropi)+
-      '<div class="dijo">'+esc(x.dijo||'')+'</div>';
-  } else if(_crmTab==='seguimiento'){
-    var lento = Number(x.dias)>=3;
-    cuerpo = '<span class="et '+(lento?'ambar':'verde')+'">'+esc(x.estado)+' · '+x.dias+' d</span>'+
-      li('Producto', x.producto)+li('Guía', x.guia)+
-      li('A cobrar', x.recaudo?('$'+Number(x.recaudo).toLocaleString('es-CL')):'')+
-      (lento?'<div class="dijo">Lleva '+x.dias+' días sin moverse.</div>':'');
-  } else if(_crmTab==='nuevos'){
-    cuerpo = '<span class="et verde">Escribió y no ha comprado</span>'+
-      '<div class="dijo">'+esc(x.dijo||'')+'</div>';
-  } else if(_crmTab==='frios'){
-    cuerpo = '<span class="et gris">'+x.dias+' días sin responder</span>';
-  } else {
-    cuerpo = '<span class="et verde">Entregado hace '+x.dias+' d</span>'+li('Producto', x.producto);
+    cuerpo='<span class="crm-et rojo">'+esc(x.motivo||x.estado)+'</span>'+li('Producto',x.producto)+li('Guía',x.guia)+li('Abierta hace',x.horas+' h');
+  }else if(_crmTab==='garantias'){
+    cuerpo='<span class="crm-et ambar">'+x.mensajes+' mensajes · '+x.horas+' h</span>'+li('Producto',x.producto)+li('Guía',x.guia)+
+      (x.modo==='agente'?'<span class="crm-et gris">bot pausado</span>':'')+
+      '<div class="crm-dijo">'+esc(String(x.dijo||'').split('\n').slice(0,3).join('\n'))+'</div>';
+  }else if(_crmTab==='avisos'){
+    cuerpo='<span class="crm-et ambar">'+esc(x.tipo)+'</span>'+li('Guía',x.guia)+li('Estado',x.estado_dropi)+
+      '<div class="crm-dijo">'+esc(x.dijo||'')+'</div>';
+  }else if(_crmTab==='seguimiento'){
+    const lento=Number(x.dias)>=3;
+    cuerpo='<span class="crm-et '+(lento?'ambar':'verde')+'">'+esc(x.estado)+' · '+x.dias+' d</span>'+li('Producto',x.producto)+li('Guía',x.guia);
+  }else if(_crmTab==='nuevos'){
+    cuerpo='<span class="crm-et verde">Sin comprar</span><div class="crm-dijo">'+esc(x.dijo||'')+'</div>';
+  }else if(_crmTab==='frios'){
+    cuerpo='<span class="crm-et gris">'+x.dias+' días callado</span>';
+  }else{
+    cuerpo='<span class="crm-et verde">Entregado hace '+x.dias+' d</span>'+li('Producto',x.producto);
   }
-
-  return '<div class="crm-c">'+cab+cuerpo+
-    '<div class="acc"><a href="'+_wa(tel)+'" target="_blank" rel="noopener">WhatsApp</a></div></div>';
+  const mover=CRM_COLS.filter(function(c){return c.k!==col;})
+    .map(function(c){ return '<button class="crm-mini" onclick="event.stopPropagation();crmMover(\''+id+'\',\''+c.k+'\')">'+c.t+'</button>'; }).join('');
+  return '<div class="crm-card" draggable="true" ondragstart="crmDragStart(event,\''+id+'\')" ondragend="crmDragEnd(event)">'+
+    '<div class="crm-top"><div class="crm-nom">'+esc(x.nombre||('+'+tel))+'<div class="crm-tel">+'+esc(tel)+'</div></div>'+_riesgo(x.riesgo)+'</div>'+
+    cuerpo+
+    '<div class="crm-acc"><button class="crm-mini wa" onclick="event.stopPropagation();crmAbrir(\''+tel+'\')">Abrir chat</button>'+mover+'</div>'+
+  '</div>';
 }
