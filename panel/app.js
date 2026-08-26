@@ -2387,16 +2387,28 @@ function fichaCrm(x,col){
 }
 
 
-/* ---------- ficha completa al hacer clic, como en Konecta ---------- */
+/* ---------- ficha completa al hacer clic, molde del CRM de Konecta ---------- */
 function _crmDato(x){
   const a=[];
   const p=function(k,v){ if(v!==undefined&&v!==null&&v!=='') a.push('<div class="crm-li"><span>'+k+'</span><b>'+esc(String(v))+'</b></div>'); };
   p('Producto',x.producto); p('Cantidad',x.cantidad); p('Guía',x.guia);
   p('Transportadora',x.transportadora); p('Estado',x.estado||x.estado_dropi);
   p('A cobrar', x.recaudo?('$'+Number(x.recaudo).toLocaleString('es-CL')):'');
-  p('Motivo',x.motivo); p('Abierta hace', x.horas!==undefined?(x.horas+' h'):'');
-  p('Días',x.dias); p('Riesgo',x.riesgo); p('Bot', x.modo==='agente'?'pausado':'');
+  p('Motivo',x.motivo);
+  p('Abierta hace', x.horas!==undefined?(x.horas+' h'):'');
+  p('Días', x.dias!==undefined?x.dias:'');
+  p('Mensajes tras recibir', x.mensajes);
+  p('Riesgo',x.riesgo);
+  p('Bot', x.modo==='agente'?'pausado':'');
   return a.join('');
+}
+
+/* El telefono como lo pide /historial: completo con el 56 delante. */
+function _telLargo(t){
+  let n=String(t||'').replace(/\D/g,'');
+  if(n.length<=9) n='56'+n.replace(/^56/,'');
+  if(n.length===10 && n.charAt(0)==='9') n='56'+n;
+  return n;
 }
 
 async function crmFicha(id){
@@ -2406,39 +2418,42 @@ async function crmFicha(id){
   let m=document.getElementById('crm-modal'); if(m) m.remove();
   m=document.createElement('div'); m.id='crm-modal'; m.className='crm-modal';
   m.onclick=function(ev){ if(ev.target.id==='crm-modal') m.remove(); };
-  const mover=CRM_COLS.map(function(c){
-    return '<button class="crm-mini'+(crmCol(tar,x)===c.k?' on':'')+'" onclick="crmMover(\''+id+'\',\''+c.k+'\');document.getElementById(\'crm-modal\').remove()">'+c.t+'</button>';
+  const mover=CRM_COLS.map(function(cc){
+    return '<button class="crm-mini'+(crmCol(tar,x)===cc.k?' on':'')+'" onclick="event.stopPropagation();crmMover(\''+id+'\',\''+cc.k+'\');document.getElementById(\'crm-modal\').remove()">'+cc.t+'</button>';
   }).join('');
-  m.innerHTML='<div class="crm-panel">'+
-    '<div class="crm-ph"><div><h3>'+esc(x.nombre||('+'+tel))+'</h3><div class="crm-tel">+'+esc(tel)+'</div></div>'+
-      '<button class="crm-x" onclick="document.getElementById(\'crm-modal\').remove()">×</button></div>'+
-    '<div class="crm-acc" style="margin:10px 0 14px">'+
-      '<button class="crm-mini wa" onclick="crmAbrir(\''+tel+'\')">Abrir conversación</button>'+mover+'</div>'+
-    '<div class="crm-sec">Datos del pedido</div><div class="crm-datos">'+(_crmDato(x)||'<div class="crm-vacio">—</div>')+'</div>'+
+  m.innerHTML='<div class="crm-panel" onclick="event.stopPropagation()">'+
+    '<div class="crm-ph">'+
+      '<div><h3>'+esc(x.nombre||('+'+tel))+'</h3><div class="crm-tel">+'+esc(_telLargo(tel))+'</div></div>'+
+      '<button class="crm-x" onclick="document.getElementById(\'crm-modal\').remove()">×</button>'+
+    '</div>'+
+    '<div class="crm-acc"><button class="crm-mini wa" onclick="event.stopPropagation();crmAbrir(\''+tel+'\')">Abrir conversación</button>'+mover+'</div>'+
+    '<div class="crm-sec">Datos del pedido</div>'+
+    '<div class="crm-datos">'+(_crmDato(x)||'<div class="crm-vacio">—</div>')+'</div>'+
     (x.dijo?'<div class="crm-sec">Lo que dijo</div><div class="crm-dijo">'+esc(x.dijo)+'</div>':'')+
-    '<div class="crm-sec">Conversación</div><div class="crm-chat" id="crmChat"><div class="crm-vacio">Cargando…</div></div>'+
+    '<div class="crm-sec">Conversación completa</div>'+
+    '<div class="crm-chat" id="crmChat"><div class="crm-vacio">Cargando…</div></div>'+
   '</div>';
   document.body.appendChild(m);
 
-  /* el chat completo, con sus imagenes, del mismo sitio que usa el panel */
+  const box=document.getElementById('crmChat');
   try{
-    const r=await fetch(URL_HIST+'?telefono='+tel+'&pais=CL&t='+Date.now());
+    /* OJO: /historial pide el numero COMPLETO. Con 8 digitos devuelve vacio. */
+    const r=await fetch(URL_HIST+'?telefono='+_telLargo(tel)+'&pais=CL&t='+Date.now());
     const d=await r.json();
     const arr=Array.isArray(d)?d:(d?[d]:[]);
     const row=arr.find(function(z){ return z&&z.historial; });
-    const box=document.getElementById('crmChat');
     if(!box) return;
     if(!row){ box.innerHTML='<div class="crm-vacio">Sin conversación guardada.</div>'; return; }
     const msgs=(typeof parseHist==='function')?parseHist(row.historial):[];
     if(!msgs.length){ box.innerHTML='<div class="crm-vacio">Sin mensajes.</div>'; return; }
-    box.innerHTML=msgs.slice(-60).map(function(mm){
+    box.innerHTML=msgs.map(function(mm){
       const mio=(mm.from!=='cliente');
       const cuerpo=(typeof cuerpoMensaje==='function')?cuerpoMensaje(mm):esc(mm.text||'');
-      return '<div class="crm-row'+(mio?' r':'')+'"><span class="crm-b '+(mio?'neg':'cli')+'">'+cuerpo+'</span></div>';
+      const hora=mm.time?'<span class="crm-h">'+esc(mm.time)+'</span>':'';
+      return '<div class="crm-row'+(mio?' r':'')+'"><span class="crm-b '+(mio?'neg':'cli')+'">'+cuerpo+hora+'</span></div>';
     }).join('');
     box.scrollTop=box.scrollHeight;
   }catch(e){
-    const box=document.getElementById('crmChat');
     if(box) box.innerHTML='<div class="crm-vacio">No pude cargar la conversación.</div>';
   }
 }
