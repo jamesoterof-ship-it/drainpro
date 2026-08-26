@@ -109,21 +109,29 @@ function enviarAprob(k,accion,intentos){
   fetch(URL_APROBAR,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:k,accion:accion})})
     .then(function(res){
       if(!res.ok) throw new Error('HTTP '+res.status);
-      if(accion==='aprobar' && typeof toast==='function') toast('Aprobado ✓ — se monta en el próximo ciclo');
+      if(typeof toast==='function') toast(accion==='aprobar' ? 'Aprobado ✓ — se monta en el próximo ciclo' : (accion==='eliminar' ? 'Eliminado ✓ — no se montará' : 'Listo ✓'));
     })
     .catch(function(){
       if(intentos>0){ setTimeout(function(){ enviarAprob(k,accion,intentos-1); }, 2500); return; }
       /* se deshace el visto local para que NO te muestre aprobado algo que el servidor no tiene */
-      var s=aprobSet(); s.delete(k); guardarSet('jaye_aprob',s); refrescarAprob();
-      if(typeof toast==='function') toast('⚠ No se pudo aprobar: sin conexión. Intenta otra vez.');
+      var s=aprobSet(); s.delete(k); guardarSet('jaye_aprob',s);
+      var s2=rechazSet(); if(accion==='eliminar'){ s2.delete(k); guardarSet('jaye_rechaz',s2); }
+      refrescarAprob();
+      if(typeof toast==='function') toast('⚠ No se pudo '+(accion==='eliminar'?'eliminar':'aprobar')+': sin conexión. Intenta otra vez.');
     });
 }
-function rechazar(k){
+function rechazar(k){ eliminar(k); }
+/* ELIMINAR: saca el pedido de la lista, lo marca ELIMINADA y lo deja anotado
+   para que el montador lo salte aunque algo lo vuelva a aprobar.
+   OJO: va con reintentos y avisa si falla. Antes era fetch().catch(){}: el
+   panel decia "Rechazado" aunque el servidor no se hubiera enterado, y el
+   pedido se montaba igual. Asi se fue el de Flory. */
+function eliminar(k){
+  if(typeof confirm==='function' && !confirm('¿Eliminar este pedido?\n\nNo se montará en Dropi y sale de la lista. Se puede deshacer.')) return;
   var r=rechazSet(); r.add(k); guardarSet('jaye_rechaz',r);
-  var a=aprobSet(); if(a.delete(k)) guardarSet('jaye_aprob',a);     // al rechazar, deja de estar aprobado
-  fetch(URL_APROBAR,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:k,accion:'rechazar'})}).catch(function(){});
-  if(typeof toast==='function') toast('Rechazado ✕ — no se montará en Dropi');
+  var a=aprobSet(); if(a.delete(k)) guardarSet('jaye_aprob',a);
   refrescarAprob();
+  enviarAprob(k,'eliminar',2);
 }
 function deshacerRechazo(k){
   var r=rechazSet(); r.delete(k); guardarSet('jaye_rechaz',r);
@@ -135,8 +143,8 @@ var BTN_APROB='background:var(--brand,#3056c9);color:#fff;border:0;border-radius
 function celdaAprob(k,montadoHtml){
   if(montadoHtml) return montadoHtml;
   if(esAprobado(k)) return '<span class="st st-rec"><i></i>Aprobado ⏳</span>';
-  if(esRechazado(k)) return '<span class="st st-ab"><i></i>Rechazado</span><button class="b-desh" onclick="deshacerRechazo(&quot;'+k+'&quot;)">Deshacer</button>';
-  return '<button class="b-apr" onclick="aprobar(&quot;'+k+'&quot;)">✓ Aprobar</button><button class="b-rech" title="Rechazar — no se monta en Dropi" onclick="rechazar(&quot;'+k+'&quot;)">✕</button>';
+  if(esRechazado(k)) return '<span class="st st-ab"><i></i>Eliminado</span><button class="b-desh" onclick="deshacerRechazo(&quot;'+k+'&quot;)">Deshacer</button>';
+  return '<button class="b-apr" onclick="aprobar(&quot;'+k+'&quot;)">✓ Aprobar</button><button class="b-rech" title="Eliminar — sale de la lista y no se monta en Dropi" onclick="eliminar(&quot;'+k+'&quot;)">🗑</button>';
 }
 
 const PAGINAS=[
