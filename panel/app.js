@@ -2438,7 +2438,7 @@ async function crmFicha(id){
   const box=document.getElementById('crmChat');
   try{
     /* OJO: /historial pide el numero COMPLETO. Con 8 digitos devuelve vacio. */
-    const r=await fetch(URL_HIST+'?telefono='+_telLargo(tel)+'&pais=CL&t='+Date.now());
+    const r=await fetch(URL_HIST+'?telefono='+_telLargo(x)+'&pais=CL&t='+Date.now());
     const d=await r.json();
     const arr=Array.isArray(d)?d:(d?[d]:[]);
     const row=arr.find(function(z){ return z&&z.historial; });
