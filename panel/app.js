@@ -819,7 +819,7 @@ const waVenta=()=>{const o=window._ventaAbierta;if(o)window.open('https://wa.me/
 function renderBots(){
   const cont=document.getElementById('botcards'); if(!cont) return;
   const hoyV=ordenes.filter(o=>o.orden>=inicioDia(0));
-  cont.innerHTML=['Carlos','James','Ramon'].map(b=>{
+  cont.innerHTML=['Carlos','James','Ramon','Redes'].map(b=>{
     const cs=convos.filter(c=>c.bot===b);
     const pausadas=cs.filter(c=>c.estado==='pausada').length;
     const ventasHoy=hoyV.filter(o=>o.bot===b).length;
@@ -879,7 +879,7 @@ function renderHistorico(){
   const conv=totVis?((vWeb.length/totVis*100).toFixed(1)+'%'):'—';
   kp.innerHTML=
     kpi('Ventas totales',vWA.length+vWeb.length,'páginas + WhatsApp','var(--border-2)','var(--ink)')+
-    kpi('Por WhatsApp',vWA.length,'Carlos, James y Ramón','var(--green-tint)','var(--green)')+
+    kpi('Por WhatsApp',vWA.length,'Carlos, James, Ramón y Redes','var(--green-tint)','var(--green)')+
     kpi('Por página',vWeb.length,fmtCLP(vWeb.reduce((a,b)=>a+b.totalNum,0))+' CLP','var(--blue-tint)','var(--blue)')+
     kpi('Conversión páginas',conv,totVis+' visitas','var(--violet-tint)','var(--violet)');
   // ventas por país (monedas separadas)
@@ -1015,7 +1015,7 @@ const TITULOS={resumen:['Resumen general','Todos los canales · monedas separada
   visitas:['Visitas y conversión','Métricas de las páginas'],
   conv:['Conversaciones','WhatsApp'],
   anuncios:['Creador de anuncios','Sube tu video → la IA escribe los copys → eliges los que sirven'],
-  bots:['Ventas y control de bots','WhatsApp · Carlos, James y Ramón'],
+  bots:['Ventas y control de bots','WhatsApp y redes · Carlos, James, Ramón y Camila Redes'],
   historico:['Histórico','Consulta cualquier mes · todo queda guardado'],
   config:['Configuración','Ajustes del panel']};
 // calcula dónde deben pegarse los encabezados de tabla: justo debajo de la barra superior + filtros fijos de la vista
