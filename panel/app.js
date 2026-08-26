@@ -2403,12 +2403,12 @@ function _crmDato(x){
   return a.join('');
 }
 
-/* El telefono como lo pide /historial: completo con el 56 delante. */
-function _telLargo(t){
-  let n=String(t||'').replace(/\D/g,'');
-  if(n.length<=9) n='56'+n.replace(/^56/,'');
-  if(n.length===10 && n.charAt(0)==='9') n='56'+n;
-  return n;
+/* El telefono completo lo manda el servidor en 'telf'. NO se reconstruye
+   desde los 8 digitos: a los moviles chilenos (56 + 9 + 8) se les perdia el 9
+   y quedaba 5675756099 en vez de 56975756099. */
+function _telLargo(x){
+  if(x && typeof x==='object') return String(x.telf||x.tel||'').replace(/\D/g,'');
+  return String(x||'').replace(/\D/g,'');
 }
 
 async function crmFicha(id){
@@ -2426,7 +2426,7 @@ async function crmFicha(id){
       '<div><h3>'+esc(x.nombre||('+'+tel))+'</h3><div class="crm-tel">+'+esc(_telLargo(tel))+'</div></div>'+
       '<button class="crm-x" onclick="document.getElementById(\'crm-modal\').remove()">×</button>'+
     '</div>'+
-    '<div class="crm-acc"><button class="crm-mini wa" onclick="event.stopPropagation();crmAbrir(\''+tel+'\')">Abrir conversación</button>'+mover+'</div>'+
+    '<div class="crm-acc"><button class="crm-mini wa" onclick="event.stopPropagation();crmAbrir(\''+_telLargo(x)+'\')">Abrir conversación</button>'+mover+'</div>'+
     '<div class="crm-sec">Datos del pedido</div>'+
     '<div class="crm-datos">'+(_crmDato(x)||'<div class="crm-vacio">—</div>')+'</div>'+
     (x.dijo?'<div class="crm-sec">Lo que dijo</div><div class="crm-dijo">'+esc(x.dijo)+'</div>':'')+
