@@ -360,6 +360,38 @@ tbody tr:hover .chev{color:var(--brand)}
   body.chat-abierto #view-conv .filters{display:none}
 }
 </style>
+
+<style id="crmCss">
+.crm-tabs{display:flex;gap:8px;overflow-x:auto;padding:2px 0 14px;scrollbar-width:none}
+.crm-tabs::-webkit-scrollbar{display:none}
+.crm-tabs button{flex:none;border:1px solid var(--grid);background:var(--card);color:var(--ink-2);
+  border-radius:999px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;
+  transition:background .18s,color .18s,border-color .18s}
+.crm-tabs button.act{background:var(--ink);color:#fff;border-color:var(--ink)}
+.crm-tabs button b{margin-left:6px;background:#e1283c;color:#fff;border-radius:999px;
+  font-size:11px;padding:1px 7px}
+.crm-tabs button.act b{background:#fff;color:var(--ink)}
+.crm-grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(290px,1fr))}
+.crm-c{background:var(--card);border:1px solid var(--grid);border-radius:14px;padding:14px 15px;
+  display:flex;flex-direction:column;gap:7px}
+.crm-c .top{display:flex;align-items:flex-start;gap:8px}
+.crm-c .nm{font-weight:700;font-size:14px;color:var(--ink);line-height:1.25;flex:1}
+.crm-c .tel{font-size:12px;color:var(--ink-3)}
+.crm-c .et{font-size:10.5px;font-weight:800;letter-spacing:.04em;border-radius:999px;padding:2px 8px;white-space:nowrap}
+.crm-c .et.rojo{background:#fdeaec;color:#c01b2c}
+.crm-c .et.ambar{background:#fff4e2;color:#a35a00}
+.crm-c .et.verde{background:#e8f6ee;color:#137a45}
+.crm-c .et.gris{background:var(--bg-2,#f2f4f7);color:var(--ink-2)}
+.crm-c .li{font-size:12.5px;color:var(--ink-2);display:flex;justify-content:space-between;gap:10px}
+.crm-c .li b{color:var(--ink);font-weight:600;text-align:right}
+.crm-c .dijo{background:var(--bg-2,#f7f8fa);border-left:3px solid var(--grid);
+  padding:8px 10px;border-radius:0 8px 8px 0;font-size:12.5px;color:var(--ink);line-height:1.5}
+.crm-c .acc{display:flex;gap:7px;margin-top:3px;flex-wrap:wrap}
+.crm-c .acc a{flex:1;text-align:center;border:1px solid var(--grid);border-radius:9px;padding:7px 10px;
+  font-size:12.5px;font-weight:600;color:var(--ink);text-decoration:none;background:var(--card)}
+.crm-c .acc a:hover{border-color:var(--ink)}
+.crm-vacio{padding:34px 16px;text-align:center;color:var(--ink-3);font-size:13.5px}
+</style>
 </head>
 <body>
 <div class="app">
@@ -380,6 +412,11 @@ tbody tr:hover .chev{color:var(--brand)}
         <svg class="ico" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
         Aprobación de ventas
         <span id="badgeAprobar" style="display:none;margin-left:auto;background:#e1283c;color:#fff;border-radius:999px;font-size:11px;font-weight:800;padding:1px 8px"></span>
+      </div>
+      <div class="nav-i" data-view="crm">
+        <svg class="ico" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        CRM · Clientes
+        <span id="badgeCrm" style="display:none;margin-left:auto;background:#e1283c;color:#fff;border-radius:999px;font-size:11px;font-weight:800;padding:1px 8px"></span>
       </div>
       <div class="nav-i" data-view="finanzas">
         <svg class="ico" viewBox="0 0 24 24"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
@@ -1225,6 +1262,11 @@ tbody tr:hover .chev{color:var(--brand)}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
-<script src="app.js?v=79"></script>
+<script src="app.js?v=80"></script>
 </body>
 </html>
+<section class="view" id="view-crm">
+  <div class="crm-tabs" id="crmTabs"></div>
+  <div id="crmCuerpo"></div>
+</section>
+

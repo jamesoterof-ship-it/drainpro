@@ -1031,7 +1031,8 @@ async function guardarAprob(i){
 }
 
 /* ---------- navegación ---------- */
-const TITULOS={resumen:['Resumen general','Todos los canales · monedas separadas por país'],
+const TITULOS={
+  crm:['CRM · Clientes','Novedades, garantías, avisos y seguimiento — todo en un solo lugar'],resumen:['Resumen general','Todos los canales · monedas separadas por país'],
   finanzas:['Finanzas','P&L, costos, devoluciones y rentabilidad por producto · Chile · en COP'],
   dropi:['Dropi · Guías','Estado de cada guía actualizado con Dropi · seguimiento'],
   radar:['Radar de productos','Lo que se está vendiendo en Dropi, medido por el inventario que se mueve'],
@@ -1068,6 +1069,7 @@ function mostrarVista(v){
   if(v==='finanzas'||v==='dropi'){ if(!window._finCargado){ cargarFinanzas(); } else { renderFinanzas(); _renderFinTabla(window._finPedidos); } }
   if(v==='calc') cargarCalc();
   if(v==='radar') cargarRadar();
+  if(v==='crm') cargarCrm();
   if(typeof cerrarDrawer==='function') cerrarDrawer();
   if(typeof volverLista==='function') volverLista();   // vuelve a la lista al cambiar de vista
   ajustarStickyTop();
@@ -2231,3 +2233,106 @@ document.querySelectorAll('#adDestSeg .adDestBtn').forEach(function(b){ b.addEve
   adDestUpd();
 }); });
 (function(){ adFill(); var n=document.getElementById('adNombre'); if(n) n.addEventListener('input',function(){n.dataset.edit='1';}); if(document.getElementById('adPais')) adPaisUpd(); adDestUpd(); adFileRender(); adGeoRender(); var cta=document.getElementById('adCta'); if(cta) cta.addEventListener('change',function(){ if(_adAds.length) renderGaleria(); }); })();
+
+
+/* ==================== CRM ====================
+   Siete tarjetas, todas de datos que ya existen. Sin IA.
+   El backend es un solo endpoint: /webhook/crm-jaye  */
+const URL_CRM = BASE + '/crm-jaye';
+const CRM_TABS = [
+  { k:'novedades',   t:'Novedades urgentes' },
+  { k:'garantias',   t:'Garantías y reclamos' },
+  { k:'avisos',      t:'Avisos del cliente' },
+  { k:'seguimiento', t:'Seguimiento de ventas' },
+  { k:'nuevos',      t:'Clientes nuevos' },
+  { k:'frios',       t:'Clientes en frío' },
+  { k:'postventa',   t:'Post-venta' },
+];
+let _crm = null, _crmTab = 'novedades';
+
+async function cargarCrm(){
+  const cuerpo = document.getElementById('crmCuerpo');
+  if(!_crm && cuerpo) cuerpo.innerHTML = '<div class="crm-vacio">Cargando…</div>';
+  try{
+    const r = await fetch(URL_CRM, {cache:'no-store'});
+    _crm = await r.json();
+  }catch(e){
+    if(cuerpo) cuerpo.innerHTML = '<div class="crm-vacio">No pude cargar el CRM. Reintento al volver a entrar.</div>';
+    return;
+  }
+  renderCrm();
+  /* el numerito rojo del menu: lo que de verdad urge */
+  const urg = (_crm.novedades||[]).length + (_crm.garantias||[]).length + (_crm.avisos||[]).length;
+  const b = document.getElementById('badgeCrm');
+  if(b){ b.textContent = urg; b.style.display = urg ? '' : 'none'; }
+}
+
+function renderCrm(){
+  if(!_crm) return;
+  const tabs = document.getElementById('crmTabs');
+  if(tabs) tabs.innerHTML = CRM_TABS.map(function(x){
+    var n = (_crm[x.k]||[]).length;
+    var urg = (x.k==='novedades'||x.k==='garantias'||x.k==='avisos') && n>0;
+    return '<button data-k="'+x.k+'" class="'+(x.k===_crmTab?'act':'')+'">'+x.t+
+           (n?'<b'+(urg?'':' style="background:var(--ink-3)"')+'>'+n+'</b>':'')+'</button>';
+  }).join('');
+  if(tabs) tabs.querySelectorAll('button').forEach(function(b){
+    b.addEventListener('click', function(){ _crmTab=b.dataset.k; renderCrm(); });
+  });
+
+  var arr = _crm[_crmTab]||[];
+  var cont = document.getElementById('crmCuerpo');
+  if(!cont) return;
+  if(!arr.length){ cont.innerHTML='<div class="crm-vacio">Nada por aquí. '+
+    (_crmTab==='novedades'?'Ningún pedido con novedad.':
+     _crmTab==='garantias'?'Ningún reclamo abierto.':
+     _crmTab==='avisos'?'Ningún cliente pidió cambios.':'Sin registros.')+'</div>'; return; }
+  cont.innerHTML = '<div class="crm-grid">'+arr.map(fichaCrm).join('')+'</div>';
+}
+
+function _wa(t){ return 'https://wa.me/'+String(t||'').replace(/\D/g,'').replace(/^(?!56)/,'56'); }
+function _riesgo(r){
+  if(!r) return '';
+  var mal = /RIESG|CR[IÍ]TIC|ALTO/i.test(r);
+  return '<span class="et '+(mal?'rojo':'gris')+'">'+esc(r)+'</span>';
+}
+
+function fichaCrm(x){
+  var tel = x.tel||'';
+  var cab = '<div class="top"><div class="nm">'+esc(x.nombre||('+'+tel))+
+            '<div class="tel">+'+esc(tel)+'</div></div>'+_riesgo(x.riesgo)+'</div>';
+  var li = function(a,b){ return b===undefined||b===null||b===''?'':'<div class="li"><span>'+a+'</span><b>'+esc(String(b))+'</b></div>'; };
+  var cuerpo = '';
+
+  if(_crmTab==='novedades'){
+    cuerpo = '<span class="et rojo">'+esc(x.motivo||x.estado)+'</span>'+
+      li('Producto', x.producto)+li('Guía', x.guia)+li('Transportadora', x.transportadora)+
+      li('A cobrar', x.recaudo?('$'+Number(x.recaudo).toLocaleString('es-CL')):'')+
+      li('Abierta hace', x.horas+' h');
+  } else if(_crmTab==='garantias'){
+    cuerpo = '<span class="et ambar">Reclamo · '+x.horas+' h</span>'+
+      li('Producto', x.producto)+li('Guía', x.guia)+
+      (x.modo==='agente'?'<span class="et gris">bot pausado</span>':'')+
+      '<div class="dijo">'+esc(x.dijo||'')+'</div>';
+  } else if(_crmTab==='avisos'){
+    cuerpo = '<span class="et ambar">'+esc(x.tipo)+'</span>'+
+      li('Producto', x.producto)+li('Guía', x.guia)+li('Estado en Dropi', x.estado_dropi)+
+      '<div class="dijo">'+esc(x.dijo||'')+'</div>';
+  } else if(_crmTab==='seguimiento'){
+    var lento = Number(x.dias)>=3;
+    cuerpo = '<span class="et '+(lento?'ambar':'verde')+'">'+esc(x.estado)+' · '+x.dias+' d</span>'+
+      li('Producto', x.producto)+li('Guía', x.guia)+
+      li('A cobrar', x.recaudo?('$'+Number(x.recaudo).toLocaleString('es-CL')):'')+
+      (lento?'<div class="dijo">Lleva '+x.dias+' días sin moverse.</div>':'');
+  } else if(_crmTab==='nuevos'){
+    cuerpo = '<span class="et verde">Escribió y no ha comprado</span>'+
+      '<div class="dijo">'+esc(x.dijo||'')+'</div>';
+  } else if(_crmTab==='frios'){
+    cuerpo = '<span class="et gris">'+x.dias+' días sin responder</span>';
+  } else {
+    cuerpo = '<span class="et verde">Entregado hace '+x.dias+' d</span>'+li('Producto', x.producto);
+  }
+
+  return '<div class="crm-c">'+cab+cuerpo+
+    '<div class="acc"><a href="'+_wa(tel)+'" target="_blank" rel="noopener">WhatsApp</a></div></div>';
+}
