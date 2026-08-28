@@ -288,7 +288,18 @@ async function cargarVentas(){
     renderVentasWA(); renderVentasBot(); renderBots(); renderResumen(); renderConvStats(); if(typeof renderAprobar==='function') renderAprobar();
   }catch(e){}
 }
-const nombreCortoProd=s=>{var t=String(s||'');return /pesta|masc/i.test(t)?'Máscara Pestañas':/antena/i.test(t)?'Antena TV':/lente/i.test(t)?'Lentes One Power':/carga|bater/i.test(t)?'Cargador 12V':t.split('+')[0].trim();};
+const nombreCortoProd=s=>{var t=String(s||'');return /pesta|masc/i.test(t)?'Máscara Pestañas':/antena/i.test(t)?'Antena TV':/lente|gafa/i.test(t)?'Lentes One Power':/carga|bater/i.test(t)?'Cargador 12V':/foco|solar/i.test(t)?'Foco Solar':/ducha|cabezal/i.test(t)?'Cabezal de Ducha':/shilajit/i.test(t)?'Shilajit Ultra':/drainpro|drenaje/i.test(t)?'DRAINPRO':t.split('+')[0].trim();};
+/* El nombre que se ve en VISITAS. Antes salia el nombre crudo entero
+   ("Mascara de Pestañas Flamenco Mega Volume"), que desbordaba la tarjeta y
+   se comia la columna de al lado. Ahora se acorta, y a las paginas de la
+   tienda nueva se les marca " · tienda" para no confundirlas con la landing
+   vieja del mismo producto, que sigue viva y mide aparte. */
+const nombrePagVis=function(slug,crudo){
+  var s=String(slug||'');
+  if(s==='tienda-portada') return 'Tienda Jaye Group';
+  var n=nombreCortoProd(crudo||s);
+  return /^tienda-/.test(s) ? (n+' · tienda') : n;
+};
 const mapPedido=r=>({fecha:r.fecha||'',cli:r.nombre||'—',tel:soloNum((r.indicativo||'')+(r.telefono||'')),telRaw:r.telefono||'',
     prod:r.producto,prodCorto:nombreCortoProd(r.producto),color:r.color||'#c9a227',pagina:r.pagina,dir:r.direccion||'—',ref:r.referencia||'',comuna:r.comuna||'—',
     region:r.region||'—',correo:r.correo||'',cant:numero(r.cantidad)||1,totalNum:numero(r.total),
@@ -545,7 +556,7 @@ function verAbandonado(i){
 /* ---------- VISITAS ---------- */
 let fPagV='todas';
 window.setPagV=function(id){ fPagV=id; renderVisitas(); };
-function pagesVis(){ var m={}; (visitasWeb||[]).forEach(function(v){ if(v&&v.pagina&&!m[v.pagina]) m[v.pagina]={id:v.pagina,nombre:v.producto||v.pagina,color:v.color||'#6cc24a'}; }); var a=Object.keys(m).map(function(k){return m[k];}); return a.length?a:PAGINAS.filter(p=>p.url); }
+function pagesVis(){ var m={}; (visitasWeb||[]).forEach(function(v){ if(v&&v.pagina&&!m[v.pagina]) m[v.pagina]={id:v.pagina,nombre:nombrePagVis(v.pagina,v.producto),color:v.color||'#6cc24a'}; }); var a=Object.keys(m).map(function(k){return m[k];}); return a.length?a:PAGINAS.filter(p=>p.url); }
 const npV=s=>/^nad/i.test(String(s||''))?'nad':String(s||'');  // nad/nadplus = misma pagina (visitas usan 'nad', pedidos 'nadplus')
 function renderVisitas(){
   const box=document.getElementById('visitasBox'); if(!box) return;
