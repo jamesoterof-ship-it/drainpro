@@ -311,7 +311,12 @@ async function cargarPaginas(){
   // PEDIDOS DE PAGINA: desde Postgres (confiable, no Google)
   try{ const pr=await fetch(URL_PEDWEB); const pj=await pr.json(); (pj.pedidos||[]).forEach(r=>peds.push(r)); }catch(e){}
   // pedidos de las landings nuevas: mismo canal PAGINA, nunca se mezclan con WhatsApp
-  try{ const lr=await fetch(URL_PEDLANDING); const lj=await lr.json(); (lj.pedidos||[]).forEach(r=>peds.push(Object.assign({},r,{confirmado:'SI',fila:'wa'+r.id,dropi:/montada/i.test(String(r.estado||''))?'ENVIADO':''}))); }catch(e){}
+  /* Los pedidos de pagina venian marcados `confirmado:'SI'` a la fuerza, asi
+     que salian en "Aprobacion de ventas" aunque el cliente no hubiera
+     contestado nunca. La regla es: primero confirma el cliente, despues
+     aparecen para aprobar. Ahora se respeta lo que dice el endpoint, que
+     marca SI solo cuando el cliente toco Confirmar (Modificar no cuenta). */
+  try{ const lr=await fetch(URL_PEDLANDING); const lj=await lr.json(); (lj.pedidos||[]).forEach(r=>peds.push(Object.assign({},r,{confirmado:String(r.confirmado||'NO').toUpperCase()==='SI'?'SI':'NO',fila:'wa'+r.id,dropi:/montada/i.test(String(r.estado||''))?'ENVIADO':''}))); }catch(e){}
   // ABANDONADOS: desde Postgres (no Google)
   try{ const ar=await fetch(URL_ABANDONADOS); const aj=await ar.json(); (aj.abandonados||[]).forEach(r=>{ const pg=PAGINAS.find(x=>x.id===r.pagina); abs.push(Object.assign({color:pg?pg.color:'#3060ea'},r)); }); }catch(e){}
   // VISITAS: desde Postgres (NO Google). Cualquier página que reporte aparece sola.
