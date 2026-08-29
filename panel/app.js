@@ -329,6 +329,26 @@ async function cargarPaginas(){
     rows.forEach(r=>{ const slug=r.pagina||'otro'; let col=COLORVIS[slug]; if(!col){ if(!ck[slug])ck[slug]=COLORROT[(ci++)%COLORROT.length]; col=ck[slug]; }
       vis.push({pagina:slug,producto:r.nombre||slug,color:col,fecha:r.dia,visitas:r.visitas,formulario:r.formularios}); });
   }catch(e){}
+  /* Los pedidos de pagina llegan de DOS endpoints (leer-pedidos-web y
+     leer-pedidos-landing). Si el mismo pedido sale en los dos, antes se metia
+     dos veces: se veia el cliente repetido y salian DOS filtros iguales con el
+     mismo producto. Paso el 28-08 con el pedido de Jhoan.
+     Se juntan por telefono + producto + total del mismo dia, y de cada par se
+     conserva la ficha mas completa (la que trae comuna y direccion), no la
+     primera que llego. */
+  peds=(function(lista){
+    const por={}, orden=[];
+    const nrm=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+    const completo=r=>(r.comuna?2:0)+(r.direccion?1:0)+(r.id?1:0);
+    lista.forEach(function(r){
+      const k=soloNum(r.telefono)+'|'+nrm(r.producto).slice(0,14)+'|'
+        +String(r.total||r.precio||'').replace(/[^0-9]/g,'')+'|'
+        +String(r.fecha||r.creado_en||'').slice(0,10);
+      if(!por[k]){ por[k]=r; orden.push(k); return; }
+      if(completo(r)>completo(por[k])) por[k]=r;
+    });
+    return orden.map(k=>por[k]);
+  })(peds);
   pedidosWeb=peds.map(mapPedido).sort((a,b)=>b.orden-a.orden);
   pedidosArchivo=pedsArch.map(mapPedido);                 // meses ya archivados (solo para Histórico)
   visitasArchivo=visArch;
