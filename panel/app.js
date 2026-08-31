@@ -1068,6 +1068,7 @@ async function guardarAprob(i){
 
 /* ---------- navegación ---------- */
 const TITULOS={
+  listanegra:['Lista negra','Clientes con devoluciones — anticipo obligatorio si vuelven a comprar'],
   direcciones:['Direcciones incompletas','Pedidos que NO se aprueban hasta corregir la dirección — contáctalos tú de parte de logística'],
   crm:['CRM · Clientes','Novedades, garantías, avisos y seguimiento — todo en un solo lugar'],resumen:['Resumen general','Todos los canales · monedas separadas por país'],
   finanzas:['Finanzas','P&L, costos, devoluciones y rentabilidad por producto · Chile · en COP'],
@@ -1127,6 +1128,39 @@ function dirPausar(tel,accion){
     .catch(function(){ alert('No se pudo '+accion+'. Revisa el flujo en n8n.'); });
 }
 
+/* ---------- Lista negra (clientes con devoluciones) ---------- */
+var _lnFilas=[];
+function cargarListaNegra(){
+  var tb=document.getElementById('tbodyListanegra'); if(!tb) return;
+  tb.innerHTML='<tr><td colspan="6" class="vacio">Cargando…</td></tr>';
+  fetch(BASE+'/lista-negra').then(function(r){return r.json();}).then(function(d){
+    _lnFilas=(Array.isArray(d)?d:(d?[d]:[])).filter(function(f){return f&&f.telefono;});
+    var badge=document.getElementById('badgeListanegra');
+    if(badge){ badge.textContent=_lnFilas.length; badge.style.display=_lnFilas.length?'':'none'; }
+    lnFiltrar();
+  }).catch(function(){ tb.innerHTML='<tr><td colspan="6" class="vacio">No se pudo cargar (¿flujo «Panel: lista negra» activo en n8n?).</td></tr>'; });
+}
+function lnFiltrar(){
+  var tb=document.getElementById('tbodyListanegra'); if(!tb) return;
+  var q=(document.getElementById('lnBuscar')||{value:''}).value.toLowerCase().trim();
+  var filas=_lnFilas.filter(function(f){
+    if(!q) return true;
+    return String(f.nombre||'').toLowerCase().indexOf(q)>=0 || String(f.telefono||'').indexOf(q.replace(/\D/g,''))>=0;
+  });
+  if(!filas.length){ tb.innerHTML='<tr><td colspan="6" class="vacio">Sin resultados.</td></tr>'; return; }
+  tb.innerHTML=filas.map(function(f){
+    var tel=String(f.telefono||'').replace(/\D/g,'');
+    return '<tr>'+
+      '<td style="font-weight:600;color:#d33">🚫 '+(f.nombre||'(sin nombre)')+'</td>'+
+      '<td>+'+tel+'</td>'+
+      '<td style="text-align:center"><b>'+(f.devueltos||1)+'</b> de '+(f.total||1)+' pedido(s)</td>'+
+      '<td>'+(f.ultimo_producto||'—')+'</td>'+
+      '<td style="color:#8a93a0;font-size:12px">'+(f.motivo||'—')+'</td>'+
+      '<td><button onclick="crmAbrir(\''+tel+'\')" style="font-size:11.5px;padding:6px 10px;border:0;border-radius:8px;background:var(--surface-2);color:var(--ink-2);border:1px solid var(--border);font-weight:700;cursor:pointer">💬 Chat</button></td>'+
+    '</tr>';
+  }).join('');
+}
+
 function mostrarVista(v){
   document.querySelectorAll('.view').forEach(x=>x.classList.remove('act'));
   (document.getElementById('view-'+v)||document.getElementById('view-resumen')).classList.add('act');
@@ -1135,6 +1169,7 @@ function mostrarVista(v){
   document.getElementById('vtitle').textContent=t[0];
   document.getElementById('vsub').textContent=t[1];
   if(v==='direcciones') cargarDirecciones();
+  if(v==='listanegra') cargarListaNegra();
   if(v==='historico') renderHistorico();
   if(v==='visitas') renderVisitas();
   if(v==='finanzas'||v==='dropi'){ if(!window._finCargado){ cargarFinanzas(); } else { renderFinanzas(); _renderFinTabla(window._finPedidos); } }

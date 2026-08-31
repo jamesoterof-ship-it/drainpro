@@ -461,6 +461,11 @@ tbody tr:hover .chev{color:var(--brand)}
         Direcciones incompletas
         <span id="badgeDirecciones" style="display:none;margin-left:auto;background:#e1283c;color:#fff;border-radius:999px;font-size:11px;font-weight:800;padding:1px 8px"></span>
       </div>
+      <div class="nav-i" data-view="listanegra">
+        <svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/></svg>
+        Lista negra
+        <span id="badgeListanegra" style="display:none;margin-left:auto;background:#e1283c;color:#fff;border-radius:999px;font-size:11px;font-weight:800;padding:1px 8px"></span>
+      </div>
       <div class="nav-i" data-view="crm">
         <svg class="ico" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         CRM · Clientes
@@ -653,6 +658,23 @@ tbody tr:hover .chev{color:var(--brand)}
         <div class="panel">
           <div class="ph"><div><h2>Top productos</h2><div class="sm" id="topProdSub">Hoy</div></div></div>
           <div class="paislist" id="topProductos"><div class="vacio">Cargando…</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== LISTA NEGRA ====== -->
+    <div class="content view" id="view-listanegra">
+      <div class="panel">
+        <div class="tbl-head">
+          <h2>🚫 Lista negra</h2>
+          <span style="font-size:12px;color:#8a93a0">Clientes con devoluciones o rechazos. Si vuelven a comprar: anticipo de $4.700 obligatorio y el pedido no se monta sin comprobante.</span>
+          <input id="lnBuscar" placeholder="Buscar por nombre o teléfono…" oninput="lnFiltrar()" style="margin-left:auto;font-size:12.5px;padding:8px 12px;border:1px solid var(--border);border-radius:9px;background:var(--surface);color:var(--ink);width:220px">
+          <button type="button" onclick="cargarListaNegra()" style="font-size:12.5px;padding:8px 14px;border:1px solid var(--border);border-radius:9px;background:var(--surface-2);color:var(--ink-2);cursor:pointer;font-weight:700">🔄</button>
+        </div>
+        <style>#tablaListanegra th{position:static}</style>
+        <div style="overflow-x:auto;padding:6px 4px">
+          <table id="tablaListanegra" style="min-width:900px"><thead><tr><th>Cliente</th><th>Teléfono</th><th>Devoluciones</th><th>Último producto devuelto</th><th>Motivo</th><th></th></tr></thead>
+          <tbody id="tbodyListanegra"><tr><td colspan="6" class="vacio">Se cargan al abrir esta pestaña.</td></tr></tbody></table>
         </div>
       </div>
     </div>
@@ -1339,7 +1361,7 @@ tbody tr:hover .chev{color:var(--brand)}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
-<script src="app.js?v=94"></script>
+<script src="app.js?v=95"></script>
 </body>
 </html>
 
