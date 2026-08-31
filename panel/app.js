@@ -1116,7 +1116,7 @@ function cargarDirecciones(){
         '<td style="color:#d33;font-weight:600">'+(f.direccion||'(vacía)')+'</td>'+
         '<td>'+(f.comuna||'')+'</td>'+
         '<td>'+(f.estado||'')+'</td>'+
-        '<td style="white-space:nowrap"><a href="https://wa.me/'+tel+'?text='+encodeURIComponent('Hola '+String(f.nombre||'').split(' ')[0]+', te escribo de logística de Jaye Group por tu pedido. Para que el repartidor te ubique sin problema, ¿me confirmas tu dirección con calle y número? Si no tiene número, mándame tu ubicación de WhatsApp o una foto de la boleta de la luz (solo para ver la dirección).')+'" target="_blank" style="display:inline-block;font-size:11.5px;padding:6px 10px;border-radius:8px;background:#25D366;color:#fff;font-weight:700;text-decoration:none;margin-right:6px">💬 Escribirle</a>'+btnPausa+'</td>'+
+        '<td style="white-space:nowrap"><button onclick="crmAbrir(\''+tel+'\')" style="font-size:11.5px;padding:6px 10px;border:0;border-radius:8px;background:#25D366;color:#fff;font-weight:700;cursor:pointer;margin-right:6px">💬 Abrir chat</button>'+btnPausa+'</td>'+
       '</tr>';
     }).join('');
   }).catch(function(){ tb.innerHTML='<tr><td colspan="6" class="vacio">No se pudo cargar (¿flujo «Panel: direcciones incompletas» activo en n8n?).</td></tr>'; });
