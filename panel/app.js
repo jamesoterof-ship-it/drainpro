@@ -1914,12 +1914,12 @@ function calcPrecio(n,v){ window._calcPrecios[n]= (v===''?null:(+v||0));
 
 /* ---------- Creador de anuncios IA (profesional) ---------- */
 var AD_PAISES={
-  Chile:{num:'+56 9 2000 7288',numId:'966653193207908',pixel:'Jaye Hogar',pixelId:'1249894010361489'},
+  Chile:{num:'+56 9 6477 5539',numId:'966653193207908',pixel:'Jaye Hogar',pixelId:'1249894010361489'},
   Colombia:{num:'+57 314 5021958',numId:'1134195636445391',pixel:'Colombia',pixelId:'963855752775059'},
   Paraguay:{num:'+595 975 357165',numId:'1114986368370031',pixel:'JAYE PARAGUAY',pixelId:'2162367424167882'}
 };
 var AD_PAGE={nombre:'Jaye Group',id:'1021271641058424'};
-var AD_NUMS=[{id:'966653193207908',label:'🇨🇱 +56 9 2000 7288 (Chile)'},{id:'1134195636445391',label:'🇨🇴 +57 314 5021958 (Colombia)'},{id:'1114986368370031',label:'🇵🇾 +595 975 357165 (Paraguay)'}];
+var AD_NUMS=[{id:'966653193207908',label:'🇨🇱 +56 9 6477 5539 (Chile)'},{id:'1134195636445391',label:'🇨🇴 +57 314 5021958 (Colombia)'},{id:'1114986368370031',label:'🇵🇾 +595 975 357165 (Paraguay)'}];
 var AD_PIXELS=[{id:'1249894010361489',label:'Jaye Hogar (Chile)'},{id:'963855752775059',label:'Colombia'},{id:'2162367424167882',label:'JAYE PARAGUAY'},{id:'1503126321234302',label:'GUATEMALA'},{id:'966394032414530',label:'JAYE STORE'}];
 var AD_COUNTRIES='Afganistán,Albania,Alemania,Andorra,Angola,Arabia Saudita,Argelia,Argentina,Armenia,Australia,Austria,Bélgica,Bolivia,Brasil,Bulgaria,Canadá,Chile,China,Chipre,Colombia,Corea del Sur,Costa Rica,Croacia,Cuba,Dinamarca,Ecuador,Egipto,El Salvador,Emiratos Árabes Unidos,Eslovaquia,Eslovenia,España,Estados Unidos,Estonia,Filipinas,Finlandia,Francia,Grecia,Guatemala,Honduras,Hungría,India,Indonesia,Irlanda,Israel,Italia,Japón,Letonia,Lituania,Luxemburgo,Malasia,Marruecos,México,Nicaragua,Nigeria,Noruega,Nueva Zelanda,Países Bajos,Panamá,Paraguay,Perú,Polonia,Portugal,Puerto Rico,Reino Unido,República Checa,República Dominicana,Rumania,Rusia,Singapur,Sudáfrica,Suecia,Suiza,Tailandia,Turquía,Ucrania,Uruguay,Venezuela,Vietnam'.split(',');
 var AD_PRODUCTS=['DRAINPRO','Shilajit Ultra',"NAD+ Men's Complex"];

@@ -117,7 +117,7 @@ window.CONFIG = {
   footTitle: "JAYE GROUP — CHILE",
   footAddr: "Av. Providencia 1208, Oficina 16, Santiago, RM.",
   footMail: "gerencia@jayegroup.com.co",
-  whatsapp: "56920007288",
+  whatsapp: "56964775539",
 
   /* ===========================================================
      BACKEND — webhook propio: el pedido cae a fin_ventas_wa como
