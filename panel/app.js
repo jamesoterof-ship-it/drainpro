@@ -836,10 +836,19 @@ function sendImg(input){
 }
 
 /* ---------- VENTAS WA (vista global) ---------- */
+var fRangoV='hoy';
+function _fVms(f){ const m=String(f||'').match(/(\d{1,2})-(\d{1,2})-(\d{4})/); if(!m) return 0; return new Date(+m[3],+m[2]-1,+m[1]).getTime(); }
 function renderVentasWA(){
   const tb=document.getElementById('tbodyVentasWA'); if(!tb) return;
   const q=(document.getElementById('vbuscar')?.value||'').toLowerCase();
   let arr=ordenes;
+  if(fRangoV!=='todas'){
+    const hoy0=new Date(); hoy0.setHours(0,0,0,0);
+    const dias={hoy:0,ayer:1,'7d':7,'14d':14}[fRangoV]??0;
+    const desde=hoy0.getTime()-dias*864e5;
+    const hasta=fRangoV==='ayer'?hoy0.getTime():Infinity;
+    arr=arr.filter(o=>{const ms=_fVms(o.fecha);return ms>=desde&&ms<hasta;});
+  }
   if(fPaisV!=='todas') arr=arr.filter(o=>o.loc===fPaisV);
   if(q) arr=arr.filter(o=>(o.cli+' '+o.prod+' '+o.tel+' '+o.zona).toLowerCase().includes(q));
   if(!arr.length){tb.innerHTML='<tr><td colspan="9" class="vacio">Sin ventas registradas aún.</td></tr>';return;}
@@ -887,20 +896,13 @@ function renderBots(){
     const pausadas=cs.filter(c=>c.estado==='pausada').length;
     const ventasHoy=hoyV.filter(o=>o.bot===b).length;
     const loc=BOTLOC[b];
-    return `<div class="bot">
-      <div class="bh">
-        <div class="bav" style="background:${BOTCOLOR[b]}">${b[0]}</div>
-        <div><div class="bnm">${BOTNOM[b]}</div><div class="bsub"><span class="flag ${FLAG[loc]}"></span><span class="stlive"><i></i>Activo</span></div></div>
-      </div>
-      <div class="bstats">
-        <div class="bstat"><b>${cs.length}</b><span>conversaciones</span></div>
-        <div class="bstat"><b>${ventasHoy}</b><span>ventas hoy</span></div>
-        <div class="bstat"><b>${pausadas}</b><span>con agente</span></div>
-      </div>
-      <div class="bfoot">
-        <button class="bbtn" onclick="irConvBot('${b}')"><svg class="ico-sm" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Conversaciones</button>
-        <button class="bbtn" onclick="irVentasDeBot('${b}')"><svg class="ico-sm" viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 0 0-6 0v4M5 9h14l-1 11H6L5 9z"/></svg>Ver ventas</button>
-      </div>
+    return `<div class="botmini">
+      <span class="bav" style="background:${BOTCOLOR[b]};width:26px;height:26px;font-size:12px;line-height:26px">${b[0]}</span>
+      <b>${BOTNOM[b].split(' ·')[0]}</b><span class="flag ${FLAG[loc]}"></span>
+      <span class="bmnum" title="conversaciones">💬 ${cs.length}</span>
+      <span class="bmnum" title="ventas hoy" style="color:#1f9d55;font-weight:800">🛒 ${ventasHoy}</span>
+      <span class="bmnum" title="con agente">👤 ${pausadas}</span>
+      <button class="bmbtn" onclick="irConvBot('${b}')" title="Conversaciones">💬</button>
     </div>`;
   }).join('');
 }
@@ -1222,6 +1224,10 @@ document.querySelectorAll('.nav-i[data-view]').forEach(n=>n.addEventListener('cl
 document.querySelectorAll('#segCanal button').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('#segCanal button').forEach(x=>x.classList.remove('act'));b.classList.add('act');
   fCanal=b.dataset.c; renderResumen();
+}));
+document.querySelectorAll('#segFechaV button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('#segFechaV button').forEach(x=>x.classList.remove('act'));b.classList.add('act');
+  fRangoV=b.dataset.f; renderVentasWA();
 }));
 document.querySelectorAll('#segEst button').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('#segEst button').forEach(x=>x.classList.remove('act'));b.classList.add('act');

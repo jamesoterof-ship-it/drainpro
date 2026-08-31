@@ -284,6 +284,11 @@ tbody tr:hover .chev{color:var(--brand)}
 .bstat{background:var(--surface-2);border:1px solid var(--border-2);border-radius:10px;padding:10px;text-align:center}
 .bstat b{display:block;font-size:17px;font-weight:800}
 .bstat span{font-size:11px;color:var(--ink-3)}
+.botgrid{display:flex!important;flex-wrap:wrap;gap:8px;grid-template-columns:none!important;margin-bottom:12px}
+.botmini{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:5px 12px;font-size:12.5px}
+.botmini .bav{border-radius:50%;color:#fff;text-align:center;font-weight:800}
+.bmnum{color:var(--ink-2);font-size:12px}
+.bmbtn{border:0;background:transparent;cursor:pointer;font-size:14px;padding:0 2px}
 .bfoot{display:flex;align-items:center;gap:8px;margin-top:14px}
 .bbtn{flex:1;font-family:inherit;font-size:12.5px;font-weight:600;padding:9px;border-radius:9px;border:1px solid var(--border);background:var(--surface);color:var(--ink-2);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px}
 .bbtn:hover{background:var(--surface-2);color:var(--ink)}
@@ -1201,6 +1206,13 @@ tbody tr:hover .chev{color:var(--brand)}
       <div class="panel">
         <div class="tbl-head">
           <h2>Ventas por WhatsApp</h2>
+          <div class="minitabs" id="segFechaV">
+            <button class="minitab act" data-f="hoy">Hoy</button>
+            <button class="minitab" data-f="ayer">Ayer</button>
+            <button class="minitab" data-f="7d">7 días</button>
+            <button class="minitab" data-f="14d">14 días</button>
+            <button class="minitab" data-f="todas">Todas</button>
+          </div>
           <div class="minitabs" id="segPaisV">
             <button class="minitab act" data-p="todas">Todas</button>
             <button class="minitab" data-p="CL"><span class="flag flag-cl"></span>Chile</button>
@@ -1361,7 +1373,7 @@ tbody tr:hover .chev{color:var(--brand)}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
-<script src="app.js?v=97"></script>
+<script src="app.js?v=98"></script>
 </body>
 </html>
 
