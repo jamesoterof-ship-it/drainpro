@@ -845,7 +845,7 @@ function renderVentasWA(){
   if(!arr.length){tb.innerHTML='<tr><td colspan="9" class="vacio">Sin ventas registradas aún.</td></tr>';return;}
   tb.innerHTML=arr.slice(0,100).map((o,i)=>`
     <tr onclick="verVenta(${i})">
-      <td class="cli">${esc(o.cli)}${huellaBadge(o.tel)}<small>${esc(o.fecha)} ${esc(o.hora)} · +${o.tel}</small></td>
+      <td class="cli">${esc(o.cli)}${huellaBadge(o.tel)}<small>${esc(o.fecha)} ${esc(o.hora)} · +${o.tel}</small>${guiaBadge(o.tel)}</td>
       <td>${BOTNOM[o.bot].split(' ·')[0]}</td>
       <td><span class="pchip"><i style="background:#0e8074"></i>${esc(o.prod)}</span></td>
       <td><span class="flag ${FLAG[o.loc]}"></span></td>
