@@ -477,7 +477,7 @@ function renderPedidosWeb(){
   if(!arr.length){tb.innerHTML='<tr><td colspan="9" class="vacio">Sin pedidos aquí.</td></tr>';return;}
   tb.innerHTML=arr.slice(0,100).map((o,i)=>`
     <tr onclick="verPedido(${i})">
-      <td class="cli">${esc(o.cli)}${huellaBadge(o.tel)}<small>${esc(o.fecha)} · +${o.tel}</small></td>
+      <td class="cli">${esc(o.cli)}${huellaBadge(o.tel)}<small>${esc(o.fecha)} · +${o.tel}</small>${guiaBadge(o.tel)}</td>
       <td><span class="pchip"><i style="background:${o.color}"></i>${esc(o.prod)}</span></td>
       <td>${esc(o.comuna)}</td>
       <td>${o.cant}</td>
@@ -701,7 +701,7 @@ function renderVentasBot(){
   if(!arr.length){tb.innerHTML='<tr><td colspan="8" class="vacio">Este bot aún no registra ventas.</td></tr>';return;}
   tb.innerHTML=arr.slice(0,80).map((o,i)=>`
     <tr onclick="verVentaBot(${i})">
-      <td class="cli">${esc(o.cli)}${huellaBadge(o.tel)}<small>${esc(o.fecha)} ${esc(o.hora)} · +${o.tel}</small></td>
+      <td class="cli">${esc(o.cli)}${huellaBadge(o.tel)}<small>${esc(o.fecha)} ${esc(o.hora)} · +${o.tel}</small>${guiaBadge(o.tel)}</td>
       <td><span class="pchip"><i style="background:#0e8074"></i>${esc(o.prod)}</span></td>
       <td>${esc(o.zona)}</td>
       <td>${o.cant}</td>
@@ -1100,7 +1100,7 @@ function cargarDirecciones(){
   var tb=document.getElementById('tbodyDirecciones'); if(!tb) return;
   tb.innerHTML='<tr><td colspan="6" class="vacio">Cargando…</td></tr>';
   fetch(BASE+'/direcciones-incompletas').then(function(r){return r.json();}).then(function(d){
-    var filas=Array.isArray(d)?d:(d?[d]:[]);
+    var filas=(d&&d.filas)?d.filas:(Array.isArray(d)?d:(d?[d]:[]));
     filas=filas.filter(function(f){return f&&f.id;});
     var badge=document.getElementById('badgeDirecciones');
     if(badge){ badge.textContent=filas.length; badge.style.display=filas.length?'':'none'; }
@@ -1134,12 +1134,14 @@ function cargarListaNegra(){
   var tb=document.getElementById('tbodyListanegra'); if(!tb) return;
   tb.innerHTML='<tr><td colspan="6" class="vacio">Cargando…</td></tr>';
   fetch(BASE+'/lista-negra').then(function(r){return r.json();}).then(function(d){
-    _lnFilas=(Array.isArray(d)?d:(d?[d]:[])).filter(function(f){return f&&f.telefono;});
+    var arrLN=(d&&d.filas)?d.filas:(Array.isArray(d)?d:(d?[d]:[]));
+    _lnFilas=arrLN.filter(function(f){return f&&f.telefono;});
     var badge=document.getElementById('badgeListanegra');
     if(badge){ badge.textContent=_lnFilas.length; badge.style.display=_lnFilas.length?'':'none'; }
     lnFiltrar();
   }).catch(function(){ tb.innerHTML='<tr><td colspan="6" class="vacio">No se pudo cargar (¿flujo «Panel: lista negra» activo en n8n?).</td></tr>'; });
 }
+function lnToggle(ix){ var d=document.getElementById('lnDet'+ix); if(d) d.style.display = d.style.display==='none' ? '' : 'none'; }
 function lnFiltrar(){
   var tb=document.getElementById('tbodyListanegra'); if(!tb) return;
   var q=(document.getElementById('lnBuscar')||{value:''}).value.toLowerCase().trim();
@@ -1148,18 +1150,46 @@ function lnFiltrar(){
     return String(f.nombre||'').toLowerCase().indexOf(q)>=0 || String(f.telefono||'').indexOf(q.replace(/\D/g,''))>=0;
   });
   if(!filas.length){ tb.innerHTML='<tr><td colspan="6" class="vacio">Sin resultados.</td></tr>'; return; }
-  tb.innerHTML=filas.map(function(f){
+  tb.innerHTML=filas.map(function(f,ix){
     var tel=String(f.telefono||'').replace(/\D/g,'');
-    return '<tr>'+
+    var devs=f.devoluciones||[];
+    var det=devs.map(function(dv){ return '<div style="padding:4px 0;border-bottom:1px solid var(--border-2)">📦 <b>'+(dv.producto||'')+'</b> · $'+Number(dv.monto||0).toLocaleString('es-CO')+' · devuelto el <b>'+(dv.fecha||'')+'</b> · '+(dv.motivo||'')+'</div>'; }).join('') || '<i>Sin detalle de pedidos devueltos.</i>';
+    return '<tr style="cursor:pointer" onclick="lnToggle('+ix+')">'+
       '<td style="font-weight:600;color:#d33">🚫 '+(f.nombre||'(sin nombre)')+'</td>'+
       '<td>+'+tel+'</td>'+
       '<td style="text-align:center"><b>'+(f.devueltos||1)+'</b> de '+(f.total||1)+' pedido(s)</td>'+
       '<td>'+(f.ultimo_producto||'—')+'</td>'+
       '<td style="color:#8a93a0;font-size:12px">'+(f.motivo||'—')+'</td>'+
       '<td><button onclick="crmAbrir(\''+tel+'\')" style="font-size:11.5px;padding:6px 10px;border:0;border-radius:8px;background:var(--surface-2);color:var(--ink-2);border:1px solid var(--border);font-weight:700;cursor:pointer">💬 Chat</button></td>'+
-    '</tr>';
+    '</tr>'+
+      '<tr id="lnDet'+ix+'" style="display:none"><td colspan="6" style="background:var(--surface-2);font-size:12px;padding:10px 18px">'+det+'</td></tr>';
   }).join('');
 }
+
+/* ---------- Estado de guia real (Dropi) por telefono ---------- */
+var _guias={};
+function cargarGuias(){
+  fetch(BASE+'/estado-guias').then(function(r){return r.json();}).then(function(d){
+    var filas=(d&&d.filas)||[];
+    var m={};
+    filas.forEach(function(f){ var t8=String(f.tel_norm||'').slice(-8); if(t8 && !m[t8]) m[t8]=f; });
+    _guias=m;
+    if(typeof renderPedidosWeb==='function') try{renderPedidosWeb();}catch(e){}
+    if(typeof renderVentasWA==='function') try{renderVentasWA();}catch(e){}
+  }).catch(function(){});
+}
+function guiaBadge(tel){
+  var g=_guias[String(tel||'').replace(/\D/g,'').slice(-8)];
+  if(!g||!g.estado) return '';
+  var e=String(g.estado).toUpperCase();
+  var color= e.indexOf('ENTREG')>=0?'#1f9d55'
+    : (e.indexOf('NOVEDAD')>=0||e.indexOf('DEVOL')>=0||e.indexOf('RECHAZ')>=0)?'#c62828'
+    : (e.indexOf('REPARTO')>=0||e.indexOf('TRANSITO')>=0||e.indexOf('DESTINO')>=0)?'#1565c0'
+    : '#8a93a0';
+  var txt=e.replace(/_/g,' ');
+  return '<br><span style="display:inline-block;margin-top:3px;font-size:10.5px;font-weight:800;color:#fff;background:'+color+';border-radius:999px;padding:1px 8px">🚚 '+txt+(g.guia?' · '+g.guia:'')+'</span>';
+}
+cargarGuias(); setInterval(cargarGuias, 180000);
 
 function mostrarVista(v){
   document.querySelectorAll('.view').forEach(x=>x.classList.remove('act'));
