@@ -1068,6 +1068,7 @@ async function guardarAprob(i){
 
 /* ---------- navegación ---------- */
 const TITULOS={
+  direcciones:['Direcciones incompletas','Pedidos que NO se aprueban hasta corregir la dirección — contáctalos tú de parte de logística'],
   crm:['CRM · Clientes','Novedades, garantías, avisos y seguimiento — todo en un solo lugar'],resumen:['Resumen general','Todos los canales · monedas separadas por país'],
   finanzas:['Finanzas','P&L, costos, devoluciones y rentabilidad por producto · Chile · en COP'],
   dropi:['Dropi · Guías','Estado de cada guía actualizado con Dropi · seguimiento'],
@@ -1093,6 +1094,39 @@ function ajustarStickyTop(){
   }
   document.documentElement.style.setProperty('--th-top', off+'px');
 }
+/* ---------- Direcciones incompletas: no se aprueban; James contacta y puede pausar a Camila ---------- */
+function cargarDirecciones(){
+  var tb=document.getElementById('tbodyDirecciones'); if(!tb) return;
+  tb.innerHTML='<tr><td colspan="6" class="vacio">Cargando…</td></tr>';
+  fetch(BASE+'/direcciones-incompletas').then(function(r){return r.json();}).then(function(d){
+    var filas=Array.isArray(d)?d:(d?[d]:[]);
+    filas=filas.filter(function(f){return f&&f.id;});
+    var badge=document.getElementById('badgeDirecciones');
+    if(badge){ badge.textContent=filas.length; badge.style.display=filas.length?'':'none'; }
+    if(!filas.length){ tb.innerHTML='<tr><td colspan="6" class="vacio">✅ Sin direcciones pendientes — todo limpio.</td></tr>'; return; }
+    tb.innerHTML=filas.map(function(f){
+      var tel=String(f.telefono||'').replace(/\D/g,'');
+      var pausado=f.etapa==='humano';
+      var btnPausa=pausado
+        ? '<button onclick="dirPausar(\''+tel+'\',\'reactivar\')" style="font-size:11.5px;padding:6px 10px;border:1px solid #1f9d55;border-radius:8px;background:#1f9d55;color:#fff;cursor:pointer;font-weight:700">▶️ Reactivar Camila</button>'
+        : '<button onclick="dirPausar(\''+tel+'\',\'pausar\')" style="font-size:11.5px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);color:var(--ink-2);cursor:pointer;font-weight:700">⏸️ Pausar Camila</button>';
+      return '<tr>'+
+        '<td><b>'+(f.nombre||'—')+'</b><br><span style="color:#8a93a0;font-size:11.5px">+'+tel+' · '+(f.fecha||'')+'</span>'+(pausado?'<br><span style="color:#d98200;font-size:11px;font-weight:700">⏸️ Camila en pausa — lo llevas tú</span>':'')+'</td>'+
+        '<td>'+(f.producto||'')+'<br><span style="color:#8a93a0;font-size:11.5px">$'+Number(f.precio||0).toLocaleString('es-CO')+'</span></td>'+
+        '<td style="color:#d33;font-weight:600">'+(f.direccion||'(vacía)')+'</td>'+
+        '<td>'+(f.comuna||'')+'</td>'+
+        '<td>'+(f.estado||'')+'</td>'+
+        '<td style="white-space:nowrap"><a href="https://wa.me/'+tel+'?text='+encodeURIComponent('Hola '+String(f.nombre||'').split(' ')[0]+', te escribo de logística de Jaye Group por tu pedido. Para que el repartidor te ubique sin problema, ¿me confirmas tu dirección con calle y número? Si no tiene número, mándame tu ubicación de WhatsApp o una foto de la boleta de la luz (solo para ver la dirección).')+'" target="_blank" style="display:inline-block;font-size:11.5px;padding:6px 10px;border-radius:8px;background:#25D366;color:#fff;font-weight:700;text-decoration:none;margin-right:6px">💬 Escribirle</a>'+btnPausa+'</td>'+
+      '</tr>';
+    }).join('');
+  }).catch(function(){ tb.innerHTML='<tr><td colspan="6" class="vacio">No se pudo cargar (¿flujo «Panel: direcciones incompletas» activo en n8n?).</td></tr>'; });
+}
+function dirPausar(tel,accion){
+  fetch(BASE+'/pausar-bot',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({telefono:tel,accion:accion})})
+    .then(function(){ cargarDirecciones(); })
+    .catch(function(){ alert('No se pudo '+accion+'. Revisa el flujo en n8n.'); });
+}
+
 function mostrarVista(v){
   document.querySelectorAll('.view').forEach(x=>x.classList.remove('act'));
   (document.getElementById('view-'+v)||document.getElementById('view-resumen')).classList.add('act');
@@ -1100,6 +1134,7 @@ function mostrarVista(v){
   const t=TITULOS[v]||TITULOS.resumen;
   document.getElementById('vtitle').textContent=t[0];
   document.getElementById('vsub').textContent=t[1];
+  if(v==='direcciones') cargarDirecciones();
   if(v==='historico') renderHistorico();
   if(v==='visitas') renderVisitas();
   if(v==='finanzas'||v==='dropi'){ if(!window._finCargado){ cargarFinanzas(); } else { renderFinanzas(); _renderFinTabla(window._finPedidos); } }
