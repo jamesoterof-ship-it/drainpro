@@ -1084,6 +1084,7 @@ async function guardarAprob(i){
 
 /* ---------- navegación ---------- */
 const TITULOS={
+  novedades:['Novedades','Pedidos detenidos - escribeles tu, las mas nuevas arriba'],
   listanegra:['Lista negra','Clientes con devoluciones — anticipo obligatorio si vuelven a comprar'],
   direcciones:['Direcciones incompletas','Pedidos que NO se aprueban hasta corregir la dirección — contáctalos tú de parte de logística'],
   crm:['CRM · Clientes','Novedades, garantías, avisos y seguimiento — todo en un solo lugar'],resumen:['Resumen general','Todos los canales · monedas separadas por país'],
@@ -1207,6 +1208,49 @@ function guiaBadge(tel){
 }
 cargarGuias(); setInterval(cargarGuias, 180000);
 
+/* ---------- Novedades: lo primero que hay que atacar ---------- */
+function nvToggle(ix){ var d=document.getElementById("nvDet"+ix); if(d) d.style.display = d.style.display==="none" ? "" : "none"; }
+function cargarNovedades(){
+  var tb=document.getElementById("tbodyNovedades"); if(!tb) return;
+  tb.innerHTML='<tr><td colspan="7" class="vacio">Cargando...</td></tr>';
+  fetch(BASE+"/novedades-panel").then(function(r){return r.json();}).then(function(d){
+    var filas=((d&&d.filas)||[]).filter(function(f){return f&&f.pedido;});
+    var badge=document.getElementById("badgeNovedades");
+    if(badge){ badge.textContent=filas.length; badge.style.display=filas.length?"":"none"; }
+    if(!filas.length){ tb.innerHTML='<tr><td colspan="7" class="vacio">Sin novedades pendientes.</td></tr>'; return; }
+    tb.innerHTML=filas.map(function(f,ix){
+      var tel=String(f.telefono||"").replace(/\D/g,""); if(tel.length===9) tel="56"+tel;
+      var mot=String(f.motivo||"").toUpperCase();
+      var esDir = mot.indexOf("DIRECCION")>=0 || mot.indexOf("UBICA")>=0;
+      var colorMot = esDir ? "#d98200" : "#c62828";
+      var dicho = f.ultimo_mensaje_cliente ? ('"'+f.ultimo_mensaje_cliente+'" ('+(f.cuando_escribio||"")+')') : "nunca ha escrito";
+      var det='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px;font-size:12.5px">'+
+        '<div><b>Pedido Dropi:</b> #'+f.pedido+'</div>'+
+        '<div><b>Guia:</b> '+(f.guia||"-")+' ('+(f.transportadora||"")+')</div>'+
+        '<div><b>Telefono:</b> +'+tel+'</div>'+
+        '<div><b>Recaudo:</b> $'+Number(f.recaudo||0).toLocaleString("es-CO")+'</div>'+
+        '<div style="grid-column:1/-1"><b>Direccion:</b> '+(f.direccion||"-")+'</div>'+
+        '<div style="grid-column:1/-1"><b>Lo ultimo que escribio:</b> '+dicho+'</div>'+
+        '<div><b>Avisos automaticos:</b> '+(f.avisos_enviados||0)+'</div>'+
+        '<div><b>Camila:</b> '+(f.etapa==="humano"?"en pausa (lo llevas tu)":"activa")+'</div></div>';
+      var accion = f.etapa==="humano" ? "reactivar" : "pausar";
+      var icono  = f.etapa==="humano" ? "\u25B6\uFE0F" : "\u23F8\uFE0F";
+      return '<tr style="cursor:pointer" onclick="nvToggle('+ix+')">'+
+        '<td style="white-space:nowrap;font-weight:700">'+(f.entro||"")+'</td>'+
+        '<td><b>'+(f.nombre||"-")+'</b><br><span style="color:#8a93a0;font-size:11.5px">+'+tel+'</span></td>'+
+        '<td>'+(f.producto||"")+'<br><span style="color:#8a93a0;font-size:11.5px">$'+Number(f.recaudo||0).toLocaleString("es-CO")+'</span></td>'+
+        '<td style="color:'+colorMot+';font-weight:700;font-size:12px">'+(f.motivo||"")+'</td>'+
+        '<td style="text-align:center">'+(f.dias||0)+'</td>'+
+        '<td style="text-align:center">'+(f.avisos_enviados||0)+'</td>'+
+        '<td style="white-space:nowrap" onclick="event.stopPropagation()">'+
+          '<button onclick="crmAbrir(\''+tel+'\')" style="font-size:11.5px;padding:6px 10px;border:0;border-radius:8px;background:#25D366;color:#fff;font-weight:700;cursor:pointer;margin-right:5px">\uD83D\uDCAC Escribirle</button>'+
+          '<button onclick="dirPausar(\''+tel+'\',\''+accion+'\')" style="font-size:11.5px;padding:6px 9px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);color:var(--ink-2);font-weight:700;cursor:pointer">'+icono+'</button>'+
+        '</td></tr>'+
+        '<tr id="nvDet'+ix+'" style="display:none"><td colspan="7" style="background:var(--surface-2);padding:12px 18px">'+det+'</td></tr>';
+    }).join("");
+  }).catch(function(){ tb.innerHTML='<tr><td colspan="7" class="vacio">No se pudo cargar (flujo Panel: novedades activo en n8n?).</td></tr>'; });
+}
+
 function mostrarVista(v){
   document.querySelectorAll('.view').forEach(x=>x.classList.remove('act'));
   (document.getElementById('view-'+v)||document.getElementById('view-resumen')).classList.add('act');
@@ -1215,6 +1259,7 @@ function mostrarVista(v){
   document.getElementById('vtitle').textContent=t[0];
   document.getElementById('vsub').textContent=t[1];
   if(v==='direcciones') cargarDirecciones();
+  if(v==='novedades') cargarNovedades();
   if(v==='listanegra') cargarListaNegra();
   if(v==='historico') renderHistorico();
   if(v==='visitas') renderVisitas();

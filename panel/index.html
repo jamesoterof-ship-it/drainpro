@@ -461,6 +461,11 @@ tbody tr:hover .chev{color:var(--brand)}
         Aprobación de ventas
         <span id="badgeAprobar" style="display:none;margin-left:auto;background:#e1283c;color:#fff;border-radius:999px;font-size:11px;font-weight:800;padding:1px 8px"></span>
       </div>
+      <div class="nav-i" data-view="novedades">
+        <svg class="ico" viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+        Novedades
+        <span id="badgeNovedades" style="display:none;margin-left:auto;background:#e1283c;color:#fff;border-radius:999px;font-size:11px;font-weight:800;padding:1px 8px"></span>
+      </div>
       <div class="nav-i" data-view="direcciones">
         <svg class="ico" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
         Direcciones incompletas
@@ -663,6 +668,22 @@ tbody tr:hover .chev{color:var(--brand)}
         <div class="panel">
           <div class="ph"><div><h2>Top productos</h2><div class="sm" id="topProdSub">Hoy</div></div></div>
           <div class="paislist" id="topProductos"><div class="vacio">Cargando…</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== NOVEDADES ====== -->
+    <div class="content view" id="view-novedades">
+      <div class="panel">
+        <div class="tbl-head">
+          <h2>&#9888;&#65039; Novedades &mdash; pedidos detenidos</h2>
+          <span style="font-size:12px;color:#8a93a0">Las m&aacute;s nuevas arriba. Toca la fila para ver todo &middot; &laquo;Escribirle&raquo; abre su chat en el panel.</span>
+          <button type="button" onclick="cargarNovedades()" style="margin-left:auto;font-size:12.5px;padding:8px 14px;border:1px solid var(--border);border-radius:9px;background:var(--surface-2);color:var(--ink-2);cursor:pointer;font-weight:700">&#128260; Actualizar</button>
+        </div>
+        <style>#tablaNovedades th{position:static}</style>
+        <div style="overflow-x:auto;padding:6px 4px">
+          <table id="tablaNovedades" style="min-width:1000px"><thead><tr><th>Entr&oacute;</th><th>Cliente</th><th>Producto</th><th>Motivo</th><th>D&iacute;as</th><th>Avisos</th><th>Acci&oacute;n</th></tr></thead>
+          <tbody id="tbodyNovedades"><tr><td colspan="7" class="vacio">Se cargan al abrir esta pesta&ntilde;a.</td></tr></tbody></table>
         </div>
       </div>
     </div>
@@ -1378,7 +1399,7 @@ tbody tr:hover .chev{color:var(--brand)}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
-<script src="app.js?v=99"></script>
+<script src="app.js?v=100"></script>
 </body>
 </html>
 
