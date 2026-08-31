@@ -990,6 +990,13 @@ tbody tr:hover .chev{color:var(--brand)}
 
       <!-- MODO EXISTENTE -->
       <div id="adExistente" style="display:none">
+        <div class="panel" style="margin-bottom:16px">
+          <div class="tbl-head"><h2>📊 Métricas de hoy</h2><span style="font-size:12px;color:#8a93a0">Gasto, frecuencia y CTR de Meta · ventas y CPA del PANEL · <span id="metricasHora"></span></span><button type="button" onclick="cargarMetricas()" style="margin-left:auto;font-size:12.5px;padding:8px 14px;border:1px solid var(--border);border-radius:9px;background:var(--surface-2);color:var(--ink-2);cursor:pointer;font-weight:700">🔄 Actualizar</button></div>
+          <div style="overflow-x:auto;padding:6px 4px">
+            <table><thead><tr><th>Campaña</th><th>Gasto hoy</th><th>Ayer</th><th>Ventas panel</th><th>CPA</th><th>Frecuencia</th><th>CTR</th><th>CPM</th></tr></thead>
+            <tbody id="tbodyMetricas"><tr><td colspan="8" class="vacio">Se cargan solas al abrir esta pestaña, o dale «Actualizar».</td></tr></tbody></table>
+          </div>
+        </div>
         <div class="panel">
           <div class="tbl-head"><h2>Tus campañas</h2><button type="button" onclick="cargarCampanas()" style="font-size:12.5px;padding:8px 14px;border:1px solid var(--border);border-radius:9px;background:var(--surface-2);color:var(--ink-2);cursor:pointer;font-weight:700">🔄 Cargar campañas</button></div>
           <div class="minitabs" id="adCampFiltro" style="margin:8px 4px 4px"><button class="minitab act" data-f="ACTIVE">Activas</button><button class="minitab" data-f="PAUSED">Pausadas</button><button class="minitab" data-f="ALL">Todas</button></div>
@@ -1310,7 +1317,7 @@ tbody tr:hover .chev{color:var(--brand)}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
-<script src="app.js?v=91"></script>
+<script src="app.js?v=92"></script>
 </body>
 </html>
 

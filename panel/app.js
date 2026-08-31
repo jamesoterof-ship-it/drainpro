@@ -2278,7 +2278,33 @@ document.querySelectorAll('#adModo .minitab').forEach(function(b){ b.addEventLis
   document.getElementById('adNueva').style.display=(b.dataset.m==='nueva')?'':'none';
   document.getElementById('adExistente').style.display=(b.dataset.m==='existente')?'':'none';
   if(b.dataset.m==='nueva'){ adTargetClear(); }
+  if(b.dataset.m==='existente'){ cargarMetricas(); }
 }); });
+
+/* ---------- Métricas de campañas (Meta + ventas del panel) ---------- */
+function cargarMetricas(){
+  var tb=document.getElementById('tbodyMetricas'); if(!tb) return;
+  tb.innerHTML='<tr><td colspan="8" class="vacio">Bajando números frescos…</td></tr>';
+  fetch(BASE+'/metricas-campanas').then(function(r){return r.json();}).then(function(d){
+    var filas=(d&&d.filas)||[];
+    if(!filas.length){ tb.innerHTML='<tr><td colspan="8" class="vacio">Sin campañas de producto.</td></tr>'; return; }
+    var num=function(n){ return (n===null||n===undefined)?'—':Number(n).toLocaleString('es-CO'); };
+    tb.innerHTML=filas.map(function(f){
+      /* banderas: CPA sobre el techo de 18.000 en rojo; frecuencia >= 3 o CTR < 1% en naranja */
+      var cpaTx = f.cpa===null ? (f.gasto_hoy>=20000?'<b style="color:#d33">sin ventas</b>':'—')
+                : (f.cpa>18000?'<b style="color:#d33">'+num(f.cpa)+'</b>':num(f.cpa));
+      var frTx = f.frecuencia>=3?'<b style="color:#d98200">'+f.frecuencia.toFixed(2)+'</b>':f.frecuencia.toFixed(2);
+      var ctrTx = (f.ctr>0&&f.ctr<1)?'<b style="color:#d98200">'+f.ctr.toFixed(2)+'%</b>':f.ctr.toFixed(2)+'%';
+      var estado = f.estado==='ACTIVE'?'':' <span style="font-size:10.5px;color:#8a93a0">(pausada)</span>';
+      return '<tr><td style="font-weight:600">'+f.campana+estado+'</td>'+
+        '<td>$'+num(f.gasto_hoy)+'</td><td style="color:#8a93a0">$'+num(f.gasto_ayer)+'</td>'+
+        '<td>'+f.ventas_hoy+' <span style="color:#8a93a0">(ayer '+f.ventas_ayer+')</span></td>'+
+        '<td>'+cpaTx+'</td><td>'+frTx+'</td><td>'+ctrTx+'</td><td>$'+num(f.cpm)+'</td></tr>';
+    }).join('');
+    var st=document.getElementById('metricasHora');
+    if(st) st.textContent='actualizado '+new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+  }).catch(function(){ tb.innerHTML='<tr><td colspan="8" class="vacio">No se pudieron bajar las métricas (¿flujo «Panel: métricas de campañas» activo en n8n?).</td></tr>'; });
+}
 document.querySelectorAll('#adDestSeg .adDestBtn').forEach(function(b){ b.addEventListener('click',function(){
   _adDest=b.dataset.d;
   document.querySelectorAll('#adDestSeg .adDestBtn').forEach(function(x){ x.style.background='var(--surface-2)'; x.style.color='var(--ink)'; x.style.borderColor='var(--border)'; });
