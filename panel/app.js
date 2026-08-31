@@ -1620,6 +1620,22 @@ function radNum(v){ return Number(v||0).toLocaleString('es-CO'); }
 function radPlata(v){ return (radarPais==='Chile'?'$':'$')+Number(v||0).toLocaleString(radarPais==='Chile'?'es-CL':'es-CO'); }
 function radEsc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){
   return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+/* El ID de Dropi: se copia con un clic para pegarlo en el buscador de Dropi. */
+function radCopiarId(el,id){
+  var previo=el.textContent;
+  var ok=function(){ el.textContent='ID '+id+' copiado'; setTimeout(function(){ el.textContent=previo; },1400); };
+  try{
+    if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(id).then(ok,function(){ radCopiarFallback(id,ok); }); }
+    else radCopiarFallback(id,ok);
+  }catch(e){ radCopiarFallback(id,ok); }
+}
+function radCopiarFallback(id,ok){
+  try{
+    var t=document.createElement('textarea'); t.value=id;
+    t.style.position='fixed'; t.style.opacity='0'; document.body.appendChild(t);
+    t.select(); document.execCommand('copy'); document.body.removeChild(t); ok();
+  }catch(e){}
+}
 function radMedalla(i){ return 'rad-med'+(i===0?' o1':i===1?' o2':i===2?' o3':''); }
 function radFoto(p){ return p.imagen
   ? '<img class="rad-foto" loading="lazy" src="'+radEsc(p.imagen)+'" alt="">'
@@ -1799,6 +1815,7 @@ function radarFichaHTML(d){
    + (p.imagen?'<img class="rad-foto" style="width:54px;height:54px" src="'+radEsc(p.imagen)+'" alt="">':'<div class="rad-foto" style="width:54px;height:54px"></div>')
    +'<div><h3 style="margin:0;font-size:16px;font-weight:780">'+radEsc(p.nombre)+'</h3>'
    +'<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:5px">'
+   + (p.id!=null?'<span title="ID en Dropi — clic para copiar" onclick="radCopiarId(this,\''+radEsc(p.id)+'\')" style="font-size:10.5px;border:1px solid var(--border);border-radius:6px;padding:2px 8px;color:var(--ink-2);cursor:pointer;font-weight:700;background:#f4f6f9">ID '+radEsc(p.id)+'</span>':'')
    + chip(radEsc(p.proveedor||'—')) + (p.ciudad?chip(radEsc(p.ciudad)):'') + (p.categoria?chip(radEsc(p.categoria)):'')
    + chip(radPlata(p.precio)+' costo') + (p.margen!=null?chip(p.margen+'% margen'):'')
    + (p.stock!=null?chip(radNum(p.stock)+' en stock'):'')
