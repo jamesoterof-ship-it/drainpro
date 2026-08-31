@@ -842,13 +842,27 @@ function renderVentasWA(){
   const tb=document.getElementById('tbodyVentasWA'); if(!tb) return;
   const q=(document.getElementById('vbuscar')?.value||'').toLowerCase();
   let arr=ordenes;
-  if(fRangoV!=='todas'){
+  const _d1=(document.getElementById('vDesde')||{}).value, _d2=(document.getElementById('vHasta')||{}).value;
+  if(_d1||_d2){
+    const desde=_d1?new Date(_d1+'T00:00:00').getTime():0;
+    const hasta=_d2?new Date(_d2+'T00:00:00').getTime()+864e5:Infinity;
+    arr=arr.filter(o=>{const ms=_fVms(o.fecha);return ms>=desde&&ms<hasta;});
+  } else if(fRangoV!=='todas'){
     const hoy0=new Date(); hoy0.setHours(0,0,0,0);
     const dias={hoy:0,ayer:1,'7d':7,'14d':14}[fRangoV]??0;
     const desde=hoy0.getTime()-dias*864e5;
     const hasta=fRangoV==='ayer'?hoy0.getTime():Infinity;
     arr=arr.filter(o=>{const ms=_fVms(o.fecha);return ms>=desde&&ms<hasta;});
   }
+  /* totalizador del rango filtrado (cuenta + plata por pais) */
+  (function(){
+    const el=document.getElementById('vTotales'); if(!el) return;
+    const sum={};
+    arr.forEach(o=>{ const v=Number(String(o.precio||'').replace(/\D/g,''))||0; sum[o.loc]=(sum[o.loc]||0)+v; });
+    const MON={CL:'CLP',CO:'COP',PY:'PYG'};
+    const partes=Object.keys(sum).map(k=>MON[k]+' $'+sum[k].toLocaleString('es-CO'));
+    el.textContent=arr.length+' venta'+(arr.length===1?'':'s')+(partes.length?' · '+partes.join(' · '):'');
+  })();
   if(fPaisV!=='todas') arr=arr.filter(o=>o.loc===fPaisV);
   if(q) arr=arr.filter(o=>(o.cli+' '+o.prod+' '+o.tel+' '+o.zona).toLowerCase().includes(q));
   if(!arr.length){tb.innerHTML='<tr><td colspan="9" class="vacio">Sin ventas registradas aún.</td></tr>';return;}
@@ -1227,8 +1241,14 @@ document.querySelectorAll('#segCanal button').forEach(b=>b.addEventListener('cli
 }));
 document.querySelectorAll('#segFechaV button').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('#segFechaV button').forEach(x=>x.classList.remove('act'));b.classList.add('act');
+  var d1=document.getElementById('vDesde'),d2=document.getElementById('vHasta');
+  if(d1)d1.value=''; if(d2)d2.value='';
   fRangoV=b.dataset.f; renderVentasWA();
 }));
+function vRangoCustom(){
+  document.querySelectorAll('#segFechaV button').forEach(x=>x.classList.remove('act'));
+  renderVentasWA();
+}
 document.querySelectorAll('#segEst button').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('#segEst button').forEach(x=>x.classList.remove('act'));b.classList.add('act');
   fEst=b.dataset.e;renderConvList();

@@ -1206,6 +1206,7 @@ tbody tr:hover .chev{color:var(--brand)}
       <div class="panel">
         <div class="tbl-head">
           <h2>Ventas por WhatsApp</h2>
+          <span id="vTotales" style="font-size:13px;font-weight:800;color:var(--ink);background:var(--surface-2);border:1px solid var(--border);border-radius:999px;padding:5px 14px"></span>
           <div class="minitabs" id="segFechaV">
             <button class="minitab act" data-f="hoy">Hoy</button>
             <button class="minitab" data-f="ayer">Ayer</button>
@@ -1213,6 +1214,10 @@ tbody tr:hover .chev{color:var(--brand)}
             <button class="minitab" data-f="14d">14 días</button>
             <button class="minitab" data-f="todas">Todas</button>
           </div>
+          <span style="display:flex;gap:4px;align-items:center;font-size:12px;color:var(--ink-3)">
+            <input type="date" id="vDesde" onchange="vRangoCustom()" style="font-size:12px;padding:5px 7px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--ink)">–
+            <input type="date" id="vHasta" onchange="vRangoCustom()" style="font-size:12px;padding:5px 7px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--ink)">
+          </span>
           <div class="minitabs" id="segPaisV">
             <button class="minitab act" data-p="todas">Todas</button>
             <button class="minitab" data-p="CL"><span class="flag flag-cl"></span>Chile</button>
@@ -1373,7 +1378,7 @@ tbody tr:hover .chev{color:var(--brand)}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
-<script src="app.js?v=98"></script>
+<script src="app.js?v=99"></script>
 </body>
 </html>
 
