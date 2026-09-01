@@ -275,6 +275,7 @@ async function cargarVentas(){
       ords.push({rid:r.row_number||'',cli:r.NOMBRE||'—',tel:soloNum(r.TELEFONO),prod:r.PRODUCTO||'—',cant:numero(r.CANTIDAD)||1,
         precioNum:precio,precio:esR?fmtGS(precio):esJ?fmtCOP(precio)+' COP':fmtCLP(precio),
         dir:r.DIRECCION||'—',zona:r.COMUNA||r.CIUDAD||'—',region:r.REGION||r.DEPARTAMENTO||'—',
+        nota:String(r.NOTA||'').trim(),   /* lo que pidio el cliente: fecha de entrega u otra instruccion */
         bot:esR?'Ramon':esJ?'James':esRedes?'Redes':'Carlos',loc:esR?'PY':esJ?'CO':'CL',estado:r.ESTADO||'—',
         conf:!/abono pendiente/i.test(String(r.ESTADO||'')),abono:/abono pendiente/i.test(String(r.ESTADO||'')),/* abono pendiente = NO confirmada hasta que pague el anticipo */
         montado:/montad/i.test(String(r.ESTADO||'')),
@@ -880,11 +881,22 @@ function renderVentasWA(){
     </tr>`).join('');
   window._ventasF=arr;
 }
+/* NOTA DEL CLIENTE — va ARRIBA de todo y en amarillo: es lo que pidio el cliente
+   (una fecha de entrega, llamar antes, etc.). Si no se ve antes de aprobar, el
+   pedido sale cuando el cliente no lo quiere y vuelve devuelto. */
+function bloqueNota(n){
+  n=String(n||'').trim(); if(!n) return '';
+  return '<div style="margin:0 0 12px;padding:11px 13px;border-radius:11px;background:#fff8e1;'
+    +'border:1px solid #f0c419;border-left:5px solid #e8a800">'
+    +'<div style="font-size:11.5px;font-weight:800;letter-spacing:.4px;color:#8a6100;margin-bottom:3px">NOTA DEL CLIENTE</div>'
+    +'<div style="font-size:14px;font-weight:700;color:#5d4200;line-height:1.35">'+esc(n)+'</div></div>';
+}
 function verVenta(i){
   const o=(window._ventasF||ordenes)[i]; if(!o) return;
   const fila=(k,v)=>`<div class="dl"><span class="k">${k}</span><span class="v">${esc(v)}</span></div>`;
   document.getElementById('mTitulo').textContent=o.cli;
   document.getElementById('mBody').innerHTML=
+    bloqueNota(o.nota)+
     fila('Canal','WhatsApp · '+BOTNOM[o.bot])+fila('País',{CL:'Chile',CO:'Colombia',PY:'Paraguay'}[o.loc])+
     fila('Producto',o.prod)+fila('Cantidad',o.cant+' unidades')+fila('Teléfono','+'+o.tel)+
     fila('Dirección',o.dir)+fila('Comuna / Ciudad',o.zona)+fila('Región / Depto.',o.region)+
@@ -1004,7 +1016,7 @@ function renderAprobar(){
       st:o.dropi?'montado':(esAprobado(k)?'aprobado':(esRechazado(k)?'rechazado':'pendiente'))});
   });
   (ordenes||[]).forEach(o=>{ if(o.loc!=='CL') return; if(o.orden<dosDias && !o.montado) return; const k=keyWa(o);
-    items.push({k,raw:o,canal:'WhatsApp',cli:o.cli,tel:o.tel,fecha:o.fecha,prod:o.prod,color:'#0e8074',comuna:o.zona,cant:o.cant,total:o.precio,orden:o.orden,abono:!!o.abono,
+    items.push({k,raw:o,canal:'WhatsApp',cli:o.cli,tel:o.tel,fecha:o.fecha,prod:o.prod,color:'#0e8074',comuna:o.zona,cant:o.cant,total:o.precio,orden:o.orden,abono:!!o.abono,nota:o.nota||'',
       st:o.montado?'montado':(esAprobado(k)?'aprobado':(esRechazado(k)?'rechazado':'pendiente'))});
   });
   const nPend=items.filter(x=>x.st==='pendiente').length;
@@ -1017,7 +1029,7 @@ function renderAprobar(){
   if(!arr.length){ tb.innerHTML='<tr><td colspan="8" class="vacio">'+(fAprob==='pend'?'Nada por aprobar. 🎉':'Sin ventas recientes.')+'</td></tr>'; return; }
   tb.innerHTML=arr.slice(0,100).map((x,i)=>`
     <tr onclick="verAprob(${i})"${x.abono?' style="background:#fdecea"':''}>
-      <td class="cli">${esc(x.cli)}${huellaBadge(x.tel)}${x.abono?'<span style="display:inline-block;margin-left:6px;background:#c62828;color:#fff;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;vertical-align:middle">ANTICIPO SIN PAGAR</span>':''}<small>${esc(x.fecha)} · +${x.tel}</small></td>
+      <td class="cli">${esc(x.cli)}${huellaBadge(x.tel)}${x.abono?'<span style="display:inline-block;margin-left:6px;background:#c62828;color:#fff;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;vertical-align:middle">ANTICIPO SIN PAGAR</span>':''}${x.nota?'<span style="display:inline-block;margin-left:6px;background:#e8a800;color:#3d2c00;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;vertical-align:middle">NOTA</span>':''}<small>${esc(x.fecha)} · +${x.tel}</small>${x.nota?'<small style="display:block;color:#8a6100;font-weight:700;white-space:normal;line-height:1.3;margin-top:2px">'+esc(x.nota)+'</small>':''}</td>
       <td>${x.canal}</td>
       <td><span class="pchip"><i style="background:${x.color}"></i>${esc(x.prod)}</span></td>
       <td>${esc(x.comuna||'—')}</td>
@@ -1042,6 +1054,7 @@ function verAprob(i){
     window._ventaAbierta={cli:o.cli,dir:o.dir+(o.ref?' - '+o.ref:''),region:o.region,tel:o.tel,prod:o.prod,cant:o.cant,precio:o.total};
   }else{
     document.getElementById('mBody').innerHTML=
+      bloqueNota(o.nota)+
       fila('Canal','WhatsApp · '+(BOTNOM[o.bot]||''))+fila('País',{CL:'Chile',CO:'Colombia',PY:'Paraguay'}[o.loc]||'—')+
       fila('Producto',o.prod)+fila('Cantidad',o.cant+' unidades')+fila('Teléfono','+'+o.tel)+
       fila('Dirección',o.dir)+fila('Comuna / Ciudad',o.zona)+fila('Región / Depto.',o.region)+
