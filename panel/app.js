@@ -1056,9 +1056,15 @@ function verAprob(i){
 /* editar un pedido de WhatsApp antes de aprobarlo (los montados en Dropi ya no se tocan desde acá) */
 function editarAprob(i){
   const x=(window._aprobF||[])[i]; if(!x) return; const o=x.raw||{};
-  const f=(k,id)=>'<div class="dl"><span class="k">'+k+'</span><span class="v" style="flex:1"><input id="'+id+'" style="width:100%;box-sizing:border-box;padding:7px 9px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);color:inherit;font:inherit"></span></div>';
+  /* etiqueta ARRIBA y campo a todo el ancho: antes la direccion quedaba en una
+     rendijita y no se podia leer ni corregir bien (James, 31-08). */
+  const EST='width:100%;box-sizing:border-box;padding:9px 11px;border:1px solid var(--border);border-radius:9px;background:var(--surface-2);color:inherit;font:inherit;font-size:13.5px';
+  const f=(k,id)=>'<div style="margin-bottom:11px"><label for="'+id+'" style="display:block;font-size:12px;color:var(--ink-3);font-weight:600;margin-bottom:4px">'+k+'</label><input id="'+id+'" style="'+EST+'"></div>';
+  const fArea=(k,id)=>'<div style="margin-bottom:11px"><label for="'+id+'" style="display:block;font-size:12px;color:var(--ink-3);font-weight:600;margin-bottom:4px">'+k+'</label><textarea id="'+id+'" rows="3" style="'+EST+';resize:vertical;line-height:1.45"></textarea></div>';
   document.getElementById('mBody').innerHTML=
-    f('Nombre','edN')+f('Dirección (con depto, edificio y referencias)','edD')+f('Comuna','edC')+f('Región','edR')+f('Cantidad','edQ')+f('Total CLP','edP')+
+    f('Nombre','edN')+fArea('Dirección (calle, número, depto, referencias)','edD')+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'+f('Comuna','edC')+f('Región','edR')+'</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'+f('Cantidad','edQ')+f('Total CLP','edP')+'</div>'+
     '<div style="display:flex;gap:8px;margin-top:12px"><button class="b-apr" onclick="guardarAprob('+i+')">💾 Guardar cambios</button><button class="b-rech" style="width:auto;padding:0 14px" onclick="verAprob('+i+')">Cancelar</button></div>';
   const set=(id,v)=>{document.getElementById(id).value=v==null?'':String(v);};
   set('edN',o.cli); set('edD',o.dir); set('edC',o.zona); set('edR',o.region); set('edQ',o.cant); set('edP',o.precioNum);
