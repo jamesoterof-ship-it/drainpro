@@ -304,7 +304,9 @@ tbody tr:hover .chev{color:var(--brand)}
 .mh{display:flex;align-items:center;gap:10px;padding:18px 20px;border-bottom:1px solid var(--border)}
 .mh .tt{font-size:15px;font-weight:700}
 .mh .x{margin-left:auto;width:32px;height:32px;border-radius:9px;border:1px solid var(--border);background:var(--surface);color:var(--ink-2);cursor:pointer;display:grid;place-items:center}
-.mb{padding:8px 20px 4px;max-height:48vh;overflow-y:auto}
+.mb{padding:8px 20px 4px;max-height:48vh;overflow-y:auto;width:100%;box-sizing:border-box}
+.mb>div{max-width:100%}
+.mb input,.mb textarea,.mb select{max-width:100%}
 .dl{display:flex;justify-content:space-between;gap:16px;padding:11px 0;border-bottom:1px solid var(--border-2);font-size:13.5px}
 .dl:last-child{border:none}
 .dl .k{color:var(--ink-3)}
@@ -1399,7 +1401,7 @@ tbody tr:hover .chev{color:var(--brand)}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
-<script src="app.js?v=101"></script>
+<script src="app.js?v=102"></script>
 </body>
 </html>
 
