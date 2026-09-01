@@ -1239,35 +1239,52 @@ function cargarNovedades(){
   tb.innerHTML='<tr><td colspan="7" class="vacio">Cargando...</td></tr>';
   fetch(BASE+"/novedades-panel").then(function(r){return r.json();}).then(function(d){
     var filas=((d&&d.filas)||[]).filter(function(f){return f&&f.pedido;});
+    var conResp=filas.filter(function(f){return f.respondio;}).length;
     var badge=document.getElementById("badgeNovedades");
-    if(badge){ badge.textContent=filas.length; badge.style.display=filas.length?"":"none"; }
+    if(badge){ badge.textContent=conResp?(conResp+"/"+filas.length):filas.length; badge.style.display=filas.length?"":"none"; }
+    var av=document.getElementById("avisoNovedades");
+    if(av){
+      av.innerHTML = conResp
+        ? '<div style="display:flex;align-items:center;gap:10px;padding:11px 15px;border:1px solid #0e8074;background:rgba(14,128,116,.09);border-radius:11px;font-size:13px">'+
+          '<b style="color:#0e8074;font-size:15px">'+conResp+'</b>'+
+          '<span style="color:var(--ink-2)">'+(conResp===1?'cliente ya respondi&oacute; con la soluci&oacute;n y est&aacute; esperando':'clientes ya respondieron con la soluci&oacute;n y est&aacute;n esperando')+'. Salen de primeros.</span></div>'
+        : '<div style="padding:11px 15px;border:1px solid var(--border);background:var(--surface-2);border-radius:11px;font-size:13px;color:var(--ink-2)">Ning&uacute;n cliente ha respondido todav&iacute;a.</div>';
+    }
     if(!filas.length){ tb.innerHTML='<tr><td colspan="7" class="vacio">Sin novedades pendientes.</td></tr>'; return; }
     tb.innerHTML=filas.map(function(f,ix){
       var tel=String(f.telefono||"").replace(/\D/g,""); if(tel.length===9) tel="56"+tel;
       var mot=String(f.motivo||"").toUpperCase();
       var esDir = mot.indexOf("DIRECCION")>=0 || mot.indexOf("UBICA")>=0;
       var colorMot = esDir ? "#d98200" : "#c62828";
-      var dicho = f.ultimo_mensaje_cliente ? ('"'+f.ultimo_mensaje_cliente+'" ('+(f.cuando_escribio||"")+')') : "nunca ha escrito";
+      var resp = !!f.respondio;
+      var fondo = resp ? 'background:rgba(14,128,116,.07)' : '';
+      var sol = resp
+        ? '<div style="margin-top:3px;padding:7px 10px;border-left:3px solid #0e8074;background:rgba(14,128,116,.10);border-radius:0 8px 8px 0;font-size:12.5px;color:var(--ink)"><b style="color:#0e8074">Dijo:</b> '+String(f.solucion||"").replace(/</g,"&lt;")+'</div>'
+        : '';
+      var dicho = f.ultimo_mensaje_cliente ? ('"'+String(f.ultimo_mensaje_cliente).replace(/</g,"&lt;")+'" ('+(f.cuando_escribio||"")+')') : "nunca ha escrito";
       var det='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px;font-size:12.5px">'+
         '<div><b>Pedido Dropi:</b> #'+f.pedido+'</div>'+
         '<div><b>Guia:</b> '+(f.guia||"-")+' ('+(f.transportadora||"")+')</div>'+
         '<div><b>Telefono:</b> +'+tel+'</div>'+
         '<div><b>Recaudo:</b> $'+Number(f.recaudo||0).toLocaleString("es-CO")+'</div>'+
-        '<div style="grid-column:1/-1"><b>Direccion:</b> '+(f.direccion||"-")+'</div>'+
+        '<div style="grid-column:1/-1"><b>Direccion registrada:</b> '+(f.direccion||"-")+'</div>'+
         '<div style="grid-column:1/-1"><b>Lo ultimo que escribio:</b> '+dicho+'</div>'+
         '<div><b>Avisos automaticos:</b> '+(f.avisos_enviados||0)+'</div>'+
         '<div><b>Camila:</b> '+(f.etapa==="humano"?"en pausa (lo llevas tu)":"activa")+'</div></div>';
       var accion = f.etapa==="humano" ? "reactivar" : "pausar";
       var icono  = f.etapa==="humano" ? "\u25B6\uFE0F" : "\u23F8\uFE0F";
-      return '<tr style="cursor:pointer" onclick="nvToggle('+ix+')">'+
+      var chip = resp
+        ? '<span style="display:inline-block;background:#0e8074;color:#fff;border-radius:6px;font-size:10.5px;font-weight:800;padding:2px 7px;margin-bottom:3px">RESPONDI&Oacute; '+(f.cuando_respondio||"")+'</span><br>'
+        : '';
+      return '<tr style="cursor:pointer;'+fondo+'" onclick="nvToggle('+ix+')">'+
         '<td style="white-space:nowrap;font-weight:700">'+(f.entro||"")+'</td>'+
-        '<td><b>'+(f.nombre||"-")+'</b><br><span style="color:#8a93a0;font-size:11.5px">+'+tel+'</span></td>'+
-        '<td>'+(f.producto||"")+'<br><span style="color:#8a93a0;font-size:11.5px">$'+Number(f.recaudo||0).toLocaleString("es-CO")+'</span></td>'+
+        '<td>'+chip+'<b>'+(f.nombre||"-")+'</b><br><span style="color:#8a93a0;font-size:11.5px">+'+tel+'</span></td>'+
+        '<td>'+(f.producto||"")+'<br><span style="color:#8a93a0;font-size:11.5px">$'+Number(f.recaudo||0).toLocaleString("es-CO")+'</span>'+sol+'</td>'+
         '<td style="color:'+colorMot+';font-weight:700;font-size:12px">'+(f.motivo||"")+'</td>'+
         '<td style="text-align:center">'+(f.dias||0)+'</td>'+
         '<td style="text-align:center">'+(f.avisos_enviados||0)+'</td>'+
         '<td style="white-space:nowrap" onclick="event.stopPropagation()">'+
-          '<button onclick="crmAbrir(\''+tel+'\')" style="font-size:11.5px;padding:6px 10px;border:0;border-radius:8px;background:#25D366;color:#fff;font-weight:700;cursor:pointer;margin-right:5px">\uD83D\uDCAC Escribirle</button>'+
+          '<button onclick="crmAbrir(\''+tel+'\')" style="font-size:11.5px;padding:6px 10px;border:0;border-radius:8px;background:'+(resp?'#0e8074':'#25D366')+';color:#fff;font-weight:700;cursor:pointer;margin-right:5px">\uD83D\uDCAC '+(resp?'Gestionar':'Escribirle')+'</button>'+
           '<button onclick="dirPausar(\''+tel+'\',\''+accion+'\')" style="font-size:11.5px;padding:6px 9px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);color:var(--ink-2);font-weight:700;cursor:pointer">'+icono+'</button>'+
         '</td></tr>'+
         '<tr id="nvDet'+ix+'" style="display:none"><td colspan="7" style="background:var(--surface-2);padding:12px 18px">'+det+'</td></tr>';
@@ -1275,7 +1292,6 @@ function cargarNovedades(){
   }).catch(function(){ tb.innerHTML='<tr><td colspan="7" class="vacio">No se pudo cargar (flujo Panel: novedades activo en n8n?).</td></tr>'; });
 }
 
-/* ---------- Entregas: acuse real de WhatsApp por pedido de pagina ---------- */
 function _entPinta(a, cod){
   if(a === 'read')      return ['#0e8074','LEIDO'];
   if(a === 'delivered') return ['#0e8074','LLEGO'];
