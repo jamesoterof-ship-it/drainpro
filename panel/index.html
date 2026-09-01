@@ -522,6 +522,11 @@ tbody tr:hover .chev{color:var(--brand)}
         <svg class="ico" viewBox="0 0 24 24"><path d="M3 3v18h18"/><rect x="7" y="11" width="3" height="6" rx="1"/><rect x="12" y="7" width="3" height="10" rx="1"/><rect x="17" y="13" width="3" height="4" rx="1"/></svg>
         Visitas y conversión
       </div>
+      <div class="nav-i" data-view="entregas">
+        <svg class="ico" viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"/><path d="M4 18l5 5"/></svg>
+        Entregas de mensajes
+        <span id="badgeEntregas" style="display:none;margin-left:auto;background:#e1283c;color:#fff;border-radius:999px;font-size:11px;font-weight:800;padding:1px 8px"></span>
+      </div>
     </nav>
 
     <div class="grouplabel">
@@ -1111,6 +1116,23 @@ tbody tr:hover .chev{color:var(--brand)}
     </div>
 
     <!-- ====== VISITAS ====== -->
+    <!-- ====== ENTREGAS DE MENSAJES ====== -->
+    <div class="content view" id="view-entregas">
+      <div class="panel">
+        <div class="tbl-head">
+          <h2>&#128232; &iquest;Le lleg&oacute; el mensaje al cliente?</h2>
+          <span style="font-size:12px;color:#8a93a0">Acuse real de WhatsApp por cada pedido de p&aacute;gina. Si dice NO LLEG&Oacute;, escr&iacute;bele t&uacute;.</span>
+          <button type="button" onclick="cargarEntregas()" style="margin-left:auto;font-size:12.5px;padding:8px 14px;border:1px solid var(--border);border-radius:9px;background:var(--surface-2);color:var(--ink-2);cursor:pointer;font-weight:700">&#128260; Actualizar</button>
+        </div>
+        <div id="resumenEntregas" style="display:flex;gap:10px;flex-wrap:wrap;padding:4px 16px 12px"></div>
+        <style>#tablaEntregas th{position:static}</style>
+        <div style="overflow-x:auto;padding:6px 4px">
+          <table id="tablaEntregas" style="min-width:920px"><thead><tr><th>Pedido</th><th>Cliente</th><th>Producto</th><th>Confirmaci&oacute;n</th><th>&iquest;Lleg&oacute;?</th><th>Acci&oacute;n</th></tr></thead>
+          <tbody id="tbodyEntregas"><tr><td colspan="6" class="vacio">Se cargan al abrir esta pesta&ntilde;a.</td></tr></tbody></table>
+        </div>
+      </div>
+    </div>
+
     <div class="content view" id="view-visitas">
       <div class="filters">
         <div class="seg"><span style="padding:7px 13px;font-size:13px;font-weight:600;color:var(--ink-2)">Página:</span></div>
@@ -1401,7 +1423,7 @@ tbody tr:hover .chev{color:var(--brand)}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
-<script src="app.js?v=104"></script>
+<script src="app.js?v=105"></script>
 </body>
 </html>
 
