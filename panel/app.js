@@ -140,8 +140,12 @@ function deshacerRechazo(k){
   refrescarAprob();
 }
 var BTN_APROB='background:var(--brand,#3056c9);color:#fff;border:0;border-radius:8px;padding:5px 12px;font-weight:700;font-size:12.5px;cursor:pointer';
-function celdaAprob(k,montadoHtml,rid){
+/* Una venta marcada FALTA DIRECCION no se puede aprobar: primero se corrige la
+   direccion con "Editar datos". Si sale a Dropi con "pendiente" vuelve devuelta
+   y perdemos el flete (paso el 31-08 con Luis Perez). */
+function celdaAprob(k,montadoHtml,rid,faltaDir){
   if(montadoHtml) return montadoHtml;
+  if(faltaDir) return '<span class="st st-ab" style="background:#fdeaea;color:#a01818"><i style="background:#c62828"></i>Corregir dirección</span>';
   if(esAprobado(k)) return '<span class="st st-rec"><i></i>Aprobado ⏳</span>';
   if(esRechazado(k)) return '<span class="st st-ab"><i></i>Eliminado</span><button class="b-desh" onclick="deshacerRechazo(&quot;'+k+'&quot;)">Deshacer</button>';
   return '<button class="b-apr" onclick="aprobar(&quot;'+k+'&quot;)">✓ Aprobar</button><button class="b-rech" title="Eliminar — sale de la lista y no se monta en Dropi" onclick="eliminar(&quot;'+k+'&quot;,&quot;'+(rid||'')+'&quot;)">🗑</button>';
@@ -708,7 +712,7 @@ function renderVentasBot(){
       <td>${o.cant}</td>
       <td class="money">${o.precio}</td>
       <td>${o.abono?'<span class="st st-rec"><i></i>Abono pendiente</span>':(o.conf?'<span class="st st-ok"><i></i>Confirmado</span>':'<span class="st st-rec"><i></i>Pendiente</span>')}</td>
-      <td class="cell-aprob" onclick="event.stopPropagation()">${celdaAprob(keyWa(o), o.montado?'<span class="st st-ok"><i></i>Montado'+(o.ordenDropi?' #'+o.ordenDropi:'')+'</span>':'', o.rid)}</td>
+      <td class="cell-aprob" onclick="event.stopPropagation()">${celdaAprob(keyWa(o), o.montado?'<span class="st st-ok"><i></i>Montado'+(o.ordenDropi?' #'+o.ordenDropi:'')+'</span>':'', o.rid, /falta direccion/i.test(String(o.estado||'')))}</td>
       <td><svg class="ico-sm chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></td>
     </tr>`).join('');
   window._ventasBotF=arr;
@@ -876,7 +880,7 @@ function renderVentasWA(){
       <td>${o.cant}</td>
       <td class="money">${o.precio}</td>
       <td>${o.abono?'<span class="st st-rec"><i></i>Abono pendiente</span>':(o.conf?'<span class="st st-ok"><i></i>Confirmado</span>':'<span class="st st-rec"><i></i>Pendiente</span>')}</td>
-      <td class="cell-aprob" onclick="event.stopPropagation()">${celdaAprob(keyWa(o), o.montado?'<span class="st st-ok"><i></i>Montado'+(o.ordenDropi?' #'+o.ordenDropi:'')+'</span>':'', o.rid)}</td>
+      <td class="cell-aprob" onclick="event.stopPropagation()">${celdaAprob(keyWa(o), o.montado?'<span class="st st-ok"><i></i>Montado'+(o.ordenDropi?' #'+o.ordenDropi:'')+'</span>':'', o.rid, /falta direccion/i.test(String(o.estado||'')))}</td>
       <td><svg class="ico-sm chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></td>
     </tr>`).join('');
   window._ventasF=arr;
@@ -1016,7 +1020,7 @@ function renderAprobar(){
       st:o.dropi?'montado':(esAprobado(k)?'aprobado':(esRechazado(k)?'rechazado':'pendiente'))});
   });
   (ordenes||[]).forEach(o=>{ if(o.loc!=='CL') return; if(o.orden<dosDias && !o.montado) return; const k=keyWa(o);
-    items.push({k,raw:o,canal:'WhatsApp',cli:o.cli,tel:o.tel,fecha:o.fecha,prod:o.prod,color:'#0e8074',comuna:o.zona,cant:o.cant,total:o.precio,orden:o.orden,abono:!!o.abono,nota:o.nota||'',
+    items.push({k,raw:o,canal:'WhatsApp',cli:o.cli,tel:o.tel,fecha:o.fecha,prod:o.prod,color:'#0e8074',comuna:o.zona,cant:o.cant,total:o.precio,orden:o.orden,abono:!!o.abono,nota:o.nota||'',faltaDir:/falta direccion/i.test(String(o.estado||'')),
       st:o.montado?'montado':(esAprobado(k)?'aprobado':(esRechazado(k)?'rechazado':'pendiente'))});
   });
   const nPend=items.filter(x=>x.st==='pendiente').length;
@@ -1035,7 +1039,7 @@ function renderAprobar(){
       <td>${esc(x.comuna||'—')}</td>
       <td>${x.cant}</td>
       <td class="money">${x.total}</td>
-      <td class="cell-aprob" onclick="event.stopPropagation()">${celdaAprob(x.k, x.st==='montado'?'<span class="st st-ok"><i></i>Montado</span>':'')}</td>
+      <td class="cell-aprob" onclick="event.stopPropagation()">${celdaAprob(x.k, x.st==='montado'?'<span class="st st-ok"><i></i>Montado</span>':'', '', x.faltaDir)}</td>
       <td onclick="event.stopPropagation()"><a class="qr" style="text-decoration:none" href="https://wa.me/${x.tel}" target="_blank">WhatsApp</a></td>
     </tr>`).join('');
 }
