@@ -592,7 +592,19 @@ function renderVisitas(){
   const box=document.getElementById('visitasBox'); if(!box) return;
   const lbl=TXT_RANGO[Rvis.tipo]||'';
   const conectadas=pagesVis();
-  var _sp=document.getElementById('segPagV'); if(_sp){ _sp.innerHTML='<button class="'+(fPagV==='todas'?'act':'')+'" onclick="setPagV(\'todas\')">Todas</button>'+conectadas.map(function(p){return '<button class="'+(fPagV===p.id?'act':'')+'" onclick="setPagV(\''+p.id+'\')"><span style="width:8px;height:8px;border-radius:50%;background:'+p.color+';display:inline-block"></span>'+esc2(p.nombre)+'</button>';}).join(''); }
+  /* desplegable de paginas: se llena solo con las que reportan, ordenadas por
+     nombre. El punto de color va aparte porque el <option> no lo admite. */
+  var _sp=document.getElementById('selPagV');
+  if(_sp){
+    var _ord=conectadas.slice().sort(function(a,b){return String(a.nombre).localeCompare(String(b.nombre),'es');});
+    if(!_ord.some(function(p){return p.id===fPagV;}) && fPagV!=='todas') fPagV='todas';
+    _sp.innerHTML='<option value="todas">Todas</option>'
+      +_ord.map(function(p){return '<option value="'+esc2(p.id)+'">'+esc2(p.nombre)+'</option>';}).join('');
+    _sp.value=fPagV;
+    var _dot=document.getElementById('pagDotV');
+    if(_dot){ var _sel=_ord.filter(function(p){return p.id===fPagV;})[0];
+      _dot.style.background=_sel?_sel.color:'var(--ink-3)'; }
+  }
   const pgs=conectadas.filter(p=>fPagV==='todas'||p.id===fPagV);
   // agregados por página, en el rango
   const data=pgs.map(p=>{
@@ -1395,10 +1407,8 @@ document.querySelectorAll('#segRvis button').forEach(b=>b.addEventListener('clic
   document.querySelectorAll('#segRvis button').forEach(x=>x.classList.remove('act'));b.classList.add('act');
   Rvis={tipo:b.dataset.r,desde:null,hasta:null}; renderVisitas();
 }));
-document.querySelectorAll('#segPagV button').forEach(b=>b.addEventListener('click',()=>{
-  document.querySelectorAll('#segPagV button').forEach(x=>x.classList.remove('act'));b.classList.add('act');
-  fPagV=b.dataset.pg; renderVisitas();
-}));
+/* el filtro de paginas ahora es el desplegable #selPagV, que llama a setPagV
+   desde su onchange; ya no hay botones que escuchar aqui */
 document.querySelectorAll('#segPaisV .minitab').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('#segPaisV .minitab').forEach(x=>x.classList.remove('act'));b.classList.add('act');
   fPaisV=b.dataset.p;renderVentasWA();

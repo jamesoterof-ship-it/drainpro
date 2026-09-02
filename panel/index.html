@@ -172,7 +172,16 @@ tbody tr:last-child td{border-bottom:none}
    Ahora se corta con puntos suspensivos y el nombre entero queda en el title. */
 .pchip span,.pchip>b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .kpi .top-r .lbl{display:flex;align-items:center;gap:6px;min-width:0;max-width:100%}
-#segPagV button{max-width:210px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* El filtro de paginas era una fila de pildoras que ya no cabia: con la tienda
+   son mas de doce y tocaba arrastrar de lado para encontrar una. Ahora es un
+   desplegable, que no crece por muchos productos que se agreguen. */
+.pagpick{display:inline-flex;align-items:center;gap:8px;background:var(--surface-2);border:1px solid var(--border);border-radius:11px;padding:5px 12px 5px 13px}
+.pagpick-lbl{font-size:13px;font-weight:600;color:var(--ink-2);white-space:nowrap}
+.pagpick-dot{width:9px;height:9px;border-radius:50%;background:var(--ink-3);flex:none}
+.pagpick select{appearance:none;-webkit-appearance:none;border:none;background:none;outline:none;cursor:pointer;
+  font-family:inherit;font-size:14px;font-weight:700;color:var(--ink);padding:4px 20px 4px 0;max-width:260px;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='11' height='7' viewBox='0 0 11 7'><path d='M1 1l4.5 4.5L10 1' fill='none' stroke='%23888' stroke-width='1.8' stroke-linecap='round'/></svg>");
+  background-repeat:no-repeat;background-position:right center}
 .money{font-weight:700;letter-spacing:-.01em}
 .st{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;white-space:nowrap}
 .st i{width:6px;height:6px;border-radius:50%}
@@ -1136,11 +1145,9 @@ tbody tr:hover .chev{color:var(--brand)}
 
     <div class="content view" id="view-visitas">
       <div class="filters">
-        <div class="seg"><span style="padding:7px 13px;font-size:13px;font-weight:600;color:var(--ink-2)">Página:</span></div>
-        <div class="seg" id="segPagV">
-          <button class="act" data-pg="todas">Todas</button>
-          <button data-pg="shilajit"><span style="width:8px;height:8px;border-radius:50%;background:#0e8074;display:inline-block"></span>Shilajit</button>
-          <button data-pg="drainpro"><span style="width:8px;height:8px;border-radius:50%;background:#3060ea;display:inline-block"></span>DRAINPRO</button>
+        <div class="pagpick"><span class="pagpick-lbl">Página:</span>
+          <span class="pagpick-dot" id="pagDotV"></span>
+          <select id="selPagV" onchange="setPagV(this.value)"><option value="todas">Todas</option></select>
         </div>
         <div class="seg alt spacer" id="segRvis">
           <button class="act" data-r="hoy">Hoy</button>
@@ -1424,7 +1431,7 @@ tbody tr:hover .chev{color:var(--brand)}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
-<script src="app.js?v=106"></script>
+<script src="app.js?v=107"></script>
 </body>
 </html>
 
