@@ -6,6 +6,11 @@
   var URL_CAJA = 'https://n8n-production-8a42.up.railway.app/webhook/caja-jaye';
   var SUELDO_MES = 5000000;
   var CAMILA_DIA = 35000;
+  /* La cuenta arranca el 1 de septiembre. Lo de agosto queda guardado en la
+     base pero no se muestra: en esos dias no se llevaba asi y mezclarlos
+     ensucia el promedio (habia domingos con una sola entrega contra la pauta
+     completa, que no representan como se opera ahora). */
+  var INICIO = '2026-09-01';
   var dias = [], rangoGan = 7;
 
   var pes = function (n) { return '$' + Math.round(Number(n) || 0).toLocaleString('es-CO'); };
@@ -80,7 +85,8 @@
       + '<td style="text-align:right;color:' + (t.q >= 0 ? 'var(--green)' : 'var(--red)') + '">' + pes(t.q) + '</td></tr>';
 
     var sub = document.getElementById('ganChartSub');
-    if (sub) sub.textContent = arr.length + ' días · promedio ' + (t.e / arr.length).toFixed(1) + ' entregas al día';
+    if (sub) sub.textContent = arr.length + (arr.length === 1 ? ' día' : ' días') + ' · promedio '
+      + (t.e / arr.length).toFixed(1) + ' entregas al día · la cuenta arranca el ' + corto(INICIO);
 
     grafico(arr);
     plan(porEnt);
@@ -170,7 +176,7 @@
 
   window.cargarGanancia = function () {
     fetch(URL_CAJA, { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) {
-      dias = (Array.isArray(j) ? j : [j]).filter(function (x) { return x && x.dia; });
+      dias = (Array.isArray(j) ? j : [j]).filter(function (x) { return x && x.dia && x.dia >= INICIO; });
       pintarGanancia();
     }).catch(function () {
       var tb = document.querySelector('#tablaGan tbody');
