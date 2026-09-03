@@ -24,9 +24,33 @@
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   })();
 
+  /* Que dias se muestran segun el selector: los ultimos N, un dia suelto o
+     un rango entre dos fechas. Los datos vienen del mas nuevo al mas viejo. */
+  function seleccion() {
+    if (rangoGan === 'dia') {
+      var d = (document.getElementById('ganDia') || {}).value;
+      return d ? dias.filter(function (x) { return x.dia === d; }) : dias.slice(0, 1);
+    }
+    if (rangoGan === 'rango') {
+      var a = (document.getElementById('ganDesde') || {}).value;
+      var b = (document.getElementById('ganHasta') || {}).value;
+      if (!a && !b) return dias.slice(0, 7);
+      return dias.filter(function (x) { return (!a || x.dia >= a) && (!b || x.dia <= b); });
+    }
+    return dias.slice(0, Number(rangoGan) || 7);
+  }
+
   function pintarGanancia() {
     if (!dias.length) return;
-    var arr = dias.slice(0, rangoGan);
+    var arr = seleccion();
+    if (!arr.length) {
+      var tbv = document.querySelector('#tablaGan tbody');
+      if (tbv) tbv.innerHTML = '<tr><td colspan="7" class="vacio">No hay entregas en esa fecha.</td></tr>';
+      var kv = document.getElementById('ganKpis'); if (kv) kv.innerHTML = '';
+      var av2 = document.getElementById('ganAvisos'); if (av2) av2.innerHTML = '';
+      var cv = document.getElementById('ganChart'); if (cv) cv.innerHTML = '<div class="vacio">Sin datos en ese rango</div>';
+      return;
+    }
     var t = { e: 0, en: 0, m: 0, c: 0, s: 0, q: 0 };
     arr.forEach(function (x) {
       t.e += num(x.entregas); t.en += num(x.entra); t.m += num(x.meta);
@@ -106,11 +130,16 @@
   function grafico(arr) {
     var el = document.getElementById('ganChart');
     if (!el || typeof echarts === 'undefined' || !arr.length) return;
+    /* OJO: si se limpia el innerHTML con una instancia viva, echarts se queda
+       sin lienzo y el grafico desaparece al cambiar de rango. Se destruye la
+       instancia primero y solo entonces se limpia. */
+    var vieja = echarts.getInstanceByDom(el);
+    if (vieja) { try { vieja.dispose(); } catch (e) {} }
     el.innerHTML = '';
     var d = arr.slice().reverse();
     var oscuro = document.documentElement.getAttribute('data-theme') === 'dark'
       || (!document.documentElement.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme:dark)').matches);
-    var inst = echarts.getInstanceByDom(el) || echarts.init(el);
+    var inst = echarts.init(el);
     inst.setOption({
       grid: { left: 8, right: 8, top: 18, bottom: 4, containLabel: true },
       tooltip: { trigger: 'axis', valueFormatter: function (v) { return pes(v); } },
@@ -188,8 +217,25 @@
     document.querySelectorAll('#segGan button').forEach(function (b) {
       b.addEventListener('click', function () {
         document.querySelectorAll('#segGan button').forEach(function (x) { x.classList.remove('act'); });
-        b.classList.add('act'); rangoGan = +b.dataset.g; pintarGanancia();
+        b.classList.add('act');
+        var v = b.dataset.g;
+        rangoGan = (v === 'dia' || v === 'rango') ? v : +v;
+        var uno = document.getElementById('ganUnDia'), ran = document.getElementById('ganRango');
+        if (uno) uno.style.display = (v === 'dia') ? 'inline-flex' : 'none';
+        if (ran) ran.style.display = (v === 'rango') ? 'inline-flex' : 'none';
+        /* al abrirlos por primera vez se rellenan con algo util */
+        if (v === 'dia') { var d = document.getElementById('ganDia'); if (d && !d.value && dias.length) d.value = dias[0].dia; }
+        if (v === 'rango') {
+          var a = document.getElementById('ganDesde'), z = document.getElementById('ganHasta');
+          if (a && !a.value && dias.length) a.value = dias[Math.min(6, dias.length - 1)].dia;
+          if (z && !z.value && dias.length) z.value = dias[0].dia;
+        }
+        pintarGanancia();
       });
+    });
+    ['ganDia', 'ganDesde', 'ganHasta'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.addEventListener('change', pintarGanancia);
     });
     document.querySelectorAll('.nav-i[data-view="ganancia"]').forEach(function (n) {
       n.addEventListener('click', function () { setTimeout(window.cargarGanancia, 60); });

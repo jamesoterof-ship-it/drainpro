@@ -84,6 +84,10 @@ nav{padding:0 12px;display:flex;flex-direction:column;gap:2px}
 .grp-wa .nav-i.act .ico{stroke:var(--green)} .grp-wa .nav-i.act::before{background:var(--green)}
 /* "Ganancia" va aparte del resto del menu: es la plata del dueno, no una
    pantalla de operacion. Se marca con el dorado de la marca. */
+/* En Ganancia el encabezado NO se pega: al quedarse fijo se veia flotando en
+   la mitad de la tabla, entre una fila y otra, y confundia. */
+#tablaGan th{position:static;text-align:right}
+#tablaGan th:first-child{text-align:left}
 .nav-i.nav-oro{background:linear-gradient(90deg,rgba(216,165,46,.14),rgba(216,165,46,.04));
   border:1px solid rgba(216,165,46,.42);color:#8a6100;font-weight:700;margin:6px 0}
 .nav-i.nav-oro .ico{stroke:#d8a52e}
@@ -785,9 +789,21 @@ tbody tr:hover .chev{color:var(--brand)}
     <div class="content view" id="view-ganancia">
       <div class="filters">
         <div class="seg" id="segGan">
-          <button class="act" data-g="7">7 días</button>
+          <button class="act" data-g="7">7 d&iacute;as</button>
           <button data-g="30">Este mes</button>
           <button data-g="90">Todo</button>
+          <button data-g="dia">Un d&iacute;a</button>
+          <button data-g="rango">Entre fechas</button>
+        </div>
+        <div class="seg alt" id="ganUnDia" style="display:none;align-items:center;gap:7px;padding:4px 10px">
+          <span style="font-size:12px;color:var(--ink-2);font-weight:600">D&iacute;a</span>
+          <input type="date" id="ganDia" style="font-size:12.5px;padding:5px 7px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--ink)">
+        </div>
+        <div class="seg alt" id="ganRango" style="display:none;align-items:center;gap:7px;padding:4px 10px">
+          <span style="font-size:12px;color:var(--ink-2);font-weight:600">Desde</span>
+          <input type="date" id="ganDesde" style="font-size:12.5px;padding:5px 7px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--ink)">
+          <span style="font-size:12px;color:var(--ink-2);font-weight:600">Hasta</span>
+          <input type="date" id="ganHasta" style="font-size:12.5px;padding:5px 7px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--ink)">
         </div>
         <div class="seg alt spacer"><span style="padding:7px 13px;font-size:12.5px;color:var(--ink-2)">Se mide por lo ENTREGADO en Dropi, no por lo vendido</span></div>
       </div>
@@ -1485,7 +1501,7 @@ tbody tr:hover .chev{color:var(--brand)}
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
 <script src="app.js?v=110"></script>
-<script src="ganancia.js?v=2"></script>
+<script src="ganancia.js?v=4"></script>
 </body>
 </html>
 
