@@ -82,6 +82,23 @@ nav{padding:0 12px;display:flex;flex-direction:column;gap:2px}
 .nav-i.act .ico{stroke:var(--brand);transform:scale(1.08)}
 .grp-web .nav-i.act .ico{stroke:var(--blue)} .grp-web .nav-i.act::before{background:var(--blue)}
 .grp-wa .nav-i.act .ico{stroke:var(--green)} .grp-wa .nav-i.act::before{background:var(--green)}
+/* "Ganancia" va aparte del resto del menu: es la plata del dueno, no una
+   pantalla de operacion. Se marca con el dorado de la marca. */
+.nav-i.nav-oro{background:linear-gradient(90deg,rgba(216,165,46,.14),rgba(216,165,46,.04));
+  border:1px solid rgba(216,165,46,.42);color:#8a6100;font-weight:700;margin:6px 0}
+.nav-i.nav-oro .ico{stroke:#d8a52e}
+.nav-i.nav-oro:hover{background:linear-gradient(90deg,rgba(216,165,46,.24),rgba(216,165,46,.08));color:#6d4c00}
+.nav-i.nav-oro.act{background:linear-gradient(90deg,rgba(216,165,46,.3),rgba(216,165,46,.1));
+  border-color:#d8a52e;color:#6d4c00}
+.nav-i.nav-oro.act::before{background:#d8a52e}
+:root[data-theme="dark"] .nav-i.nav-oro{color:#e8c877}
+:root[data-theme="dark"] .nav-i.nav-oro:hover,
+:root[data-theme="dark"] .nav-i.nav-oro.act{color:#f3dda5}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .nav-i.nav-oro{color:#e8c877}
+  :root:not([data-theme="light"]) .nav-i.nav-oro:hover,
+  :root:not([data-theme="light"]) .nav-i.nav-oro.act{color:#f3dda5}
+}
 .nav-i .badge{margin-left:auto;background:#eef0f4;color:var(--ink-2);font-size:11px;font-weight:700;padding:1px 8px;border-radius:999px}
 .nav-i.act .badge{background:var(--ink);color:var(--on-ink)}
 .nav-i.sub{padding:7px 12px 7px 36px;font-size:13.5px}
@@ -492,6 +509,10 @@ tbody tr:hover .chev{color:var(--brand)}
         CRM · Clientes
         <span id="badgeCrm" style="display:none;margin-left:auto;background:#e1283c;color:#fff;border-radius:999px;font-size:11px;font-weight:800;padding:1px 8px"></span>
       </div>
+      <div class="nav-i nav-oro" data-view="ganancia">
+        <svg class="ico" viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M17 7h4v4"/></svg>
+        Ganancia
+      </div>
       <div class="nav-i" data-view="finanzas">
         <svg class="ico" viewBox="0 0 24 24"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
         Finanzas
@@ -759,6 +780,38 @@ tbody tr:hover .chev{color:var(--brand)}
     <div class="content view" id="view-crm">
       <div class="crm-tabs" id="crmTabs"></div>
       <div id="crmCuerpo"></div>
+    </div>
+
+    <div class="content view" id="view-ganancia">
+      <div class="filters">
+        <div class="seg" id="segGan">
+          <button class="act" data-g="7">7 días</button>
+          <button data-g="30">Este mes</button>
+          <button data-g="90">Todo</button>
+        </div>
+        <div class="seg alt spacer"><span style="padding:7px 13px;font-size:12.5px;color:var(--ink-2)">Se mide por lo ENTREGADO en Dropi, no por lo vendido</span></div>
+      </div>
+      <div id="ganAvisos"></div>
+      <div class="kpis" id="ganKpis"></div>
+      <div class="panel">
+        <div class="ph"><div><h2>Entra y sale, día por día</h2><div class="sm" id="ganChartSub">—</div></div>
+          <div class="legend"><span><i style="background:var(--green)"></i>Entra</span><span><i style="background:var(--brand)"></i>Meta</span><span><i style="background:var(--ink-3)"></i>Queda</span></div></div>
+        <div class="chartwrap" id="ganChart" style="height:300px"><div class="vacio">—</div></div>
+      </div>
+      <div class="panel">
+        <div class="ph"><div><h2>Detalle diario</h2><div class="sm">Cada entrega ya trae descontado el flete y el costo del producto.</div></div></div>
+        <div style="overflow-x:auto;padding:6px 4px">
+          <table id="tablaGan" style="min-width:760px">
+            <thead><tr><th>D&iacute;a</th><th>Entregas</th><th>Entra</th><th>Meta</th><th>Camila</th><th>Sueldo</th><th>Queda</th></tr></thead>
+            <tbody><tr><td colspan="7" class="vacio">Cargando&hellip;</td></tr></tbody>
+            <tfoot></tfoot>
+          </table>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="ph"><div><h2>Plan de inversi&oacute;n</h2><div class="sm">Proyectado con el margen real por entrega que se est&aacute; midiendo.</div></div></div>
+        <div id="ganPlan" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;padding:16px"></div>
+      </div>
     </div>
 
     <div class="content view" id="view-finanzas">
@@ -1431,7 +1484,7 @@ tbody tr:hover .chev{color:var(--brand)}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
-<script src="app.js?v=108"></script>
+<script src="app.js?v=109"></script>
 </body>
 </html>
 
