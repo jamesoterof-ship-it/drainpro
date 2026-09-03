@@ -1039,7 +1039,17 @@ function renderAprobar(){
   const bg=document.getElementById('badgeAprobar');
   if(bg){ bg.style.display=nPend?'':'none'; bg.textContent=nPend; }
   agRiesgoCalc(items);
-  let arr=items.sort((a,b)=>b.orden-a.orden);
+  /* Lo que lleva mas tiempo esperando va ARRIBA: antes se ordenaba por
+     reciente y una venta de la manana se hundia al fondo de la lista, donde
+     nadie la volvia a ver. Ahora los pendientes suben, y entre ellos manda la
+     antiguedad: la que lleva mas horas sin aprobar queda de primera. Lo que ya
+     esta montado o aprobado va despues, ahi si con lo reciente arriba. */
+  let arr=items.sort((a,b)=>{
+    const pa = a.st==='pendiente', pb = b.st==='pendiente';
+    if(pa!==pb) return pa ? -1 : 1;
+    if(pa) return a.orden-b.orden;
+    return b.orden-a.orden;
+  });
   if(fAprob==='pend') arr=arr.filter(x=>x.st==='pendiente');
   window._aprobF=arr;
   if(!arr.length){ tb.innerHTML='<tr><td colspan="8" class="vacio">'+(fAprob==='pend'?'Nada por aprobar. 🎉':'Sin ventas recientes.')+'</td></tr>'; return; }
