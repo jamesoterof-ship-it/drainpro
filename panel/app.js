@@ -163,9 +163,16 @@ const fmtCOP=n=>'$'+Math.round(n).toLocaleString('es-CO');
 const fmtGS=n=>'Gs '+Math.round(n).toLocaleString('es-PY');
 const numero=v=>{const n=parseFloat(String(v??'').replace(/[^\d.,-]/g,'').replace(/\./g,'').replace(',','.'));return isNaN(n)?0:n;};
 const FLAG={CL:'flag-cl',CO:'flag-co',PY:'flag-py'};
-const BOTNOM={Carlos:'Carlos · Chile',James:'James · Colombia',Ramon:'Ramón · Paraguay',Redes:'Camila Redes · Chile'};
-const BOTLOC={Carlos:'CL',James:'CO',Ramon:'PY',Redes:'CL'};
-const BOTCOLOR={Carlos:'linear-gradient(135deg,#0e8074,#3aa897)',James:'linear-gradient(135deg,#3060ea,#6a92f5)',Ramon:'linear-gradient(135deg,#7c4dd8,#a98aec)',Redes:'linear-gradient(135deg,#d8256b,#f0699b)'};
+const BOTNOM={Carlos:'Carlos · Chile',Logistica:'Carlos · Logística',James:'James · Colombia',Ramon:'Ramón · Paraguay',Redes:'Camila Redes · Chile'};
+const BOTLOC={Carlos:'CL',Logistica:'CL',James:'CO',Ramon:'PY',Redes:'CL'};
+const BOTCOLOR={Carlos:'linear-gradient(135deg,#0e8074,#3aa897)',Logistica:'linear-gradient(135deg,#d97706,#f0a94a)',James:'linear-gradient(135deg,#3060ea,#6a92f5)',Ramon:'linear-gradient(135deg,#7c4dd8,#a98aec)',Redes:'linear-gradient(135deg,#d8256b,#f0699b)'};
+/* Logística no es otro bot con otra memoria: es el MISMO chat del cliente visto por
+   el lado de Carlos. La conversación es una sola (Camila sigue leyendo todo); lo que
+   cambia es qué se muestra en pantalla. */
+const esVistaLog=()=>fBot==='Logistica';
+/* los dos se llaman Carlos: en las tarjetas hay que distinguirlos */
+const nomCorto=b=>b==='Logistica'?'Carlos · Log.':BOTNOM[b].split(' ·')[0];
+const convDelBot=b=>b==='Logistica'?convos.filter(c=>c.log):convos.filter(c=>c.bot===b);
 
 let convos=[], ordenes=[], pedidosWeb=[], abandonadosWeb=[], visitasWeb=[], selTel=null;
 let pedidosArchivo=[], visitasArchivo=[];   // meses ya archivados (solo Histórico)
@@ -215,22 +222,25 @@ function normConv(r){
   return {n:r.NOMBRE||tel||'Sin nombre',tel,ultimo:r.ULTIMO_MENSAJE||'',hora:r.HORA||'',fecha:r.FECHA||'',
     orden:fechaOrden(r.FECHA,r.HORA),bot:esR?'Ramon':esJ?'James':'Carlos',loc:esR?'PY':esJ?'CO':'CL',
     estado:modo==='agente'?'pausada':'activa',msgs:[],loaded:false,
+    /* marcas que manda la consulta: si Carlos (logística) habló en este chat y su última línea */
+    log:(r.LOGISTICA===true||r.LOGISTICA==='true'||r.LOGISTICA==='t'),ultLog:r.ULT_LOG||'',
     /* huella del último mensaje: si cambia, el historial cacheado ya no sirve */
     sig:String(r.FECHA||'')+'|'+String(r.HORA||'')+'|'+String(r.ULTIMO_MENSAJE||'')};
 }
 function parseHist(txt){
   if(!txt) return [];
-  const parts=String(txt).split(/(?=(?:Cliente|Asistente|Ramón|Ramon|Carlos|James|Agente|Sistema)\s*(?:\[[^\]]*\])?\s*:)/g);
+  /* "Carlos (logistica)" va ANTES que "Carlos" en la lista: si no, se parte mal la etiqueta */
+  const parts=String(txt).split(/(?=(?:Cliente|Asistente|Ramón|Ramon|Carlos \(logistica\)|Carlos|James|Agente|Sistema)\s*(?:\[[^\]]*\])?\s*:)/g);
   const out=[];
   /* las notas "Sistema:" ahora se muestran como aviso en la conversación (antes se ocultaban
      y cosas importantes como el link del anticipo quedaban invisibles) */
   const _sacaSistema=s=>{const notas=[];const limpio=String(s).replace(/\n?\s*Sistema\s*:([^\n]*)/g,(_,n)=>{if(n.trim())notas.push(n.trim());return '';}).trim();return {limpio,notas};};
   parts.forEach(p=>{p=p.trim();if(!p)return;
-    const m=p.match(/^(Cliente|Asistente|Ramón|Ramon|Carlos|James|Agente|Sistema)\s*(?:\[([^\]]*)\])?\s*:\s*([\s\S]*)$/);
+    const m=p.match(/^(Cliente|Asistente|Ramón|Ramon|Carlos \(logistica\)|Carlos|James|Agente|Sistema)\s*(?:\[([^\]]*)\])?\s*:\s*([\s\S]*)$/);
     if(m){const lbl=m[1],time=(m[2]||'').trim();
       if(lbl==='Sistema'){const b=m[3].trim();if(b)out.push({from:'sistema',text:b,time:time});return;}
       const {limpio,notas}=_sacaSistema(m[3]);
-      const from=lbl==='Cliente'?'cliente':(lbl==='Agente'?'agente':'bot');
+      const from=lbl==='Cliente'?'cliente':(lbl==='Agente'?'agente':(lbl==='Carlos (logistica)'?'logistica':'bot'));
       if(limpio)out.push({from,text:limpio,time:time});
       notas.forEach(n=>out.push({from:'sistema',text:n,time:''}));}
     else {const {limpio,notas}=_sacaSistema(p);if(limpio)out.push({from:'cliente',text:limpio,time:''});notas.forEach(n=>out.push({from:'sistema',text:n,time:''}));}
@@ -681,9 +691,15 @@ const inicialesDe=n=>String(n||'?').trim().split(/\s+/).slice(0,2).map(w=>w[0]).
 function renderConvStats(){
   const cont=document.getElementById('convStats'); if(!cont) return;
   const lbl=TXT_RANGO[Rconv.tipo]||'';
-  const cs=convos.filter(c=>c.bot===fBot && enRangoDe(c.orden,Rconv));
-  const total=convos.filter(c=>c.bot===fBot).length;
-  const ventas=ordenes.filter(o=>o.bot===fBot && enRangoDe(o.orden,Rconv)).length;
+  const base=convDelBot(fBot);
+  const cs=base.filter(c=>enRangoDe(c.orden,Rconv));
+  const total=base.length;
+  /* Carlos no vende: en su vista contamos las ventas de ESOS mismos clientes,
+     que es lo que él confirmó o destrabó, no ventas suyas */
+  const ventas=esVistaLog()
+    ? (function(){const s={};base.forEach(c=>s[soloNum(c.tel)]=1);
+        return ordenes.filter(o=>s[soloNum(o.tel)] && enRangoDe(o.orden,Rconv)).length;})()
+    : ordenes.filter(o=>o.bot===fBot && enRangoDe(o.orden,Rconv)).length;
   const conAgente=cs.filter(c=>c.estado==='pausada').length;
   const conv=cs.length?(ventas/cs.length*100):0;
   cont.innerHTML=
@@ -702,23 +718,27 @@ function renderConvList(){
   // fusionar pedidos web que aún no tienen conversación (para ver los pendientes de confirmar)
   var _base=convos.slice(), _seen={}; _base.forEach(function(c){ _seen[soloNum(c.tel)]=1; });
   (pedidosWeb||[]).forEach(function(p){ var t=soloNum(p.tel); if(t && !_seen[t]){ _seen[t]=1; _base.push({tel:t, n:p.cli||t, bot:'carlos', estado:'activa', ultimo:'📦 Pedido web · '+(p.conf?'confirmado ✅':'esperando confirmación ⏳'), hora:'', fecha:p.fecha||'', orden:p.orden||0}); } });
-  let arr=_base.filter(c=>c.bot===fBot && enRangoDe(c.orden,Rconv));
+  let arr=_base.filter(c=>(esVistaLog()?c.log:c.bot===fBot) && enRangoDe(c.orden,Rconv));
   if(fEst!=='todas') arr=arr.filter(c=>c.estado===fEst);
   if(q) arr=arr.filter(c=>(c.n+' '+c.tel).toLowerCase().includes(q));
   if(!arr.length){cont.innerHTML='<div class="vacio">Sin conversaciones aquí.</div>';return;}
   cont.innerHTML=arr.slice(0,150).map(c=>`
     <div class="citem ${c.tel===selTel?'sel':''}" onclick="abrirChat('${c.tel}')">
-      <div class="cav" style="background:${BOTCOLOR[c.bot]}">${inicialesDe(c.n)}<span class="bdot ${c.estado==='activa'?'bdot-on':'bdot-paused'}"></span></div>
+      <div class="cav" style="background:${BOTCOLOR[esVistaLog()?'Logistica':c.bot]}">${inicialesDe(c.n)}<span class="bdot ${c.estado==='activa'?'bdot-on':'bdot-paused'}"></span></div>
       <div class="cinfo">
         <div class="l1"><span class="nm">${esc(c.n)}</span><span class="tm">${esc(c.hora||c.fecha)}</span></div>
-        <div class="l2">${confBadgeHTML(pedWebDe(c.tel))}${esc(c.ultimo)||'—'}</div>
+        <div class="l2">${confBadgeHTML(pedWebDe(c.tel))}${esc((esVistaLog()&&c.ultLog)?c.ultLog:c.ultimo)||'—'}${(!esVistaLog()&&c.log)?'<span class="tag-log">Carlos</span>':''}</div>
       </div>
       <span class="ctag ${c.estado==='activa'?'ctag-bot':'ctag-ag'}">${c.estado==='activa'?'Bot':'Agente'}</span>
     </div>`).join('');
 }
 function renderVentasBot(){
   const tb=document.getElementById('tbodyVentasBot'); if(!tb) return;
-  const arr=ordenes.filter(o=>o.bot===fBot);
+  /* en la vista de Logística no hay ventas propias: se listan las de esos mismos clientes */
+  const arr=esVistaLog()
+    ? (function(){const s={};convDelBot('Logistica').forEach(c=>s[soloNum(c.tel)]=1);
+        return ordenes.filter(o=>s[soloNum(o.tel)]);})()
+    : ordenes.filter(o=>o.bot===fBot);
   if(!arr.length){tb.innerHTML='<tr><td colspan="8" class="vacio">Este bot aún no registra ventas.</td></tr>';return;}
   tb.innerHTML=arr.slice(0,80).map((o,i)=>`
     <tr onclick="verVentaBot(${i})">
@@ -747,8 +767,10 @@ function pintarChatHead(c){
   document.getElementById('chNom').textContent=c.n;
   var _pw=pedWebDe(c.tel);
   var _st=_pw?(_pw.conf?' · <b style="color:#0f7a52">✅ Confirmó su pedido</b>':' · <b style="color:#c0392b">⏳ PENDIENTE de confirmar</b>'):'';
-  document.getElementById('chTel').innerHTML='+'+c.tel+' · atendida por <b>'+BOTNOM[c.bot]+'</b>'+_st;
-  const av=document.getElementById('chAv'); av.style.background=BOTCOLOR[c.bot]; av.textContent=inicialesDe(c.n);
+  const _quien=esVistaLog()?'Logistica':c.bot;
+  document.getElementById('chTel').innerHTML='+'+c.tel+' · atendida por <b>'+BOTNOM[_quien]+'</b>'+
+    (esVistaLog()?' <span style="opacity:.6">· solo lo de logística</span>':'')+_st;
+  const av=document.getElementById('chAv'); av.style.background=BOTCOLOR[_quien]; av.textContent=inicialesDe(c.n);
   const b=document.getElementById('btnPausa'), t=document.getElementById('pauseTxt');
   if(c.estado==='pausada'){b.classList.add('btn-resume');t.textContent='Activar bot';}
   else{b.classList.remove('btn-resume');t.textContent='Pausar bot';}
@@ -794,11 +816,18 @@ function cuerpoMensaje(m){
 }
 function renderBubbles(c){
   const box=document.getElementById('chmsgs');
-  if(!c.msgs.length){box.innerHTML='<div class="vacio">Sin mensajes todavía.</div>';return;}
-  box.innerHTML=c.msgs.map(m=>{
+  /* La conversación guardada es UNA sola. Aquí se decide qué mostrar:
+     - en la vista de Logística: solo el cliente y lo que escribió Carlos
+     - en la vista de Camila: todo, pero lo de Carlos va marcado en naranja
+       para que no se confunda con lo que dijo ella */
+  let msgs=c.msgs;
+  if(esVistaLog()) msgs=msgs.filter(m=>m.from==='cliente'||m.from==='logistica'||m.from==='sistema');
+  if(!msgs.length){box.innerHTML='<div class="vacio">'+(esVistaLog()?'Aquí no ha escrito Carlos.':'Sin mensajes todavía.')+'</div>';return;}
+  box.innerHTML=msgs.map(m=>{
     if(m.from==='sistema'){const rojo=/link de pago|anticipo|abono|riesgo/i.test(m.text||'');return `<div class="msg m-sys${rojo?' m-sys-rojo':''}"><div class="who">${rojo?'⛔':'⚠'} Sistema</div>${cuerpoMensaje(m)}</div>`;}
-    const cls=m.from==='cliente'?'m-cli':(m.from==='agente'?'m-ag':'m-bot');
-    const who=m.from==='cliente'?'Cliente':(m.from==='agente'?'Tú · Agente':BOTNOM[c.bot].split(' ·')[0]+' · Bot');
+    const cls=m.from==='cliente'?'m-cli':(m.from==='agente'?'m-ag':(m.from==='logistica'?'m-log':'m-bot'));
+    const who=m.from==='cliente'?'Cliente':(m.from==='agente'?'Tú · Agente':
+      (m.from==='logistica'?'Carlos · Logística':BOTNOM[c.bot].split(' ·')[0]+' · Bot'));
     return `<div class="msg ${cls}"><div class="who">${who}</div>${cuerpoMensaje(m)}${m.time?'<div style="font-size:11px;opacity:.5;margin-top:3px">'+esc(m.time)+'</div>':''}</div>`;
   }).join('');
   box.scrollTop=box.scrollHeight;
@@ -937,14 +966,16 @@ const waVenta=()=>{const o=window._ventaAbierta;if(o)window.open('https://wa.me/
 function renderBots(){
   const cont=document.getElementById('botcards'); if(!cont) return;
   const hoyV=ordenes.filter(o=>o.orden>=inicioDia(0));
-  cont.innerHTML=['Carlos','James','Ramon','Redes'].map(b=>{
-    const cs=convos.filter(c=>c.bot===b);
+  cont.innerHTML=['Carlos','Logistica','James','Ramon','Redes'].map(b=>{
+    const cs=convDelBot(b);
     const pausadas=cs.filter(c=>c.estado==='pausada').length;
-    const ventasHoy=hoyV.filter(o=>o.bot===b).length;
+    const ventasHoy=b==='Logistica'
+      ? (function(){const s={};cs.forEach(c=>s[soloNum(c.tel)]=1);return hoyV.filter(o=>s[soloNum(o.tel)]).length;})()
+      : hoyV.filter(o=>o.bot===b).length;
     const loc=BOTLOC[b];
     return `<div class="botmini">
       <span class="bav" style="background:${BOTCOLOR[b]};width:26px;height:26px;font-size:12px;line-height:26px">${b[0]}</span>
-      <b>${BOTNOM[b].split(' ·')[0]}</b><span class="flag ${FLAG[loc]}"></span>
+      <b>${nomCorto(b)}</b><span class="flag ${FLAG[loc]}"></span>
       <span class="bmnum" title="conversaciones">💬 ${cs.length}</span>
       <span class="bmnum" title="ventas hoy" style="color:#1f9d55;font-weight:800">🛒 ${ventasHoy}</span>
       <span class="bmnum" title="con agente">👤 ${pausadas}</span>
@@ -955,10 +986,12 @@ function renderBots(){
 function irConvBot(b){
   fBot=b; selTel=null;
   document.querySelectorAll('.nav-i[data-bot]').forEach(x=>x.classList.toggle('subact',x.dataset.bot===b));
-  document.getElementById('tabVentasLbl').textContent='Ventas de '+BOTNOM[b].split(' ·')[0];
+  document.getElementById('tabVentasLbl').textContent=b==='Logistica'?'Ventas de estos clientes':'Ventas de '+nomCorto(b);
   mostrarVista('conv'); setTabConv('conv'); renderConvList();
   document.getElementById('vtitle').textContent=BOTNOM[b];
-  document.getElementById('vsub').textContent='Conversaciones y ventas de este bot';
+  document.getElementById('vsub').textContent=b==='Logistica'
+    ? 'Solo lo que escribe Carlos: confirmaciones, anticipos, novedades y carritos'
+    : 'Conversaciones y ventas de este bot';
 }
 function irVentasDeBot(b){ irConvBot(b); setTabConv('ventas'); }
 
