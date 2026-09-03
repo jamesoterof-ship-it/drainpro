@@ -20,7 +20,7 @@
   function corto(s) { var p = String(s).split('-'); return p[2] + ' ' + MES[+p[1] - 1]; }
   function diaSem(s) { var p = String(s).split('-'); return DIAS[new Date(+p[0], +p[1] - 1, +p[2]).getDay()]; }
   var HOY = (function () {
-    var d = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Santiago' }));
+    var d = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Bogota' }));
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   })();
 
@@ -56,7 +56,7 @@
          que el dia sin entregas tenia plata. */
       var tbv = document.querySelector('#tablaGan tbody');
       var esHoy = (rangoGan === 'hoy');
-      if (tbv) tbv.innerHTML = '<tr><td colspan="8" class="vacio">'
+      if (tbv) tbv.innerHTML = '<tr><td colspan="7" class="vacio">'
         + (esHoy ? 'Todavía no hay entregas registradas hoy. Dropi las va marcando durante el día.'
                  : 'No hay entregas en esa fecha.') + '</td></tr>';
       var tfv = document.querySelector('#tablaGan tfoot'); if (tfv) tfv.innerHTML = '';
@@ -77,19 +77,13 @@
     });
     var pctMeta = t.en ? Math.round(t.m / t.en * 100) : 0;
     var porEnt = t.e ? t.en / t.e : 0;
-    /* Dos numeros distintos y los dos importan:
-       - genera: lo que deja el negocio (entra menos Meta y bots). Es la cuenta
-         de James: entra de Dropi - Meta - bots.
-       - t.q: lo que sobra DESPUES de pagarse el sueldo, o sea lo reinvertible. */
-    var genera = t.en - t.m - t.c;
-
     var k = document.getElementById('ganKpis');
     if (k) k.innerHTML =
       tar('Te liquida Dropi', pes(t.en), arr.length + (arr.length === 1 ? ' día · ' : ' días · ') + t.e + ' entregas', '') +
       tar('Meta', pes(t.m), pctMeta + '% de lo que entra', pctMeta > 55 ? 'mal' : '') +
       tar('Bots', pes(t.c), 'Camila, Carlos y 3 más', '') +
-      tar('TE QUEDA', pes(genera), 'Dropi menos Meta y bots', genera >= 0 ? 'ok' : 'mal') +
-      tar('Tras tu sueldo', pes(t.q), 'lo que sobra para reinvertir', t.q >= 0 ? '' : 'mal') +
+      tar('Tu sueldo', pes(t.s), 'de los $5.000.000 del mes', '') +
+      tar('TE QUEDA', pes(t.q), 'ya con tu sueldo descontado', t.q >= 0 ? 'ok' : 'mal') +
       tar('Cada entrega deja', pes(porEnt), 'de lo que te liquida Dropi', '');
 
     /* el mes contra el sueldo */
@@ -117,27 +111,23 @@
     /* tabla */
     var tb = document.querySelector('#tablaGan tbody');
     if (tb) tb.innerHTML = arr.map(function (x) {
-      /* la columna QUEDA es la cuenta de James: lo que liquida Dropi menos
-         Meta y bots. El sueldo va aparte, en su propia columna. */
-      var q = num(x.entra) - num(x.meta) - num(x.camila);
-      var tras = q - num(x.sueldo);
+      /* TE QUEDA es lo ultimo: despues de Meta, de los bots y del sueldo. */
+      var q = num(x.entra) - num(x.meta) - num(x.camila) - num(x.sueldo);
       return '<tr' + (x.dia === HOY ? ' style="background:var(--brand-tint)"' : '') + '>'
         + '<td><b>' + corto(x.dia) + '</b><small style="display:block;color:var(--ink-3)">' + diaSem(x.dia) + (x.dia === HOY ? ' · hoy' : '') + '</small></td>'
         + '<td style="text-align:right">' + num(x.entregas) + '</td>'
         + '<td style="text-align:right">' + pes(x.entra) + '</td>'
         + '<td style="text-align:right;color:var(--ink-2)">−' + pes(x.meta) + '</td>'
         + '<td style="text-align:right;color:var(--ink-2)">−' + pes(x.camila) + '</td>'
-        + '<td style="text-align:right;font-weight:700;color:' + (q >= 0 ? 'var(--green)' : 'var(--red)') + '">' + pes(q) + '</td>'
         + '<td style="text-align:right;color:var(--ink-2)">−' + pes(x.sueldo) + '</td>'
-        + '<td style="text-align:right;color:' + (tras >= 0 ? 'var(--ink)' : 'var(--red)') + '">' + pes(tras) + '</td></tr>';
+        + '<td style="text-align:right;font-weight:700;color:' + (q >= 0 ? 'var(--green)' : 'var(--red)') + '">' + pes(q) + '</td></tr>';
     }).join('');
     var tf = document.querySelector('#tablaGan tfoot');
     if (tf) tf.innerHTML = '<tr style="font-weight:800;background:var(--surface-2)"><td>Total</td>'
       + '<td style="text-align:right">' + t.e + '</td><td style="text-align:right">' + pes(t.en) + '</td>'
       + '<td style="text-align:right">−' + pes(t.m) + '</td><td style="text-align:right">−' + pes(t.c) + '</td>'
-      + '<td style="text-align:right;color:' + (genera >= 0 ? 'var(--green)' : 'var(--red)') + '">' + pes(genera) + '</td>'
       + '<td style="text-align:right">−' + pes(t.s) + '</td>'
-      + '<td style="text-align:right;color:' + (t.q >= 0 ? 'var(--ink)' : 'var(--red)') + '">' + pes(t.q) + '</td></tr>';
+      + '<td style="text-align:right;color:' + (t.q >= 0 ? 'var(--green)' : 'var(--red)') + '">' + pes(t.q) + '</td></tr>';
 
     var sub = document.getElementById('ganChartSub');
     if (sub) sub.textContent = arr.length + (arr.length === 1 ? ' día' : ' días') + ' · promedio '
@@ -243,7 +233,7 @@
       pintarGanancia();
     }).catch(function () {
       var tb = document.querySelector('#tablaGan tbody');
-      if (tb) tb.innerHTML = '<tr><td colspan="8" class="vacio">No se pudo cargar la caja.</td></tr>';
+      if (tb) tb.innerHTML = '<tr><td colspan="7" class="vacio">No se pudo cargar la caja.</td></tr>';
     });
   };
 
