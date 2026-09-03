@@ -727,7 +727,7 @@ function renderConvList(){
       <div class="cav" style="background:${BOTCOLOR[esVistaLog()?'Logistica':c.bot]}">${inicialesDe(c.n)}<span class="bdot ${c.estado==='activa'?'bdot-on':'bdot-paused'}"></span></div>
       <div class="cinfo">
         <div class="l1"><span class="nm">${esc(c.n)}</span><span class="tm">${esc(c.hora||c.fecha)}</span></div>
-        <div class="l2">${confBadgeHTML(pedWebDe(c.tel))}${esc((esVistaLog()&&c.ultLog)?c.ultLog:c.ultimo)||'—'}${(!esVistaLog()&&c.log)?'<span class="tag-log">Carlos</span>':''}</div>
+        <div class="l2">${confBadgeHTML(pedWebDe(c.tel))}${(!esVistaLog()&&c.log)?'<span class="tag-log">Carlos</span> ':''}${esc((esVistaLog()&&c.ultLog)?c.ultLog:c.ultimo)||'—'}</div>
       </div>
       <span class="ctag ${c.estado==='activa'?'ctag-bot':'ctag-ag'}">${c.estado==='activa'?'Bot':'Agente'}</span>
     </div>`).join('');
