@@ -1137,6 +1137,7 @@ const TITULOS={
   listanegra:['Lista negra','Clientes con devoluciones — anticipo obligatorio si vuelven a comprar'],
   direcciones:['Direcciones incompletas','Pedidos que NO se aprueban hasta corregir la dirección — contáctalos tú de parte de logística'],
   crm:['CRM · Clientes','Novedades, garantías, avisos y seguimiento — todo en un solo lugar'],resumen:['Resumen general','Todos los canales · monedas separadas por país'],
+  ganancia:['Ganancia','Lo que entra de Dropi menos Meta, Camila y tu sueldo · en pesos colombianos'],
   finanzas:['Finanzas','P&L, costos, devoluciones y rentabilidad por producto · Chile · en COP'],
   dropi:['Dropi · Guías','Estado de cada guía actualizado con Dropi · seguimiento'],
   radar:['Radar de productos','Lo que se está vendiendo en Dropi, medido por el inventario que se mueve'],
