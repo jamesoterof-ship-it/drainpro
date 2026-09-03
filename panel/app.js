@@ -91,8 +91,11 @@ async function sincronizarAprob(){
     if(!r.ok) return;
     const j=await r.json();
     const claves=(j.aprobados||j.keys||[]).map(String);
-    if(!claves.length) return;
-    guardarSet('jaye_aprob', new Set(claves));
+    if(claves.length) guardarSet('jaye_aprob', new Set(claves));
+    /* Los ELIMINADOS también se bajan del servidor. Antes vivían solo en el
+       localStorage del aparato: si la llave se borraba en el servidor, ese teléfono
+       seguía escondiendo la venta para siempre (pasó con Maria Grandon el 3-09). */
+    if(Array.isArray(j.rechazados)) guardarSet('jaye_rechaz', new Set(j.rechazados.map(String)));
     refrescarAprob();
   }catch(e){}
 }
@@ -1079,13 +1082,20 @@ document.querySelectorAll('#segAprob .minitab').forEach(b=>b.addEventListener('c
 function renderAprobar(){
   const tb=document.getElementById('tbodyAprobar'); if(!tb) return;
   const dosDias=Date.now()-2*864e5;
+  /* Lo que NO está montado necesita atención, así que se mira 7 días atrás, no 2.
+     Con la ventana de 2 días, el de Alejandro (31-08) llevaba 3 días invisible y el
+     de Sandra (01-09) otros 2: ninguno de los dos aparecía en ninguna pestaña. */
+  const sieteDias=Date.now()-7*864e5;
   const items=[];
   (pedidosWeb||[]).forEach(o=>{ if(!o.conf) return; const k=keyPag(o);
     items.push({k,raw:o,canal:'Página',cli:o.cli,tel:o.tel,fecha:o.fecha,prod:o.prod,color:o.color,comuna:o.comuna,cant:o.cant,total:o.total,orden:o.orden,abono:!!(o.abono||/abono pendiente/i.test(String(o.estado||''))),
       st:o.dropi?'montado':(esAprobado(k)?'aprobado':(esRechazado(k)?'rechazado':'pendiente'))});
   });
-  (ordenes||[]).forEach(o=>{ if(o.loc!=='CL') return; if(o.orden<dosDias && !o.montado) return; const k=keyWa(o);
-    items.push({k,raw:o,canal:'WhatsApp',cli:o.cli,tel:o.tel,fecha:o.fecha,prod:o.prod,color:'#0e8074',comuna:o.zona,cant:o.cant,total:o.precio,orden:o.orden,abono:!!o.abono,nota:o.nota||'',faltaDir:/falta direccion/i.test(String(o.estado||'')),
+  (ordenes||[]).forEach(o=>{ if(o.loc!=='CL') return; if(o.orden < (o.montado?dosDias:sieteDias)) return; const k=keyWa(o);
+    /* rid = id de la fila. SIN esto el borrado se hacia por telefono+fecha y dos
+       ventas del mismo cliente el mismo dia se borraban LAS DOS (paso el 3-09 con
+       Maria Grandon). El servidor ya tiene el candado; solo hay que mandarle el id. */
+    items.push({k,raw:o,rid:o.rid||'',canal:'WhatsApp',cli:o.cli,tel:o.tel,fecha:o.fecha,prod:o.prod,color:'#0e8074',comuna:o.zona,cant:o.cant,total:o.precio,orden:o.orden,abono:!!o.abono,nota:o.nota||'',faltaDir:/falta direccion/i.test(String(o.estado||'')),
       st:o.montado?'montado':(esAprobado(k)?'aprobado':(esRechazado(k)?'rechazado':'pendiente'))});
   });
   const nPend=items.filter(x=>x.st==='pendiente').length;
@@ -1114,7 +1124,7 @@ function renderAprobar(){
       <td>${esc(x.comuna||'—')}</td>
       <td>${x.cant}</td>
       <td class="money">${x.total}</td>
-      <td class="cell-aprob" onclick="event.stopPropagation()">${celdaAprob(x.k, x.st==='montado'?'<span class="st st-ok"><i></i>Montado</span>':'', '', x.faltaDir)}</td>
+      <td class="cell-aprob" onclick="event.stopPropagation()">${celdaAprob(x.k, x.st==='montado'?'<span class="st st-ok"><i></i>Montado</span>':'', x.rid||'', x.faltaDir)}</td>
       <td onclick="event.stopPropagation()"><a class="qr" style="text-decoration:none" href="https://wa.me/${x.tel}" target="_blank">WhatsApp</a></td>
     </tr>`).join('');
 }
