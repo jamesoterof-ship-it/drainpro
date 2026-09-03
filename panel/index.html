@@ -84,10 +84,21 @@ nav{padding:0 12px;display:flex;flex-direction:column;gap:2px}
 .grp-wa .nav-i.act .ico{stroke:var(--green)} .grp-wa .nav-i.act::before{background:var(--green)}
 /* "Ganancia" va aparte del resto del menu: es la plata del dueno, no una
    pantalla de operacion. Se marca con el dorado de la marca. */
-/* En Ganancia el encabezado NO se pega: al quedarse fijo se veia flotando en
-   la mitad de la tabla, entre una fila y otra, y confundia. */
-#tablaGan th{position:static;text-align:right}
+/* Historial de Ganancia: el encabezado queda fijo MIENTRAS SE BAJA DENTRO de
+   la tabla, no pegado a la pantalla. Antes se pegaba al viewport (top:64px) y
+   se veia flotando en la mitad de la lista, entre una fila y otra. Ahora el
+   scroll ocurre dentro de #ganScroll y el th se ancla arriba de ese cajon. */
+#ganScroll{max-height:460px;overflow:auto}
+#tablaGan th{position:sticky;top:0;z-index:5;text-align:right;background:var(--surface-2);
+  box-shadow:0 1px 0 var(--border)}
 #tablaGan th:first-child{text-align:left}
+/* tarjetas mas chicas en esta vista: son muchas cifras y no necesitan gritar */
+#view-ganancia .kpis{grid-template-columns:repeat(auto-fit,minmax(146px,1fr));gap:8px}
+#view-ganancia .kpi{padding:10px 12px}
+#view-ganancia .kpi .val{font-size:16.5px;letter-spacing:-.02em;margin:2px 0 1px;font-weight:800}
+#view-ganancia .kpi .lbl{font-size:10.5px;letter-spacing:.03em}
+#view-ganancia .kpi .sm{font-size:10.5px;line-height:1.3}
+@media(max-width:900px){#view-ganancia .kpis{grid-template-columns:repeat(2,1fr)}}
 .nav-i.nav-oro{background:linear-gradient(90deg,rgba(216,165,46,.14),rgba(216,165,46,.04));
   border:1px solid rgba(216,165,46,.42);color:#8a6100;font-weight:700;margin:6px 0}
 .nav-i.nav-oro .ico{stroke:#d8a52e}
@@ -789,6 +800,8 @@ tbody tr:hover .chev{color:var(--brand)}
     <div class="content view" id="view-ganancia">
       <div class="filters">
         <div class="seg" id="segGan">
+          <button data-g="hoy">Hoy</button>
+          <button data-g="ayer">Ayer</button>
           <button class="act" data-g="7">7 d&iacute;as</button>
           <button data-g="30">Este mes</button>
           <button data-g="90">Todo</button>
@@ -816,9 +829,9 @@ tbody tr:hover .chev{color:var(--brand)}
       </div>
       <div class="panel">
         <div class="ph"><div><h2>Detalle diario</h2><div class="sm">Cada entrega ya trae descontado el flete y el costo del producto.</div></div></div>
-        <div style="overflow-x:auto;padding:6px 4px">
+        <div id="ganScroll" style="padding:6px 4px">
           <table id="tablaGan" style="min-width:760px">
-            <thead><tr><th>D&iacute;a</th><th>Entregas</th><th>Entra</th><th>Meta</th><th>Camila</th><th>Sueldo</th><th>Queda</th></tr></thead>
+            <thead><tr><th>D&iacute;a</th><th>Entregas</th><th>Entra</th><th>Meta</th><th>Bots</th><th>Sueldo</th><th>Queda</th></tr></thead>
             <tbody><tr><td colspan="7" class="vacio">Cargando&hellip;</td></tr></tbody>
             <tfoot></tfoot>
           </table>
@@ -1501,7 +1514,7 @@ tbody tr:hover .chev{color:var(--brand)}
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
 <script src="app.js?v=110"></script>
-<script src="ganancia.js?v=4"></script>
+<script src="ganancia.js?v=7"></script>
 </body>
 </html>
 

@@ -5,7 +5,7 @@
 (function () {
   var URL_CAJA = 'https://n8n-production-8a42.up.railway.app/webhook/caja-jaye';
   var SUELDO_MES = 5000000;
-  var CAMILA_DIA = 35000;
+  var BOTS_DIA = 40000;   /* Camila, Carlos, el inspector, el de redes y el de seguimiento */
   /* La cuenta arranca el 1 de septiembre. Lo de agosto queda guardado en la
      base pero no se muestra: en esos dias no se llevaba asi y mezclarlos
      ensucia el promedio (habia domingos con una sola entrega contra la pauta
@@ -27,6 +27,13 @@
   /* Que dias se muestran segun el selector: los ultimos N, un dia suelto o
      un rango entre dos fechas. Los datos vienen del mas nuevo al mas viejo. */
   function seleccion() {
+    if (rangoGan === 'hoy') return dias.filter(function (x) { return x.dia === HOY; });
+    if (rangoGan === 'ayer') {
+      var p = HOY.split('-');
+      var d = new Date(+p[0], +p[1] - 1, +p[2] - 1);
+      var ay = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      return dias.filter(function (x) { return x.dia === ay; });
+    }
     if (rangoGan === 'dia') {
       var d = (document.getElementById('ganDia') || {}).value;
       return d ? dias.filter(function (x) { return x.dia === d; }) : dias.slice(0, 1);
@@ -61,9 +68,11 @@
 
     var k = document.getElementById('ganKpis');
     if (k) k.innerHTML =
-      tar('Entra', pes(t.en), arr.length + ' días · ' + t.e + ' entregas', '') +
+      tar('Entra', pes(t.en), arr.length + (arr.length === 1 ? ' día · ' : ' días · ') + t.e + ' entregas', '') +
       tar('Meta', pes(t.m), pctMeta + '% de lo que entra', pctMeta > 55 ? 'mal' : '') +
-      tar('Te queda', pes(t.q), 'con tu sueldo ya descontado', t.q >= 0 ? 'ok' : 'mal') +
+      tar('Bots', pes(t.c), 'Camila, Carlos y 3 más', '') +
+      tar('Tu sueldo', pes(t.s), 'de los $5.000.000 del mes', '') +
+      tar('Te queda', pes(t.q), 'ya con todo descontado', t.q >= 0 ? 'ok' : 'mal') +
       tar('Cada entrega deja', pes(porEnt), 'limpio, sin flete ni producto', '');
 
     /* el mes contra el sueldo */
@@ -174,7 +183,7 @@
     var mejor = 0, mq = -Infinity;
     ESC.forEach(function (x, i) {
       x.entra = x.e * 30 * porEnt;
-      x.queda = x.entra - x.m * 30 - CAMILA_DIA * 30 - SUELDO_MES;
+      x.queda = x.entra - x.m * 30 - BOTS_DIA * 30 - SUELDO_MES;
       if (x.queda > mq) { mq = x.queda; mejor = i; }
     });
     var html = ESC.map(function (x, i) {
@@ -187,11 +196,11 @@
         + '<div style="font-size:12px;color:var(--ink-2);margin-top:9px;padding-top:9px;border-top:1px solid var(--border);line-height:1.9">'
         + 'Entra <b style="float:right;color:var(--ink)">' + pes(x.entra) + '</b><br>'
         + 'Meta <b style="float:right;color:var(--ink)">−' + pes(x.m * 30) + '</b><br>'
-        + 'Camila <b style="float:right;color:var(--ink)">−' + pes(CAMILA_DIA * 30) + '</b><br>'
+        + 'Bots <b style="float:right;color:var(--ink)">−' + pes(BOTS_DIA * 30) + '</b><br>'
         + 'Tu sueldo <b style="float:right;color:var(--ink)">−' + pes(SUELDO_MES) + '</b></div></div>';
     }).join('');
     var base = ESC[1];
-    var techo = (base.entra - CAMILA_DIA * 30 - SUELDO_MES) / 30;
+    var techo = (base.entra - BOTS_DIA * 30 - SUELDO_MES) / 30;
     html += '<div style="grid-column:1/-1;border:1px solid var(--amber);border-radius:12px;padding:14px;background:var(--amber-tint)">'
       + '<div style="font-size:13px;font-weight:800">Hasta dónde aguanta la pauta</div>'
       + '<div style="font-size:13px;color:var(--ink-2);margin-top:6px;line-height:1.65">'
@@ -219,7 +228,7 @@
         document.querySelectorAll('#segGan button').forEach(function (x) { x.classList.remove('act'); });
         b.classList.add('act');
         var v = b.dataset.g;
-        rangoGan = (v === 'dia' || v === 'rango') ? v : +v;
+        rangoGan = /^\d+$/.test(v) ? +v : v;
         var uno = document.getElementById('ganUnDia'), ran = document.getElementById('ganRango');
         if (uno) uno.style.display = (v === 'dia') ? 'inline-flex' : 'none';
         if (ran) ran.style.display = (v === 'rango') ? 'inline-flex' : 'none';
