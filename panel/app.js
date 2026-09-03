@@ -287,9 +287,20 @@ async function cargarVentas(){
             un segundo de diferencia contaban como dos ventas. */
       if(/^ELIMINAD/i.test(String(r.ESTADO||''))) return;
       const _dupK=soloNum(r.TELEFONO).slice(-8)+'|'+precio+'|'+String(r.FECHA||'').split(',')[0];
-      if(_vistas[_dupK]) return;
-      _vistas[_dupK]=1;
-      ords.push({rid:r.row_number||'',cli:r.NOMBRE||'—',tel:soloNum(r.TELEFONO),prod:r.PRODUCTO||'—',cant:numero(r.CANTIDAD)||1,
+      /* De dos filas del mismo cliente gana la que SI se monto en Dropi. Antes
+         ganaba la primera que llegara, y a veces era la marcada "duplicado, no
+         se creo otra": el panel decia que la venta no existia cuando en Dropi
+         si estaba (paso con Maria Angelica Zuñiga y el pedido #7750172). */
+      const _conDropi=/#\d/.test(String(r.ESTADO||''));
+      let _pos=-1;
+      if(_vistas[_dupK]!==undefined){
+        const _prev=ords[_vistas[_dupK]];
+        /* solo se pisa la fila guardada si la nueva trae numero de Dropi y la
+           anterior no; en cualquier otro caso se descarta la nueva */
+        if(!(_conDropi && _prev && !/#\d/.test(String(_prev.estado||'')))) return;
+        _pos=_vistas[_dupK];
+      }
+      const _fila={rid:r.row_number||'',cli:r.NOMBRE||'—',tel:soloNum(r.TELEFONO),prod:r.PRODUCTO||'—',cant:numero(r.CANTIDAD)||1,
         precioNum:precio,precio:esR?fmtGS(precio):esJ?fmtCOP(precio)+' COP':fmtCLP(precio),
         dir:r.DIRECCION||'—',zona:r.COMUNA||r.CIUDAD||'—',region:r.REGION||r.DEPARTAMENTO||'—',
         nota:String(r.NOTA||'').trim(),   /* lo que pidio el cliente: fecha de entrega u otra instruccion */
@@ -297,7 +308,9 @@ async function cargarVentas(){
         conf:!/abono pendiente/i.test(String(r.ESTADO||'')),abono:/abono pendiente/i.test(String(r.ESTADO||'')),/* abono pendiente = NO confirmada hasta que pague el anticipo */
         montado:/montad/i.test(String(r.ESTADO||'')),
         ordenDropi:(String(r.ESTADO||'').match(/#(\d+)/)||[])[1]||'',
-        fecha:r.FECHA||'',hora:r.HORA||'',orden:fechaOrden(r.FECHA,r.HORA)});
+        fecha:r.FECHA||'',hora:r.HORA||'',orden:fechaOrden(r.FECHA,r.HORA)};
+      if(_pos>=0){ ords[_pos]=_fila; }
+      else { _vistas[_dupK]=ords.length; ords.push(_fila); }
     });
     ordenes=ords.sort((a,b)=>b.orden-a.orden);   // (3) recientes primero
     // contador del canal de redes en el menu
