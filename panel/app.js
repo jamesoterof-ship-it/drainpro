@@ -420,20 +420,16 @@ function renderTopProd(){
   const waR=ordenes.filter(o=>enRango(o.orden)), webR=pedidosWeb.filter(o=>enRango(o.orden));
   /* Se agrupa por el nombre CORTO, no por el crudo: "Foco Solar Tipo Cámara" y
      "Foco Solar Tipo Camara" son el mismo producto y salian como dos filas.
-     Y se cuentan UNIDADES, no pedidos: si alguien lleva 3 focos, son 3. */
+     Se cuentan VENTAS: una venta es una venta, lleve 1 producto o 20. */
   const prod={};
-  const sumar=o=>{const k=nombreCortoProd(o.prod)||'—';
-    if(!prod[k]) prod[k]={u:0,p:0};
-    prod[k].u+=(numero(o.cant)||1); prod[k].p++;};
+  const sumar=o=>{const k=nombreCortoProd(o.prod)||'—';prod[k]=(prod[k]||0)+1;};
   if(fCanal!=='web') waR.forEach(sumar);
   if(fCanal!=='wa') webR.forEach(sumar);
-  const top=Object.entries(prod).sort((a,b)=>b[1].u-a[1].u).slice(0,6);
-  const sub=document.getElementById('topProdSub'); if(sub) sub.textContent=rangoTxt()+' · unidades vendidas';
+  const top=Object.entries(prod).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  const sub=document.getElementById('topProdSub'); if(sub) sub.textContent=rangoTxt()+' · ventas';
   if(!top.length){cont.innerHTML='<div class="vacio">Sin ventas en el periodo.</div>';return;}
-  const max=top[0][1].u||1;
-  cont.innerHTML=top.map(([n,v])=>'<div class="pais">'+esc(n)+
-    '<div class="track"><i style="width:'+Math.round(v.u/max*100)+'%;background:#0e8074"></i></div>'+
-    '<b title="'+v.u+' unidades en '+v.p+' pedidos">'+v.u+'<span style="opacity:.5;font-weight:400;font-size:11px"> / '+v.p+' ped</span></b></div>').join('');
+  const max=top[0][1]||1;
+  cont.innerHTML=top.map(([n,c])=>'<div class="pais">'+esc(n)+'<div class="track"><i style="width:'+Math.round(c/max*100)+'%;background:#0e8074"></i></div><b>'+c+'</b></div>').join('');
 }
 function renderChart(){
   const cont=document.getElementById('chartReal'); if(!cont) return;
