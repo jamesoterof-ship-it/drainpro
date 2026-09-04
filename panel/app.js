@@ -1570,6 +1570,105 @@ function pintarNovStats(d){
       }).join('')+'</tbody></table></div></div>';
   }
 
+  /* ---- HUELLA: lo que Dropi ya sabia del cliente ANTES de despachar ---- */
+  var hu = d.huella || [];
+  if(hu.length){
+    var riesg  = hu.filter(function(x){ return /riesg|critic/i.test(x.k); });
+    var plataR = riesg.reduce(function(s,x){ return s+Number(x.plata||0); },0);      /* plata parada de riesgosos */
+    var paraR  = riesg.reduce(function(s,x){ return s+Number(x.d||0)+Number(x.n||0); },0); /* pedidos parados */
+    var despR  = riesg.reduce(function(s,x){ return s+Number(x.t||0); },0);          /* pedidos despachados */
+    var plataTot = (Number(r.plata_devuelta)||0) + (Number(r.plata_novedad)||0);
+    if(plataR > 0 && plataTot > 0){
+      h += '<div style="background:#fdecec;border-left:4px solid #c62828;border-radius:8px;padding:13px 16px;margin:14px 0;font-size:13px;line-height:1.6;color:var(--ink)">'+
+        '<b style="color:#c62828">El '+Math.round(100*plataR/plataTot)+'% de tu plata parada esta en clientes que Dropi ya tenia marcados como riesgosos.</b><br>'+
+        'Les despachaste <b>'+despR+' pedidos</b>; se cayeron <b>'+paraR+'</b>, por <b>'+_nsMoneda(plataR)+'</b>. '+
+        'Esos clientes se podian filtrar antes de despachar: pedirles anticipo o no montarles el pedido.</div>';
+    }
+    h += '<div class="panel" style="margin-top:14px"><div class="tbl-head"><h2 style="font-size:15px">&#128101; Huella del cliente</h2>'+
+      '<span style="font-size:12px;color:#8a93a0">lo que Dropi sabia del cliente ANTES de despachar &middot; &iquest;predice?</span></div>'+
+      '<div style="overflow-x:auto;padding:4px"><table style="min-width:640px"><thead><tr>'+
+      '<th>Huella</th><th>Pedidos</th><th>Cerrados</th><th>Entreg.</th><th>Devuel.</th><th>Entrega</th><th>Novedad</th><th>Plata parada</th></tr></thead><tbody>'+
+      hu.map(function(x){
+        var t = (x.tasa===null||x.tasa===undefined) ? null : Number(x.tasa);
+        var c2 = _nsColor(t);
+        var mala = /riesg|critic/i.test(x.k);
+        var barra = t===null ? '' :
+          '<div style="display:inline-block;width:52px;height:6px;background:var(--surface-2);border-radius:3px;overflow:hidden;vertical-align:middle;margin-right:7px">'+
+          '<div style="width:'+t+'%;height:100%;background:'+c2+'"></div></div>';
+        return '<tr'+(mala?' style="background:#fdecec"':'')+'>'+
+          '<td style="font-weight:700;color:'+(mala?'#c62828':'var(--ink)')+'">'+x.k+'</td>'+
+          '<td>'+x.t+'</td><td>'+x.cerr+'</td><td>'+x.e+'</td><td>'+x.d+'</td>'+
+          '<td style="white-space:nowrap">'+barra+'<b style="color:'+c2+'">'+(t===null?'—':t+'%')+'</b></td>'+
+          '<td>'+(x.n||0)+'</td><td style="color:'+(Number(x.plata)>0?'#c62828':'#8a93a0')+'">'+(Number(x.plata)>0?_nsMoneda(x.plata):'—')+'</td></tr>';
+      }).join('')+'</tbody></table></div></div>';
+  }
+
+  /* ---- CLIENTES que se estan devolviendo, con su huella ---- */
+  var cl = d.clientes || [];
+  if(cl.length){
+    h += '<div class="panel" style="margin-top:14px"><div class="tbl-head"><h2 style="font-size:15px">&#128666; Clientes que se estan devolviendo</h2>'+
+      '<span style="font-size:12px;color:#8a93a0">ordenados por plata &middot; la huella dice si ya venia marcado</span></div>'+
+      '<div style="overflow-x:auto;padding:4px"><table style="min-width:920px"><thead><tr>'+
+      '<th>Cliente</th><th>Tel&eacute;fono</th><th>Huella</th><th>Tipo</th><th>Historial en Dropi</th>'+
+      '<th>Devuel.</th><th>Novedad</th><th>Plata</th><th>Zona</th><th>Transp.</th></tr></thead><tbody>'+
+      cl.map(function(x){
+        var mala = /riesg|critic/i.test(x.hl||'');
+        var sinH = /sin/i.test(x.hl||'');
+        var col = mala ? '#c62828' : (sinH ? '#8a93a0' : '#0e8074');
+        var bg  = mala ? '#fdecec' : (/probable/i.test(x.hl||'') ? '#fff8e6' : 'transparent');
+        var hist = Number(x.h_tot)>0
+          ? Number(x.h_tot)+' pedidos · '+x.h_ent+' entregados · <b style="color:#c62828">'+x.h_dev+' devueltos</b>'
+          : '<span style="color:#8a93a0">sin historial</span>';
+        return '<tr style="background:'+bg+'">'+
+          '<td style="font-weight:600">'+String(x.nombre||'').slice(0,24)+'</td>'+
+          '<td style="font-size:12px;color:#8a93a0">+'+String(x.telefono||'')+'</td>'+
+          '<td><span style="background:'+col+';color:#fff;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700">'+String(x.hl||'-')+'</span></td>'+
+          '<td style="font-size:12px">'+String(x.bt||'-')+'</td>'+
+          '<td style="font-size:12px">'+hist+'</td>'+
+          '<td>'+x.devueltos+'</td><td>'+x.novedades+'</td>'+
+          '<td style="color:#c62828;font-weight:700">'+_nsMoneda(x.plata)+'</td>'+
+          '<td style="font-size:11.5px;color:#8a93a0">'+String(x.zonas||'').slice(0,22)+'</td>'+
+          '<td style="font-size:11.5px;color:#8a93a0">'+String(x.transp||'').slice(0,14)+'</td></tr>';
+      }).join('')+'</tbody></table></div></div>';
+  }
+
+  /* ---- ZONA x TRANSPORTADORA: donde conviene cambiar ---- */
+  var zt = d.zona_transp || [];
+  if(zt.length){
+    var porReg = {};
+    zt.forEach(function(x){ (porReg[x.region] = porReg[x.region] || []).push(x); });
+    var conDos = Object.keys(porReg).filter(function(k){ return porReg[k].length > 1; });
+    h += '<div class="panel" style="margin-top:14px"><div class="tbl-head"><h2 style="font-size:15px">&#128666; Zona &times; transportadora</h2>'+
+      '<span style="font-size:12px;color:#8a93a0">minimo 3 cerrados &middot; donde hay dos, se puede comparar y cambiar</span></div>';
+    if(conDos.length){
+      h += '<div style="padding:8px 16px 0;font-size:12.5px;color:var(--ink-2)">Regiones donde tienes las dos y se pueden comparar: <b>'+conDos.join(', ')+'</b></div>';
+    }
+    h += '<div style="overflow-x:auto;padding:4px"><table style="min-width:700px"><thead><tr>'+
+      '<th>Region</th><th>Transportadora</th><th>Pedidos</th><th>Cerrados</th><th>Entreg.</th><th>Entrega</th><th>Plata parada</th><th></th></tr></thead><tbody>'+
+      Object.keys(porReg).sort(function(a,b){
+        var ma=Math.min.apply(null,porReg[a].map(function(x){return x.tasa===null?999:Number(x.tasa);}));
+        var mb=Math.min.apply(null,porReg[b].map(function(x){return x.tasa===null?999:Number(x.tasa);}));
+        return ma-mb;
+      }).map(function(reg){
+        var fs = porReg[reg];
+        var mejor = fs.reduce(function(a,b){ return (Number(b.tasa)||0) > (Number(a.tasa)||0) ? b : a; }, fs[0]);
+        return fs.map(function(x,i){
+          var t = (x.tasa===null||x.tasa===undefined) ? null : Number(x.tasa);
+          var c2 = _nsColor(t);
+          var gana = fs.length>1 && x.tr===mejor.tr;
+          var barra = t===null ? '' :
+            '<div style="display:inline-block;width:52px;height:6px;background:var(--surface-2);border-radius:3px;overflow:hidden;vertical-align:middle;margin-right:7px">'+
+            '<div style="width:'+t+'%;height:100%;background:'+c2+'"></div></div>';
+          return '<tr'+(fs.length>1?' style="background:var(--surface-2)"':'')+'>'+
+            '<td style="font-weight:600">'+(i===0?String(reg).slice(0,24):'')+'</td>'+
+            '<td style="font-weight:600">'+x.tr+'</td><td>'+x.t+'</td><td>'+x.cerr+'</td><td>'+x.e+'</td>'+
+            '<td style="white-space:nowrap">'+barra+'<b style="color:'+c2+'">'+(t===null?'—':t+'%')+'</b></td>'+
+            '<td style="color:'+(Number(x.plata)>0?'#c62828':'#8a93a0')+'">'+(Number(x.plata)>0?_nsMoneda(x.plata):'—')+'</td>'+
+            '<td>'+(gana?'<span style="background:#0e8074;color:#fff;padding:2px 8px;border-radius:20px;font-size:10.5px;font-weight:700">MEJOR AQUI</span>':'')+'</td></tr>';
+        }).join('');
+      }).join('')+'</tbody></table></div></div>';
+  }
+
   h += _nsTabla('Por region', 'minimo 5 pedidos cerrados &middot; de peor a mejor', d.regiones, 'Region');
   h += _nsTabla('Por comuna', 'minimo 4 pedidos cerrados', d.comunas, 'Comuna');
   h += _nsTabla('Por producto', 'minimo 5 pedidos cerrados', d.productos, 'Producto');
