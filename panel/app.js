@@ -972,6 +972,28 @@ function bloqueNota(n){
     +'<div style="font-size:11.5px;font-weight:800;letter-spacing:.4px;color:#8a6100;margin-bottom:3px">NOTA DEL CLIENTE</div>'
     +'<div style="font-size:14px;font-weight:700;color:#5d4200;line-height:1.35">'+esc(n)+'</div></div>';
 }
+/* ESPEJO EXACTO de _notaDropi del montador (n8n l682yMOKI6QaiK8d).
+   Muestra el texto TAL CUAL se va a imprimir en el rotulo de Dropi, que es lo
+   que alcanza a leer el repartidor. No es la nota cruda: los avisos internos
+   nuestros se recortan y solo viaja lo que pidio el cliente.
+   Si se cambia la funcion del montador, hay que cambiar esta igual. */
+function notaRotulo(n){
+  var t=String(n||'').trim();
+  t=t.replace(/^NO MONTAR: la direccion no sirve[\s\S]*?o una referencia\.\s*/i,'').trim();
+  t=t.replace(/^FALTA DIRECCION[:\s-]*/i,'').trim();
+  if(!t) return '';
+  if(t.length>240) t=t.slice(0,240);
+  return t;
+}
+/* fila destacada con lo que sale impreso en la guia — asi no se aprueba a ciegas */
+function filaRotulo(nota){
+  const t=notaRotulo(nota);
+  const vacio=!t;
+  return '<div class="dl" style="align-items:flex-start;'+(vacio?'':'background:#fff8e1;border-radius:9px;padding:7px 9px;margin:2px 0')+'">'
+    +'<span class="k" style="'+(vacio?'':'color:#8a6100;font-weight:800')+'">Va impreso en la guía</span>'
+    +'<span class="v" style="white-space:normal;line-height:1.35;'+(vacio?'color:var(--ink-3)':'color:#5d4200;font-weight:800')+'">'
+    +(vacio?'— el cliente no pidió nada —':esc(t))+'</span></div>';
+}
 function verVenta(i){
   const o=(window._ventasF||ordenes)[i]; if(!o) return;
   const fila=(k,v)=>`<div class="dl"><span class="k">${k}</span><span class="v">${esc(v)}</span></div>`;
@@ -981,6 +1003,7 @@ function verVenta(i){
     fila('Canal','WhatsApp · '+BOTNOM[o.bot])+fila('País',{CL:'Chile',CO:'Colombia',PY:'Paraguay'}[o.loc])+
     fila('Producto',o.prod)+fila('Cantidad',o.cant+' unidades')+fila('Teléfono','+'+o.tel)+
     fila('Dirección',o.dir)+fila('Comuna / Ciudad',o.zona)+fila('Región / Depto.',o.region)+
+    filaRotulo(o.nota)+
     (o.abono?'<div class="dl"><span class="k">Confirmación del cliente</span><span class="v" style="color:#c62828;font-weight:800">🔴 ABONO PENDIENTE — no aprobar hasta ver el comprobante</span></div>':fila('Confirmación del cliente',o.conf?'CONFIRMADO':'Pendiente'))+fila('Montado en Dropi',o.montado?('SÍ'+(o.ordenDropi?' · orden #'+o.ordenDropi:'')):'Pendiente')+
     fila('Fecha',o.fecha+' '+(o.hora||''));
   document.getElementById('mTotal').textContent=o.precio;
@@ -1160,6 +1183,7 @@ function verAprob(i){
       fila('Canal','WhatsApp · '+(BOTNOM[o.bot]||''))+fila('País',{CL:'Chile',CO:'Colombia',PY:'Paraguay'}[o.loc]||'—')+
       fila('Producto',o.prod)+fila('Cantidad',o.cant+' unidades')+fila('Teléfono','+'+o.tel)+
       fila('Dirección',o.dir)+fila('Comuna / Ciudad',o.zona)+fila('Región / Depto.',o.region)+
+      filaRotulo(o.nota)+
       (o.abono?'<div class="dl"><span class="k">Confirmación del cliente</span><span class="v" style="color:#c62828;font-weight:800">🔴 ABONO PENDIENTE — no aprobar hasta ver el comprobante</span></div>':fila('Confirmación del cliente',o.conf?'CONFIRMADO':'Pendiente'))+fila('Montado en Dropi',o.montado?('SÍ'+(o.ordenDropi?' · orden #'+o.ordenDropi:'')):'Pendiente')+
       fila('Fecha',o.fecha+' '+(o.hora||''))+
       (o.rid&&!o.montado?'<div style="margin-top:10px"><button class="b-copy" onclick="editarAprob('+i+')">✎ Editar datos</button></div>':'');
@@ -1180,14 +1204,23 @@ function editarAprob(i){
     f('Nombre','edN')+fArea('Dirección (calle, número, depto, referencias)','edD')+
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'+f('Comuna','edC')+f('Región','edR')+'</div>'+
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'+f('Cantidad','edQ')+f('Total CLP','edP')+'</div>'+
+    /* Nota del cliente: es lo unico de este formulario que se IMPRIME en el rotulo
+       de Dropi, o sea lo que alcanza a leer el repartidor. Por eso va marcada en
+       amarillo y con el aviso de que sale en la guia. */
+    '<div style="margin-bottom:11px"><label for="edNota" style="display:block;font-size:12px;color:#8a6100;font-weight:800;margin-bottom:4px">NOTA DEL CLIENTE — sale impresa en el rótulo de Dropi</label>'
+      +'<textarea id="edNota" rows="2" placeholder="Ej: de lunes a jueves en casa, viernes no está" style="'+EST+';resize:vertical;line-height:1.45;border-color:rgba(216,165,46,.55);background:rgba(216,165,46,.07)"></textarea>'
+      +'<div style="font-size:11px;color:var(--ink-3);margin-top:3px">Lo que pidió el cliente para su entrega. Déjala vacía si no pidió nada.</div></div>'+
     '<div style="display:flex;gap:8px;margin-top:12px"><button class="b-apr" onclick="guardarAprob('+i+')">💾 Guardar cambios</button><button class="b-rech" style="width:auto;padding:0 14px" onclick="verAprob('+i+')">Cancelar</button></div>';
   const set=(id,v)=>{document.getElementById(id).value=v==null?'':String(v);};
   set('edN',o.cli); set('edD',o.dir); set('edC',o.zona); set('edR',o.region); set('edQ',o.cant); set('edP',o.precioNum);
+  set('edNota',o.nota);
 }
 async function guardarAprob(i){
   const x=(window._aprobF||[])[i]; if(!x) return; const o=x.raw||{};
   const val=id=>document.getElementById(id).value.trim();
-  const body={id:String(o.rid||''),nombre:val('edN'),direccion:val('edD'),comuna:val('edC'),region:val('edR'),cantidad:val('edQ'),precio:val('edP')};
+  /* la nota va SIEMPRE en el cuerpo, aunque venga vacia: asi tambien se puede
+     borrar una nota mal puesta. Los demas campos vacios no pisan lo que ya hay. */
+  const body={id:String(o.rid||''),nombre:val('edN'),direccion:val('edD'),comuna:val('edC'),region:val('edR'),cantidad:val('edQ'),precio:val('edP'),nota:val('edNota')};
   try{
     const r=await fetch(URL_EDITARWA,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     if(!r.ok) throw 0;
@@ -1197,6 +1230,7 @@ async function guardarAprob(i){
     if(body.region) o.region=body.region;
     if(body.cantidad) o.cant=numero(body.cantidad)||o.cant;
     if(body.precio){ o.precioNum=numero(body.precio); o.precio=fmtCLP(o.precioNum); }
+    o.nota=body.nota;
     renderAprobar(); if(typeof renderVentasWA==='function') renderVentasWA();
     const ni=(window._aprobF||[]).findIndex(y=>y.k===x.k);
     verAprob(ni>=0?ni:i);
