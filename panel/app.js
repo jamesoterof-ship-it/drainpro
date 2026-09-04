@@ -1573,63 +1573,95 @@ function pintarNovStats(d){
   /* ---- HUELLA: lo que Dropi ya sabia del cliente ANTES de despachar ---- */
   var hu = d.huella || [];
   if(hu.length){
+    /* la cuenta se hace con la plata DEVUELTA, que es la perdida de verdad.
+       La novedad no entra: todavia se recupera. */
     var riesg  = hu.filter(function(x){ return /riesg|critic/i.test(x.k); });
-    var plataR = riesg.reduce(function(s,x){ return s+Number(x.plata||0); },0);      /* plata parada de riesgosos */
-    var paraR  = riesg.reduce(function(s,x){ return s+Number(x.d||0)+Number(x.n||0); },0); /* pedidos parados */
+    var perdiR = riesg.reduce(function(s,x){ return s+Number(x.plata_dev||0); },0);  /* plata YA perdida */
+    var devR   = riesg.reduce(function(s,x){ return s+Number(x.d||0); },0);          /* pedidos devueltos */
     var despR  = riesg.reduce(function(s,x){ return s+Number(x.t||0); },0);          /* pedidos despachados */
-    var plataTot = (Number(r.plata_devuelta)||0) + (Number(r.plata_novedad)||0);
-    if(plataR > 0 && plataTot > 0){
+    var perdiT = Number(r.plata_devuelta)||0;
+    if(perdiR > 0 && perdiT > 0){
       h += '<div style="background:#fdecec;border-left:4px solid #c62828;border-radius:8px;padding:13px 16px;margin:14px 0;font-size:13px;line-height:1.6;color:var(--ink)">'+
-        '<b style="color:#c62828">El '+Math.round(100*plataR/plataTot)+'% de tu plata parada esta en clientes que Dropi ya tenia marcados como riesgosos.</b><br>'+
-        'Les despachaste <b>'+despR+' pedidos</b>; se cayeron <b>'+paraR+'</b>, por <b>'+_nsMoneda(plataR)+'</b>. '+
+        '<b style="color:#c62828">El '+Math.round(100*perdiR/perdiT)+'% de lo que has perdido en devoluciones es de clientes que Dropi ya tenia marcados como riesgosos.</b><br>'+
+        'Les despachaste <b>'+despR+' pedidos</b>; te devolvieron <b>'+devR+'</b>, por <b>'+_nsMoneda(perdiR)+'</b>. '+
         'Esos clientes se podian filtrar antes de despachar: pedirles anticipo o no montarles el pedido.</div>';
     }
     h += '<div class="panel" style="margin-top:14px"><div class="tbl-head"><h2 style="font-size:15px">&#128101; Huella del cliente</h2>'+
       '<span style="font-size:12px;color:#8a93a0">lo que Dropi sabia del cliente ANTES de despachar &middot; &iquest;predice?</span></div>'+
-      '<div style="overflow-x:auto;padding:4px"><table style="min-width:640px"><thead><tr>'+
-      '<th>Huella</th><th>Pedidos</th><th>Cerrados</th><th>Entreg.</th><th>Devuel.</th><th>Entrega</th><th>Novedad</th><th>Plata parada</th></tr></thead><tbody>'+
+      '<div style="overflow-x:auto;padding:4px"><table style="min-width:720px"><thead><tr>'+
+      '<th>Huella</th><th>Pedidos</th><th>Cerrados</th><th>Entreg.</th><th>Devuel.</th><th>Entrega</th>'+
+      '<th>Plata PERDIDA</th><th>Novedad</th><th>En novedad</th></tr></thead><tbody>'+
       hu.map(function(x){
         var t = (x.tasa===null||x.tasa===undefined) ? null : Number(x.tasa);
         var c2 = _nsColor(t);
-        var mala = /riesg|critic/i.test(x.k);
+        /* el fondo lo marca la devolucion real, no la etiqueta */
+        var devuelve = Number(x.d) > 0;
         var barra = t===null ? '' :
           '<div style="display:inline-block;width:52px;height:6px;background:var(--surface-2);border-radius:3px;overflow:hidden;vertical-align:middle;margin-right:7px">'+
           '<div style="width:'+t+'%;height:100%;background:'+c2+'"></div></div>';
-        return '<tr'+(mala?' style="background:#fdecec"':'')+'>'+
-          '<td style="font-weight:700;color:'+(mala?'#c62828':'var(--ink)')+'">'+x.k+'</td>'+
-          '<td>'+x.t+'</td><td>'+x.cerr+'</td><td>'+x.e+'</td><td>'+x.d+'</td>'+
+        return '<tr'+(devuelve?' style="background:#fdecec"':'')+'>'+
+          '<td style="font-weight:700;color:'+(devuelve?'#c62828':'var(--ink)')+'">'+x.k+'</td>'+
+          '<td>'+x.t+'</td><td>'+x.cerr+'</td><td>'+x.e+'</td>'+
+          '<td style="font-weight:700;color:'+(devuelve?'#c62828':'#8a93a0')+'">'+x.d+'</td>'+
           '<td style="white-space:nowrap">'+barra+'<b style="color:'+c2+'">'+(t===null?'—':t+'%')+'</b></td>'+
-          '<td>'+(x.n||0)+'</td><td style="color:'+(Number(x.plata)>0?'#c62828':'#8a93a0')+'">'+(Number(x.plata)>0?_nsMoneda(x.plata):'—')+'</td></tr>';
-      }).join('')+'</tbody></table></div></div>';
+          '<td style="font-weight:700;color:'+(Number(x.plata_dev)>0?'#c62828':'#8a93a0')+'">'+(Number(x.plata_dev)>0?_nsMoneda(x.plata_dev):'—')+'</td>'+
+          '<td style="color:'+(Number(x.n)>0?'#d98200':'#8a93a0')+'">'+(x.n||0)+'</td>'+
+          '<td style="color:'+(Number(x.plata_nov)>0?'#d98200':'#8a93a0')+'">'+(Number(x.plata_nov)>0?_nsMoneda(x.plata_nov):'—')+'</td></tr>';
+      }).join('')+'</tbody></table></div>'+
+      '<div style="padding:6px 16px 12px;font-size:12px;color:#8a93a0">La <b>plata perdida</b> es la de pedidos ya devueltos. '+
+      'La columna <b>en novedad</b> todav&iacute;a se puede recuperar y no cuenta como p&eacute;rdida.</div></div>';
   }
 
   /* ---- CLIENTES que se estan devolviendo, con su huella ---- */
+  /* OJO (correccion de James, 04-09): NO se marca a un cliente por tener una novedad.
+     La novedad todavia se recupera; la devolucion ya es plata perdida. El fondo de la
+     fila se pinta por DEVOLUCION REAL, no por la etiqueta de riesgo de Dropi. */
   var cl = d.clientes || [];
   if(cl.length){
-    h += '<div class="panel" style="margin-top:14px"><div class="tbl-head"><h2 style="font-size:15px">&#128666; Clientes que se estan devolviendo</h2>'+
-      '<span style="font-size:12px;color:#8a93a0">ordenados por plata &middot; la huella dice si ya venia marcado</span></div>'+
-      '<div style="overflow-x:auto;padding:4px"><table style="min-width:920px"><thead><tr>'+
+    var conDev = cl.filter(function(x){ return Number(x.devueltos) > 0; });
+    var soloNov = cl.filter(function(x){ return Number(x.devueltos) === 0; });
+    var plataDev = conDev.reduce(function(s,x){ return s+Number(x.plata_dev||x.plata||0); },0);
+    var plataNov = soloNov.reduce(function(s,x){ return s+Number(x.plata_nov||x.plata||0); },0);
+
+    var fila = function(x, esDev){
+      var mala = /riesg|critic/i.test(x.hl||'');
+      var sinH = /sin/i.test(x.hl||'');
+      var col = mala ? '#c62828' : (sinH ? '#8a93a0' : (/probable/i.test(x.hl||'') ? '#d98200' : '#0e8074'));
+      /* el fondo lo decide la DEVOLUCION, no la huella */
+      var bg = esDev ? '#fdecec' : 'transparent';
+      var hist = Number(x.h_tot)>0
+        ? Number(x.h_tot)+' pedidos · '+x.h_ent+' entregados · '+(Number(x.h_dev)>0?'<b style="color:#c62828">'+x.h_dev+' devueltos</b>':'<span style="color:#0e8074">'+x.h_dev+' devueltos</span>')
+        : '<span style="color:#8a93a0">sin historial</span>';
+      return '<tr style="background:'+bg+'">'+
+        '<td style="font-weight:600">'+String(x.nombre||'').slice(0,24)+'</td>'+
+        '<td style="font-size:12px;color:#8a93a0">+'+String(x.telefono||'')+'</td>'+
+        '<td><span style="background:'+col+';color:#fff;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700">'+String(x.hl||'-')+'</span></td>'+
+        '<td style="font-size:12px">'+String(x.bt||'-')+'</td>'+
+        '<td style="font-size:12px">'+hist+'</td>'+
+        '<td style="font-weight:700;color:'+(Number(x.devueltos)>0?'#c62828':'#8a93a0')+'">'+x.devueltos+'</td>'+
+        '<td style="color:'+(Number(x.novedades)>0?'#d98200':'#8a93a0')+'">'+x.novedades+'</td>'+
+        '<td style="font-weight:700;color:'+(esDev?'#c62828':'#d98200')+'">'+_nsMoneda(esDev ? (x.plata_dev||x.plata) : (x.plata_nov||x.plata))+'</td>'+
+        '<td style="font-size:11.5px;color:#8a93a0">'+String(x.zonas||'').slice(0,22)+'</td>'+
+        '<td style="font-size:11.5px;color:#8a93a0">'+String(x.transp||'').slice(0,14)+'</td></tr>';
+    };
+    var cab = '<div style="overflow-x:auto;padding:4px"><table style="min-width:920px"><thead><tr>'+
       '<th>Cliente</th><th>Tel&eacute;fono</th><th>Huella</th><th>Tipo</th><th>Historial en Dropi</th>'+
-      '<th>Devuel.</th><th>Novedad</th><th>Plata</th><th>Zona</th><th>Transp.</th></tr></thead><tbody>'+
-      cl.map(function(x){
-        var mala = /riesg|critic/i.test(x.hl||'');
-        var sinH = /sin/i.test(x.hl||'');
-        var col = mala ? '#c62828' : (sinH ? '#8a93a0' : '#0e8074');
-        var bg  = mala ? '#fdecec' : (/probable/i.test(x.hl||'') ? '#fff8e6' : 'transparent');
-        var hist = Number(x.h_tot)>0
-          ? Number(x.h_tot)+' pedidos · '+x.h_ent+' entregados · <b style="color:#c62828">'+x.h_dev+' devueltos</b>'
-          : '<span style="color:#8a93a0">sin historial</span>';
-        return '<tr style="background:'+bg+'">'+
-          '<td style="font-weight:600">'+String(x.nombre||'').slice(0,24)+'</td>'+
-          '<td style="font-size:12px;color:#8a93a0">+'+String(x.telefono||'')+'</td>'+
-          '<td><span style="background:'+col+';color:#fff;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700">'+String(x.hl||'-')+'</span></td>'+
-          '<td style="font-size:12px">'+String(x.bt||'-')+'</td>'+
-          '<td style="font-size:12px">'+hist+'</td>'+
-          '<td>'+x.devueltos+'</td><td>'+x.novedades+'</td>'+
-          '<td style="color:#c62828;font-weight:700">'+_nsMoneda(x.plata)+'</td>'+
-          '<td style="font-size:11.5px;color:#8a93a0">'+String(x.zonas||'').slice(0,22)+'</td>'+
-          '<td style="font-size:11.5px;color:#8a93a0">'+String(x.transp||'').slice(0,14)+'</td></tr>';
-      }).join('')+'</tbody></table></div></div>';
+      '<th>Devuel.</th><th>Novedad</th><th>Plata</th><th>Zona</th><th>Transp.</th></tr></thead><tbody>';
+
+    if(conDev.length){
+      h += '<div class="panel" style="margin-top:14px"><div class="tbl-head">'+
+        '<h2 style="font-size:15px;color:#c62828">&#128683; Clientes que SI devolvieron</h2>'+
+        '<span style="font-size:12px;color:#8a93a0">plata perdida &middot; '+conDev.length+' clientes &middot; '+_nsMoneda(plataDev)+'</span></div>'+
+        cab + conDev.map(function(x){ return fila(x,true); }).join('') + '</tbody></table></div></div>';
+    }
+    if(soloNov.length){
+      h += '<div class="panel" style="margin-top:14px"><div class="tbl-head">'+
+        '<h2 style="font-size:15px;color:#d98200">&#9888;&#65039; Clientes con novedad abierta &mdash; todav&iacute;a se recuperan</h2>'+
+        '<span style="font-size:12px;color:#8a93a0">NO devolvieron &middot; '+soloNov.length+' clientes &middot; '+_nsMoneda(plataNov)+' por salvar</span></div>'+
+        '<div style="padding:8px 16px 0;font-size:12.5px;color:var(--ink-2)">Estos no perdieron nada todav&iacute;a. '+
+        'Una novedad no es una devoluci&oacute;n: se gestiona y el pedido sigue.</div>'+
+        cab + soloNov.map(function(x){ return fila(x,false); }).join('') + '</tbody></table></div></div>';
+    }
   }
 
   /* ---- ZONA x TRANSPORTADORA: donde conviene cambiar ---- */
