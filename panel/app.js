@@ -304,6 +304,7 @@ async function cargarVentas(){
         precioNum:precio,precio:esR?fmtGS(precio):esJ?fmtCOP(precio)+' COP':fmtCLP(precio),
         dir:r.DIRECCION||'—',zona:r.COMUNA||r.CIUDAD||'—',region:r.REGION||r.DEPARTAMENTO||'—',
         nota:String(r.NOTA||'').trim(),   /* lo que pidio el cliente: fecha de entrega u otra instruccion */
+        desde:String(r.DESPACHAR_DESDE||'').slice(0,10),  /* fecha que pidio el cliente para recibir */
         bot:esR?'Ramon':esJ?'James':esRedes?'Redes':'Carlos',loc:esR?'PY':esJ?'CO':'CL',estado:r.ESTADO||'—',
         conf:!/abono pendiente/i.test(String(r.ESTADO||'')),abono:/abono pendiente/i.test(String(r.ESTADO||'')),/* abono pendiente = NO confirmada hasta que pague el anticipo */
         montado:/montad/i.test(String(r.ESTADO||'')),
@@ -1166,10 +1167,22 @@ function renderAprobar(){
     /* rid = id de la fila. SIN esto el borrado se hacia por telefono+fecha y dos
        ventas del mismo cliente el mismo dia se borraban LAS DOS (paso el 3-09 con
        Maria Grandon). El servidor ya tiene el candado; solo hay que mandarle el id. */
-    items.push({k,raw:o,rid:o.rid||'',canal:'WhatsApp',cli:o.cli,tel:o.tel,fecha:o.fecha,prod:o.prod,color:'#0e8074',comuna:o.zona,cant:o.cant,total:o.precio,orden:o.orden,abono:!!o.abono,nota:o.nota||'',faltaDir:/falta direccion/i.test(String(o.estado||'')),
+    items.push({k,raw:o,rid:o.rid||'',canal:'WhatsApp',cli:o.cli,tel:o.tel,fecha:o.fecha,prod:o.prod,color:'#0e8074',comuna:o.zona,cant:o.cant,total:o.precio,orden:o.orden,abono:!!o.abono,nota:o.nota||'',desde:o.desde||'',faltaDir:/falta direccion/i.test(String(o.estado||'')),
       st:o.montado?'montado':(esAprobado(k)?'aprobado':(esRechazado(k)?'rechazado':'pendiente'))});
   });
-  const nPend=items.filter(x=>x.st==='pendiente').length;
+  /* PROGRAMADAS: el cliente pidió una fecha. Salen de Pendientes para que no se
+     despachen antes de tiempo (pasó con Sonia Ruth: pidió el 20 de octubre y salió
+     al día siguiente) y VUELVEN solas 3 días antes de la fecha. */
+  const hoyMs=Date.now(), tresDias=3*864e5;
+  items.forEach(x=>{
+    const d=x.desde?Date.parse(x.desde+'T12:00:00'):0;
+    x.prog = !!(d && x.st!=='montado' && d - hoyMs > tresDias);
+    x.diasFalta = d ? Math.round((d-hoyMs)/864e5) : 0;
+  });
+  const nProg=items.filter(x=>x.prog).length;
+  const bp=document.getElementById('numProg');
+  if(bp){ bp.style.display=nProg?'':'none'; bp.textContent=nProg; }
+  const nPend=items.filter(x=>x.st==='pendiente' && !x.prog).length;
   const bg=document.getElementById('badgeAprobar');
   if(bg){ bg.style.display=nPend?'':'none'; bg.textContent=nPend; }
   agRiesgoCalc(items);
@@ -1184,12 +1197,13 @@ function renderAprobar(){
     if(pa) return a.orden-b.orden;
     return b.orden-a.orden;
   });
-  if(fAprob==='pend') arr=arr.filter(x=>x.st==='pendiente');
+  if(fAprob==='pend')  arr=arr.filter(x=>x.st==='pendiente' && !x.prog);
+  if(fAprob==='prog'){ arr=arr.filter(x=>x.prog).sort((a,b)=>Date.parse(a.desde)-Date.parse(b.desde)); }
   window._aprobF=arr;
-  if(!arr.length){ tb.innerHTML='<tr><td colspan="8" class="vacio">'+(fAprob==='pend'?'Nada por aprobar. 🎉':'Sin ventas recientes.')+'</td></tr>'; return; }
+  if(!arr.length){ tb.innerHTML='<tr><td colspan="8" class="vacio">'+(fAprob==='pend'?'Nada por aprobar. 🎉':(fAprob==='prog'?'Ninguna venta con fecha pedida por el cliente.':'Sin ventas recientes.'))+'</td></tr>'; return; }
   tb.innerHTML=arr.slice(0,100).map((x,i)=>`
     <tr onclick="verAprob(${i})"${x.abono?' style="background:#fdecea"':''}>
-      <td class="cli">${esc(x.cli)}${huellaBadge(x.tel)}${x.abono?'<span style="display:inline-block;margin-left:6px;background:#c62828;color:#fff;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;vertical-align:middle">ANTICIPO SIN PAGAR</span>':''}${x.nota?'<span style="display:inline-block;margin-left:6px;background:#e8a800;color:#3d2c00;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;vertical-align:middle">NOTA</span>':''}<small>${esc(x.fecha)} · +${x.tel}</small>${x.nota?'<small style="display:block;color:#8a6100;font-weight:700;white-space:normal;line-height:1.3;margin-top:2px">'+esc(x.nota)+'</small>':''}</td>
+      <td class="cli">${esc(x.cli)}${huellaBadge(x.tel)}${x.abono?'<span style="display:inline-block;margin-left:6px;background:#c62828;color:#fff;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;vertical-align:middle">ANTICIPO SIN PAGAR</span>':''}${x.prog?'<span style="display:inline-block;margin-left:6px;background:#d97706;color:#fff;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;vertical-align:middle">📅 '+esc(x.desde)+' · en '+x.diasFalta+' días</span>':''}${x.nota?'<span style="display:inline-block;margin-left:6px;background:#e8a800;color:#3d2c00;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;vertical-align:middle">NOTA</span>':''}<small>${esc(x.fecha)} · +${x.tel}</small>${x.nota?'<small style="display:block;color:#8a6100;font-weight:700;white-space:normal;line-height:1.3;margin-top:2px">'+esc(x.nota)+'</small>':''}</td>
       <td>${x.canal}</td>
       <td><span class="pchip"><i style="background:${x.color}"></i>${esc(x.prod)}</span></td>
       <td>${esc(x.comuna||'—')}</td>
