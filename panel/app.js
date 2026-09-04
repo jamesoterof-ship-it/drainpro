@@ -1177,13 +1177,17 @@ function renderAprobar(){
   /* PROGRAMADAS: el cliente pidió una fecha. Salen de Pendientes para que no se
      despachen antes de tiempo (pasó con Sonia Ruth: pidió el 20 de octubre y salió
      al día siguiente) y VUELVEN solas 3 días antes de la fecha. */
-  const hoyMs=Date.now(), tresDias=3*864e5;
+  /* Se cuenta en DIAS DE CALENDARIO, no en horas: si el cliente pidio el 15,
+     tiene que aparecer en Pendientes el 12, sin importar la hora del dia. */
+  const _hoyCL=new Date(new Date().toLocaleString('en-US',{timeZone:'America/Santiago'}));
+  const hoyDia=Date.UTC(_hoyCL.getFullYear(),_hoyCL.getMonth(),_hoyCL.getDate());
   items.forEach(x=>{
-    const d=x.desde?Date.parse(x.desde+'T12:00:00'):0;
-    x.prog = !!(d && x.st!=='montado' && d - hoyMs > tresDias);
-    x.diasFalta = d ? Math.round((d-hoyMs)/864e5) : 0;
+    const p=String(x.desde||'').split('-');
+    const d = p.length===3 ? Date.UTC(+p[0],+p[1]-1,+p[2]) : 0;
+    x.diasFalta = d ? Math.round((d-hoyDia)/864e5) : 0;
+    x.prog = !!(d && x.st!=='montado' && x.diasFalta > 3);
     /* el dia que vuelve sola a Pendientes: 3 dias antes de la fecha del cliente */
-    x.vuelve = x.prog ? new Date(d-tresDias).toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit'}) : '';
+    x.vuelve = x.prog ? new Date(d-3*864e5).toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',timeZone:'UTC'}) : '';
   });
   const nProg=items.filter(x=>x.prog).length;
   const bp=document.getElementById('numProg');
