@@ -1484,6 +1484,134 @@ function cargarNovedades(){
   }).catch(function(){ tb.innerHTML='<tr><td colspan="7" class="vacio">No se pudo cargar (flujo Panel: novedades activo en n8n?).</td></tr>'; });
 }
 
+/* ---------- Novedades · sub-pestaña ESTADISTICA ----------
+   OJO con dos cosas al leer estos numeros:
+   1) la tasa de entrega se mide sobre pedidos CERRADOS (entregado o devuelto). Un pedido
+      en camino todavia no es ni bueno ni malo; meterlo en el denominador falsea todo.
+   2) "RECHAZADO POR CLIENTE" NO significa que el cliente rechazo: la transportadora usa
+      esa causal tambien cuando no ubica ni contacta al destinatario. El rechazo real es
+      "DESTINATARIO RECHAZA ENTREGA". Por eso se separan en la tabla de motivos. */
+var _novTab = 'pend', _novStats = null;
+
+function _nsMoneda(n){ return '$' + Math.round(Number(n)||0).toLocaleString('es-CL'); }
+function _nsColor(t){
+  if(t === null || t === undefined) return '#8a93a0';
+  if(t >= 90) return '#0e8074';
+  if(t >= 80) return '#7a9a1e';
+  if(t >= 70) return '#d98200';
+  return '#c62828';
+}
+function _nsTarjeta(v, et, sub, col){
+  return '<div style="flex:1;min-width:150px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px">'+
+    '<div style="font-size:11px;color:#8a93a0;font-weight:700;letter-spacing:.5px">'+et+'</div>'+
+    '<div style="font-size:24px;font-weight:800;color:'+(col||'var(--ink)')+';margin:2px 0">'+v+'</div>'+
+    '<div style="font-size:11.5px;color:#8a93a0">'+(sub||'')+'</div></div>';
+}
+function _nsTabla(titulo, nota, filas, etiqueta){
+  if(!filas || !filas.length) return '';
+  var h = '<div class="panel" style="margin-top:14px"><div class="tbl-head"><h2 style="font-size:15px">'+titulo+'</h2>'+
+    (nota ? '<span style="font-size:12px;color:#8a93a0">'+nota+'</span>' : '')+'</div>'+
+    '<div style="overflow-x:auto;padding:4px"><table style="min-width:660px"><thead><tr>'+
+    '<th>'+etiqueta+'</th><th>Pedidos</th><th>Cerrados</th><th>Entreg.</th><th>Devuel.</th>'+
+    '<th>Entrega</th><th>Novedad</th><th>Plata parada</th></tr></thead><tbody>';
+  h += filas.map(function(x){
+    var t = (x.tasa === null || x.tasa === undefined) ? null : Number(x.tasa);
+    var c = _nsColor(t);
+    var barra = t === null ? '' :
+      '<div style="display:inline-block;width:52px;height:6px;background:var(--surface-2);border-radius:3px;overflow:hidden;vertical-align:middle;margin-right:7px">'+
+      '<div style="width:'+t+'%;height:100%;background:'+c+'"></div></div>';
+    return '<tr><td style="font-weight:600">'+String(x.k||'').slice(0,34)+'</td>'+
+      '<td>'+x.t+'</td><td>'+x.cerr+'</td><td>'+x.e+'</td><td>'+x.d+'</td>'+
+      '<td style="white-space:nowrap">'+barra+'<b style="color:'+c+'">'+(t===null?'—':t+'%')+'</b></td>'+
+      '<td>'+(x.n||0)+'</td><td style="color:'+(Number(x.plata)>0?'#c62828':'#8a93a0')+'">'+(Number(x.plata)>0?_nsMoneda(x.plata):'—')+'</td></tr>';
+  }).join('');
+  return h + '</tbody></table></div></div>';
+}
+
+function pintarNovStats(d){
+  var c = document.getElementById('novStats'); if(!c) return;
+  var r = d.resumen || {};
+  /* sin esto los th quedan sticky y el encabezado flota en medio de la tabla */
+  var css = '<style>#novStats th{position:static}#novStats td{padding:9px 12px}#novStats table{width:100%}</style>';
+  var tasaEnt = r.cerrados ? Math.round(100*r.entregados/r.cerrados) : null;
+  var tasaDev = r.cerrados ? Math.round(100*r.devueltos/r.cerrados) : null;
+
+  var h = css + '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:4px">'+
+    _nsTarjeta((tasaEnt===null?'—':tasaEnt+'%'), 'TASA DE ENTREGA', r.entregados+' de '+r.cerrados+' cerrados', _nsColor(tasaEnt))+
+    _nsTarjeta((tasaDev===null?'—':tasaDev+'%'), 'TASA DE DEVOLUCION', r.devueltos+' devueltos', '#c62828')+
+    _nsTarjeta(r.novedades||0, 'NOVEDADES ABIERTAS', _nsMoneda(r.plata_novedad)+' recuperables', '#d98200')+
+    _nsTarjeta(_nsMoneda(r.plata_devuelta), 'YA PERDIDO', 'en devoluciones', '#c62828')+
+    _nsTarjeta(r.en_curso||0, 'EN CAMINO', 'aun sin definir')+
+    '</div>';
+
+  h += '<div style="background:var(--surface-2);border-left:4px solid #d8a52e;border-radius:8px;padding:11px 15px;margin:12px 0;font-size:12.5px;line-height:1.55;color:var(--ink-2)">'+
+    '<b>Como leer esto.</b> La tasa se mide solo sobre pedidos <b>cerrados</b> (entregado o devuelto): '+
+    'los '+(r.en_curso||0)+' que van en camino todavia no son ni buenos ni malos y no cuentan. '+
+    'Y ojo con el motivo: <b>&laquo;RECHAZADO POR CLIENTE&raquo; no quiere decir que el cliente lo rechazo</b> &mdash; '+
+    'la transportadora usa esa misma causal cuando no ubica ni contacta al destinatario. '+
+    'El rechazo de verdad es <b>&laquo;DESTINATARIO RECHAZA ENTREGA&raquo;</b>.</div>';
+
+  /* motivos */
+  var mot = d.motivos || [];
+  if(mot.length){
+    var totMot = mot.reduce(function(s,x){ return s+Number(x.n||0); },0);
+    h += '<div class="panel" style="margin-top:14px"><div class="tbl-head"><h2 style="font-size:15px">Por que se caen</h2>'+
+      '<span style="font-size:12px;color:#8a93a0">motivo que reporta la transportadora</span></div>'+
+      '<div style="overflow-x:auto;padding:4px"><table style="min-width:600px"><thead><tr>'+
+      '<th>Motivo</th><th>Casos</th><th>%</th><th>Terminaron devueltos</th><th>Plata</th><th>&iquest;Rechazo real?</th></tr></thead><tbody>'+
+      mot.map(function(x){
+        var real = x.real === true || x.real === 't';
+        return '<tr><td style="font-weight:600">'+String(x.k||'').slice(0,36)+'</td><td>'+x.n+'</td>'+
+          '<td>'+(totMot?Math.round(100*x.n/totMot):0)+'%</td><td>'+x.d+'</td>'+
+          '<td style="color:#c62828">'+_nsMoneda(x.plata)+'</td>'+
+          '<td>'+(real
+            ? '<span style="background:#fdecec;color:#c62828;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700">SI</span>'
+            : '<span style="background:var(--surface-2);color:#8a93a0;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700">no necesariamente</span>')+'</td></tr>';
+      }).join('')+'</tbody></table></div></div>';
+  }
+
+  h += _nsTabla('Por region', 'minimo 5 pedidos cerrados &middot; de peor a mejor', d.regiones, 'Region');
+  h += _nsTabla('Por comuna', 'minimo 4 pedidos cerrados', d.comunas, 'Comuna');
+  h += _nsTabla('Por producto', 'minimo 5 pedidos cerrados', d.productos, 'Producto');
+  h += _nsTabla('Por transportadora', 'minimo 5 pedidos cerrados', d.transportadoras, 'Transportadora');
+
+  h += '<div style="text-align:right;font-size:11.5px;color:#8a93a0;padding:12px 4px">Ultimos 60 dias &middot; actualizado '+(d.actualizado||'')+
+    ' &middot; <a href="#" onclick="cargarNovStats(1);return false" style="color:var(--ink-2);font-weight:700">Actualizar</a></div>';
+  c.innerHTML = h;
+}
+
+function cargarNovStats(forzar){
+  var c = document.getElementById('novStats'); if(!c) return;
+  if(_novStats && !forzar){ pintarNovStats(_novStats); return; }
+  c.innerHTML = '<div class="vacio" style="padding:26px">Calculando estad&iacute;stica&hellip;</div>';
+  fetch(BASE+'/novedades-stats').then(function(r){ return r.json(); }).then(function(d){
+    if(Array.isArray(d)) d = d[0] || {};
+    _novStats = d;
+    pintarNovStats(d);
+  }).catch(function(){
+    c.innerHTML = '<div class="vacio" style="padding:26px">No se pudo cargar (&iquest;flujo &laquo;Panel: estadistica de novedades&raquo; activo en n8n?).</div>';
+  });
+}
+
+/* el segmento se engancha una sola vez, al cargar la pagina */
+document.addEventListener('DOMContentLoaded', function(){
+  var seg = document.getElementById('segNov'); if(!seg) return;
+  seg.querySelectorAll('button').forEach(function(b){
+    b.addEventListener('click', function(){ novTab(b.dataset.nov); });
+  });
+});
+
+function novTab(t){
+  _novTab = t;
+  var p = document.getElementById('novPend'), s = document.getElementById('novStats');
+  if(p) p.style.display = (t === 'pend' ? '' : 'none');
+  if(s) s.style.display = (t === 'stats' ? '' : 'none');
+  var seg = document.getElementById('segNov');
+  if(seg) seg.querySelectorAll('button').forEach(function(b){ b.classList.toggle('act', b.dataset.nov === t); });
+  if(t === 'stats') cargarNovStats();
+  else cargarNovedades();
+}
+
 function _entPinta(a, cod){
   if(a === 'read')      return ['#0e8074','LEIDO'];
   if(a === 'delivered') return ['#0e8074','LLEGO'];
@@ -1539,7 +1667,7 @@ function mostrarVista(v){
   document.getElementById('vtitle').textContent=t[0];
   document.getElementById('vsub').textContent=t[1];
   if(v==='direcciones') cargarDirecciones();
-  if(v==='novedades') cargarNovedades();
+  if(v==='novedades') novTab(_novTab);
   if(v==='listanegra') cargarListaNegra();
   if(v==='historico') renderHistorico();
   if(v==='visitas') renderVisitas();

@@ -749,6 +749,20 @@ tbody tr:hover .chev{color:var(--brand)}
 
     <!-- ====== NOVEDADES ====== -->
     <div class="content view" id="view-novedades">
+      <div class="filters">
+        <div class="seg" id="segNov">
+          <button class="act" data-nov="pend">Pendientes</button>
+          <button data-nov="stats">&#128202; Estad&iacute;stica</button>
+        </div>
+      </div>
+
+      <!-- ---- sub-pestaña: estadística ---- -->
+      <div id="novStats" style="display:none">
+        <div class="vacio" style="padding:26px">Cargando estad&iacute;stica&hellip;</div>
+      </div>
+
+      <!-- ---- sub-pestaña: pendientes ---- -->
+      <div id="novPend">
       <div class="panel">
         <div class="tbl-head">
           <h2>&#9888;&#65039; Novedades &mdash; pedidos detenidos</h2>
@@ -762,6 +776,7 @@ tbody tr:hover .chev{color:var(--brand)}
           <tbody id="tbodyNovedades"><tr><td colspan="7" class="vacio">Se cargan al abrir esta pesta&ntilde;a.</td></tr></tbody></table>
         </div>
       </div>
+      </div><!-- /novPend -->
     </div>
 
     <!-- ====== LISTA NEGRA ====== -->
@@ -1538,8 +1553,8 @@ tbody tr:hover .chev{color:var(--brand)}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
-<script src="app.js?v=121"></script>
-<script src="ganancia.js?v=121"></script>
+<script src="app.js?v=122"></script>
+<script src="ganancia.js?v=122"></script>
 </body>
 </html>
 
