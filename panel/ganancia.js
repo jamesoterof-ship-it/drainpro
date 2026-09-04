@@ -44,6 +44,7 @@
       if (!a && !b) return dias.slice(0, 7);
       return dias.filter(function (x) { return (!a || x.dia >= a) && (!b || x.dia <= b); });
     }
+    if (rangoGan === 'mes') return dias.slice();   /* el totalizado usa todos los dias */
     return dias.slice(0, Number(rangoGan) || 7);
   }
 
@@ -110,7 +111,40 @@
 
     /* tabla */
     var tb = document.querySelector('#tablaGan tbody');
-    if (tb) tb.innerHTML = arr.map(function (x) {
+    /* POR MES: una fila por mes con todo sumado, en vez de una fila por dia.
+       Es lo que James pidio para ver el totalizado del mes de una sola mirada. */
+    if (rangoGan === 'mes') {
+      var MESL = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+      var porMes = {};
+      arr.forEach(function (x) {
+        var k = String(x.dia).slice(0, 7);
+        if (!porMes[k]) porMes[k] = { e:0, en:0, m:0, c:0, s:0, d:0 };
+        porMes[k].e += num(x.entregas); porMes[k].en += num(x.entra);
+        porMes[k].m += num(x.meta); porMes[k].c += num(x.camila);
+        porMes[k].s += num(x.sueldo); porMes[k].d += 1;
+      });
+      var claves = Object.keys(porMes).sort().reverse();
+      if (tb) tb.innerHTML = claves.map(function (k) {
+        var v = porMes[k], q = v.en - v.m - v.c - v.s;
+        var pp = k.split('-');
+        return '<tr>'
+          + '<td><b>' + MESL[+pp[1]-1] + ' ' + pp[0] + '</b><small style="display:block;color:var(--ink-3)">'
+          + v.d + ' días · ' + (v.d ? Math.round(v.e/v.d) : 0) + ' entregas al día</small></td>'
+          + '<td style="text-align:right">' + v.e + '</td>'
+          + '<td style="text-align:right">' + pes(v.en) + '</td>'
+          + '<td style="text-align:right;color:var(--ink-2)">−' + pes(v.m) + '</td>'
+          + '<td style="text-align:right;color:var(--ink-2)">−' + pes(v.c) + '</td>'
+          + '<td style="text-align:right;color:var(--ink-2)">−' + pes(v.s) + '</td>'
+          + '<td style="text-align:right;font-weight:800;font-size:15px;color:' + (q >= 0 ? 'var(--green)' : 'var(--red)') + '">' + pes(q) + '</td></tr>';
+      }).join('');
+      var tfm = document.querySelector('#tablaGan tfoot');
+      if (tfm) tfm.innerHTML = '<tr style="font-weight:800;background:var(--surface-2)"><td>Todos los meses</td>'
+        + '<td style="text-align:right">' + t.e + '</td><td style="text-align:right">' + pes(t.en) + '</td>'
+        + '<td style="text-align:right">−' + pes(t.m) + '</td><td style="text-align:right">−' + pes(t.c) + '</td>'
+        + '<td style="text-align:right">−' + pes(t.s) + '</td>'
+        + '<td style="text-align:right;color:' + (t.q >= 0 ? 'var(--green)' : 'var(--red)') + '">' + pes(t.q) + '</td></tr>';
+    }
+    else if (tb) tb.innerHTML = arr.map(function (x) {
       /* TE QUEDA es lo ultimo: despues de Meta, de los bots y del sueldo. */
       var q = num(x.entra) - num(x.meta) - num(x.camila) - num(x.sueldo);
       return '<tr' + (x.dia === HOY ? ' style="background:var(--brand-tint)"' : '') + '>'
@@ -123,7 +157,8 @@
         + '<td style="text-align:right;font-weight:700;color:' + (q >= 0 ? 'var(--green)' : 'var(--red)') + '">' + pes(q) + '</td></tr>';
     }).join('');
     var tf = document.querySelector('#tablaGan tfoot');
-    if (tf) tf.innerHTML = '<tr style="font-weight:800;background:var(--surface-2)"><td>Total</td>'
+    /* en "Por mes" el pie ya lo escribio el bloque de arriba; no se pisa */
+    if (tf && rangoGan !== 'mes') tf.innerHTML = '<tr style="font-weight:800;background:var(--surface-2)"><td>Total</td>'
       + '<td style="text-align:right">' + t.e + '</td><td style="text-align:right">' + pes(t.en) + '</td>'
       + '<td style="text-align:right">−' + pes(t.m) + '</td><td style="text-align:right">−' + pes(t.c) + '</td>'
       + '<td style="text-align:right">−' + pes(t.s) + '</td>'
