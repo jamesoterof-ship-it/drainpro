@@ -989,6 +989,31 @@ function notaRotulo(n){
   if(t.length>240) t=t.slice(0,240);
   return t;
 }
+/* ESPEJO del candado de direccion de Camila (Code in JavaScript2).
+   Marca las direcciones que NO tienen con que ubicar al repartidor: ni numero de
+   calle, ni numero de casa chico (casa 2, manzana F casa 6), ni una referencia.
+   Ojo: cruce, capilla y villa NO cuentan como referencia, son nombres de lugar.
+   Esto NO frena la venta, solo la deja a la vista: hoy salen unas 2 al dia asi y
+   no las ve nadie hasta que vuelven devueltas. */
+function dirSinUbicar(dir){
+  var n=String(dir||'').replace(/\((?:FALTA|falta)[^)]*\)/g,'').replace(/\[[^\]]*\]/g,'').trim();
+  if(!n||n.length<8) return true;
+  if(/^pendient|^por confirmar|^sin direccion|^no la dio|^desconocid|^por definir|^no indica|^n\/a$|^-+$|^\.+$|direccion pendiente/i.test(n)) return true;
+  if(/\d{2,5}/.test(n)) return false;
+  if(/(casa|sitio|lote|manzana|mz|depto|departamento|parcela|n°|nro|numero|número)\s*\.?\s*[a-z]?\s*n?°?\s*\d{1,4}/i.test(n)) return false;
+  if(/(color|frente|cerca|al lado|contiguo|pasaje|esquina|porton|portón|reja|negocio|tienda|local|almacen|almacén|escuela|colegio|liceo|sede|iglesia|plaza|cancha|km|kilometro|kilómetro|camino|entrada|subida|bajada|puente|referencia|azul|verde|roja|rojo|amarill|blanca|blanco|cafe|café|gris|celeste|naranja|beige|condominio|edificio|block|torre)/i.test(n)) return false;
+  return true;
+}
+/* aviso rojo: el repartidor no tiene como encontrarla */
+function bloqueSinUbicar(dir,montado){
+  if(!dirSinUbicar(dir)) return '';
+  return '<div style="margin:0 0 12px;padding:11px 13px;border-radius:11px;background:#fdeaea;'
+    +'border:1px solid #e69a9a;border-left:5px solid #c62828">'
+    +'<div style="font-size:11.5px;font-weight:800;letter-spacing:.4px;color:#a01818;margin-bottom:3px">SIN CÓMO UBICARLA</div>'
+    +'<div style="font-size:13.5px;font-weight:700;color:#7d1414;line-height:1.35">Esta dirección no trae número ni una referencia. '
+    +(montado?'Ya salió así — conviene llamar al cliente antes de que el repartidor llegue.':'Pídele el color de la casa, cerca de qué queda, o su ubicación de WhatsApp antes de aprobar.')
+    +'</div></div>';
+}
 /* ESPEJO de _esperaHasta del montador: si el cliente pidio que no le llegue
    todavia, el pedido NO se monta hasta ese dia. Aqui se muestra para que se vea
    por que no ha salido, en vez de parecer trabada. */
@@ -1039,7 +1064,7 @@ function verVenta(i){
   const fila=(k,v)=>`<div class="dl"><span class="k">${k}</span><span class="v">${esc(v)}</span></div>`;
   document.getElementById('mTitulo').textContent=o.cli;
   document.getElementById('mBody').innerHTML=
-    bloqueNota(o.nota)+bloqueEspera(o.nota,o.montado)+
+    bloqueNota(o.nota)+bloqueEspera(o.nota,o.montado)+bloqueSinUbicar(o.dir,o.montado)+
     fila('Canal','WhatsApp · '+BOTNOM[o.bot])+fila('País',{CL:'Chile',CO:'Colombia',PY:'Paraguay'}[o.loc])+
     fila('Producto',o.prod)+fila('Cantidad',o.cant+' unidades')+fila('Teléfono','+'+o.tel)+
     fila('Dirección',o.dir)+fila('Comuna / Ciudad',o.zona)+fila('Región / Depto.',o.region)+
@@ -1238,7 +1263,7 @@ function verAprob(i){
     window._ventaAbierta={cli:o.cli,dir:o.dir+(o.ref?' - '+o.ref:''),region:o.region,tel:o.tel,prod:o.prod,cant:o.cant,precio:o.total};
   }else{
     document.getElementById('mBody').innerHTML=
-      bloqueNota(o.nota)+bloqueEspera(o.nota,o.montado)+
+      bloqueNota(o.nota)+bloqueEspera(o.nota,o.montado)+bloqueSinUbicar(o.dir,o.montado)+
       fila('Canal','WhatsApp · '+(BOTNOM[o.bot]||''))+fila('País',{CL:'Chile',CO:'Colombia',PY:'Paraguay'}[o.loc]||'—')+
       fila('Producto',o.prod)+fila('Cantidad',o.cant+' unidades')+fila('Teléfono','+'+o.tel)+
       fila('Dirección',o.dir)+fila('Comuna / Ciudad',o.zona)+fila('Región / Depto.',o.region)+
