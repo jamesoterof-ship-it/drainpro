@@ -146,9 +146,12 @@ var BTN_APROB='background:var(--brand,#3056c9);color:#fff;border:0;border-radius
 /* Una venta marcada FALTA DIRECCION no se puede aprobar: primero se corrige la
    direccion con "Editar datos". Si sale a Dropi con "pendiente" vuelve devuelta
    y perdemos el flete (paso el 31-08 con Luis Perez). */
-function celdaAprob(k,montadoHtml,rid,faltaDir){
+function celdaAprob(k,montadoHtml,rid,faltaDir,prog){
   if(montadoHtml) return montadoHtml;
   if(faltaDir) return '<span class="st st-ab" style="background:#fdeaea;color:#a01818"><i style="background:#c62828"></i>Corregir dirección</span>';
+  /* Programada: NO se aprueba todavía. Vuelve sola a Pendientes 3 días antes, y ahí
+     James la aprueba después de avisarle al cliente que su pedido va en camino. */
+  if(prog) return '<span class="st st-ab" style="background:#fff3e2;color:#b45309"><i style="background:#d97706"></i>Vuelve el '+esc(prog)+'</span>';
   if(esAprobado(k)) return '<span class="st st-rec"><i></i>Aprobado ⏳</span>';
   if(esRechazado(k)) return '<span class="st st-ab"><i></i>Eliminado</span><button class="b-desh" onclick="deshacerRechazo(&quot;'+k+'&quot;)">Deshacer</button>';
   return '<button class="b-apr" onclick="aprobar(&quot;'+k+'&quot;)">✓ Aprobar</button><button class="b-rech" title="Eliminar — sale de la lista y no se monta en Dropi" onclick="eliminar(&quot;'+k+'&quot;,&quot;'+(rid||'')+'&quot;)">🗑</button>';
@@ -1008,7 +1011,8 @@ function esperaHasta(nota){
   if(!cand){for(var k in DIA){if(new RegExp('\\b'+k+'\\b').test(t)){var s=(DIA[k]-hoy.getDay()+7)%7||7;cand=new Date(y,m,d+s);break;}}}
   if(!cand||isNaN(cand)) return null;
   var dias=Math.round((cand-new Date(y,m,d))/864e5);
-  if(dias<=0||dias>45) return null;
+  /* igual que el montador: se suelta 2 dias antes para que llegue en la fecha */
+  if(dias<=2||dias>45) return null;
   return ('0'+cand.getDate()).slice(-2)+'-'+('0'+(cand.getMonth()+1)).slice(-2)+'-'+cand.getFullYear();
 }
 /* aviso de retencion: solo si todavia no se monto (si ya salio, no tiene sentido) */
@@ -1178,6 +1182,8 @@ function renderAprobar(){
     const d=x.desde?Date.parse(x.desde+'T12:00:00'):0;
     x.prog = !!(d && x.st!=='montado' && d - hoyMs > tresDias);
     x.diasFalta = d ? Math.round((d-hoyMs)/864e5) : 0;
+    /* el dia que vuelve sola a Pendientes: 3 dias antes de la fecha del cliente */
+    x.vuelve = x.prog ? new Date(d-tresDias).toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit'}) : '';
   });
   const nProg=items.filter(x=>x.prog).length;
   const bp=document.getElementById('numProg');
@@ -1209,7 +1215,7 @@ function renderAprobar(){
       <td>${esc(x.comuna||'—')}</td>
       <td>${x.cant}</td>
       <td class="money">${x.total}</td>
-      <td class="cell-aprob" onclick="event.stopPropagation()">${celdaAprob(x.k, x.st==='montado'?'<span class="st st-ok"><i></i>Montado</span>':'', x.rid||'', x.faltaDir)}</td>
+      <td class="cell-aprob" onclick="event.stopPropagation()">${celdaAprob(x.k, x.st==='montado'?'<span class="st st-ok"><i></i>Montado</span>':'', x.rid||'', x.faltaDir, x.vuelve)}</td>
       <td onclick="event.stopPropagation()"><a class="qr" style="text-decoration:none" href="https://wa.me/${x.tel}" target="_blank">WhatsApp</a></td>
     </tr>`).join('');
 }
