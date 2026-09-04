@@ -985,6 +985,41 @@ function notaRotulo(n){
   if(t.length>240) t=t.slice(0,240);
   return t;
 }
+/* ESPEJO de _esperaHasta del montador: si el cliente pidio que no le llegue
+   todavia, el pedido NO se monta hasta ese dia. Aqui se muestra para que se vea
+   por que no ha salido, en vez de parecer trabada. */
+function esperaHasta(nota){
+  var t=String(nota||'').toLowerCase()
+    .replace(/[áà]/g,'a').replace(/[éè]/g,'e').replace(/[íì]/g,'i')
+    .replace(/[óò]/g,'o').replace(/[úù]/g,'u');
+  if(!t) return null;
+  if(!/(no\s+despach|no\s+(lo\s+)?mand|no\s+(me\s+)?envi|antes\s+del?|despues\s+del?|a\s+partir\s+del?|apartir\s+del?|me\s+pagan|cuando\s+(me\s+)?pagu|dia\s+de\s+pago|entregar?\s+(el|a\s+partir))/.test(t)) return null;
+  var MES={enero:0,febrero:1,marzo:2,abril:3,mayo:4,junio:5,julio:6,agosto:7,septiembre:8,setiembre:8,octubre:9,noviembre:10,diciembre:11};
+  var DIA={domingo:0,lunes:1,martes:2,miercoles:3,jueves:4,viernes:5,sabado:6};
+  var hoy=new Date(new Date().toLocaleString('en-US',{timeZone:'America/Santiago'}));
+  var y=hoy.getFullYear(),m=hoy.getMonth(),d=hoy.getDate(),cand=null;
+  var a=t.match(/(\d{1,2})\s*de\s*([a-z]+)/);
+  if(a&&MES[a[2]]!==undefined){var yy=y;if(MES[a[2]]<m)yy=y+1;cand=new Date(yy,MES[a[2]],parseInt(a[1],10));}
+  if(!cand){
+    var b=t.match(/(?:antes\s+del?|despues\s+del?|a\s+partir\s+del?|apartir\s+del?|el\s+dia|pagan\s+el|paguen\s+el|pago\s+el|el)\s+(\d{1,2})\b/);
+    if(b){var nn=parseInt(b[1],10);if(nn>=1&&nn<=31){cand=new Date(y,m,nn);if(nn<d)cand=new Date(y,m+1,nn);}}
+  }
+  if(!cand){for(var k in DIA){if(new RegExp('\\b'+k+'\\b').test(t)){var s=(DIA[k]-hoy.getDay()+7)%7||7;cand=new Date(y,m,d+s);break;}}}
+  if(!cand||isNaN(cand)) return null;
+  var dias=Math.round((cand-new Date(y,m,d))/864e5);
+  if(dias<=0||dias>45) return null;
+  return ('0'+cand.getDate()).slice(-2)+'-'+('0'+(cand.getMonth()+1)).slice(-2)+'-'+cand.getFullYear();
+}
+/* aviso de retencion: solo si todavia no se monto (si ya salio, no tiene sentido) */
+function bloqueEspera(nota,montado){
+  if(montado) return '';
+  const f=esperaHasta(nota); if(!f) return '';
+  return '<div style="margin:0 0 12px;padding:11px 13px;border-radius:11px;background:#e8f1ff;'
+    +'border:1px solid #7ea7f0;border-left:5px solid #3060ea">'
+    +'<div style="font-size:11.5px;font-weight:800;letter-spacing:.4px;color:#1e4bb8;margin-bottom:3px">NO SALE TODAVÍA</div>'
+    +'<div style="font-size:14px;font-weight:700;color:#123a8f;line-height:1.35">Se monta solo el '+esc(f)
+    +'<div style="font-size:12px;font-weight:600;margin-top:3px">Lo pidió el cliente. Si lo quieres mandar ya, quítale la fecha a la nota en Editar datos.</div></div></div>';
+}
 /* fila destacada con lo que sale impreso en la guia — asi no se aprueba a ciegas */
 function filaRotulo(nota){
   const t=notaRotulo(nota);
@@ -999,7 +1034,7 @@ function verVenta(i){
   const fila=(k,v)=>`<div class="dl"><span class="k">${k}</span><span class="v">${esc(v)}</span></div>`;
   document.getElementById('mTitulo').textContent=o.cli;
   document.getElementById('mBody').innerHTML=
-    bloqueNota(o.nota)+
+    bloqueNota(o.nota)+bloqueEspera(o.nota,o.montado)+
     fila('Canal','WhatsApp · '+BOTNOM[o.bot])+fila('País',{CL:'Chile',CO:'Colombia',PY:'Paraguay'}[o.loc])+
     fila('Producto',o.prod)+fila('Cantidad',o.cant+' unidades')+fila('Teléfono','+'+o.tel)+
     fila('Dirección',o.dir)+fila('Comuna / Ciudad',o.zona)+fila('Región / Depto.',o.region)+
@@ -1179,7 +1214,7 @@ function verAprob(i){
     window._ventaAbierta={cli:o.cli,dir:o.dir+(o.ref?' - '+o.ref:''),region:o.region,tel:o.tel,prod:o.prod,cant:o.cant,precio:o.total};
   }else{
     document.getElementById('mBody').innerHTML=
-      bloqueNota(o.nota)+
+      bloqueNota(o.nota)+bloqueEspera(o.nota,o.montado)+
       fila('Canal','WhatsApp · '+(BOTNOM[o.bot]||''))+fila('País',{CL:'Chile',CO:'Colombia',PY:'Paraguay'}[o.loc]||'—')+
       fila('Producto',o.prod)+fila('Cantidad',o.cant+' unidades')+fila('Teléfono','+'+o.tel)+
       fila('Dirección',o.dir)+fila('Comuna / Ciudad',o.zona)+fila('Región / Depto.',o.region)+
