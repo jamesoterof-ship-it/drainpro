@@ -995,18 +995,24 @@ function notaRotulo(n){
    Ojo: cruce, capilla y villa NO cuentan como referencia, son nombres de lugar.
    Esto NO frena la venta, solo la deja a la vista: hoy salen unas 2 al dia asi y
    no las ve nadie hasta que vuelven devueltas. */
-function dirSinUbicar(dir){
+function dirSinUbicar(dir,nota){
   var n=String(dir||'').replace(/\((?:FALTA|falta)[^)]*\)/g,'').replace(/\[[^\]]*\]/g,'').trim();
   if(!n||n.length<8) return true;
   if(/^pendient|^por confirmar|^sin direccion|^no la dio|^desconocid|^por definir|^no indica|^n\/a$|^-+$|^\.+$|direccion pendiente/i.test(n)) return true;
+  /* el numero se busca SOLO en la calle: en la nota cualquier fecha daria un falso ok */
   if(/\d{2,5}/.test(n)) return false;
   if(/(casa|sitio|lote|manzana|mz|depto|departamento|parcela|n°|nro|numero|número)\s*\.?\s*[a-z]?\s*n?°?\s*\d{1,4}/i.test(n)) return false;
-  if(/(color|frente|cerca|al lado|contiguo|pasaje|esquina|porton|portón|reja|negocio|tienda|local|almacen|almacén|escuela|colegio|liceo|sede|iglesia|plaza|cancha|km|kilometro|kilómetro|camino|entrada|subida|bajada|puente|referencia|azul|verde|roja|rojo|amarill|blanca|blanco|cafe|café|gris|celeste|naranja|beige|condominio|edificio|block|torre)/i.test(n)) return false;
+  /* la referencia sirve igual si viene en la NOTA del cliente y no en la calle: en el
+     campo la direccion suele ser "Catarata s/n" y lo util esta todo en la nota. */
+  var t=n+' '+String(nota||'');
+  /* si mando su ubicacion de WhatsApp no hay nada que preguntarle */
+  if(/-?\d{1,2}\.\d{4,}\s*[\/,;]\s*-?\d{1,3}\.\d{4,}/.test(t)) return false;
+  if(/(color|frente|cerca|al lado|contiguo|pasaje|esquina|porton|portón|reja|negocio|tienda|local|minimarket|almacen|almacén|escuela|colegio|liceo|sede|iglesia|plaza|cancha|km|kilometro|kilómetro|camino|ruta|entrada|subida|bajada|puente|referencia|azul|verde|roja|rojo|amarill|blanca|blanco|cafe|café|gris|celeste|naranja|beige|condominio|edificio|block|torre|campamento|sector|fundo|comunidad|preguntar por|lo conocen|la conocen|gps|ubicacion|ubicación)/i.test(t)) return false;
   return true;
 }
 /* aviso rojo: el repartidor no tiene como encontrarla */
-function bloqueSinUbicar(dir,montado){
-  if(!dirSinUbicar(dir)) return '';
+function bloqueSinUbicar(dir,montado,nota){
+  if(!dirSinUbicar(dir,nota)) return '';
   return '<div style="margin:0 0 12px;padding:11px 13px;border-radius:11px;background:#fdeaea;'
     +'border:1px solid #e69a9a;border-left:5px solid #c62828">'
     +'<div style="font-size:11.5px;font-weight:800;letter-spacing:.4px;color:#a01818;margin-bottom:3px">SIN CÓMO UBICARLA</div>'
@@ -1064,7 +1070,7 @@ function verVenta(i){
   const fila=(k,v)=>`<div class="dl"><span class="k">${k}</span><span class="v">${esc(v)}</span></div>`;
   document.getElementById('mTitulo').textContent=o.cli;
   document.getElementById('mBody').innerHTML=
-    bloqueNota(o.nota)+bloqueEspera(o.nota,o.montado)+bloqueSinUbicar(o.dir,o.montado)+
+    bloqueNota(o.nota)+bloqueEspera(o.nota,o.montado)+bloqueSinUbicar(o.dir,o.montado,o.nota)+
     fila('Canal','WhatsApp · '+BOTNOM[o.bot])+fila('País',{CL:'Chile',CO:'Colombia',PY:'Paraguay'}[o.loc])+
     fila('Producto',o.prod)+fila('Cantidad',o.cant+' unidades')+fila('Teléfono','+'+o.tel)+
     fila('Dirección',o.dir)+fila('Comuna / Ciudad',o.zona)+fila('Región / Depto.',o.region)+
@@ -1263,7 +1269,7 @@ function verAprob(i){
     window._ventaAbierta={cli:o.cli,dir:o.dir+(o.ref?' - '+o.ref:''),region:o.region,tel:o.tel,prod:o.prod,cant:o.cant,precio:o.total};
   }else{
     document.getElementById('mBody').innerHTML=
-      bloqueNota(o.nota)+bloqueEspera(o.nota,o.montado)+bloqueSinUbicar(o.dir,o.montado)+
+      bloqueNota(o.nota)+bloqueEspera(o.nota,o.montado)+bloqueSinUbicar(o.dir,o.montado,o.nota)+
       fila('Canal','WhatsApp · '+(BOTNOM[o.bot]||''))+fila('País',{CL:'Chile',CO:'Colombia',PY:'Paraguay'}[o.loc]||'—')+
       fila('Producto',o.prod)+fila('Cantidad',o.cant+' unidades')+fila('Teléfono','+'+o.tel)+
       fila('Dirección',o.dir)+fila('Comuna / Ciudad',o.zona)+fila('Región / Depto.',o.region)+
