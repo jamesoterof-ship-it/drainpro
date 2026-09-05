@@ -1200,7 +1200,11 @@ const REV={
   VERDE:   {bg:'#0e8074',fg:'#fff',fila:'',        txt:'#0e8074',et:'✓ revisada'}
 };
 function chipRev(x){
-  const r=REV[x.nivel]; if(!r) return '';
+  const r=REV[x.nivel];
+  /* Sin veredicto todavia: hay que verlo, porque aprobar antes de que pase el
+     revisor es justo lo que dejaba salir los pedidos que el cliente ya habia
+     cancelado. Las montadas no llevan aviso: ahi ya no hay nada que decidir. */
+  if(!r) return x.st==='montado' ? '' : '<span style="display:inline-block;margin-left:6px;background:#e8eaed;color:#5f6368;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;vertical-align:middle">⏳ sin revisar</span>';
   if(x.nivel==='VERDE') return '<span style="display:inline-block;margin-left:6px;color:'+r.txt+';font-size:10.5px;font-weight:700;vertical-align:middle">'+r.et+'</span>';
   return '<span style="display:inline-block;margin-left:6px;background:'+r.bg+';color:'+r.fg+';font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;vertical-align:middle">'+r.et+'</span>';
 }
