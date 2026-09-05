@@ -311,6 +311,10 @@ async function cargarVentas(){
         /* veredicto del revisor: lee la conversacion 15 min despues de la venta y dice
            si se puede aprobar. Antes esto solo salia por WhatsApp y el 95% no llegaba. */
         revision:String(r.REVISION||'').trim(), nivel:String(r.REVISION_NIVEL||'').trim().toUpperCase(),
+        /* instante exacto de la venta, en milisegundos. Viene de la base a proposito:
+           calcularlo con la fecha escrita deja el reloj corrido una hora, porque el
+           panel se mira desde Bogota (UTC-5) y las ventas van en hora de Chile. */
+        creadoMs:Number(r.CREADO_MS)||0,
         bot:esR?'Ramon':esJ?'James':esRedes?'Redes':'Carlos',loc:esR?'PY':esJ?'CO':'CL',estado:r.ESTADO||'—',
         conf:!/abono pendiente/i.test(String(r.ESTADO||'')),abono:/abono pendiente/i.test(String(r.ESTADO||'')),/* abono pendiente = NO confirmada hasta que pague el anticipo */
         montado:/montad/i.test(String(r.ESTADO||'')),
@@ -1199,14 +1203,20 @@ const REV={
   AMARILLO:{bg:'#e8a800',fg:'#3d2c00',fila:'#fffaeb',txt:'#8a6100',et:'🟡 REVISAR'},
   VERDE:   {bg:'#0e8074',fg:'#fff',fila:'',        txt:'#0e8074',et:'✓ revisada'}
 };
+/* La hora de espera: las ventas se aprueban una hora despues de registradas, a
+   proposito, para darle tiempo al cliente a cambiar de idea, corregir la direccion
+   o cancelar. El panel dice cuanto falta y cuando ya se puede. Sin esto se
+   aprobaba a los 3, 5 y 13 minutos y salian pedidos ya cancelados. */
+const ESPERA_MIN=60;
+function minutosDe(x){ return x.creadoMs ? Math.floor((Date.now()-x.creadoMs)/60000) : null; }
+function pastilla(bg,fg,txt){ return '<span style="display:inline-block;margin-left:6px;background:'+bg+';color:'+fg+';font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;vertical-align:middle">'+txt+'</span>'; }
 function chipRev(x){
-  const r=REV[x.nivel];
-  /* Sin veredicto todavia: hay que verlo, porque aprobar antes de que pase el
-     revisor es justo lo que dejaba salir los pedidos que el cliente ya habia
-     cancelado. Las montadas no llevan aviso: ahi ya no hay nada que decidir. */
-  if(!r) return x.st==='montado' ? '' : '<span style="display:inline-block;margin-left:6px;background:#e8eaed;color:#5f6368;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;vertical-align:middle">⏳ sin revisar</span>';
-  if(x.nivel==='VERDE') return '<span style="display:inline-block;margin-left:6px;color:'+r.txt+';font-size:10.5px;font-weight:700;vertical-align:middle">'+r.et+'</span>';
-  return '<span style="display:inline-block;margin-left:6px;background:'+r.bg+';color:'+r.fg+';font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;vertical-align:middle">'+r.et+'</span>';
+  if(x.st==='montado') return '';                       /* ya salio, no hay nada que decidir */
+  const m=minutosDe(x), r=REV[x.nivel];
+  if(m!==null && m<ESPERA_MIN) return pastilla('#e8eaed','#5f6368','⏳ faltan '+(ESPERA_MIN-m)+' min');
+  if(!r) return pastilla('#e8eaed','#5f6368','⏳ sin revisar');
+  if(x.nivel==='VERDE') return pastilla('#0e8074','#fff','✓ se puede aprobar');
+  return pastilla(r.bg,r.fg,r.et);
 }
 function motivoRev(x){
   const r=REV[x.nivel];
@@ -1216,8 +1226,14 @@ function motivoRev(x){
 /* el mismo veredicto, en grande, dentro del detalle del cliente */
 function bloqueRev(o){
   const n=String(o.nivel||'').toUpperCase(), r=REV[n];
+  const m=minutosDe(o);
+  if(!o.montado && m!==null && m<ESPERA_MIN){
+    return '<div style="background:#f1f3f4;border-left:4px solid #9aa0a6;padding:10px 12px;border-radius:8px;margin-bottom:10px">'
+      +'<div style="color:#3c4043;font-weight:800;font-size:12.5px;margin-bottom:4px">⏳ Faltan '+(ESPERA_MIN-m)+' min para poder aprobarla</div>'
+      +'<div style="color:#5f6368;line-height:1.4;white-space:normal">Se espera una hora desde la venta por si el cliente cambia la dirección, pone una condición o la cancela. Va en '+m+' min.</div></div>';
+  }
   if(!r) return '<div class="dl"><span class="k">Revisión</span><span class="v" style="color:#7a7a7a">Todavía sin revisar — el revisor pasa a los 15 min de la venta</span></div>';
-  if(n==='VERDE') return '<div class="dl"><span class="k">Revisión</span><span class="v" style="color:#0e8074;font-weight:700">✓ Revisada, sin problemas</span></div>';
+  if(n==='VERDE') return '<div class="dl"><span class="k">Revisión</span><span class="v" style="color:#0e8074;font-weight:700">✓ Revisada, sin problemas — se puede aprobar</span></div>';
   return '<div style="background:'+r.fila+';border-left:4px solid '+r.bg+';padding:10px 12px;border-radius:8px;margin-bottom:10px">'
     +'<div style="color:'+r.bg+';font-weight:800;font-size:12.5px;margin-bottom:4px">'+r.et+'</div>'
     +'<div style="color:'+r.txt+';font-weight:600;line-height:1.4;white-space:normal">'+esc(o.revision||'')+'</div></div>';
@@ -1239,7 +1255,7 @@ function renderAprobar(){
        ventas del mismo cliente el mismo dia se borraban LAS DOS (paso el 3-09 con
        Maria Grandon). El servidor ya tiene el candado; solo hay que mandarle el id. */
     items.push({k,raw:o,rid:o.rid||'',canal:'WhatsApp',cli:o.cli,tel:o.tel,fecha:o.fecha,prod:o.prod,color:'#0e8074',comuna:o.zona,cant:o.cant,total:o.precio,orden:o.orden,abono:!!o.abono,nota:o.nota||'',desde:o.desde||'',faltaDir:/falta direccion/i.test(String(o.estado||'')),
-      revision:o.revision||'',nivel:o.nivel||'',
+      revision:o.revision||'',nivel:o.nivel||'',creadoMs:o.creadoMs||0,
       st:o.montado?'montado':(esAprobado(k)?'aprobado':(esRechazado(k)?'rechazado':'pendiente'))});
   });
   /* PROGRAMADAS: el cliente pidió una fecha. Salen de Pendientes para que no se
