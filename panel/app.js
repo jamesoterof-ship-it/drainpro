@@ -1886,8 +1886,7 @@ function cargarEntregas(){
   fetch(BASE+'/entregas-pagina').then(function(r){return r.json();}).then(function(d){
     var f = ((d && d.filas) || []).filter(function(x){ return x && x.id; });
     var malos = f.filter(function(x){ return x.acuse === 'failed'; }).length;
-    var b = document.getElementById('badgeEntregas');
-    if(b){ b.textContent = malos; b.style.display = malos ? '' : 'none'; }
+    _urgPag = malos; _badgeEntregas();
     var cnt = {read:0, delivered:0, sent:0, failed:0, nada:0};
     f.forEach(function(x){ cnt[x.acuse ? x.acuse : 'nada']++; });
     var res = document.getElementById('resumenEntregas');
@@ -1913,6 +1912,71 @@ function cargarEntregas(){
     }).join('');
   }).catch(function(){ tb.innerHTML = '<tr><td colspan="6" class="vacio">No se pudo cargar (flujo Panel: entregas de pagina activo?).</td></tr>'; });
 }
+/* DESPACHOS: guia generada -> Carlos aviso -> le llego.
+   Antes esto no se veia en ninguna parte: la pestaña solo miraba los pedidos de
+   pagina y solo el mensaje de confirmacion, asi que un pedido despachado sin
+   avisar quedaba invisible y el cliente no sabia que iba en camino. */
+var _entTab='despachos', _urgDesp=0, _urgPag=0;
+function _badgeEntregas(){
+  var b=document.getElementById('badgeEntregas'); if(!b) return;
+  var n=_urgDesp+_urgPag; b.textContent=n; b.style.display=n?'':'none';
+}
+function entTab(t){
+  _entTab = t || 'despachos';
+  var d = _entTab==='despachos';
+  document.getElementById('cajaDespachos').style.display = d ? '' : 'none';
+  document.getElementById('cajaPagina').style.display    = d ? 'none' : '';
+  document.getElementById('entTabDesp').classList.toggle('act', d);
+  document.getElementById('entTabPag').classList.toggle('act', !d);
+  if(d) cargarDespachos(); else cargarEntregas();
+}
+function cargarDespachos(){
+  var tb = document.getElementById('tbodyDespachos'); if(!tb) return;
+  tb.innerHTML = '<tr><td colspan="7" class="vacio">Cargando...</td></tr>';
+  fetch(BASE+'/despachos-panel').then(function(r){return r.json();}).then(function(d){
+    var f = ((d && d.filas) || []).filter(function(x){ return x && x.id; });
+    var sinAvisar = f.filter(function(x){ return x.alerta; }).length;
+    var b = document.getElementById('badgeDesp');
+    if(b){ b.textContent = sinAvisar; b.style.display = sinAvisar ? '' : 'none'; }
+    _urgDesp = sinAvisar; _badgeEntregas();
+    var cnt = {lleg:0, camino:0, fallo:0, nada:0};
+    f.forEach(function(x){
+      if(!x.avisado_en) return;
+      if(x.acuse==='read'||x.acuse==='delivered') cnt.lleg++;
+      else if(x.acuse==='sent') cnt.camino++;
+      else if(x.acuse==='failed') cnt.fallo++;
+      else cnt.nada++;
+    });
+    var res = document.getElementById('resumenEntregas');
+    if(res) res.innerHTML =
+      _entChip('#c62828','Sin avisar (van en camino)', sinAvisar) +
+      _entChip('#0e8074','Les llegó', cnt.lleg) +
+      _entChip('#d98200','En camino', cnt.camino) +
+      _entChip('#8a93a0','Sin dato', cnt.nada);
+    if(!f.length){ tb.innerHTML = '<tr><td colspan="7" class="vacio">Sin despachos en los últimos 14 días.</td></tr>'; return; }
+    tb.innerHTML = f.map(function(x){
+      var tel = String(x.telefono||'').replace(/\D/g,'');
+      if(tel.length===8) tel = '9'+tel;
+      if(tel.indexOf('56')!==0) tel = '56'+tel;
+      var blue = /BLUE/i.test(String(x.transportadora||''));
+      var link = blue ? 'https://www.blue.cl/seguimiento/?guia='+x.guia
+                      : 'https://www.starken.cl/seguimiento?codigo='+x.guia;
+      var av = x.avisado_en
+        ? '<span style="color:#0e8074;font-weight:700;font-size:12px">SÍ · '+new Date(x.avisado_en).toLocaleString('es-CL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+'</span>'
+        : '<span style="color:'+(x.alerta?'#c62828':'#8a93a0')+';font-weight:800;font-size:12px">'+(x.alerta?'NO · va en camino':'no (ya cerró)')+'</span>';
+      var p = x.avisado_en ? _entPinta(x.acuse, x.acuse_codigo) : ['#8a93a0','—'];
+      return '<tr'+(x.alerta?' style="background:#fdecec"':'')+'>'+
+        '<td style="white-space:nowrap"><b>#'+x.id+'</b><br><span style="color:#8a93a0;font-size:11px">'+(x.estado||'')+'</span></td>'+
+        '<td>'+(x.nombre||'-')+'<br><span style="color:#8a93a0;font-size:11.5px">+'+tel+'</span></td>'+
+        '<td>'+(x.producto||'')+' x'+(x.cantidad||1)+'<br><span style="color:#8a93a0;font-size:11.5px">'+(x.ciudad||'')+'</span></td>'+
+        '<td style="white-space:nowrap"><a href="'+link+'" target="_blank" rel="noopener" style="color:#0e8074;font-weight:700;font-size:12px">'+x.guia+'</a><br><span style="color:#8a93a0;font-size:11px">'+(x.transportadora||'')+'</span></td>'+
+        '<td style="white-space:nowrap">'+av+'</td>'+
+        '<td style="white-space:nowrap"><span style="color:'+p[0]+';font-weight:800;font-size:12px">'+p[1]+'</span></td>'+
+        '<td><button onclick="crmAbrir(\''+tel+'\')" style="font-size:11.5px;padding:6px 10px;border:0;border-radius:8px;background:#25D366;color:#fff;font-weight:700;cursor:pointer">💬 Escribirle</button></td>'+
+      '</tr>';
+    }).join('');
+  }).catch(function(){ tb.innerHTML = '<tr><td colspan="7" class="vacio">No se pudo cargar (flujo Panel: despachos activo?).</td></tr>'; });
+}
 function _entChip(color, txt, n){
   return '<div style="display:flex;align-items:center;gap:7px;padding:7px 13px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2)">'+
     '<span style="width:9px;height:9px;border-radius:50%;background:'+color+'"></span>'+
@@ -1932,7 +1996,7 @@ function mostrarVista(v){
   if(v==='listanegra') cargarListaNegra();
   if(v==='historico') renderHistorico();
   if(v==='visitas') renderVisitas();
-  if(v==='entregas') cargarEntregas();
+  if(v==='entregas') entTab(_entTab);
   if(v==='finanzas'||v==='dropi'){ if(!window._finCargado){ cargarFinanzas(); } else { renderFinanzas(); _renderFinTabla(window._finPedidos); } }
   if(v==='calc') cargarCalc();
   if(v==='radar') cargarRadar();

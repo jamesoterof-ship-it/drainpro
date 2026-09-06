@@ -1262,12 +1262,26 @@ tbody tr:hover .chev{color:var(--brand)}
       <div class="panel">
         <div class="tbl-head">
           <h2>&#128232; &iquest;Le lleg&oacute; el mensaje al cliente?</h2>
-          <span style="font-size:12px;color:#8a93a0">Acuse real de WhatsApp por cada pedido de p&aacute;gina. Si dice NO LLEG&Oacute;, escr&iacute;bele t&uacute;.</span>
-          <button type="button" onclick="cargarEntregas()" style="margin-left:auto;font-size:12.5px;padding:8px 14px;border:1px solid var(--border);border-radius:9px;background:var(--surface-2);color:var(--ink-2);cursor:pointer;font-weight:700">&#128260; Actualizar</button>
+          <span style="font-size:12px;color:#8a93a0">Acuse real de WhatsApp. Si dice NO LLEG&Oacute;, escr&iacute;bele t&uacute;.</span>
+          <button type="button" onclick="entTab(_entTab)" style="margin-left:auto;font-size:12.5px;padding:8px 14px;border:1px solid var(--border);border-radius:9px;background:var(--surface-2);color:var(--ink-2);cursor:pointer;font-weight:700">&#128260; Actualizar</button>
+        </div>
+        <!-- dos cosas distintas: el mensaje de confirmacion de una venta de pagina,
+             y el aviso de despacho que manda Carlos cuando ya hay guia -->
+        <div style="display:flex;gap:8px;padding:0 16px 10px">
+          <button type="button" id="entTabDesp" class="subtab" onclick="entTab('despachos')">&#128230; Despachos (gu&iacute;a)<span id="badgeDesp" style="display:none;margin-left:7px;background:#c62828;color:#fff;border-radius:999px;font-size:11px;font-weight:800;padding:1px 7px"></span></button>
+          <button type="button" id="entTabPag" class="subtab" onclick="entTab('pagina')">&#127760; Confirmaci&oacute;n (p&aacute;gina)</button>
         </div>
         <div id="resumenEntregas" style="display:flex;gap:10px;flex-wrap:wrap;padding:4px 16px 12px"></div>
-        <style>#tablaEntregas th{position:static}</style>
-        <div style="overflow-x:auto;padding:6px 4px">
+        <style>
+          #tablaEntregas th,#tablaDespachos th{position:static}
+          .subtab{font-size:12.5px;padding:8px 14px;border:1px solid var(--border);border-radius:9px;background:var(--surface-2);color:var(--ink-2);cursor:pointer;font-weight:700}
+          .subtab.act{background:#0e8074;border-color:#0e8074;color:#fff}
+        </style>
+        <div id="cajaDespachos" style="overflow-x:auto;padding:6px 4px">
+          <table id="tablaDespachos" style="min-width:980px"><thead><tr><th>Pedido</th><th>Cliente</th><th>Producto</th><th>Gu&iacute;a</th><th>&iquest;Carlos avis&oacute;?</th><th>&iquest;Lleg&oacute;?</th><th>Acci&oacute;n</th></tr></thead>
+          <tbody id="tbodyDespachos"><tr><td colspan="7" class="vacio">Se cargan al abrir esta pesta&ntilde;a.</td></tr></tbody></table>
+        </div>
+        <div id="cajaPagina" style="overflow-x:auto;padding:6px 4px;display:none">
           <table id="tablaEntregas" style="min-width:920px"><thead><tr><th>Pedido</th><th>Cliente</th><th>Producto</th><th>Confirmaci&oacute;n</th><th>&iquest;Lleg&oacute;?</th><th>Acci&oacute;n</th></tr></thead>
           <tbody id="tbodyEntregas"><tr><td colspan="6" class="vacio">Se cargan al abrir esta pesta&ntilde;a.</td></tr></tbody></table>
         </div>
@@ -1562,7 +1576,7 @@ tbody tr:hover .chev{color:var(--brand)}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
-<script src="app.js?v=132"></script>
+<script src="app.js?v=133"></script>
 <script src="ganancia.js?v=124"></script>
 </body>
 </html>
