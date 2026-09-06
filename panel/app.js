@@ -172,6 +172,12 @@ const FLAG={CL:'flag-cl',CO:'flag-co',PY:'flag-py'};
 const BOTNOM={Carlos:'Carlos · Chile',Logistica:'Carlos · Logística',James:'James · Colombia',Ramon:'Ramón · Paraguay',Redes:'Camila Redes · Chile'};
 const BOTLOC={Carlos:'CL',Logistica:'CL',James:'CO',Ramon:'PY',Redes:'CL'};
 const BOTCOLOR={Carlos:'linear-gradient(135deg,#0e8074,#3aa897)',Logistica:'linear-gradient(135deg,#d97706,#f0a94a)',James:'linear-gradient(135deg,#3060ea,#6a92f5)',Ramon:'linear-gradient(135deg,#7c4dd8,#a98aec)',Redes:'linear-gradient(135deg,#d8256b,#f0699b)'};
+/* Konecta marca TODO pedido como canal "whatsapp", asi que el canal de verdad se
+   cruza por el chat y llega aca dentro del nombre del bot. Sin sufijo = venta
+   vieja, de antes del cruce: se muestra "Redes" a secas y no se inventa cual fue. */
+const redNombre=r=>r==='ig'?'Instagram':r==='fb'?'Facebook':r==='com'?'Comentario':'Redes';
+/* la etiqueta solo aparece en las ventas de redes; en las de WhatsApp estorbaria */
+const redBadge=o=>(o&&o.bot==='Redes')?'<span class="redchip red-'+(o.red||'na')+'">'+redNombre(o.red)+'</span>':'';
 /* Logística no es otro bot con otra memoria: es el MISMO chat del cliente visto por
    el lado de Carlos. La conversación es una sola (Camila sigue leyendo todo); lo que
    cambia es qué se muestra en pantalla. */
@@ -280,6 +286,11 @@ async function cargarVentas(){
       const bot=String(r.BOT||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
       const esR=bot.includes('ramon'); const esJ=bot.includes('james');
       const esRedes=bot.includes('redes');   // ventas que cierra Camila en Facebook e Instagram
+      /* de QUE red vino. El flujo escribe el bot como "Camila Redes IG/FB/Com"; si
+         no trae sufijo es una venta vieja, de antes de que se guardara el canal. */
+      const red=!esRedes?'':bot.includes('instagram')||/\big\b/.test(bot)?'ig'
+        :bot.includes('facebook')||/\bfb\b/.test(bot)?'fb'
+        :bot.includes('com')?'com':'';
       const precio=numero(r.PRECIO);
       /* Dos candados antes de contarla como venta:
          1. las ELIMINADAS no existen para el panel ni para los contadores
@@ -315,7 +326,7 @@ async function cargarVentas(){
            calcularlo con la fecha escrita deja el reloj corrido una hora, porque el
            panel se mira desde Bogota (UTC-5) y las ventas van en hora de Chile. */
         creadoMs:Number(r.CREADO_MS)||0,
-        bot:esR?'Ramon':esJ?'James':esRedes?'Redes':'Carlos',loc:esR?'PY':esJ?'CO':'CL',estado:r.ESTADO||'—',
+        bot:esR?'Ramon':esJ?'James':esRedes?'Redes':'Carlos',red:red,loc:esR?'PY':esJ?'CO':'CL',estado:r.ESTADO||'—',
         conf:!/abono pendiente/i.test(String(r.ESTADO||'')),abono:/abono pendiente/i.test(String(r.ESTADO||'')),/* abono pendiente = NO confirmada hasta que pague el anticipo */
         montado:/montad/i.test(String(r.ESTADO||'')),
         ordenDropi:(String(r.ESTADO||'').match(/#(\d+)/)||[])[1]||'',
@@ -437,7 +448,7 @@ function renderResumen(){
 }
 function renderActividad(){
   const cont=document.getElementById('actividadReciente'); if(!cont) return;
-  const wa=ordenes.map(o=>({cli:o.cli,canal:o.bot==='Redes'?'redes':'wa',prod:o.prod,loc:o.loc,bot:o.bot,money:o.precio,orden:o.orden,
+  const wa=ordenes.map(o=>({cli:o.cli,canal:o.bot==='Redes'?'redes':'wa',red:o.red,prod:o.prod,loc:o.loc,bot:o.bot,money:o.precio,orden:o.orden,
     fecha:o.fecha,hora:o.hora}));
   const web=pedidosWeb.map(o=>({cli:o.cli,canal:'web',prod:o.prod,loc:'CL',color:o.color,money:o.total+' CLP',orden:o.orden,fecha:o.fecha}));
   const todo=wa.concat(web).sort((a,b)=>b.orden-a.orden).slice(0,8);
@@ -448,7 +459,7 @@ function renderActividad(){
     return '<div class="actrow"><div class="actav" style="background:'+bg+'">'+esc(ini)+'</div>'+
       '<div class="actinfo"><div class="n1">'+esc(a.cli&&a.cli!=='—'?a.cli:'Cliente')+'</div>'+
       '<div class="n2">'+esc(a.prod)+' · '+esc(a.fecha)+(a.hora?' '+esc(a.hora):'')+'</div></div>'+
-      '<span class="actcanal '+(a.canal==='wa'?'act-wa':a.canal==='redes'?'act-redes':'act-web')+'">'+(a.canal==='wa'?'WhatsApp':a.canal==='redes'?'Redes':'Página')+'</span>'+
+      '<span class="actcanal '+(a.canal==='wa'?'act-wa':a.canal==='redes'?('act-redes'+(a.red?' act-'+a.red:'')):'act-web')+'">'+(a.canal==='wa'?'WhatsApp':a.canal==='redes'?redNombre(a.red):'Página')+'</span>'+
       '<div class="actmoney">'+esc(a.money)+'</div></div>';
   }).join('')+'</div>';
 }
@@ -769,7 +780,7 @@ function renderVentasBot(){
   if(!arr.length){tb.innerHTML='<tr><td colspan="8" class="vacio">Este bot aún no registra ventas.</td></tr>';return;}
   tb.innerHTML=arr.slice(0,80).map((o,i)=>`
     <tr onclick="verVentaBot(${i})">
-      <td class="cli">${esc(o.cli)}${huellaBadge(o.tel)}<small>${esc(o.fecha)} ${esc(o.hora)} · +${o.tel}</small>${guiaBadge(o.tel)}</td>
+      <td class="cli">${esc(o.cli)}${huellaBadge(o.tel)}${redBadge(o)}<small>${esc(o.fecha)} ${esc(o.hora)} · +${o.tel}</small>${guiaBadge(o.tel)}</td>
       <td><span class="pchip"><i style="background:#0e8074"></i>${esc(o.prod)}</span></td>
       <td>${esc(o.zona)}</td>
       <td>${o.cant}</td>
