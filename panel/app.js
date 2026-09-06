@@ -1093,7 +1093,7 @@ function verVenta(i){
     fila('Producto',o.prod)+fila('Cantidad',o.cant+' unidades')+fila('Teléfono','+'+o.tel)+
     fila('Dirección',o.dir)+fila('Comuna / Ciudad',o.zona)+fila('Región / Depto.',o.region)+
     filaRotulo(o.nota)+
-    (o.abono?'<div class="dl"><span class="k">Confirmación del cliente</span><span class="v" style="color:#c62828;font-weight:800">🔴 ABONO PENDIENTE — no aprobar hasta ver el comprobante</span></div>':fila('Confirmación del cliente',o.conf?'CONFIRMADO':'Pendiente'))+fila('Montado en Dropi',o.montado?('SÍ'+(o.ordenDropi?' · orden #'+o.ordenDropi:'')):'Pendiente')+
+    (o.abono?'<div class="dl"><span class="k">Confirmación del cliente</span><span class="v" style="color:#c62828;font-weight:800">🔴 ABONO PENDIENTE — no aprobar hasta ver el comprobante</span></div>':fila('Confirmación del cliente',o.conf?'CONFIRMADO':'Pendiente'))+filaDropi(o)+
     fila('Fecha',o.fecha+' '+(o.hora||''));
   document.getElementById('mTotal').textContent=o.precio;
   window._ventaAbierta=o;
@@ -1260,6 +1260,18 @@ function motivoRev(x){
   return '<small style="display:block;color:'+r.txt+';font-weight:700;white-space:normal;line-height:1.3;margin-top:2px">'+esc(x.revision)+'</small>';
 }
 /* el mismo veredicto, en grande, dentro del detalle del cliente */
+/* "Pendiente" tapaba los rechazos: Natalia decia Pendiente cuando Dropi la habia
+   rechazado por no tener contra entrega, y no habia forma de saberlo desde el
+   panel. Ahora, si la venta trae un motivo, se muestra en rojo tal cual. */
+function filaDropi(o){
+  const e=String(o.estado||"");
+  if(o.montado) return fila("Montado en Dropi","SÍ"+(o.ordenDropi?" · orden #"+o.ordenDropi:""));
+  if(/TRABAD|RECHAZ|FALTA/i.test(e)){
+    const m=e.replace(/^TRABADO:s*/i,"").replace(/^Dropi rechazos*-s*/i,"").replace(/^d+.s*/,"").trim();
+    return '<div class="dl"><span class="k">Montado en Dropi</span><span class="v" style="color:#c62828;font-weight:800;white-space:normal;text-align:right">NO SALIÓ — '+esc(m)+'</span></div>';
+  }
+  return fila("Montado en Dropi","Pendiente");
+}
 function bloqueRev(o){
   const n=String(o.nivel||'').toUpperCase(), r=REV[n];
   const m=minutosDe(o);
@@ -1373,7 +1385,7 @@ function verAprob(i){
       fila('Producto',o.prod)+fila('Cantidad',o.cant+' unidades')+fila('Teléfono','+'+o.tel)+
       fila('Dirección',o.dir)+fila('Comuna / Ciudad',o.zona)+fila('Región / Depto.',o.region)+
       filaRotulo(o.nota)+
-      (o.abono?'<div class="dl"><span class="k">Confirmación del cliente</span><span class="v" style="color:#c62828;font-weight:800">🔴 ABONO PENDIENTE — no aprobar hasta ver el comprobante</span></div>':fila('Confirmación del cliente',o.conf?'CONFIRMADO':'Pendiente'))+fila('Montado en Dropi',o.montado?('SÍ'+(o.ordenDropi?' · orden #'+o.ordenDropi:'')):'Pendiente')+
+      (o.abono?'<div class="dl"><span class="k">Confirmación del cliente</span><span class="v" style="color:#c62828;font-weight:800">🔴 ABONO PENDIENTE — no aprobar hasta ver el comprobante</span></div>':fila('Confirmación del cliente',o.conf?'CONFIRMADO':'Pendiente'))+filaDropi(o)+
       fila('Fecha',o.fecha+' '+(o.hora||''))+
       (o.rid&&!o.montado?'<div style="margin-top:10px"><button class="b-copy" onclick="editarAprob('+i+')">✎ Editar datos</button></div>':'');
     document.getElementById('mTotal').textContent=o.precio;
