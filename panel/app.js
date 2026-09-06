@@ -169,7 +169,11 @@ const fmtCOP=n=>'$'+Math.round(n).toLocaleString('es-CO');
 const fmtGS=n=>'Gs '+Math.round(n).toLocaleString('es-PY');
 const numero=v=>{const n=parseFloat(String(v??'').replace(/[^\d.,-]/g,'').replace(/\./g,'').replace(',','.'));return isNaN(n)?0:n;};
 const FLAG={CL:'flag-cl',CO:'flag-co',PY:'flag-py'};
-const BOTNOM={Carlos:'Carlos · Chile',Logistica:'Carlos · Logística',James:'James · Colombia',Ramon:'Ramón · Paraguay',Redes:'Camila Redes · Chile'};
+/* El bot del numero chileno se mostraba como 'Carlos' y el de logistica tambien:
+   no habia forma de saber cual estabas mirando, y una regla que faltaba en uno se
+   buscaba en el otro. La CLAVE interna sigue siendo Carlos (la usan los filtros);
+   lo que cambia es solo el nombre que se ve. */
+const BOTNOM={Carlos:'Camila · Chile',Logistica:'Carlos · Logística',James:'James · Colombia',Ramon:'Ramón · Paraguay',Redes:'Camila Redes · Chile'};
 const BOTLOC={Carlos:'CL',Logistica:'CL',James:'CO',Ramon:'PY',Redes:'CL'};
 const BOTCOLOR={Carlos:'linear-gradient(135deg,#0e8074,#3aa897)',Logistica:'linear-gradient(135deg,#d97706,#f0a94a)',James:'linear-gradient(135deg,#3060ea,#6a92f5)',Ramon:'linear-gradient(135deg,#7c4dd8,#a98aec)',Redes:'linear-gradient(135deg,#d8256b,#f0699b)'};
 /* Konecta marca TODO pedido como canal "whatsapp", asi que el canal de verdad se
