@@ -1221,14 +1221,39 @@ const REV={
 const ESPERA_MIN=60;
 function minutosDe(x){ return x.creadoMs ? Math.floor((Date.now()-x.creadoMs)/60000) : null; }
 function pastilla(bg,fg,txt){ return '<span style="display:inline-block;margin-left:6px;background:'+bg+';color:'+fg+';font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;vertical-align:middle">'+txt+'</span>'; }
+const enAtributo=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
 function chipRev(x){
   if(x.st==='montado') return '';                       /* ya salio, no hay nada que decidir */
-  const m=minutosDe(x), r=REV[x.nivel];
-  if(m!==null && m<ESPERA_MIN) return pastilla('#e8eaed','#5f6368','⏳ faltan '+(ESPERA_MIN-m)+' min');
-  if(!r) return pastilla('#e8eaed','#5f6368','⏳ sin revisar');
-  if(x.nivel==='VERDE') return pastilla('#0e8074','#fff','✓ se puede aprobar');
-  return pastilla(r.bg,r.fg,r.et);
+  const r=REV[x.nivel];
+  const luego = !r                ? pastilla('#e8eaed','#5f6368','⏳ sin revisar')
+              : x.nivel==='VERDE' ? pastilla('#0e8074','#fff','✓ se puede aprobar')
+              :                     pastilla(r.bg,r.fg,r.et);
+  const m=minutosDe(x);
+  if(m===null || m>=ESPERA_MIN) return luego;
+  /* El numero iba quemado dentro del chip y la tabla no se vuelve a dibujar sola,
+     asi que se quedaba diciendo "faltan 54 min" media hora despues. Ahora el chip
+     carga el instante de la venta y lo que tiene que decir al cumplirse la hora;
+     relojEspera() se encarga de irlo bajando. */
+  return '<span data-espera="'+x.creadoMs+'" data-luego="'+enAtributo(luego)+'">'
+    + pastilla('#e8eaed','#5f6368','⏳ faltan '+(ESPERA_MIN-m)+' min')+'</span>';
 }
+/* Baja los relojes de espera sin volver a dibujar la tabla: toca solo ese texto,
+   asi no cierra las filas abiertas ni pierde el scroll. Cada 20 s alcanza de
+   sobra para un contador que va en minutos. */
+function relojEspera(){
+  document.querySelectorAll('[data-espera]').forEach(function(el){
+    const ms=Number(el.getAttribute('data-espera'))||0;
+    if(!ms) return;
+    const falta=ESPERA_MIN-Math.floor((Date.now()-ms)/60000);
+    if(falta>0){
+      const p=el.querySelector('span');
+      if(p) p.textContent=(el.getAttribute('data-frase')||'⏳ faltan {n} min').replace('{n}',falta);
+    }else{
+      el.outerHTML=el.getAttribute('data-luego')||'';
+    }
+  });
+}
+setInterval(relojEspera,20000);
 function motivoRev(x){
   const r=REV[x.nivel];
   if(!r||x.nivel==='VERDE'||!x.revision||x.revision==='sin problemas') return '';
@@ -1239,10 +1264,15 @@ function bloqueRev(o){
   const n=String(o.nivel||'').toUpperCase(), r=REV[n];
   const m=minutosDe(o);
   if(!o.montado && m!==null && m<ESPERA_MIN){
-    return '<div style="background:#f1f3f4;border-left:4px solid #9aa0a6;padding:10px 12px;border-radius:8px;margin-bottom:10px">'
-      +'<div style="color:#3c4043;font-weight:800;font-size:12.5px;margin-bottom:4px">⏳ Faltan '+(ESPERA_MIN-m)+' min para poder aprobarla</div>'
-      +'<div style="color:#5f6368;line-height:1.4;white-space:normal">Se espera una hora desde la venta por si el cliente cambia la dirección, pone una condición o la cancela. Va en '+m+' min.</div></div>';
+    /* mismo reloj que el chip de la fila: el detalle se queda abierto un buen rato
+       y sin esto el "faltan N min" tampoco se movia */
+    return '<div data-espera="'+o.creadoMs+'" data-frase="⏳ Faltan {n} min para poder aprobarla" data-luego="'+enAtributo(bloqueRevYa(o,n,r))+'" style="background:#f1f3f4;border-left:4px solid #9aa0a6;padding:10px 12px;border-radius:8px;margin-bottom:10px">'
+      +'<span style="display:block;color:#3c4043;font-weight:800;font-size:12.5px;margin-bottom:4px">⏳ Faltan '+(ESPERA_MIN-m)+' min para poder aprobarla</span>'
+      +'<div style="color:#5f6368;line-height:1.4;white-space:normal">Se espera una hora desde la venta por si el cliente cambia la dirección, pone una condición o la cancela.</div></div>';
   }
+  return bloqueRevYa(o,n,r);
+}
+function bloqueRevYa(o,n,r){
   if(!r) return '<div class="dl"><span class="k">Revisión</span><span class="v" style="color:#7a7a7a">Todavía sin revisar — el revisor pasa a los 15 min de la venta</span></div>';
   if(n==='VERDE') return '<div class="dl"><span class="k">Revisión</span><span class="v" style="color:#0e8074;font-weight:700">✓ Revisada, sin problemas — se puede aprobar</span></div>';
   return '<div style="background:'+r.fila+';border-left:4px solid '+r.bg+';padding:10px 12px;border-radius:8px;margin-bottom:10px">'
