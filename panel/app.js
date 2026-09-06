@@ -1264,13 +1264,15 @@ function motivoRev(x){
    rechazado por no tener contra entrega, y no habia forma de saberlo desde el
    panel. Ahora, si la venta trae un motivo, se muestra en rojo tal cual. */
 function filaDropi(o){
+  /* arma su propio HTML: "fila" es local de cada ficha y desde aqui no existe */
+  const dl=(k,v,est)=>'<div class="dl"><span class="k">'+k+'</span><span class="v"'+(est?' style="'+est+'"':'')+'>'+v+'</span></div>';
   const e=String(o.estado||"");
-  if(o.montado) return fila("Montado en Dropi","SÍ"+(o.ordenDropi?" · orden #"+o.ordenDropi:""));
+  if(o.montado) return dl("Montado en Dropi",esc("SÍ"+(o.ordenDropi?" · orden #"+o.ordenDropi:"")));
   if(/TRABAD|RECHAZ|FALTA/i.test(e)){
     const m=e.replace(/^TRABADO:s*/i,"").replace(/^Dropi rechazos*-s*/i,"").replace(/^d+.s*/,"").trim();
-    return '<div class="dl"><span class="k">Montado en Dropi</span><span class="v" style="color:#c62828;font-weight:800;white-space:normal;text-align:right">NO SALIÓ — '+esc(m)+'</span></div>';
+    return dl("Montado en Dropi","NO SALIÓ — "+esc(m),"color:#c62828;font-weight:800;white-space:normal;text-align:right");
   }
-  return fila("Montado en Dropi","Pendiente");
+  return dl("Montado en Dropi","Pendiente");
 }
 function bloqueRev(o){
   const n=String(o.nivel||'').toUpperCase(), r=REV[n];
