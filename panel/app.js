@@ -992,7 +992,10 @@ function renderVentasWA(){
    (una fecha de entrega, llamar antes, etc.). Si no se ve antes de aprobar, el
    pedido sale cuando el cliente no lo quiere y vuelve devuelto. */
 function bloqueNota(n){
-  n=String(n||'').trim(); if(!n) return '';
+  /* se limpia el recado INTERNO antes de pintarlo: decia "NOTA DEL CLIENTE:
+     NO MONTAR, la direccion no sirve..." y eso no lo pidio el cliente. El aviso
+     de direccion tiene su propio bloque (bloqueSinUbicar). */
+  n=notaRotulo(n); if(!n) return '';
   return '<div style="margin:0 0 12px;padding:11px 13px;border-radius:11px;background:#fff8e1;'
     +'border:1px solid #f0c419;border-left:5px solid #e8a800">'
     +'<div style="font-size:11.5px;font-weight:800;letter-spacing:.4px;color:#8a6100;margin-bottom:3px">NOTA DEL CLIENTE</div>'
@@ -1024,12 +1027,15 @@ function dirSinUbicar(dir,nota){
   /* el numero se busca SOLO en la calle: en la nota cualquier fecha daria un falso ok */
   if(/\d{2,5}/.test(n)) return false;
   if(/(casa|sitio|lote|manzana|mz|depto|departamento|parcela|n°|nro|numero|número)\s*\.?\s*[a-z]?\s*n?°?\s*\d{1,4}/i.test(n)) return false;
+  /* el depto o la casa tambien se identifican por LETRA: "bloc 9, departamento B"
+     (Gomez Carreño, Viña del Mar). Espejo del mismo cambio en el candado de Camila. */
+  if(/(casa|depto|departamento|block|bloc|torre|edificio)\s*\.?\s*n?°?\s*[a-z0-9]{1,4}\b/i.test(n)) return false;
   /* la referencia sirve igual si viene en la NOTA del cliente y no en la calle: en el
      campo la direccion suele ser "Catarata s/n" y lo util esta todo en la nota. */
   var t=n+' '+String(nota||'');
   /* si mando su ubicacion de WhatsApp no hay nada que preguntarle */
   if(/-?\d{1,2}\.\d{4,}\s*[\/,;]\s*-?\d{1,3}\.\d{4,}/.test(t)) return false;
-  if(/(color|frente|cerca|al lado|contiguo|pasaje|esquina|porton|portón|reja|negocio|tienda|local|minimarket|almacen|almacén|escuela|colegio|liceo|sede|iglesia|plaza|cancha|km|kilometro|kilómetro|camino|ruta|entrada|subida|bajada|puente|referencia|azul|verde|roja|rojo|amarill|blanca|blanco|cafe|café|gris|celeste|naranja|beige|condominio|edificio|block|torre|campamento|sector|fundo|comunidad|preguntar por|lo conocen|la conocen|gps|ubicacion|ubicación)/i.test(t)) return false;
+  if(/(color|frente|cerca|al lado|contiguo|pasaje|esquina|porton|portón|reja|negocio|tienda|local|minimarket|almacen|almacén|escuela|colegio|liceo|sede|iglesia|plaza|cancha|km|kilometro|kilómetro|camino|ruta|entrada|subida|bajada|puente|referencia|azul|verde|roja|rojo|amarill|blanca|blanco|cafe|café|gris|celeste|naranja|beige|condominio|edificio|block|bloc|torre|campamento|fundo|comunidad|preguntar por|lo conocen|la conocen|gps|ubicacion|ubicación)/i.test(t)) return false;
   return true;
 }
 /* aviso rojo: el repartidor no tiene como encontrarla */
