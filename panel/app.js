@@ -1280,9 +1280,14 @@ function renderAprobar(){
     const p=String(x.desde||'').split('-');
     const d = p.length===3 ? Date.UTC(+p[0],+p[1]-1,+p[2]) : 0;
     x.diasFalta = d ? Math.round((d-hoyDia)/864e5) : 0;
-    x.prog = !!(d && x.st!=='montado' && x.diasFalta > 3);
-    /* el dia que vuelve sola a Pendientes: 3 dias antes de la fecha del cliente */
-    x.vuelve = x.prog ? new Date(d-3*864e5).toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',timeZone:'UTC'}) : '';
+    /* Cuantos dias antes tiene que salir, segun la zona: Santiago llega en 1 a 3
+       dias habiles y las regiones en 2 a 4. Con 3 dias fijos para todo el pais, un
+       pedido de region aparecia tarde y llegaba despues de la fecha que pidio el
+       cliente — justo por haberlo esperado. Es la misma regla del montador. */
+    const _reg = String((x.raw && x.raw.region) || x.region || '').toUpperCase();
+    x.margen = /METROP/.test(_reg) ? 3 : 4;
+    x.prog = !!(d && x.st!=='montado' && x.diasFalta > x.margen);
+    x.vuelve = x.prog ? new Date(d-x.margen*864e5).toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',timeZone:'UTC'}) : '';
   });
   const nProg=items.filter(x=>x.prog).length;
   const bp=document.getElementById('numProg');
