@@ -146,6 +146,22 @@ var BTN_APROB='background:var(--brand,#3056c9);color:#fff;border:0;border-radius
 /* Una venta marcada FALTA DIRECCION no se puede aprobar: primero se corrige la
    direccion con "Editar datos". Si sale a Dropi con "pendiente" vuelve devuelta
    y perdemos el flete (paso el 31-08 con Luis Perez). */
+/* El estado se graba cuando entra la venta y ahi se queda. Si despues el
+   inspector arregla la direccion, el estado sigue diciendo FALTA DIRECCION y el
+   boton Aprobar no aparecia nunca: la venta quedaba trabada con una direccion
+   que ya sirve (paso con Adriana el 07-09, "Jose Luis del Real 6, frente al
+   colegio", 29.990 detenidos). Aca se vuelve a mirar la direccion de AHORA, con
+   el mismo criterio del candado: numero de casa, o una referencia con que
+   ubicarla. */
+function dirSirve(d){
+  var t=String(d||'').replace(/\((?:FALTA|falta)[^)]*\)/g,'').replace(/\[[^\]]*\]/g,'').trim();
+  if(!t || t.length<8) return false;
+  if(/^pendient|^por confirmar|^sin direccion|^no la dio|^desconocid|^por definir|^no indica|direccion pendiente/i.test(t)) return false;
+  if(/(^|\b)(solicitar|preguntar|confirmar|contactar|verificar)\b/i.test(t)) return false;  // es un recado, no una direccion
+  if(/\b\d{1,5}\b/.test(t)) return true;
+  if(/(casa|sitio|lote|manzana|mz|depto|departamento|parcela|block|bloc|torre|edificio)\s*\.?\s*n?°?\s*[a-z0-9]{1,4}\b/i.test(t)) return true;
+  return /(color|frente|cerca|al lado|contiguo|pasaje|esquina|porton|portón|reja|negocio|tienda|local|almacen|almacén|escuela|colegio|liceo|sede|iglesia|plaza|cancha|km|kilometro|kilómetro|camino|entrada|subida|bajada|puente|referencia|azul|verde|roja|rojo|amarill|blanca|blanco|cafe|café|gris|celeste|naranja|beige)/i.test(t);
+}
 function celdaAprob(k,montadoHtml,rid,faltaDir,prog){
   if(montadoHtml) return montadoHtml;
   if(faltaDir) return '<span class="st st-ab" style="background:#fdeaea;color:#a01818"><i style="background:#c62828"></i>Corregir dirección</span>';
@@ -1335,7 +1351,7 @@ function renderAprobar(){
     /* rid = id de la fila. SIN esto el borrado se hacia por telefono+fecha y dos
        ventas del mismo cliente el mismo dia se borraban LAS DOS (paso el 3-09 con
        Maria Grandon). El servidor ya tiene el candado; solo hay que mandarle el id. */
-    items.push({k,raw:o,rid:o.rid||'',canal:'WhatsApp',cli:o.cli,tel:o.tel,fecha:o.fecha,prod:o.prod,color:'#0e8074',comuna:o.zona,cant:o.cant,total:o.precio,orden:o.orden,abono:!!o.abono,nota:o.nota||'',desde:o.desde||'',faltaDir:/falta direccion/i.test(String(o.estado||'')),
+    items.push({k,raw:o,rid:o.rid||'',canal:'WhatsApp',cli:o.cli,tel:o.tel,fecha:o.fecha,prod:o.prod,color:'#0e8074',comuna:o.zona,cant:o.cant,total:o.precio,orden:o.orden,abono:!!o.abono,nota:o.nota||'',desde:o.desde||'',faltaDir:/falta direccion/i.test(String(o.estado||'')) && !dirSirve(o.dir),
       revision:o.revision||'',nivel:o.nivel||'',creadoMs:o.creadoMs||0,
       st:o.montado?'montado':(esAprobado(k)?'aprobado':(esRechazado(k)?'rechazado':'pendiente'))});
   });
