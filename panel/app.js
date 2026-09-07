@@ -1624,6 +1624,16 @@ function cargarNovedades(){
         : '<div style="padding:11px 15px;border:1px solid var(--border);background:var(--surface-2);border-radius:11px;font-size:13px;color:var(--ink-2)">Ning&uacute;n cliente ha respondido todav&iacute;a.</div>';
     }
     if(!filas.length){ tb.innerHTML='<tr><td colspan="7" class="vacio">Sin novedades pendientes.</td></tr>'; return; }
+    /* ORDEN PARA LLAMAR, no para mirar. Primero el que ya contesto y esta esperando:
+       ese se cierra en una llamada. Despues, el que lleva mas dias parado, que es al
+       que menos tiempo le queda antes de que la transportadora lo devuelva.
+       El 07-09 el promedio hasta atender una novedad era de 45 horas y 55 de 63
+       devoluciones se perdieron con el aviso ya puesto. */
+    filas.sort(function(a,b){
+      var ra=a.respondio?1:0, rb=b.respondio?1:0;
+      if(ra!==rb) return rb-ra;
+      return (Number(b.dias)||0)-(Number(a.dias)||0);
+    });
     tb.innerHTML=filas.map(function(f,ix){
       var tel=String(f.telefono||"").replace(/\D/g,""); if(tel.length===9) tel="56"+tel;
       var mot=String(f.motivo||"").toUpperCase();
@@ -1657,6 +1667,10 @@ function cargarNovedades(){
         '<td style="text-align:center">'+(f.dias||0)+'</td>'+
         '<td style="text-align:center">'+(f.avisos_enviados||0)+'</td>'+
         '<td style="white-space:nowrap" onclick="event.stopPropagation()">'+
+          /* LLAMAR va de primero y mas grande: una novedad se salva por telefono, no
+             por chat. De 21 novedades abiertas el 07-09, 17 ya habian escrito algo y
+             ninguna se habia atendido. */
+          '<a href="tel:+'+tel+'" style="display:inline-block;font-size:11.5px;padding:6px 11px;border:0;border-radius:8px;background:#1565c0;color:#fff;font-weight:800;cursor:pointer;margin-right:5px;text-decoration:none">\uD83D\uDCDE Llamar</a>'+
           '<button onclick="crmAbrir(\''+tel+'\')" style="font-size:11.5px;padding:6px 10px;border:0;border-radius:8px;background:'+(resp?'#0e8074':'#25D366')+';color:#fff;font-weight:700;cursor:pointer;margin-right:5px">\uD83D\uDCAC '+(resp?'Gestionar':'Escribirle')+'</button>'+
           '<button onclick="dirPausar(\''+tel+'\',\''+accion+'\')" style="font-size:11.5px;padding:6px 9px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);color:var(--ink-2);font-weight:700;cursor:pointer">'+icono+'</button>'+
         '</td></tr>'+
