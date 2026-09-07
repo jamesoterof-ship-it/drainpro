@@ -618,7 +618,7 @@ function renderAbandonadosWeb(){
       <td>${o.cant}</td>
       <td class="money">${o.total}</td>
       <td>${o.contactado?'<span class="st st-ok"><i></i>✓ Mensaje enviado</span>'+(o.contactadoFecha?'<small style="display:block;color:var(--ink-3)">'+esc(o.contactadoFecha)+'</small>':''):'<span class="st st-ab"><i></i>Sin contactar</span>'}</td>
-      <td onclick="event.stopPropagation()"><a class="qr" style="text-decoration:none" href="https://wa.me/${o.tel}" target="_blank">WhatsApp</a></td>
+      <td onclick="event.stopPropagation()"><a class="qr" style="text-decoration:none;cursor:pointer" onclick="crmAbrir('${o.tel}')">WhatsApp</a></td>
     </tr>`).join('');
   window._abandF=abandonadosWeb.slice(0,100);
 }
@@ -1114,7 +1114,10 @@ function copiarVenta(){
   const txt=[o.cli,o.dir+(o.zona&&o.zona!=='—'?' - '+o.zona:''),o.region,'+'+o.tel,o.prod+' x'+o.cant,o.precio].join('\n');
   navigator.clipboard.writeText(txt).then(()=>toast('Datos copiados'));
 }
-const waVenta=()=>{const o=window._ventaAbierta;if(o)window.open('https://wa.me/'+o.tel,'_blank');};
+/* El boton lleva a la conversacion DENTRO del panel, no a wa.me: la idea es
+   contestarle al cliente desde aca, con el historial a la vista, sin saltar a
+   otra aplicacion y sin perder de vista el pedido. */
+const waVenta=()=>{const o=window._ventaAbierta;if(o&&typeof crmAbrir==='function')crmAbrir(o.tel);};
 
 /* ---------- BOTS ---------- */
 function renderBots(){
@@ -1374,7 +1377,7 @@ function renderAprobar(){
       <td>${x.cant}</td>
       <td class="money">${x.total}</td>
       <td class="cell-aprob" onclick="event.stopPropagation()">${celdaAprob(x.k, x.st==='montado'?'<span class="st st-ok"><i></i>Montado</span>':'', x.rid||'', x.faltaDir, x.vuelve)}</td>
-      <td onclick="event.stopPropagation()"><a class="qr" style="text-decoration:none" href="https://wa.me/${x.tel}" target="_blank">WhatsApp</a></td>
+      <td onclick="event.stopPropagation()"><a class="qr" style="text-decoration:none;cursor:pointer" onclick="crmAbrir('${x.tel}')">WhatsApp</a></td>
     </tr>`).join('');
 }
 /* detalle del cliente al hacer clic en una fila de Aprobación (página o WhatsApp) */
@@ -3312,6 +3315,10 @@ function crmDrop(ev,col){
 async function crmAbrir(tel){
   const t=String(tel||'').replace(/\D/g,'');
   const ficha=document.getElementById('crm-modal'); if(ficha) ficha.remove();
+  /* la misma funcion la usan ahora los botones de WhatsApp del detalle de
+     venta y de las tablas, asi que hay que cerrar tambien ESE modal: si no,
+     la conversacion se abre detras de la ficha y parece que no paso nada. */
+  const ov=document.getElementById('ov'); if(ov) ov.classList.remove('open');
   if(!convos.length && typeof cargarConvos==='function'){
     if(typeof toast==='function') toast('Abriendo conversación…');
     try{ await cargarConvos(); }catch(e){}
