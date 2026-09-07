@@ -3498,3 +3498,34 @@ async function crmFicha(id){
     if(box) box.innerHTML='<div class="crm-vacio">No pude cargar la conversación.</div>';
   }
 }
+
+/* ==================== AVISO DE VERSION NUEVA ====================
+   El navegador se queda con el app.js viejo aunque se publique uno nuevo, y
+   entonces un arreglo ya subido "sigue igual" en la pantalla. Paso el 07-09:
+   el boton de WhatsApp estaba arreglado y publicado, pero el panel abierto
+   tenia la version anterior en cache.
+   Cada 3 minutos se mira que version esta publicada. Si cambio, se recarga
+   sola una vez -con la bandera de sessionStorage no queda dando vueltas- y
+   solo si no hay un chat abierto con algo escrito, para no borrarle nada. */
+(function(){
+  var MIA=(document.querySelector('script[src*="app.js"]')||{getAttribute:function(){return '';}})
+            .getAttribute('src')||'';
+  var v0=(MIA.match(/v=(\d+)/)||[])[1];
+  if(!v0) return;
+  async function mirar(){
+    try{
+      var r=await fetch('index.html?ping='+Date.now(),{cache:'no-store'});
+      var t=await r.text();
+      var v1=(t.match(/app\.js\?v=(\d+)/)||[])[1];
+      if(!v1||v1===v0) return;
+      var caja=document.getElementById('chinput');
+      if(caja&&String(caja.value||'').trim()) return;      // esta escribiendo: no se le toca
+      if(sessionStorage.getItem('jaye_recargado')===v1) return;
+      sessionStorage.setItem('jaye_recargado',v1);
+      if(typeof toast==='function') toast('Panel actualizado, recargando…');
+      setTimeout(function(){ location.reload(); },1200);
+    }catch(e){}
+  }
+  setTimeout(mirar,20000);
+  setInterval(mirar,180000);
+})();
