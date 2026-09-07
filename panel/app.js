@@ -820,8 +820,21 @@ function pintarChatHead(c){
 async function abrirChat(tel){
   selTel=tel; renderConvList();
   var c=convos.find(x=>x.tel===tel);
+  if(!c) c=convos.find(x=>soloNum(x.tel).slice(-8)===soloNum(tel).slice(-8));
   if(!c){ var _p=pedWebDe(tel); if(_p){ c={tel:soloNum(tel), n:_p.cli||tel, bot:'carlos', estado:'activa', loc:'chile', loaded:true, msgs:[{from:'bot', time:'', text:'📦 Pedido web: '+_p.cant+'x '+_p.prod+' · '+_p.total+' · '+(_p.comuna||'')+'\n'+(_p.conf?'✅ El cliente CONFIRMÓ su pedido.':'⏳ Esperando que el cliente confirme (se le envió la plantilla con botones Confirmar / Modificar).')}]}; } }
+  if(!c){
+    /* La lista de la izquierda solo trae las conversaciones mas recientes, y
+       hay muchas mas ventas que eso: al abrir una de hace unos dias no estaba
+       en la lista y el chat no abria, con un aviso de "no encontre esa
+       conversacion". El historial NO depende de la lista -se pide por
+       telefono-, asi que la conversacion se arma aca y se carga igual. */
+    var _o=(typeof ordenes!=='undefined')?ordenes.find(x=>soloNum(x.tel)===soloNum(tel)):null;
+    c={tel:soloNum(tel), n:(_o&&_o.cli)||soloNum(tel), bot:(_o&&_o.bot)||'Carlos',
+       estado:'activa', loc:(_o&&_o.loc)||'CL', loaded:false, msgs:[]};
+    convos.unshift(c);
+  }
   if(!c) return;
+  selTel=c.tel; renderConvList();
   document.getElementById('chatwin').style.display='flex';
   document.getElementById('chatEmpty').style.display='none';
   const g=document.querySelector('#view-conv .convgrid'); if(g) g.classList.add('ver-chat');  // móvil: muestra el chat
@@ -3326,11 +3339,10 @@ async function crmAbrir(tel){
   const c=convos.find(function(x){ return String(x.tel).replace(/\D/g,'').slice(-8)===t.slice(-8); });
   if(typeof irConvBot==='function') irConvBot(c&&c.bot?c.bot:'Carlos');
   if(typeof setTabConv==='function') setTabConv('conv');
-  if(c){ if(typeof abrirChat==='function') await abrirChat(c.tel); }
-  else{
-    if(typeof abrirChat==='function') await abrirChat(t);
-    if(typeof toast==='function') toast('No encontré esa conversación en la lista');
-  }
+  /* Aunque no este en la lista se abre igual: abrirChat() arma la conversacion
+     con el telefono y trae el historial. El aviso de "no la encontre" sobraba
+     y ademas asustaba, porque el chat SI se puede abrir. */
+  if(typeof abrirChat==='function') await abrirChat(c?c.tel:t);
 }
 
 function renderCrm(){
