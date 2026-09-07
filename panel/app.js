@@ -158,6 +158,8 @@ function dirSirve(d){
   if(!t || t.length<8) return false;
   if(/^pendient|^por confirmar|^sin direccion|^no la dio|^desconocid|^por definir|^no indica|direccion pendiente/i.test(t)) return false;
   if(/(^|\b)(solicitar|preguntar|confirmar|contactar|verificar)\b/i.test(t)) return false;  // es un recado, no una direccion
+  /* el retiro en sucursal no lleva numero de casa y es una entrega valida */
+  if(/retir[ao]\s+en\s+sucursal|sucursal\s+(starken|blue)/i.test(t)) return true;
   if(/\b\d{1,5}\b/.test(t)) return true;
   if(/(casa|sitio|lote|manzana|mz|depto|departamento|parcela|block|bloc|torre|edificio)\s*\.?\s*n?°?\s*[a-z0-9]{1,4}\b/i.test(t)) return true;
   return /(color|frente|cerca|al lado|contiguo|pasaje|esquina|porton|portón|reja|negocio|tienda|local|almacen|almacén|escuela|colegio|liceo|sede|iglesia|plaza|cancha|km|kilometro|kilómetro|camino|entrada|subida|bajada|puente|referencia|azul|verde|roja|rojo|amarill|blanca|blanco|cafe|café|gris|celeste|naranja|beige)/i.test(t);
@@ -1351,7 +1353,7 @@ function renderAprobar(){
     /* rid = id de la fila. SIN esto el borrado se hacia por telefono+fecha y dos
        ventas del mismo cliente el mismo dia se borraban LAS DOS (paso el 3-09 con
        Maria Grandon). El servidor ya tiene el candado; solo hay que mandarle el id. */
-    items.push({k,raw:o,rid:o.rid||'',canal:'WhatsApp',cli:o.cli,tel:o.tel,fecha:o.fecha,prod:o.prod,color:'#0e8074',comuna:o.zona,cant:o.cant,total:o.precio,orden:o.orden,abono:!!o.abono,nota:o.nota||'',desde:o.desde||'',faltaDir:/falta direccion/i.test(String(o.estado||'')) && !dirSirve(o.dir),
+    items.push({k,raw:o,rid:o.rid||'',canal:'WhatsApp',cli:o.cli,tel:o.tel,fecha:o.fecha,prod:o.prod,color:'#0e8074',comuna:o.zona,cant:o.cant,total:o.precio,orden:o.orden,abono:!!o.abono,nota:o.nota||'',desde:o.desde||'',faltaDir:/falta (direccion|numero)/i.test(String(o.estado||'')) && !dirSirve(o.dir),
       revision:o.revision||'',nivel:o.nivel||'',creadoMs:o.creadoMs||0,
       st:o.montado?'montado':(esAprobado(k)?'aprobado':(esRechazado(k)?'rechazado':'pendiente'))});
   });
