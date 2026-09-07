@@ -1382,17 +1382,12 @@ function renderAprobar(){
   const bg=document.getElementById('badgeAprobar');
   if(bg){ bg.style.display=nPend?'':'none'; bg.textContent=nPend; }
   agRiesgoCalc(items);
-  /* Lo que lleva mas tiempo esperando va ARRIBA: antes se ordenaba por
-     reciente y una venta de la manana se hundia al fondo de la lista, donde
-     nadie la volvia a ver. Ahora los pendientes suben, y entre ellos manda la
-     antiguedad: la que lleva mas horas sin aprobar queda de primera. Lo que ya
-     esta montado o aprobado va despues, ahi si con lo reciente arriba. */
-  let arr=items.sort((a,b)=>{
-    const pa = a.st==='pendiente', pb = b.st==='pendiente';
-    if(pa!==pb) return pa ? -1 : 1;
-    if(pa) return a.orden-b.orden;
-    return b.orden-a.orden;
-  });
+  /* LO MAS NUEVO ARRIBA, lo mas viejo abajo. Sin excepciones y sin separar por
+     estado: la lista se lee como llegan las ventas.
+     Antes los pendientes subian y entre ellos mandaba la antiguedad, para que una
+     venta de la manana no se hundiera. James lo pidio al reves el 07-09: al abrir
+     el panel quiere ver primero lo que acaba de entrar. */
+  let arr=items.sort((a,b)=>b.orden-a.orden);
   if(fAprob==='pend')  arr=arr.filter(x=>x.st==='pendiente' && !x.prog);
   if(fAprob==='prog'){ arr=arr.filter(x=>x.prog).sort((a,b)=>Date.parse(a.desde)-Date.parse(b.desde)); }
   window._aprobF=arr;
