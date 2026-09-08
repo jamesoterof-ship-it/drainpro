@@ -22,7 +22,32 @@
 
 /* ---------- portada ---------- */
 .rd-hero{position:relative;background:var(--rd-pizarraD);overflow:hidden}
+.rd-hero__foto{position:relative;line-height:0}
 .rd-hero__img{display:block;width:100%;height:auto;object-fit:cover}
+
+/* El texto va SOBRE la foto pero solo en el tercio de arriba, que en esta
+   imagen es la ventana y el closet. Las cajas -que son el producto- quedan
+   despejadas. El velo se desvanece antes de llegar a ellas. */
+.rd-sobre{position:absolute;left:0;right:0;top:0;padding:20px 20px 60px;line-height:1.5;
+  background:linear-gradient(180deg,rgba(14,19,24,.82) 0%,rgba(14,19,24,.62) 46%,rgba(14,19,24,.22) 76%,rgba(14,19,24,0) 100%)}
+.rd-estrellas{display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.14);
+  border:1px solid rgba(255,255,255,.24);border-radius:99px;padding:5px 12px;margin-bottom:12px;
+  backdrop-filter:blur(4px)}
+.rd-estrellas span{color:#FFC24A;font-size:13px;letter-spacing:1.5px}
+.rd-estrellas b{color:#fff;font-size:13px;font-family:'Sora',sans-serif;font-variant-numeric:tabular-nums}
+.rd-estrellas small{color:#C6D0D8;font-size:11.5px}
+.rd-sobre .rd-h1{text-shadow:0 2px 18px rgba(0,0,0,.55)}
+.rd-sobre .rd-h1 span,.rd-sobre .rd-h1 em{display:block}
+.rd-sobre__p{display:inline-block;margin:12px 0 0;font-family:'Sora',sans-serif;font-weight:700;font-size:14px;
+  color:#241505;background:var(--rd-ambar);padding:6px 13px;border-radius:99px;letter-spacing:.01em}
+
+/* las lineas entran en cascada, una detras de otra */
+.rd-cae{opacity:0;transform:translateY(16px);animation:rd-caer .62s cubic-bezier(.2,.7,.3,1) forwards;
+  animation-delay:calc(var(--i) * .11s)}
+@keyframes rd-caer{to{opacity:1;transform:translateY(0)}}
+@media (prefers-reduced-motion:reduce){
+  .rd-cae{animation:none;opacity:1;transform:none}
+}
 .rd-hero__txt{padding:26px 20px 30px;background:linear-gradient(180deg,var(--rd-pizarraD),#1B242C);color:#fff}
 .rd-kick{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
   color:var(--rd-ambar);margin-bottom:10px}

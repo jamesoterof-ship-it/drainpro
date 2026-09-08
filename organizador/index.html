@@ -48,10 +48,23 @@ fbq('track','PageView');
 
 <!-- ===== PORTADA ===== -->
 <section class="rd-hero">
-  <img id="heroImg" class="rd-hero__img" src="img/hero.webp" alt="Seis cajas organizadoras de ropa apiladas en un dormitorio" fetchpriority="high">
+  <div class="rd-hero__foto">
+    <img id="heroImg" class="rd-hero__img" src="img/hero.webp" alt="Seis cajas organizadoras de ropa apiladas en un dormitorio" fetchpriority="high">
+    <!-- el texto va sobre el TERCIO DE ARRIBA, que en la foto es la ventana
+         y el clóset: las cajas quedan libres, sin nada encima -->
+    <div class="rd-sobre">
+      <div class="rd-estrellas"><span>★★★★★</span><b>4,8</b><small>312 compras</small></div>
+      <h1 class="rd-h1">
+        <span class="rd-cae" style="--i:0">Guarda</span>
+        <span class="rd-cae" style="--i:1">el invierno.</span>
+        <em class="rd-cae" style="--i:2">Recupera</em>
+        <em class="rd-cae" style="--i:3">tu clóset.</em>
+      </h1>
+      <p class="rd-cae rd-sobre__p" style="--i:4">98 litros por caja</p>
+    </div>
+  </div>
   <div class="rd-hero__txt">
     <span class="rd-kick">Cambio de temporada</span>
-    <h1 class="rd-h1">Guarda el invierno.<br><em>Recupera tu clóset.</em></h1>
     <p class="rd-lead">Cada caja se traga un plumón king completo. Se apilan, y por la ventana ves qué guardaste sin abrirlas.</p>
     <div class="rd-precio">
       <span class="rd-precio__d">Desde</span>
