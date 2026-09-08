@@ -162,6 +162,14 @@ function dirSirve(d){
   if(/retir[ao]\s+en\s+sucursal|sucursal\s+(starken|blue)/i.test(t)) return true;
   if(/\b\d{1,5}\b/.test(t)) return true;
   if(/(casa|sitio|lote|manzana|mz|depto|departamento|parcela|block|bloc|torre|edificio)\s*\.?\s*n?°?\s*[a-z0-9]{1,4}\b/i.test(t)) return true;
+  /* Asentamientos que POR DEFINICION no tienen numeracion: una toma, un
+     campamento, una comunidad. Ahi el nombre propio del lugar ES la direccion
+     -es la que el cartero y el repartidor usan-, asi que exigirle numero es
+     trabar una venta que si se puede entregar. Se pide el nombre propio
+     (dos palabras despues) para que un "vivo en una toma" suelto no pase.
+     David Rodriguez, 06-09: dio "toma Tomas Alba Edison, sector Amanecer" y
+     dijo que es la direccion que siempre usa y con la que le entregan. */
+  if(/\b(toma|campamento|comunidad|poblaci[oó]n)\s+(de\s+)?[a-záéíóúñ0-9]{3,}\s+[a-záéíóúñ0-9]{2,}/i.test(t)) return true;
   return /(color|frente|cerca|al lado|contiguo|pasaje|esquina|porton|portón|reja|negocio|tienda|local|almacen|almacén|escuela|colegio|liceo|sede|iglesia|plaza|cancha|km|kilometro|kilómetro|camino|entrada|subida|bajada|puente|referencia|azul|verde|roja|rojo|amarill|blanca|blanco|cafe|café|gris|celeste|naranja|beige)/i.test(t);
 }
 function celdaAprob(k,montadoHtml,rid,faltaDir,prog){
