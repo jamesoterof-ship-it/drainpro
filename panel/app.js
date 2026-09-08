@@ -607,11 +607,25 @@ function volverDeEditar(){
 async function guardarEdicion(){
   const o=window._pedEdit; if(!o||!o.fila){ toast('Falta el número de pedido'); return; }
   const g=k=>{const e=document.getElementById('ed_'+k); return e?String(e.value||'').trim():'';};
-  const payload={order_number:o.fila,nombre:g('nombre'),telefono:g('tel').replace(/\D/g,''),direccion:g('dir'),
-    referencia:g('ref'),comuna:g('comuna'),region:g('region'),cantidad:g('cant').replace(/\D/g,''),
-    confirmado:(document.getElementById('ed_conf')||{}).value||''};
+  /* Los pedidos de pagina llegan de DOS lados y no se guardan igual:
+       leer-pedidos-web      -> fila = numero de fila de la planilla, va a
+                                editar-pedido-web con order_number.
+       leer-pedidos-landing  -> viven en la MISMA tabla que los de WhatsApp y
+                                el panel les pone fila = "wa"+id. Esos hay que
+                                mandarlos a editar-pedido-wa con el id, no a
+                                editar-pedido-web, que no entiende "wa753" y
+                                se queda sin guardar nada (Ana Rojas, 07-09). */
+  const esLanding=/^wa\d+$/i.test(String(o.fila||''));
+  const url=esLanding?URL_EDITARWA:URL_EDITPED;
+  const payload=esLanding
+    ? {id:String(o.fila).replace(/^wa/i,''),nombre:g('nombre'),direccion:g('dir'),
+       comuna:g('comuna'),region:g('region'),cantidad:g('cant').replace(/\D/g,''),
+       nota:g('ref')}
+    : {order_number:o.fila,nombre:g('nombre'),telefono:g('tel').replace(/\D/g,''),direccion:g('dir'),
+       referencia:g('ref'),comuna:g('comuna'),region:g('region'),cantidad:g('cant').replace(/\D/g,''),
+       confirmado:(document.getElementById('ed_conf')||{}).value||''};
   try{
-    const r=await fetch(URL_EDITPED,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
     let j=null; try{ j=await r.json(); }catch(e){}
     const ok = r.ok && (Array.isArray(j)? j.length>0 : (!j || j.ok!==false));
     if(ok){ toast('Pedido actualizado ✓'); closeM(); cargarPaginas();
