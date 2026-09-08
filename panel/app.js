@@ -176,8 +176,20 @@ function dirSirve(d){
      Jose de la Mariquina — se trababa por no traer numero. */
   return /(color|frente|cerca|al lado|contiguo|pasaje|esquina|porton|portón|reja|negocio|tienda|local|almacen|almacén|escuela|colegio|liceo|sede|iglesia|plaza|cancha|km|kilometro|kilómetro|camino|entrada|subida|bajada|puente|referencia|centro del|pleno centro|azul|verde|roja|rojo|amarill|blanca|blanco|cafe|café|gris|celeste|naranja|beige)/i.test(t);
 }
+/* Sin nombre la transportadora no entrega y Dropi ni siquiera acepta el pedido.
+   El perfil de WhatsApp muchas veces trae el puro numero (08-09: la venta 828,
+   Cargador en Penalolen, quedo un dia detenida). Mismo criterio que dirSirve:
+   se mira el nombre de AHORA, asi que apenas lo corrigen con "Editar datos" el
+   boton Aprobar vuelve solo. */
+function nombreSirve(n){
+  var t=String(n||'').trim();
+  var letras=t.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g,'');
+  if(letras.length<3) return false;
+  return !/^(cliente|clienta|sin nombre|no lo dio|no indica|no dio|pendiente|por confirmar|desconocid[oa]?|anonimo|anonima|n\/a|na|senor|senora|sr|sra|srta|don|dona|usuario|whatsapp)$/i.test(t.replace(/[.]/g,''));
+}
 function celdaAprob(k,montadoHtml,rid,faltaDir,prog){
   if(montadoHtml) return montadoHtml;
+  if(faltaDir==='nom') return '<span class="st st-ab" style="background:#fdeaea;color:#a01818"><i style="background:#c62828"></i>Falta el nombre</span>';
   if(faltaDir) return '<span class="st st-ab" style="background:#fdeaea;color:#a01818"><i style="background:#c62828"></i>Corregir dirección</span>';
   /* Programada: NO se aprueba todavía. Vuelve sola a Pendientes 3 días antes, y ahí
      James la aprueba después de avisarle al cliente que su pedido va en camino. */
@@ -1388,7 +1400,7 @@ function renderAprobar(){
     /* rid = id de la fila. SIN esto el borrado se hacia por telefono+fecha y dos
        ventas del mismo cliente el mismo dia se borraban LAS DOS (paso el 3-09 con
        Maria Grandon). El servidor ya tiene el candado; solo hay que mandarle el id. */
-    items.push({k,raw:o,rid:o.rid||'',canal:'WhatsApp',cli:o.cli,tel:o.tel,fecha:o.fecha,prod:o.prod,color:'#0e8074',comuna:o.zona,cant:o.cant,total:o.precio,orden:o.orden,abono:!!o.abono,nota:o.nota||'',desde:o.desde||'',faltaDir:/falta (direccion|numero)/i.test(String(o.estado||'')) && !dirSirve(o.dir),
+    items.push({k,raw:o,rid:o.rid||'',canal:'WhatsApp',cli:o.cli,tel:o.tel,fecha:o.fecha,prod:o.prod,color:'#0e8074',comuna:o.zona,cant:o.cant,total:o.precio,orden:o.orden,abono:!!o.abono,nota:o.nota||'',desde:o.desde||'',faltaDir:(/falta (direccion|numero)/i.test(String(o.estado||'')) && !dirSirve(o.dir)) ? true : (!nombreSirve(o.cli) ? 'nom' : false),
       revision:o.revision||'',nivel:o.nivel||'',creadoMs:o.creadoMs||0,
       st:o.montado?'montado':(esAprobado(k)?'aprobado':(esRechazado(k)?'rechazado':'pendiente'))});
   });
