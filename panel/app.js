@@ -170,7 +170,11 @@ function dirSirve(d){
      David Rodriguez, 06-09: dio "toma Tomas Alba Edison, sector Amanecer" y
      dijo que es la direccion que siempre usa y con la que le entregan. */
   if(/\b(toma|campamento|comunidad|poblaci[oó]n)\s+(de\s+)?[a-záéíóúñ0-9]{3,}\s+[a-záéíóúñ0-9]{2,}/i.test(t)) return true;
-  return /(color|frente|cerca|al lado|contiguo|pasaje|esquina|porton|portón|reja|negocio|tienda|local|almacen|almacén|escuela|colegio|liceo|sede|iglesia|plaza|cancha|km|kilometro|kilómetro|camino|entrada|subida|bajada|puente|referencia|azul|verde|roja|rojo|amarill|blanca|blanco|cafe|café|gris|celeste|naranja|beige)/i.test(t);
+  /* "centro del pueblo" es una direccion de verdad en un pueblo chico: ahi el
+     cartero sabe quien es cada quien y las casas no tienen numero. Carlos
+     Villarroel, 08-09: "Carlos Condell s/n, en el centro del pueblo" en San
+     Jose de la Mariquina — se trababa por no traer numero. */
+  return /(color|frente|cerca|al lado|contiguo|pasaje|esquina|porton|portón|reja|negocio|tienda|local|almacen|almacén|escuela|colegio|liceo|sede|iglesia|plaza|cancha|km|kilometro|kilómetro|camino|entrada|subida|bajada|puente|referencia|centro del|pleno centro|azul|verde|roja|rojo|amarill|blanca|blanco|cafe|café|gris|celeste|naranja|beige)/i.test(t);
 }
 function celdaAprob(k,montadoHtml,rid,faltaDir,prog){
   if(montadoHtml) return montadoHtml;
