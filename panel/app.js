@@ -578,7 +578,7 @@ function verPedido(i){
     (o.abono?'<div class="dl"><span class="k">Confirmación del cliente</span><span class="v" style="color:#c62828;font-weight:800">🔴 ABONO PENDIENTE — no aprobar hasta ver el comprobante</span></div>':fila('Confirmación del cliente',o.conf?'CONFIRMADO':'Pendiente'))+fila('Dropi',o.dropi?'ENVIADO':'Pendiente')+fila('Fecha',o.fecha)+
     (o.dropi?'<div style="margin-top:12px;font-size:12px;color:var(--ink-3)">Este pedido ya está montado en Dropi. Para cambiar la dirección se edita directo en Dropi.</div>':'<button onclick="editarPedido()" style="width:100%;margin-top:12px;padding:11px;border:1px solid var(--grid);border-radius:10px;background:var(--card);color:var(--ink);font-weight:600;cursor:pointer">✏️ Editar pedido / estado</button>');
   document.getElementById('mTotal').textContent=o.total+' CLP';
-  window._pedEdit=o; window._pedEditIdx=i;
+  window._pedEdit=o; window._pedEditIdx=i; window._pedEditOrigen='pedidos';
   window._ventaAbierta={cli:o.cli,dir:o.dir+(o.ref?' - '+o.ref:''),region:o.region,tel:o.tel,prod:o.prod,cant:o.cant,precio:o.total};
   document.getElementById('ov').classList.add('open');
 }
@@ -591,11 +591,18 @@ function editarPedido(){
     row('nombre','Nombre')+row('tel','Teléfono')+row('dir','Dirección')+row('ref','Referencia (opcional)')+
     row('comuna','Comuna')+row('region','Región')+row('cant','Cantidad')+
     row('conf','Estado','<select id="ed_conf" style="'+inS+'"><option value="NO">Pendiente</option><option value="SI">Confirmado</option></select>')+
-    '<div style="display:flex;gap:8px;margin-top:14px"><button onclick="guardarEdicion()" style="flex:1;padding:11px;border:0;border-radius:10px;background:#6cc24a;color:#fff;font-weight:700;cursor:pointer">Guardar cambios</button><button onclick="verPedido(window._pedEditIdx)" style="padding:11px 16px;border:1px solid var(--grid);border-radius:10px;background:var(--card);color:var(--ink);cursor:pointer">Cancelar</button></div>';
+    '<div style="display:flex;gap:8px;margin-top:14px"><button onclick="guardarEdicion()" style="flex:1;padding:11px;border:0;border-radius:10px;background:#6cc24a;color:#fff;font-weight:700;cursor:pointer">Guardar cambios</button><button onclick="volverDeEditar()" style="padding:11px 16px;border:1px solid var(--grid);border-radius:10px;background:var(--card);color:var(--ink);cursor:pointer">Cancelar</button></div>';
   const sv=(k,v)=>{const e=document.getElementById('ed_'+k); if(e) e.value=(v==null||v==='—')?'':String(v);};
   sv('nombre',o.cli); sv('tel',o.telRaw||o.tel); sv('dir',o.dir); sv('ref',o.ref);
   sv('comuna',o.comuna); sv('region',o.region); sv('cant',o.cant);
   document.getElementById('ed_conf').value=o.conf?'SI':'NO';
+}
+/* Vuelve a la ficha desde donde se abrio el editor. Sin esto, al cancelar
+   desde Aprobacion se mostraba otro pedido: verPedido lee de _pedidosF y
+   Aprobacion trabaja con _aprobF, que son listas distintas. */
+function volverDeEditar(){
+  if(window._pedEditOrigen==='aprob') verAprob(window._pedEditIdx);
+  else verPedido(window._pedEditIdx);
 }
 async function guardarEdicion(){
   const o=window._pedEdit; if(!o||!o.fila){ toast('Falta el número de pedido'); return; }
@@ -607,7 +614,9 @@ async function guardarEdicion(){
     const r=await fetch(URL_EDITPED,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
     let j=null; try{ j=await r.json(); }catch(e){}
     const ok = r.ok && (Array.isArray(j)? j.length>0 : (!j || j.ok!==false));
-    if(ok){ toast('Pedido actualizado ✓'); closeM(); cargarPaginas(); }
+    if(ok){ toast('Pedido actualizado ✓'); closeM(); cargarPaginas();
+      /* si se edito desde Aprobacion, esa tabla tambien tiene que refrescarse */
+      if(window._pedEditOrigen==='aprob' && typeof renderAprobar==='function'){ setTimeout(renderAprobar,600); } }
     else { toast('No se pudo guardar el pedido'); }
   }catch(e){ toast('Error de conexión al guardar'); }
 }
@@ -1418,6 +1427,16 @@ function verAprob(i){
       (o.ref?fila('Referencia',o.ref):'')+fila('Comuna',o.comuna)+fila('Región',o.region)+
       (o.abono?'<div class="dl"><span class="k">Confirmación del cliente</span><span class="v" style="color:#c62828;font-weight:800">🔴 ABONO PENDIENTE — no aprobar hasta ver el comprobante</span></div>':fila('Confirmación del cliente',o.conf?'CONFIRMADO':'Pendiente'))+fila('Dropi',o.dropi?'ENVIADO':'Pendiente')+fila('Fecha',o.fecha);
     document.getElementById('mTotal').textContent=o.total+' CLP';
+    /* Los pedidos de pagina tambien se editan desde aca. Antes solo se podia
+       desde la pestaña Pedidos, asi que uno que llegaba con la direccion mala
+       -"Casa", el de Ana Rojas el 07-09- no se podia corregir donde se aprueba.
+       Se reusa el mismo formulario; _pedEditOrigen recuerda de donde se entro
+       para que Cancelar y Guardar vuelvan a la pantalla correcta. */
+    window._pedEdit=o; window._pedEditIdx=i; window._pedEditOrigen='aprob';
+    if(!o.dropi){
+      document.getElementById('mBody').innerHTML+=
+        '<div style="margin-top:10px"><button class="b-copy" onclick="editarPedido()">✎ Editar datos</button></div>';
+    }
     window._ventaAbierta={cli:o.cli,dir:o.dir+(o.ref?' - '+o.ref:''),region:o.region,tel:o.tel,prod:o.prod,cant:o.cant,precio:o.total};
   }else{
     document.getElementById('mBody').innerHTML=
