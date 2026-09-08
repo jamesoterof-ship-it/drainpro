@@ -20,6 +20,7 @@ fbq('track','PageView');
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="rediseno.css">
 </head>
 <body>
 
@@ -44,179 +45,116 @@ fbq('track','PageView');
   </nav>
 </header>
 
-<!-- HERO full-bleed -->
-<section class="hero" id="hero">
-  <img id="heroImg" class="hero__bg" alt="" fetchpriority="high">
-  <canvas class="hero__fx" id="heroFx" aria-hidden="true"></canvas>
-  <div class="hero__scrim"></div>
-  <div class="hero__in">
-    <div class="hero__top">
-      <span class="kicker" id="heroKicker"></span>
-      <h1 id="heroTitle"></h1>
-      <p class="lead" id="heroLead"></p>
+
+<!-- ===== PORTADA ===== -->
+<section class="rd-hero">
+  <img id="heroImg" class="rd-hero__img" src="img/hero.webp" alt="Seis cajas organizadoras de ropa apiladas en un dormitorio" fetchpriority="high">
+  <div class="rd-hero__txt">
+    <span class="rd-kick">Cambio de temporada</span>
+    <h1 class="rd-h1">Guarda el invierno.<br><em>Recupera tu clóset.</em></h1>
+    <p class="rd-lead">Cada caja se traga un plumón king completo. Se apilan, y por la ventana ves qué guardaste sin abrirlas.</p>
+    <div class="rd-precio">
+      <span class="rd-precio__d">Desde</span>
+      <b>$19.500</b>
+      <span class="rd-precio__u">las 3 cajas</span>
     </div>
+    <button class="rd-cta" data-scroll="#pedido">Quiero las mías — pago al recibir</button>
+    <p class="rd-mini">Envío gratis a todo Chile · No pagas nada por adelantado</p>
   </div>
 </section>
 
-<!-- SELLOS (franja propia bajo el hero — no tocan el producto) -->
-<div class="ministrip">
-  <div class="hero__mini">
-    <div class="hm"><svg viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.5 8.5 8 10 4.5-1.5 8-5 8-10V5z"/><path d="m9 12 2 2 4-4"/></svg><span>Fórmula avanzada</span></div>
-    <div class="hm"><svg viewBox="0 0 24 24"><path d="M12 2 3 6v6c0 5.5 3.8 9.5 9 11 5.2-1.5 9-5.5 9-11V6z"/><circle cx="12" cy="11" r="3"/></svg><span>Calidad premium</span></div>
-    <div class="hm"><svg viewBox="0 0 24 24"><circle cx="12" cy="7" r="3.2"/><path d="M5.5 21a6.5 6.5 0 0 1 13 0"/></svg><span>Hecho para hombres</span></div>
-  </div>
+<!-- ===== FRANJA DE CONFIANZA ===== -->
+<div class="rd-tira">
+  <div><b>98 L</b><span>por caja</span></div>
+  <div><b>Gratis</b><span>el envío</span></div>
+  <div><b>Al recibir</b><span>pagas en casa</span></div>
+  <div><b>2 a 4</b><span>días hábiles</span></div>
 </div>
 
-<!-- INTRO PRODUCTO (formato Shilajit: producto + 2 propuestas + precio) -->
-<section class="intro">
-  <div class="wrap">
-    <h2 class="intro__prod" data-rv>Organizador de Ropa Plegable</h2>
-    <p class="intro__claim" data-rv>98 litros por caja · pack de 3</p>
-    <div class="vp" data-rv>
-      <h3>Cabe un plumón king</h3>
-      <p>O seis frazadas gruesas, o dieciséis prendas dobladas. En una sola caja.</p>
-    </div>
-    <div class="vp" data-rv>
-      <h3>Se apilan sin hundirse</h3>
-      <p>Llevan estructura interna: aguantan el peso de la de arriba.</p>
-    </div>
-    <p class="intro__price" data-rv>Pack de 3 cajas <b id="introPrice">$24.500</b> <span>CLP</span></p>
+<!-- ===== LA CIFRA ===== -->
+<section class="rd-cifra">
+  <span class="rd-eyebrow">Capacidad real</span>
+  <div class="rd-num">98<small>litros</small></div>
+  <p class="rd-sub">Eso es 60 × 43 × 38 centímetros. El porte de una maleta grande, pero blanda y que se pliega.</p>
+  <div class="rd-cabe">
+    <div><b>1</b><span>plumón king<br>completo</span></div>
+    <div><b>6</b><span>frazadas<br>gruesas</span></div>
+    <div><b>16</b><span>prendas<br>dobladas</span></div>
   </div>
 </section>
 
-<!-- TARJETAS CON IMÁGENES (1c · 2c · 3c) -->
-<section class="imgcards">
-  <div class="wrap">
-    <div class="imgcard" data-rv>
-      <div class="imgcard__ph"><img src="img/card1.webp" alt="Salud prostática y vitalidad masculina" loading="lazy"></div>
-      <h3>Salud prostática y vitalidad masculina</h3>
-      <p>Fórmula avanzada para hombres que quieren vivir mejor cada día.</p>
-    </div>
-    <div class="imgcard" data-rv>
-      <div class="imgcard__ph"><img src="img/card2.webp" alt="Tu combustible diario" loading="lazy"></div>
-      <h3>Tu combustible diario</h3>
-      <p>Más energía y menos cansancio, de la mañana a la noche.</p>
-    </div>
-    <div class="imgcard" data-rv>
-      <div class="imgcard__ph"><img src="img/card3.webp" alt="Energía que dura todo el día" loading="lazy"></div>
-      <h3>Energía que dura todo el día</h3>
-      <p>Recupera tu ritmo, tu fuerza y tu vitalidad de siempre.</p>
-    </div>
-  </div>
-</section>
-
-<!-- OFERTA 2x (justo debajo de las tarjetas) -->
-<section class="offsec">
-  <div class="wrap" data-rv="zoom">
-    <div class="offer">
-      <h2 id="offerTitle"></h2>
-      <p id="offerSub" style="opacity:.92"></p>
-      <img class="offer__img" src="img/oferta.webp" alt="Pack de 6 cajas organizadoras de ropa en oferta" loading="lazy">
-      <div class="prices"><span class="was" id="offerWas"></span><span class="new pulse" id="offerNew"></span></div>
-      <button class="btn btn--acc" data-scroll="#pedido" data-qty="2">Aprovechar la promoción</button>
-      <p class="cd-title" id="cdTitle">La oferta termina en</p>
-      <div class="cd" id="cd">
-        <div class="u"><div class="b"><b id="cd-d">00</b></div><span>Días</span></div>
-        <div class="u"><div class="b"><b id="cd-h">00</b></div><span>Horas</span></div>
-        <div class="u"><div class="b"><b id="cd-m">00</b></div><span>Min</span></div>
-        <div class="u"><div class="b sec"><b id="cd-s">00</b></div><span>Seg</span></div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- VIDEO DEL PRODUCTO (mismo montaje que DRAINPRO) -->
-<section style="padding:0">
-  <video class="full-video" autoplay muted loop playsinline controls preload="metadata" poster="img/hero.webp" style="display:block;width:100%;margin:0">
+<!-- ===== VIDEO (limpio, sin voz ni letras) ===== -->
+<section class="rd-video">
+  <video autoplay muted loop playsinline preload="metadata" poster="img/hero.webp">
     <source src="img/organizador-video.mp4" type="video/mp4">
-    Tu navegador no soporta el video.
   </video>
 </section>
 
-<!-- INGREDIENTES (sección clara, estilo ejemplo) -->
-<section class="ingredients">
-  <div class="wrap">
-    <span class="eyebrow">Por dentro</span>
-    <h2 class="sec" data-rv>Hecha para aguantar, no para durar un mes.</h2>
-    <p class="sec-sub" data-rv>Tela no tejida transpirable con estructura interna. Ni plástico que se quiebra ni cartón que se hunde.</p>
-    <div class="ing-grid">
-      <div class="ing" data-rv><div class="cir"><svg viewBox="0 0 24 24"><circle cx="6" cy="7" r="2.2"/><circle cx="18" cy="9" r="2.2"/><circle cx="11" cy="17" r="2.2"/><path d="M7.9 8.2 9.8 15M7.8 7.6 16 8.6M16.6 10.8 12.5 15.4"/></svg></div><div><b>60 x 43 x 38 cm</b><p>98 litros útiles. El porte de una maleta grande, pero blanda.</p></div></div>
-      <div class="ing" data-rv><div class="cir"><svg viewBox="0 0 24 24"><path d="M4 20C4 11 11 4 20 4c0 9-7 16-16 16z"/><path d="M9 15c2-3 5-5 8-6"/></svg></div><div><b>Ventana transparente</b><p>Ves qué guardaste sin tener que abrir y desarmar todo.</p></div></div>
-      <div class="ing" data-rv><div class="cir"><svg viewBox="0 0 24 24"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg></div><div><b>Estructura interna</b><p>Varillas en las paredes: la caja queda parada aunque esté vacía.</p></div></div>
-      <div class="ing" data-rv><div class="cir"><svg viewBox="0 0 24 24"><path d="M12 3c4 5 6 8 6 11a6 6 0 0 1-12 0c0-3 2-6 6-11z"/></svg></div><div><b>Cierre completo</b><p>Corre por los tres lados de la tapa. Se abre entera, no por una ranura.</p></div></div>
-      <div class="ing" data-rv><div class="cir"><svg viewBox="0 0 24 24"><path d="M12 2C8 7 6 11 6 14a6 6 0 0 0 12 0c0-3-2-7-6-12z"/><path d="M12 6v12"/></svg></div><div><b>Asas reforzadas</b><p>Dos por caja, cosidas al armazón. La bajas del clóset cargada.</p></div></div>
-      <div class="ing" data-rv><div class="cir"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3"/><path d="M12 11v9M8 15c-3 0-4-3-4-3M16 15c3 0 4-3 4-3"/></svg></div><div><b>Tela que respira</b><p>No es plástico: la ropa guardada no queda con olor a encierro.</p></div></div>
-      <div class="ing" data-rv><div class="cir"><svg viewBox="0 0 24 24"><path d="M4 20C4 11 11 4 20 4c0 9-7 16-16 16z"/><path d="M9 15c2-3 5-5 8-6"/></svg></div><div><b>Se pliega</b><p>Cuando no la usas, la doblas y queda del grosor de un cuaderno.</p></div></div>
+<!-- ===== GALERÍA ===== -->
+<section class="rd-galeria">
+  <span class="rd-eyebrow">Así se ve en tu casa</span>
+  <h2 class="rd-h2">Se apilan, y el clóset queda libre</h2>
+  <div class="rd-grid">
+    <figure class="rd-g rd-g--alta"><img src="img/card1.webp" alt="Cajas organizadoras apiladas junto al clóset" loading="lazy"></figure>
+    <figure class="rd-g"><img src="img/c1.webp" alt="Ropa doblada dentro de la caja, vista por la ventana transparente" loading="lazy"></figure>
+    <figure class="rd-g"><img src="img/c2.webp" alt="Cierre de la caja organizadora" loading="lazy"></figure>
+    <figure class="rd-g"><img src="img/card2.webp" alt="Caja organizadora llena de frazadas" loading="lazy"></figure>
+    <figure class="rd-g"><img src="img/c3.webp" alt="Guardando ropa de invierno en la caja" loading="lazy"></figure>
+    <figure class="rd-g rd-g--ancha"><img src="img/card3.webp" alt="Torre de cajas organizadoras en el dormitorio" loading="lazy"></figure>
+  </div>
+</section>
+
+<!-- ===== DETALLES ===== -->
+<section class="rd-detalles">
+  <span class="rd-eyebrow">Por dentro</span>
+  <h2 class="rd-h2">Hecha para aguantar, no para durar un mes</h2>
+  <ul class="rd-lista">
+    <li><b>Estructura interna</b><span>Varillas en las paredes: queda parada aunque esté vacía, y no se hunde con la de arriba.</span></li>
+    <li><b>Ventana transparente</b><span>Ves qué guardaste sin abrir y desarmar todo para encontrar una prenda.</span></li>
+    <li><b>Cierre por tres lados</b><span>La tapa se abre entera, no por una ranura. Metes el plumón de una.</span></li>
+    <li><b>Asas reforzadas</b><span>Dos por caja, cosidas al armazón. La bajas del clóset cargada sin que se rasgue.</span></li>
+    <li><b>Tela que respira</b><span>No es plástico: la ropa no queda con olor a encierro ni agarra humedad.</span></li>
+    <li><b>Se pliega</b><span>Cuando no la usas, la doblas y queda del grosor de un cuaderno.</span></li>
+  </ul>
+</section>
+
+<!-- ===== COMPARACIÓN ===== -->
+<section class="rd-vs">
+  <span class="rd-eyebrow">La diferencia</span>
+  <h2 class="rd-h2">No todas las cajas son del mismo porte</h2>
+  <div class="rd-vs__par">
+    <div class="rd-vs__c">
+      <span>Las que venden por ahí</span>
+      <b>26 L</b>
+      <small>47 × 28 × 20 cm</small>
+      <div class="rd-barra"><i style="width:27%"></i></div>
+    </div>
+    <div class="rd-vs__c rd-vs__c--n">
+      <span>La nuestra</span>
+      <b>98 L</b>
+      <small>60 × 43 × 38 cm</small>
+      <div class="rd-barra"><i style="width:100%"></i></div>
     </div>
   </div>
+  <p class="rd-sub">Casi cuatro veces más espacio en cada una. Por eso te caben los plumones y no solo las poleras.</p>
 </section>
 
-<!-- CÓMO ACTÚA / CIENCIA -->
-<section class="science">
-  <div class="wrap center">
-    <span class="eyebrow">Cómo se usa</span>
-    <h2 class="sec" data-rv id="howTitle"></h2>
-    <p class="lead-c" data-rv id="howIntro" style="margin-left:auto;margin-right:auto"></p>
-    <div class="steps" id="howSteps"></div>
-  </div>
+<!-- ===== ANTES / DESPUÉS ===== -->
+<section class="rd-ba">
+  <span class="rd-eyebrow">El cambio</span>
+  <h2 class="rd-h2">De la pieza revuelta al clóset que respira</h2>
+  <img src="img/antes-despues.webp" alt="Antes: la ropa amontonada sobre la cama. Después: guardada en las cajas apiladas" loading="lazy">
+  <div class="rd-ba__rot"><span>Antes</span><span>Después</span></div>
 </section>
 
-
-<!-- BENEFICIOS: lista vertical con íconos de línea -->
-<section>
-  <div class="wrap">
-    <span class="eyebrow">Beneficios</span>
-    <h2 class="sec" data-rv>Recupera tu clóset.<br>Y tu pieza.</h2>
-    <div class="benefits">
-      <div class="bi" data-rv data-rv-d="0"><div class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="2.2"/><ellipse cx="12" cy="12" rx="10" ry="4.4"/><ellipse cx="12" cy="12" rx="10" ry="4.4" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="10" ry="4.4" transform="rotate(120 12 12)"/></svg></div><div class="txt"><h3>Los plumones, guardados</h3><p>Ese que ocupa media repisa entra completo en una caja.</p></div></div>
-      <div class="bi" data-rv data-rv-d="80"><div class="ico"><svg viewBox="0 0 24 24"><circle cx="10" cy="14" r="6"/><path d="M14.5 9.5 21 3M16 3h5v5"/></svg></div><div class="txt"><h3>La ropa de invierno, afuera</h3><p>La guardas hasta el próximo año sin que agarre humedad ni olor.</p></div></div>
-      <div class="bi" data-rv data-rv-d="160"><div class="ico"><svg viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.5 8.5 8 10 4.5-1.5 8-5 8-10V5z"/><path d="m9 12 2 2 4-4"/></svg></div><div class="txt"><h3>Debajo de la cama o arriba</h3><p>Se apilan de a tres. Aprovechas el alto del clóset, no solo las repisas.</p></div></div>
-      <div class="bi" data-rv data-rv-d="240"><div class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.5"/><path d="M12 1v3M12 20v3M1 12h3M20 12h3"/></svg></div><div class="txt"><h3>Sabes qué hay en cada una</h3><p>La ventana te muestra el contenido. No más abrir cuatro para encontrar una.</p></div></div>
-      <div class="bi" data-rv data-rv-d="320"><div class="ico"><svg viewBox="0 0 24 24"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg></div><div class="txt"><h3>Recuperación</h3><p>Ayuda a tu cuerpo a recuperarse y mantenerse fuerte cada día.</p></div></div>
-    </div>
-  </div>
-</section>
-
-<!-- BOTÓN PUENTE (rebote) entre beneficios y carrusel -->
-<div class="midcta"><button class="btn btn--acc bounce" data-scroll="#pedido">Pedir ahora — paga al recibir</button></div>
-
-<!-- CARRUSEL DE IMÁGENES (cinta en movimiento constante) -->
-<section>
-  <div class="wrap">
-    <div class="carousel">
-      <div class="carousel__track">
-        <div class="imgcard"><img src="img/c1.webp" onerror="this.src='img/hero.webp'" alt="Caja organizadora de ropa de 98 litros con ventana transparente" loading="lazy"></div>
-        <div class="imgcard"><img src="img/c2.webp" onerror="this.src='img/hero.webp'" alt="Energía celular" loading="lazy"></div>
-        <div class="imgcard"><img src="img/c3.webp" onerror="this.src='img/hero.webp'" alt="Rendimiento masculino" loading="lazy"></div>
-        <div class="imgcard"><img src="img/c4.webp" onerror="this.src='img/hero.webp'" alt="Vitalidad total" loading="lazy"></div>
-        <div class="imgcard" aria-hidden="true"><img src="img/c1.webp" onerror="this.src='img/hero.webp'" alt="" loading="lazy"></div>
-        <div class="imgcard" aria-hidden="true"><img src="img/c2.webp" onerror="this.src='img/hero.webp'" alt="" loading="lazy"></div>
-        <div class="imgcard" aria-hidden="true"><img src="img/c3.webp" onerror="this.src='img/hero.webp'" alt="" loading="lazy"></div>
-        <div class="imgcard" aria-hidden="true"><img src="img/c4.webp" onerror="this.src='img/hero.webp'" alt="" loading="lazy"></div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- STATS (claro) -->
-<section class="light">
-  <div class="wrap center">
-    <span class="eyebrow">Resultados</span>
-    <h2 class="sec" data-rv id="statTitle">Resultados que hablan</h2>
-    <div class="statgrid" id="stats"></div>
-  </div>
-</section>
-
-<!-- COMPARATIVA -->
-<section class="compare">
-  <div class="wrap">
-    <h2 class="sec" data-rv id="cmpTitle">¿Qué nos hace diferentes?</h2>
-    <table data-rv>
-      <colgroup><col><col class="c-us"><col class="c-ot"></colgroup>
-      <thead><tr><th>Característica</th><th class="us" id="cmpUs">Nosotros</th><th>Otros</th></tr></thead>
-      <tbody id="compare"></tbody>
-    </table>
-  </div>
+<!-- ===== PRECIOS ===== -->
+<section class="rd-packs" id="oferta">
+  <span class="rd-eyebrow">Elige tu pack</span>
+  <h2 class="rd-h2">Mientras más llevas, más barata sale</h2>
+  <div id="packs" class="packs"></div>
+  <button class="rd-cta" data-scroll="#pedido">Pedir ahora</button>
+  <p class="rd-mini">Envío gratis · Pagas en efectivo cuando el repartidor te lo entrega</p>
+  <div id="carriers" class="carriers"></div>
 </section>
 
 <!-- RESEÑAS (formato Shilajit) -->
@@ -254,89 +192,11 @@ fbq('track','PageView');
   </div>
 </div>
 
-<!-- ANTES / DESPUÉS -->
-<section class="ba-sec">
-  <div class="wrap">
-    <div class="center">
-      <span class="eyebrow">El cambio</span>
-      <h2 class="sec" data-rv>De la pieza revuelta al clóset que respira</h2>
-      <p class="sec-sub" data-rv>La ropa que hoy está amontonada sobre la cama termina guardada, apilada y a la vista. En una tarde.</p>
-    </div>
-    <div class="ba-img" data-rv><img src="img/antes-despues.webp" alt="Antes y después: la ropa amontonada sobre la cama y después guardada en las cajas apiladas" loading="lazy"></div>
-    <div class="midcta midcta--in"><button class="btn btn--green bounce" data-scroll="#pedido">Quiero las mías</button></div>
-  </div>
-</section>
-
-<!-- GARANTÍA -->
-<section class="garantia light">
-  <div class="wrap center">
-    <div class="gseal" data-rv>
-      <svg viewBox="0 0 220 220" role="img" aria-label="Garantía de devolución de 30 días">
-        <defs>
-          <linearGradient id="gsealg" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stop-color="var(--pri)"/><stop offset="1" stop-color="var(--acc)"/>
-          </linearGradient>
-          <path id="gtop" fill="none" d="M44 110a66 66 0 0 1 132 0"/>
-          <path id="gbot" fill="none" d="M48 118a62 62 0 0 0 124 0"/>
-        </defs>
-        <circle cx="110" cy="110" r="98" fill="url(#gsealg)" opacity=".16"/>
-        <circle cx="110" cy="110" r="92" fill="url(#gsealg)"/>
-        <circle cx="110" cy="110" r="84" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="2" stroke-dasharray="1.5 6" stroke-linecap="round"/>
-        <text font-family="Sora,sans-serif" font-weight="700" font-size="14.5" letter-spacing="2.4" fill="#fff"><textPath href="#gtop" startOffset="50%" text-anchor="middle">GARANTÍA TOTAL</textPath></text>
-        <text font-family="Sora,sans-serif" font-weight="700" font-size="12.5" letter-spacing="1.8" fill="#fff"><textPath href="#gbot" startOffset="50%" text-anchor="middle">DEVOLUCIÓN 100%</textPath></text>
-        <circle cx="110" cy="110" r="55" fill="#fff"/>
-        <text id="garDias" x="110" y="105" text-anchor="middle" font-family="Sora,sans-serif" font-weight="800" font-size="44" fill="#0c1526">30</text>
-        <text x="110" y="131" text-anchor="middle" font-family="Sora,sans-serif" font-weight="700" font-size="15" letter-spacing="3" fill="#0c1526">DÍAS</text>
-      </svg>
-    </div>
-    <h2 class="sec" id="garTitle" data-rv>Garantía total de satisfacción</h2>
-    <p class="sec-sub" id="garText" data-rv></p>
-    <div class="gtrust" data-rv>
-      <div class="gt"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v4h4"/></svg>Devolución 100%</div>
-      <div class="gt"><svg viewBox="0 0 24 24"><path d="M12 3 4 6v5c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/><path d="m9 11 2 2 4-4"/></svg>Sin preguntas</div>
-      <div class="gt"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="11" rx="2"/><circle cx="12" cy="12.5" r="2.4"/></svg>Pago al recibir</div>
-    </div>
-  </div>
-</section>
-
-<!-- TU SEGURO DE VIDA -->
-<section>
-  <div class="wrap">
-    <div class="center">
-      <span class="eyebrow">Lo que te llevas</span>
-      <h2 class="sec" data-rv>Tres cajas que te devuelven el clóset</h2>
-    </div>
-    <ul class="seguro" data-rv>
-      <li><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6"/></svg>98 litros de espacio por caja, 294 en el pack de tres.</li>
-      <li><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6"/></svg>Se apilan de a tres: aprovechas el alto del clóset, no solo las repisas.</li>
-      <li><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6"/></svg>Ventana transparente para ver qué hay sin abrirlas.</li>
-      <li><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6"/></svg>Cuando no las uses, se pliegan y quedan del grosor de un cuaderno.</li>
-    </ul>
-    <div class="midcta midcta--in"><button class="btn btn--green bounce" data-scroll="#pedido">Pedir con pago al recibir</button></div>
-    <div class="trustbx">
-      <div class="tb"><svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Compra segura</div>
-      <div class="tb"><svg viewBox="0 0 24 24"><path d="M3 7h11v8H3zM14 10h4l3 3v2h-7z"/><circle cx="7" cy="17" r="1.6"/><circle cx="17.5" cy="17" r="1.6"/></svg>Envío rápido</div>
-      <div class="tb"><svg viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.2 5.8.9-4.2 4 1 5.7-5.2-2.7-5.2 2.7 1-5.7-4.2-4 5.8-.9z"/></svg>Garantía de calidad</div>
-    </div>
-  </div>
-</section>
-
-<!-- FAQ -->
-<section class="faq" id="faq">
-  <div class="wrap">
-    <h2 class="sec" data-rv>Preguntas frecuentes</h2>
-    <div id="faqList" data-rv></div>
-  </div>
-</section>
-
-<!-- CTA FINAL (oscuro) — arriba del formulario -->
-<section class="ctafinal">
-  <div class="wrap center">
-    <span class="eyebrow">Organizador de Ropa</span>
-    <h2 class="sec" data-rv>Guarda el invierno de una vez.</h2>
-    <p class="sec-sub" data-rv style="margin-left:auto;margin-right:auto">98 litros por caja. Envío gratis y pagas cuando la recibes.</p>
-    <button class="btn btn--acc btn--lg" data-scroll="#pedido">Comprar ahora</button>
-  </div>
+<!-- ===== PREGUNTAS ===== -->
+<section class="rd-faq faq" id="faq">
+  <span class="rd-eyebrow">Preguntas frecuentes</span>
+  <h2 class="rd-h2">Lo que más nos preguntan</h2>
+  <div id="faqList" class="faqlist"></div>
 </section>
 
 <!-- FORMULARIO COD -->
@@ -394,22 +254,6 @@ fbq('track','PageView');
   </div>
 </section>
 
-<!-- MARQUEE 2 -->
-<div class="marquee marquee--acc"><div class="mq__t" id="mq2"></div></div>
-
-<!-- SUSCRIPCIÓN DE CORREO (formato Shilajit) -->
-<section class="newsletter light">
-  <div class="wrap">
-    <h2>Suscríbete a nuestros correos</h2>
-    <p>Conoce las nuevas colecciones y las ofertas exclusivas antes que nadie.</p>
-    <form class="inp" onsubmit="return false">
-      <input type="email" placeholder="Correo electrónico" aria-label="Correo electrónico">
-      <button type="submit" aria-label="Suscribir">→</button>
-    </form>
-  </div>
-</section>
-
-<!-- FOOTER (idéntico a Shilajit) -->
 <footer class="footer">
   <div class="wrap">
     <h3 class="ftitle">JAYE GROUP - CHILE</h3>

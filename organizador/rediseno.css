@@ -1,0 +1,134 @@
+/* ============================================================
+   REDISEÑO — Organizador de Ropa
+   Va en archivo APARTE: style.css es del molde y no se toca.
+   Solo estiliza las clases nuevas (rd-*). El encabezado, el pie y
+   las reseñas siguen tomando su estilo de style.css, intactos.
+
+   Color: el gris de la caja llevado a azul pizarra, sobre blanco
+   frio. El ambar aparece SOLO donde hay que tocar -botones, precio,
+   el pack recomendado- para que el ojo sepa siempre donde ir.
+   ============================================================ */
+:root{
+  --rd-tinta:#141A20;
+  --rd-pizarra:#3C4A57;
+  --rd-pizarraD:#26313B;
+  --rd-papel:#F3F4F2;
+  --rd-blanco:#FFFFFF;
+  --rd-ambar:#E08A2B;
+  --rd-ambarD:#B96C18;
+  --rd-linea:#DFE1DD;
+  --rd-suave:#69737D;
+}
+
+/* ---------- portada ---------- */
+.rd-hero{position:relative;background:var(--rd-pizarraD);overflow:hidden}
+.rd-hero__img{display:block;width:100%;height:auto;object-fit:cover}
+.rd-hero__txt{padding:26px 20px 30px;background:linear-gradient(180deg,var(--rd-pizarraD),#1B242C);color:#fff}
+.rd-kick{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--rd-ambar);margin-bottom:10px}
+.rd-h1{font-family:'Sora',system-ui,sans-serif;font-size:clamp(30px,8.4vw,42px);font-weight:800;line-height:1.06;
+  letter-spacing:-.02em;margin:0;color:#fff;text-wrap:balance}
+.rd-h1 em{font-style:normal;color:var(--rd-ambar)}
+.rd-lead{color:#C6D0D8;font-size:16px;line-height:1.55;margin:13px 0 0;max-width:34ch}
+.rd-precio{display:flex;align-items:baseline;gap:9px;margin:20px 0 0;flex-wrap:wrap}
+.rd-precio__d{font-size:12.5px;color:#9DAAB4;letter-spacing:.05em;text-transform:uppercase}
+.rd-precio b{font-family:'Sora',sans-serif;font-size:38px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums;line-height:1}
+.rd-precio__u{font-size:14px;color:#9DAAB4}
+.rd-cta{display:block;width:100%;margin-top:18px;background:var(--rd-ambar);color:#241505;border:0;border-radius:5px;
+  padding:17px 14px;font-family:'Sora',sans-serif;font-size:16.5px;font-weight:800;letter-spacing:.01em;cursor:pointer;
+  box-shadow:0 8px 22px rgba(224,138,43,.28);transition:transform .16s ease,background .16s ease}
+.rd-cta:hover{background:var(--rd-ambarD)}
+.rd-cta:active{transform:translateY(1px)}
+.rd-cta:focus-visible{outline:3px solid #fff;outline-offset:2px}
+.rd-mini{font-size:12.5px;color:#93A1AC;margin:11px 0 0;text-align:center}
+
+/* ---------- franja de confianza ---------- */
+.rd-tira{display:grid;grid-template-columns:repeat(4,1fr);background:var(--rd-tinta);gap:1px}
+.rd-tira div{background:var(--rd-tinta);padding:14px 6px;text-align:center;border-right:1px solid rgba(255,255,255,.09)}
+.rd-tira div:last-child{border-right:0}
+.rd-tira b{display:block;font-family:'Sora',sans-serif;font-size:16px;color:#fff;font-variant-numeric:tabular-nums}
+.rd-tira span{display:block;font-size:10.5px;color:#93A1AC;letter-spacing:.05em;text-transform:uppercase;margin-top:2px}
+
+/* ---------- bloques ---------- */
+.rd-cifra,.rd-galeria,.rd-detalles,.rd-vs,.rd-ba,.rd-packs,.rd-faq{padding:38px 20px;max-width:560px;margin:0 auto}
+.rd-cifra{background:var(--rd-papel);max-width:none;text-align:center}
+.rd-eyebrow{display:block;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--rd-ambarD);margin-bottom:9px}
+.rd-h2{font-family:'Sora',sans-serif;font-size:clamp(23px,6vw,29px);font-weight:800;line-height:1.14;
+  letter-spacing:-.015em;margin:0 0 6px;color:var(--rd-tinta);text-wrap:balance}
+.rd-sub{color:var(--rd-suave);font-size:15px;line-height:1.6;margin:14px auto 0;max-width:42ch}
+
+/* ---------- la cifra ---------- */
+.rd-num{font-family:'Sora',sans-serif;font-size:clamp(78px,23vw,116px);font-weight:800;line-height:.84;
+  color:var(--rd-pizarra);font-variant-numeric:tabular-nums;letter-spacing:-.04em}
+.rd-num small{display:block;font-size:19px;font-weight:700;color:var(--rd-ambarD);letter-spacing:.02em;margin-top:8px}
+.rd-cabe{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--rd-linea);
+  border:1px solid var(--rd-linea);margin:24px auto 0;max-width:420px}
+.rd-cabe div{background:var(--rd-blanco);padding:17px 8px}
+.rd-cabe b{display:block;font-family:'Sora',sans-serif;font-size:30px;color:var(--rd-tinta);font-variant-numeric:tabular-nums}
+.rd-cabe span{display:block;font-size:12px;color:var(--rd-suave);line-height:1.35;margin-top:5px}
+
+/* ---------- video ---------- */
+.rd-video{padding:0;background:#0F1418}
+.rd-video video{display:block;width:100%;height:auto;max-height:78vh;object-fit:contain;margin:0 auto}
+
+/* ---------- galeria ---------- */
+.rd-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:20px}
+.rd-g{margin:0;overflow:hidden;border-radius:3px;background:var(--rd-papel)}
+.rd-g img{display:block;width:100%;height:100%;object-fit:cover}
+.rd-g--alta{grid-row:span 2}
+.rd-g--alta img{min-height:330px}
+.rd-g--ancha{grid-column:span 2}
+.rd-g:not(.rd-g--alta) img{aspect-ratio:1/1}
+.rd-g--ancha img{aspect-ratio:16/10}
+
+/* ---------- detalles ---------- */
+.rd-lista{list-style:none;margin:20px 0 0;padding:0;display:flex;flex-direction:column;gap:1px;
+  background:var(--rd-linea);border:1px solid var(--rd-linea)}
+.rd-lista li{background:var(--rd-blanco);padding:16px 15px}
+.rd-lista b{display:block;font-family:'Sora',sans-serif;font-size:15.5px;color:var(--rd-tinta);margin-bottom:4px}
+.rd-lista span{font-size:14.5px;color:var(--rd-suave);line-height:1.55}
+
+/* ---------- comparacion ---------- */
+.rd-vs{background:var(--rd-papel);max-width:none}
+.rd-vs__par{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-top:20px;max-width:520px;
+  margin-left:auto;margin-right:auto}
+.rd-vs__c{background:var(--rd-blanco);border:1px solid var(--rd-linea);padding:17px 14px}
+.rd-vs__c--n{border:2px solid var(--rd-pizarra)}
+.rd-vs__c>span{display:block;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--rd-suave);font-weight:600}
+.rd-vs__c--n>span{color:var(--rd-ambarD)}
+.rd-vs__c b{display:block;font-family:'Sora',sans-serif;font-size:34px;margin:9px 0 1px;color:var(--rd-tinta);
+  font-variant-numeric:tabular-nums}
+.rd-vs__c small{display:block;font-size:12.5px;color:var(--rd-suave)}
+.rd-barra{height:7px;background:var(--rd-linea);border-radius:99px;margin-top:12px;overflow:hidden}
+.rd-barra i{display:block;height:100%;background:var(--rd-pizarra);border-radius:99px}
+.rd-vs__c--n .rd-barra i{background:var(--rd-ambar)}
+
+/* ---------- antes / despues ---------- */
+.rd-ba img{display:block;width:100%;height:auto;margin-top:18px;border:1px solid var(--rd-linea)}
+.rd-ba__rot{display:grid;grid-template-columns:1fr 1fr;gap:0;margin-top:8px}
+.rd-ba__rot span{text-align:center;font-size:11px;font-weight:700;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--rd-suave)}
+
+/* ---------- precios ---------- */
+.rd-packs{background:var(--rd-tinta);max-width:none;text-align:center;color:#fff}
+.rd-packs .rd-h2{color:#fff}
+.rd-packs .rd-eyebrow{color:var(--rd-ambar)}
+.rd-packs #packs{margin:22px auto 0;max-width:480px}
+.rd-packs .rd-mini{color:#93A1AC}
+.rd-packs .carriers{display:flex;gap:16px;justify-content:center;align-items:center;margin-top:20px;opacity:.75}
+.rd-packs .carriers img{height:26px;width:auto;filter:brightness(0) invert(1)}
+
+/* ---------- preguntas ---------- */
+.rd-faq{background:var(--rd-blanco);max-width:560px}
+
+@media (min-width:640px){
+  .rd-hero{display:grid;grid-template-columns:1fr 1fr;align-items:center}
+  .rd-hero__img{height:100%}
+  .rd-hero__txt{padding:40px 34px}
+  .rd-g--alta img{min-height:420px}
+}
+@media (prefers-reduced-motion:reduce){
+  .rd-cta{transition:none}
+  .rd-video video{animation:none}
+}
