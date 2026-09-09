@@ -403,7 +403,10 @@ const mapPedido=r=>({fecha:r.fecha||'',cli:r.nombre||'—',tel:soloNum((r.indica
     prod:r.producto,prodCorto:nombreCortoProd(r.producto),color:r.color||'#c9a227',pagina:r.pagina,dir:r.direccion||'—',ref:r.referencia||'',comuna:r.comuna||'—',
     region:r.region||'—',correo:r.correo||'',cant:numero(r.cantidad)||1,totalNum:numero(r.total),
     total:fmtCLP(numero(r.total)),conf:String(r.confirmado||'').toUpperCase()==='SI',
-    dropi:String(r.dropi||'').toUpperCase()==='ENVIADO',fila:r.fila,orden:fechaOrden(r.fecha,'')});
+    dropi:String(r.dropi||'').toUpperCase()==='ENVIADO',fila:r.fila,orden:fechaOrden(r.fecha,''),
+    /* el estado tal cual viene ("Nueva", "ABONO PENDIENTE", "MONTADA DROPI #7820845"):
+       de aqui salen el numero de Dropi y el abono pendiente en la vista de Camila */
+    estado:String(r.estado||'')});
 async function cargarPaginas(){
   const conectadas=PAGINAS.filter(p=>p.url);
   let peds=[], abs=[], vis=[], pedsArch=[], visArch=[];
@@ -806,7 +809,9 @@ function renderConvStats(){
   const ventas=esVistaLog()
     ? (function(){const s={};base.forEach(c=>s[soloNum(c.tel)]=1);
         return ordenes.filter(o=>s[soloNum(o.tel)] && enRangoDe(o.orden,Rconv)).length;})()
-    : ordenes.filter(o=>o.bot===fBot && enRangoDe(o.orden,Rconv)).length;
+    : ordenes.filter(o=>o.bot===fBot && enRangoDe(o.orden,Rconv)).length
+      /* en «Camila · Chile» las ventas de PAGINA tambien cuentan (ver renderVentasBot) */
+      + (fBot==='Carlos' ? (pedidosWeb||[]).filter(p=>enRangoDe(p.orden,Rconv)).length : 0);
   const conAgente=cs.filter(c=>c.estado==='pausada').length;
   const conv=cs.length?(ventas/cs.length*100):0;
   cont.innerHTML=
@@ -817,6 +822,17 @@ function renderConvStats(){
 }
 function pedWebDe(tel){ try{ var t=soloNum(tel); return (pedidosWeb||[]).find(function(p){return soloNum(p.tel)===t;})||null; }catch(e){ return null; } }
 function confBadgeHTML(pw){ if(!pw) return ''; return pw.conf ? '<span style="display:inline-block;background:#e6f4ea;color:#0f7a52;font-weight:700;font-size:9.5px;padding:1px 6px;border-radius:6px;margin-right:5px">✅ Confirmó</span>' : '<span style="display:inline-block;background:#fdecea;color:#c0392b;font-weight:700;font-size:9.5px;padding:1px 6px;border-radius:6px;margin-right:5px">⏳ Sin confirmar</span>'; }
+/* Los clientes de PAGINA llegan a Conversaciones por la plantilla de
+   confirmacion, antes de que WhatsApp entregue un nombre de perfil: en la
+   lista y en la cabecera salian como puro numero (56993184212) y James no
+   podia reconocer a los compradores de la tienda entre 400 conversaciones.
+   Si el nombre es solo digitos y hay un pedido web de ese telefono, se
+   muestra el nombre que el cliente escribio en el pedido. */
+function nombreConv(c){
+  var n=String((c&&c.n)||'').trim();
+  if(/^\+?\d{6,}$/.test(n)){ var p=pedWebDe(c.tel); if(p&&p.cli&&p.cli!=='—') return p.cli; }
+  return n;
+}
 function renderConvList(){
   renderConvStats();
   const cont=document.getElementById('clist'); if(!cont) return;
@@ -824,16 +840,25 @@ function renderConvList(){
   const q=(document.getElementById('cbuscar')?.value||'').toLowerCase();
   // fusionar pedidos web que aún no tienen conversación (para ver los pendientes de confirmar)
   var _base=convos.slice(), _seen={}; _base.forEach(function(c){ _seen[soloNum(c.tel)]=1; });
-  (pedidosWeb||[]).forEach(function(p){ var t=soloNum(p.tel); if(t && !_seen[t]){ _seen[t]=1; _base.push({tel:t, n:p.cli||t, bot:'carlos', estado:'activa', ultimo:'📦 Pedido web · '+(p.conf?'confirmado ✅':'esperando confirmación ⏳'), hora:'', fecha:p.fecha||'', orden:p.orden||0}); } });
+  /* OJO: la clave de la pestaña «Camila · Chile» es 'Carlos' con mayuscula
+     (BOTNOM/BOTCOLOR). Con 'carlos' en minuscula estas filas no coincidian con
+     ningun bot y el cliente de pagina que no habia escrito por WhatsApp no
+     aparecia en ninguna lista. 9-sep: James no veia las ventas del Organizador. */
+  (pedidosWeb||[]).forEach(function(p){ var t=soloNum(p.tel); if(t && !_seen[t]){ _seen[t]=1; _base.push({tel:t, n:p.cli||t, bot:'Carlos', estado:'activa', ultimo:'📦 Pedido web · '+(p.conf?'confirmado ✅':'esperando confirmación ⏳'), hora:'', fecha:p.fecha||'', orden:p.orden||0}); } });
   let arr=_base.filter(c=>(esVistaLog()?c.log:c.bot===fBot) && enRangoDe(c.orden,Rconv));
   if(fEst!=='todas') arr=arr.filter(c=>c.estado===fEst);
   if(q) arr=arr.filter(c=>(c.n+' '+c.tel).toLowerCase().includes(q));
+  /* Los pedidos de pagina se agregan al FINAL de la lista, y la lista se corta
+     a 150 sin ordenar: con 400 conversaciones, el cliente que compro en la
+     tienda hace diez minutos quedaba fuera. Ordenar por fecha antes de cortar
+     pone a los de hoy arriba, vengan de WhatsApp o de la pagina. */
+  arr=arr.slice().sort((a,b)=>(b.orden||0)-(a.orden||0));
   if(!arr.length){cont.innerHTML='<div class="vacio">Sin conversaciones aquí.</div>';return;}
   cont.innerHTML=arr.slice(0,150).map(c=>`
     <div class="citem ${c.tel===selTel?'sel':''}" onclick="abrirChat('${c.tel}')">
-      <div class="cav" style="background:${BOTCOLOR[esVistaLog()?'Logistica':c.bot]}">${inicialesDe(c.n)}<span class="bdot ${c.estado==='activa'?'bdot-on':'bdot-paused'}"></span></div>
+      <div class="cav" style="background:${BOTCOLOR[esVistaLog()?'Logistica':c.bot]}">${inicialesDe(nombreConv(c))}<span class="bdot ${c.estado==='activa'?'bdot-on':'bdot-paused'}"></span></div>
       <div class="cinfo">
-        <div class="l1"><span class="nm">${esc(c.n)}</span><span class="tm">${esc(c.hora||c.fecha)}</span></div>
+        <div class="l1"><span class="nm">${esc(nombreConv(c))}</span><span class="tm">${esc(c.hora||c.fecha)}</span></div>
         <div class="l2">${confBadgeHTML(pedWebDe(c.tel))}${(!esVistaLog()&&c.log)?'<span class="tag-log">Carlos</span> ':''}${esc((esVistaLog()&&c.ultLog)?c.ultLog:c.ultimo)||'—'}</div>
       </div>
       <span class="ctag ${c.estado==='activa'?'ctag-bot':'ctag-ag'}">${c.estado==='activa'?'Bot':'Agente'}</span>
@@ -842,20 +867,38 @@ function renderConvList(){
 function renderVentasBot(){
   const tb=document.getElementById('tbodyVentasBot'); if(!tb) return;
   /* en la vista de Logística no hay ventas propias: se listan las de esos mismos clientes */
-  const arr=esVistaLog()
+  let arr=esVistaLog()
     ? (function(){const s={};convDelBot('Logistica').forEach(c=>s[soloNum(c.tel)]=1);
         return ordenes.filter(o=>s[soloNum(o.tel)]);})()
     : ordenes.filter(o=>o.bot===fBot);
+  /* Las ventas de PAGINA de Chile tambien van aqui. `ordenes` las excluye a
+     proposito (son canal pagina, no WhatsApp), asi que en «Camila · Chile» la
+     subpestaña Ventas no mostraba ninguna venta de la tienda: el 9-sep el
+     Organizador llevaba 7 ventas y James no veia ni una. Se traen de
+     `pedidosWeb` con la misma forma que una fila de WhatsApp, marcadas
+     `esWeb` para que la celda de aprobacion use SU llave (keyPag) y no la de
+     WhatsApp: con keyWa se aprobaria una fila que no existe. */
+  if(!esVistaLog() && fBot==='Carlos' && (pedidosWeb||[]).length){
+    const web=pedidosWeb.map(p=>({esWeb:true, rid:'', cli:p.cli, tel:p.tel, prod:p.prod, cant:p.cant,
+      precioNum:p.totalNum, precio:p.total, dir:p.dir, zona:p.comuna, region:p.region,
+      nota:'', desde:'', revision:'', nivel:'', fecha:p.fecha, hora:'', orden:p.orden||0,
+      conf:p.conf, abono:/abono/i.test(String(p.estado||'')), montado:p.dropi,
+      ordenDropi:(String(p.estado||'').match(/#(\d+)/)||[])[1]||'', estado:p.estado||'',
+      bot:'Carlos', loc:'CL', red:'', pagina:p.pagina, fila:p.fila, color:p.color}));
+    arr=arr.concat(web).sort((a,b)=>(b.orden||0)-(a.orden||0));
+  }
   if(!arr.length){tb.innerHTML='<tr><td colspan="8" class="vacio">Este bot aún no registra ventas.</td></tr>';return;}
   tb.innerHTML=arr.slice(0,80).map((o,i)=>`
     <tr onclick="verVentaBot(${i})">
-      <td class="cli">${esc(o.cli)}${huellaBadge(o.tel)}${redBadge(o)}<small>${esc(o.fecha)} ${esc(o.hora)} · +${o.tel}</small>${guiaBadge(o.tel)}</td>
-      <td><span class="pchip"><i style="background:#0e8074"></i>${esc(o.prod)}</span></td>
+      <td class="cli">${esc(o.cli)}${huellaBadge(o.tel)}${redBadge(o)}${o.esWeb?'<span class="redchip" style="background:#e8eefc;color:#3060ea">Página</span>':''}<small>${esc(o.fecha)} ${esc(o.hora)} · +${o.tel}</small>${guiaBadge(o.tel)}</td>
+      <td><span class="pchip"><i style="background:${o.esWeb?(o.color||'#3060ea'):'#0e8074'}"></i>${esc(o.prod)}</span></td>
       <td>${esc(o.zona)}</td>
       <td>${o.cant}</td>
       <td class="money">${o.precio}</td>
       <td>${o.abono?'<span class="st st-rec"><i></i>Abono pendiente</span>':(o.conf?'<span class="st st-ok"><i></i>Confirmado</span>':'<span class="st st-rec"><i></i>Pendiente</span>')}</td>
-      <td class="cell-aprob" onclick="event.stopPropagation()">${celdaAprob(keyWa(o), o.montado?'<span class="st st-ok"><i></i>Montado'+(o.ordenDropi?' #'+o.ordenDropi:'')+'</span>':'', o.rid, /falta direccion/i.test(String(o.estado||'')))}</td>
+      <td class="cell-aprob" onclick="event.stopPropagation()">${o.esWeb
+        ? celdaAprob(keyPag(o), o.montado?'<span class="st st-ok"><i></i>Montado'+(o.ordenDropi?' #'+o.ordenDropi:'')+'</span>':'')
+        : celdaAprob(keyWa(o), o.montado?'<span class="st st-ok"><i></i>Montado'+(o.ordenDropi?' #'+o.ordenDropi:'')+'</span>':'', o.rid, /falta direccion/i.test(String(o.estado||'')))}</td>
       <td><svg class="ico-sm chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></td>
     </tr>`).join('');
   window._ventasBotF=arr;
@@ -871,13 +914,13 @@ function setTabConv(t){
   ajustarStickyTop();
 }
 function pintarChatHead(c){
-  document.getElementById('chNom').textContent=c.n;
+  document.getElementById('chNom').textContent=nombreConv(c);
   var _pw=pedWebDe(c.tel);
   var _st=_pw?(_pw.conf?' · <b style="color:#0f7a52">✅ Confirmó su pedido</b>':' · <b style="color:#c0392b">⏳ PENDIENTE de confirmar</b>'):'';
   const _quien=esVistaLog()?'Logistica':c.bot;
   document.getElementById('chTel').innerHTML='+'+c.tel+' · atendida por <b>'+BOTNOM[_quien]+'</b>'+
     (esVistaLog()?' <span style="opacity:.6">· solo lo de logística</span>':'')+_st;
-  const av=document.getElementById('chAv'); av.style.background=BOTCOLOR[_quien]; av.textContent=inicialesDe(c.n);
+  const av=document.getElementById('chAv'); av.style.background=BOTCOLOR[_quien]; av.textContent=inicialesDe(nombreConv(c));
   const b=document.getElementById('btnPausa'), t=document.getElementById('pauseTxt');
   if(c.estado==='pausada'){b.classList.add('btn-resume');t.textContent='Activar bot';}
   else{b.classList.remove('btn-resume');t.textContent='Pausar bot';}
@@ -886,7 +929,7 @@ async function abrirChat(tel){
   selTel=tel; renderConvList();
   var c=convos.find(x=>x.tel===tel);
   if(!c) c=convos.find(x=>soloNum(x.tel).slice(-8)===soloNum(tel).slice(-8));
-  if(!c){ var _p=pedWebDe(tel); if(_p){ c={tel:soloNum(tel), n:_p.cli||tel, bot:'carlos', estado:'activa', loc:'chile', loaded:true, msgs:[{from:'bot', time:'', text:'📦 Pedido web: '+_p.cant+'x '+_p.prod+' · '+_p.total+' · '+(_p.comuna||'')+'\n'+(_p.conf?'✅ El cliente CONFIRMÓ su pedido.':'⏳ Esperando que el cliente confirme (se le envió la plantilla con botones Confirmar / Modificar).')}]}; } }
+  if(!c){ var _p=pedWebDe(tel); if(_p){ c={tel:soloNum(tel), n:_p.cli||tel, bot:'Carlos', estado:'activa', loc:'chile', loaded:true, msgs:[{from:'bot', time:'', text:'📦 Pedido web: '+_p.cant+'x '+_p.prod+' · '+_p.total+' · '+(_p.comuna||'')+'\n'+(_p.conf?'✅ El cliente CONFIRMÓ su pedido.':'⏳ Esperando que el cliente confirme (se le envió la plantilla con botones Confirmar / Modificar).')}]}; } }
   if(!c){
     /* La lista de la izquierda solo trae las conversaciones mas recientes, y
        hay muchas mas ventas que eso: al abrir una de hace unos dias no estaba
@@ -1177,7 +1220,7 @@ function verVenta(i){
   document.getElementById('mTitulo').textContent=o.cli;
   document.getElementById('mBody').innerHTML=
     bloqueNota(o.nota)+bloqueEspera(o.nota,o.montado)+bloqueSinUbicar(o.dir,o.montado,o.nota)+
-    fila('Canal','WhatsApp · '+BOTNOM[o.bot])+fila('País',{CL:'Chile',CO:'Colombia',PY:'Paraguay'}[o.loc])+
+    fila('Canal',o.esWeb?'Página · '+o.prod:'WhatsApp · '+BOTNOM[o.bot])+fila('País',{CL:'Chile',CO:'Colombia',PY:'Paraguay'}[o.loc])+
     fila('Producto',o.prod)+fila('Cantidad',o.cant+' unidades')+fila('Teléfono','+'+o.tel)+
     fila('Dirección',o.dir)+fila('Comuna / Ciudad',o.zona)+fila('Región / Depto.',o.region)+
     filaRotulo(o.nota)+
