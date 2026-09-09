@@ -712,6 +712,20 @@ let fPagV='todas';
 window.setPagV=function(id){ fPagV=id; renderVisitas(); };
 function pagesVis(){ var m={}; (visitasWeb||[]).forEach(function(v){ if(v&&v.pagina&&!m[v.pagina]) m[v.pagina]={id:v.pagina,nombre:nombrePagVis(v.pagina,v.producto),color:v.color||'#6cc24a'}; }); var a=Object.keys(m).map(function(k){return m[k];}); return a.length?a:PAGINAS.filter(p=>p.url); }
 const npV=s=>/^nad/i.test(String(s||''))?'nad':String(s||'');  // nad/nadplus = misma pagina (visitas usan 'nad', pedidos 'nadplus')
+/* A que pagina pertenece un pedido, para la vista Pagina (visitas -> formulario
+   -> pedidos). El endpoint de pedidos de la tienda marca 'otro' en todo
+   producto que no tiene en su lista: el 9-sep el Organizador llevaba 7 ventas
+   y la vista decia "Pedidos 0, conversion 0.0%". Las visitas si traen la
+   pagina (tienda-organizador) y el nombre del producto, asi que se empareja
+   por nombre. NO se pisa o.pagina: de ahi sale la llave de aprobacion (keyPag). */
+const nrmNomPag=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]/g,'');
+function paginaVis(o){
+  const p=String((o&&o.pagina)||'');
+  if(p&&p!=='otro') return p;
+  const k=nrmNomPag(o&&o.prod); if(!k) return p;
+  const v=(visitasWeb||[]).find(x=>x&&x.pagina&&nrmNomPag(x.producto)===k);
+  return v?v.pagina:p;
+}
 function renderVisitas(){
   const box=document.getElementById('visitasBox'); if(!box) return;
   const lbl=TXT_RANGO[Rvis.tipo]||'';
@@ -734,7 +748,7 @@ function renderVisitas(){
   const data=pgs.map(p=>{
     let vis=0,form=0;
     visitasWeb.filter(v=>npV(v.pagina)===npV(p.id)&&enRangoDe(fechaOrden(v.fecha,''),Rvis)).forEach(v=>{vis+=numero(v.visitas);form+=numero(v.formulario);});
-    const peds=pedidosWeb.filter(o=>npV(o.pagina)===npV(p.id)&&enRangoDe(o.orden,Rvis)).length;
+    const peds=pedidosWeb.filter(o=>npV(paginaVis(o))===npV(p.id)&&enRangoDe(o.orden,Rvis)).length;
     return {id:p.id,nombre:p.nombre,color:p.color,vis,form,peds};
   });
   const tVis=data.reduce((a,b)=>a+b.vis,0), tForm=data.reduce((a,b)=>a+b.form,0), tPed=data.reduce((a,b)=>a+b.peds,0);
@@ -753,7 +767,7 @@ function renderVisitas(){
   const dias=[];
   for(let i=nD-1;i>=0;i--){const d=new Date(inicioDia(i));dias.push({key:d.toDateString(),lbl:i===0?'Hoy':d.toLocaleDateString('es-CL',{weekday:'short'}),v:0,f:0,p:0});}
   visitasWeb.filter(v=>fPagV==='todas'||npV(v.pagina)===npV(fPagV)).forEach(v=>{const t=fechaOrden(v.fecha,'');if(!t)return;const d=dias.find(x=>x.key===new Date(t).toDateString());if(d){d.v+=numero(v.visitas);d.f+=numero(v.formulario);}});
-  pedidosWeb.filter(o=>fPagV==='todas'||npV(o.pagina)===npV(fPagV)).forEach(o=>{const d=dias.find(x=>x.key===new Date(o.orden).toDateString());if(d)d.p++;});
+  pedidosWeb.filter(o=>fPagV==='todas'||npV(paginaVis(o))===npV(fPagV)).forEach(o=>{const d=dias.find(x=>x.key===new Date(o.orden).toDateString());if(d)d.p++;});
   const max=Math.max(4,...dias.map(d=>d.v));
   const W=620,m=40,slot=(W-m-10)/nD,bw=Math.min(11,slot*0.24);
   let bars='',labels='';
