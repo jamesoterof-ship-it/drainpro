@@ -528,28 +528,56 @@ function renderTopProd(){
   const max=top[0][1]||1;
   cont.innerHTML=top.map(([n,c])=>'<div class="pais">'+esc(n)+'<div class="track"><i style="width:'+Math.round(c/max*100)+'%;background:#0e8074"></i></div><b>'+c+'</b></div>').join('');
 }
+/* CUATRO barras por dia: Total, Pagina, WhatsApp y Redes. Antes eran dos y las
+   ventas de Facebook e Instagram iban sumadas dentro de WhatsApp, asi que el
+   canal de redes no se podia medir. El TOTAL va de primero y es la barra que
+   se lee de un vistazo; las otras tres explican de donde salio. */
+const CH_SERIES=[
+  {k:'web', nom:'Página',   color:'#3060ea'},
+  {k:'wa',  nom:'WhatsApp', color:'#179f6b'},
+  {k:'red', nom:'Redes',    color:'#d8256b'}
+];
 function renderChart(){
   const cont=document.getElementById('chartReal'); if(!cont) return;
   const nD = R.tipo==='30d' ? 30 : (R.tipo==='fechas'&&R.desde&&R.hasta ? Math.min(31,Math.round((R.hasta-R.desde)/864e5)+1) : 7);
   const base = R.tipo==='fechas'&&R.desde ? R.desde : inicioDia(nD-1);
   const dias=[];
-  for(let i=0;i<nD;i++){const d=new Date(base+i*864e5);dias.push({key:d.toDateString(),lbl:nD>10?String(d.getDate()):(d.toDateString()===new Date().toDateString()?'Hoy':d.toLocaleDateString('es-CL',{weekday:'short'})),wa:0,web:0});}
-  if(fCanal!=='web') ordenes.forEach(o=>{if(!o.orden)return;const d=dias.find(x=>x.key===new Date(o.orden).toDateString());if(d)d.wa++;});
-  if(fCanal!=='wa') pedidosWeb.forEach(o=>{if(!o.orden)return;const d=dias.find(x=>x.key===new Date(o.orden).toDateString());if(d)d.web++;});
-  const max=Math.max(4,...dias.map(d=>d.wa+d.web));
-  const W=620, m=40, slot=(W-m-10)/nD, bw=Math.min(15,slot*0.34);
+  for(let i=0;i<nD;i++){const d=new Date(base+i*864e5);dias.push({key:d.toDateString(),lbl:nD>10?String(d.getDate()):(d.toDateString()===new Date().toDateString()?'Hoy':d.toLocaleDateString('es-CL',{weekday:'short'})),wa:0,web:0,red:0});}
+  /* las de redes vienen dentro de `ordenes` marcadas bot==='Redes' (mismo criterio
+     que usan la lista de actividad y el contador del menu) */
+  ordenes.forEach(o=>{if(!o.orden)return;const d=dias.find(x=>x.key===new Date(o.orden).toDateString());if(!d)return;if(o.bot==='Redes')d.red++;else d.wa++;});
+  pedidosWeb.forEach(o=>{if(!o.orden)return;const d=dias.find(x=>x.key===new Date(o.orden).toDateString());if(d)d.web++;});
+  /* el filtro de canal decide QUE series se dibujan; el total es la suma de las
+     que se ven, para que el numero de arriba siempre cuadre con las barras */
+  const vis = fCanal==='todos' ? CH_SERIES : CH_SERIES.filter(s=>s.k===(fCanal==='web'?'web':fCanal==='redes'?'red':'wa'));
+  dias.forEach(d=>{ d.tot=vis.reduce((s,x)=>s+d[x.k],0); });
+  const conTotal = vis.length>1;                     /* con un solo canal el total seria la misma barra */
+  const cols = (conTotal?1:0)+vis.length;
+  const max=Math.max(4,...dias.map(d=>d.tot));
+  const W=620, m=40, slot=(W-m-10)/nD, gap=2;
+  const bw=Math.max(3,Math.min(13,(slot*0.80-gap*(cols-1))/cols));
+  const ancho=bw*cols+gap*(cols-1);
+  const alto=v=>Math.round(v/max*150);
   let bars='',labels='';
   dias.forEach((d,i)=>{
-    const x=m+12+i*slot, hw=Math.round(d.web/max*150), ha=Math.round(d.wa/max*150);
-    bars+=`<rect x="${x}" y="${186-hw}" width="${bw}" height="${hw||2}" rx="3" fill="#3060ea"/>`;
-    bars+=`<rect x="${x+bw+3}" y="${186-ha}" width="${bw}" height="${ha||2}" rx="3" fill="#179f6b"/>`;
-    if(d.web&&nD<=10)bars+=`<text x="${x+bw/2}" y="${178-hw}" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--ink)">${d.web}</text>`;
-    if(d.wa&&nD<=10)bars+=`<text x="${x+bw*1.5+3}" y="${178-ha}" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--ink)">${d.wa}</text>`;
-    if(nD<=10||i%5===0||i===nD-1)labels+=`<text x="${x+bw+1}" y="205" text-anchor="middle" font-size="11" fill="var(--ink-3)">${d.lbl}</text>`;
+    const x0=m+10+i*slot+(slot-ancho)/2;
+    let c=0;
+    const pone=(v,color,fuerte)=>{
+      const h=alto(v), x=x0+c*(bw+gap); c++;
+      bars+=`<rect x="${x}" y="${186-h}" width="${bw}" height="${h||2}" rx="2.5" fill="${color}"/>`;
+      /* el numero solo cuando cabe: siempre el del total, los canales con 7 dias o menos */
+      if(v&&(fuerte?nD<=10:nD<=7))bars+=`<text x="${x+bw/2}" y="${179-h}" text-anchor="middle" font-size="${fuerte?10.5:8.5}" font-weight="${fuerte?800:700}" fill="var(--ink)">${v}</text>`;
+    };
+    if(conTotal) pone(d.tot,'var(--ink)',true);
+    vis.forEach(s=>pone(d[s.k],s.color,false));
+    if(nD<=10||i%5===0||i===nD-1)labels+=`<text x="${x0+ancho/2}" y="205" text-anchor="middle" font-size="11" fill="var(--ink-3)">${d.lbl}</text>`;
   });
   cont.innerHTML=`<svg viewBox="0 0 620 220" width="100%" height="210" preserveAspectRatio="none" font-family="Inter">
     <g stroke="var(--grid)" stroke-width="1"><line x1="40" y1="20" x2="610" y2="20"/><line x1="40" y1="65" x2="610" y2="65"/><line x1="40" y1="110" x2="610" y2="110"/><line x1="40" y1="155" x2="610" y2="155"/><line x1="40" y1="186" x2="610" y2="186"/></g>
     ${bars}${labels}</svg>`;
+  const lg=document.getElementById('chartLeyenda');
+  if(lg) lg.innerHTML=(conTotal?'<span><i style="background:var(--ink)"></i>Total</span>':'')+
+    vis.map(s=>`<span><i style="background:${s.color}"></i>${s.nom}</span>`).join('');
 }
 function renderPaises(){
   const cont=document.getElementById('paisesReal'); if(!cont) return;
