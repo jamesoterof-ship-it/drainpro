@@ -568,7 +568,7 @@ function renderChart(){
       /* el numero solo cuando cabe: siempre el del total, los canales con 7 dias o menos */
       if(v&&(fuerte?nD<=10:nD<=7))bars+=`<text x="${x+bw/2}" y="${179-h}" text-anchor="middle" font-size="${fuerte?10.5:8.5}" font-weight="${fuerte?800:700}" fill="var(--ink)">${v}</text>`;
     };
-    if(conTotal) pone(d.tot,'var(--ink)',true);
+    if(conTotal) pone(d.tot,'var(--gold)',true);
     vis.forEach(s=>pone(d[s.k],s.color,false));
     if(nD<=10||i%5===0||i===nD-1)labels+=`<text x="${x0+ancho/2}" y="205" text-anchor="middle" font-size="11" fill="var(--ink-3)">${d.lbl}</text>`;
   });
@@ -576,7 +576,7 @@ function renderChart(){
     <g stroke="var(--grid)" stroke-width="1"><line x1="40" y1="20" x2="610" y2="20"/><line x1="40" y1="65" x2="610" y2="65"/><line x1="40" y1="110" x2="610" y2="110"/><line x1="40" y1="155" x2="610" y2="155"/><line x1="40" y1="186" x2="610" y2="186"/></g>
     ${bars}${labels}</svg>`;
   const lg=document.getElementById('chartLeyenda');
-  if(lg) lg.innerHTML=(conTotal?'<span><i style="background:var(--ink)"></i>Total</span>':'')+
+  if(lg) lg.innerHTML=(conTotal?'<span><i style="background:var(--gold)"></i>Total</span>':'')+
     vis.map(s=>`<span><i style="background:${s.color}"></i>${s.nom}</span>`).join('');
 }
 function renderPaises(){
