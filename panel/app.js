@@ -288,13 +288,21 @@ function normConv(r){
 function parseHist(txt){
   if(!txt) return [];
   /* "Carlos (logistica)" va ANTES que "Carlos" en la lista: si no, se parte mal la etiqueta */
-  const parts=String(txt).split(/(?=(?:Cliente|Asistente|Ramón|Ramon|Carlos \(logistica\)|Carlos|James|Agente|Sistema)\s*(?:\[[^\]]*\])?\s*:)/g);
+  /* Algunos flujos firman con un sufijo: "Carlos (logistica) · plantilla confirmacion_pedido:".
+     Sin contemplarlo, esa linea NO abria mensaje nuevo y la plantilla se pegaba
+     al globo anterior -por eso el chat mostraba a Camila atendiendo cuando la
+     ultima que habia escrito era logistica. */
+  /* el sufijo no puede comerse el "[" de la marca de tiempo, si no la hora
+     "05:30" le sirve de dos puntos y el mensaje sale partido a la mitad */
+  const _SUF='(?:\\s*·[^\\n:\\[]{0,60})?';
+  const _ROL='(?:Cliente|Asistente|Ramón|Ramon|Carlos \\(logistica\\)|Carlos|James|Agente|Sistema)';
+  const parts=String(txt).split(new RegExp('(?='+_ROL+_SUF+'\\s*(?:\\[[^\\]]*\\])?\\s*:)','g'));
   const out=[];
   /* las notas "Sistema:" ahora se muestran como aviso en la conversación (antes se ocultaban
      y cosas importantes como el link del anticipo quedaban invisibles) */
   const _sacaSistema=s=>{const notas=[];const limpio=String(s).replace(/\n?\s*Sistema\s*:([^\n]*)/g,(_,n)=>{if(n.trim())notas.push(n.trim());return '';}).trim();return {limpio,notas};};
   parts.forEach(p=>{p=p.trim();if(!p)return;
-    const m=p.match(/^(Cliente|Asistente|Ramón|Ramon|Carlos \(logistica\)|Carlos|James|Agente|Sistema)\s*(?:\[([^\]]*)\])?\s*:\s*([\s\S]*)$/);
+    const m=p.match(new RegExp('^('+_ROL+')'+_SUF+'\\s*(?:\\[([^\\]]*)\\])?\\s*:\\s*([\\s\\S]*)$'));
     if(m){const lbl=m[1],time=(m[2]||'').trim();
       if(lbl==='Sistema'){const b=m[3].trim();if(b)out.push({from:'sistema',text:b,time:time});return;}
       const {limpio,notas}=_sacaSistema(m[3]);
@@ -963,7 +971,10 @@ function pintarChatHead(c){
   var _pw=pedWebDe(c.tel);
   var _st=_pw?(_pw.conf?' · <b style="color:#0f7a52">✅ Confirmó su pedido</b>':' · <b style="color:#c0392b">⏳ PENDIENTE de confirmar</b>'):'';
   const _quien=esVistaLog()?'Logistica':c.bot;
-  document.getElementById('chTel').innerHTML='+'+c.tel+' · atendida por <b>'+BOTNOM[_quien]+'</b>'+
+  /* quien la atiende de verdad: agente si el bot esta pausado, Carlos si el
+     ultimo que escribio fue logistica, y si no el bot de la ficha */
+  const _at=esVistaLog()?{nom:BOTNOM.Logistica,col:BOTCOLOR.Logistica}:quienAtiende(c);
+  document.getElementById('chTel').innerHTML='+'+c.tel+' · atiende <span class="chquien" style="background:'+_at.col+'">'+esc(_at.nom)+'</span>'+
     (esVistaLog()?' <span style="opacity:.6">· solo lo de logística</span>':'')+_st;
   const av=document.getElementById('chAv'); av.style.background=BOTCOLOR[_quien]; av.textContent=inicialesDe(nombreConv(c));
   const b=document.getElementById('btnPausa'), t=document.getElementById('pauseTxt');
@@ -996,6 +1007,7 @@ async function abrirChat(tel){
   const box=document.getElementById('chmsgs');
   if(!c.loaded){ box.innerHTML='<div class="vacio">Cargando historial…</div>';
     if(!await traerHist(c)){ box.innerHTML='<div class="vacio">No pude cargar el historial.</div>'; return; }
+    pintarChatHead(c);   /* recien aca se sabe quien fue el ultimo en escribir */
     renderBubbles(c); return;
   }
   renderBubbles(c);
@@ -1038,6 +1050,33 @@ function cuerpoMensaje(m){
   const fotos=imgs.map(u=>'<img class="msgimg" src="'+u+'" onclick="ampliarImg(this)" alt="imagen">').join('');
   return (texto?texto:'')+(fotos?(texto?'<br>':'')+fotos:'')||'—';
 }
+/* El historial guarda la marca de tiempo como "DD-MM HH:MM" entre corchetes.
+   Antes el chat pintaba ese texto crudo abajo del globo y el dia no se leia por
+   ningun lado: dos mensajes de dias distintos se veian pegados. Aca se parte la
+   marca en fecha y hora para poder poner el separador de dia, como WhatsApp. */
+function _marca(t){
+  const m=String(t||'').match(/(\d{1,2})-(\d{1,2})(?:-(\d{2,4}))?\s+(\d{1,2}:\d{2})/);
+  if(m) return {dia:m[1].padStart(2,'0')+'-'+m[2].padStart(2,'0'), hora:m[4]};
+  const h=String(t||'').match(/^\s*(\d{1,2}:\d{2})\s*$/);
+  return {dia:'', hora:h?h[1]:String(t||'').trim()};
+}
+function _diaTexto(d){
+  const hoy=new Date(), ayer=new Date(Date.now()-864e5);
+  const f=x=>String(x.getDate()).padStart(2,'0')+'-'+String(x.getMonth()+1).padStart(2,'0');
+  if(d===f(hoy)) return 'Hoy · '+d;
+  if(d===f(ayer)) return 'Ayer · '+d;
+  return d;
+}
+/* Quien esta atendiendo la conversacion AHORA mismo. No es siempre el bot de la
+   ficha: si el bot esta pausado manda el agente, y si el ultimo que escribio fue
+   Carlos la clienta va a contestarle a logistica, no a Camila. */
+function quienAtiende(c){
+  if(c.estado==='pausada') return {nom:'Agente (tú)', col:'linear-gradient(135deg,#7c4dd8,#a98aec)'};
+  let ult=null; (c.msgs||[]).forEach(m=>{ if(m.from==='bot'||m.from==='logistica'||m.from==='agente') ult=m; });
+  if(ult&&ult.from==='agente')    return {nom:'Agente (tú)', col:'linear-gradient(135deg,#7c4dd8,#a98aec)'};
+  if(ult&&ult.from==='logistica') return {nom:BOTNOM.Logistica, col:BOTCOLOR.Logistica};
+  return {nom:BOTNOM[c.bot]||c.bot, col:BOTCOLOR[c.bot]||BOTCOLOR.Carlos};
+}
 function renderBubbles(c){
   const box=document.getElementById('chmsgs');
   /* La conversación guardada es UNA sola. Aquí se decide qué mostrar:
@@ -1047,12 +1086,19 @@ function renderBubbles(c){
   let msgs=c.msgs;
   if(esVistaLog()) msgs=msgs.filter(m=>m.from==='cliente'||m.from==='logistica'||m.from==='sistema');
   if(!msgs.length){box.innerHTML='<div class="vacio">'+(esVistaLog()?'Aquí no ha escrito Carlos.':'Sin mensajes todavía.')+'</div>';return;}
+  let _diaAct='';
   box.innerHTML=msgs.map(m=>{
-    if(m.from==='sistema'){const rojo=/link de pago|anticipo|abono|riesgo/i.test(m.text||'');return `<div class="msg m-sys${rojo?' m-sys-rojo':''}"><div class="who">${rojo?'⛔':'⚠'} Sistema</div>${cuerpoMensaje(m)}</div>`;}
+    const mk=_marca(m.time);
+    /* separador de dia: solo cuando el mensaje TRAE fecha. Los que no la traen
+       quedan bajo el ultimo separador, que es como se leen en WhatsApp. */
+    let sep='';
+    if(mk.dia && mk.dia!==_diaAct){ _diaAct=mk.dia; sep='<div class="chdia"><span>'+esc(_diaTexto(mk.dia))+'</span></div>'; }
+    const pie=mk.hora?'<div class="msgh">'+esc((mk.dia?mk.dia+' · ':'')+mk.hora)+'</div>':'';
+    if(m.from==='sistema'){const rojo=/link de pago|anticipo|abono|riesgo/i.test(m.text||'');return sep+`<div class="msg m-sys${rojo?' m-sys-rojo':''}"><div class="who">${rojo?'⛔':'⚠'} Sistema</div>${cuerpoMensaje(m)}${pie}</div>`;}
     const cls=m.from==='cliente'?'m-cli':(m.from==='agente'?'m-ag':(m.from==='logistica'?'m-log':'m-bot'));
     const who=m.from==='cliente'?'Cliente':(m.from==='agente'?'Tú · Agente':
       (m.from==='logistica'?'Carlos · Logística':BOTNOM[c.bot].split(' ·')[0]+' · Bot'));
-    return `<div class="msg ${cls}"><div class="who">${who}</div>${cuerpoMensaje(m)}${m.time?'<div style="font-size:11px;opacity:.5;margin-top:3px">'+esc(m.time)+'</div>':''}</div>`;
+    return sep+`<div class="msg ${cls}"><div class="who">${who}</div>${cuerpoMensaje(m)}${pie}</div>`;
   }).join('');
   box.scrollTop=box.scrollHeight;
 }

@@ -315,6 +315,12 @@ tbody tr:hover .chev{color:var(--brand)}
 .chmsgs{flex:1;padding:18px;background:var(--surface-2);display:flex;flex-direction:column;gap:10px;overflow-y:auto;min-height:300px}
 .msg{max-width:74%;padding:10px 13px;border-radius:13px;font-size:13.5px;line-height:1.45;box-shadow:var(--shadow);white-space:pre-wrap;word-break:break-word}
 .msg .who{font-size:10.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;margin-bottom:3px;opacity:.6}
+.msg .msgh{font-size:11px;opacity:.5;margin-top:3px;font-variant-numeric:tabular-nums}
+/* separador de dia, como el de WhatsApp: el chat no mostraba la fecha por ningun lado */
+.chdia{align-self:center;margin:6px 0 2px}
+.chdia span{display:inline-block;padding:3px 11px;border-radius:999px;background:var(--surface);border:1px solid var(--border);font-size:11px;font-weight:700;letter-spacing:.02em;color:var(--muted,#64748b)}
+/* quien atiende la conversacion ahora: agente, Camila o Carlos */
+.chquien{display:inline-block;padding:1px 9px;border-radius:999px;color:#fff;font-size:11px;font-weight:700;vertical-align:1px}
 .msgimg{max-width:210px;max-height:240px;border-radius:10px;display:block;cursor:pointer;margin-top:2px;object-fit:cover}
 .imgov{position:fixed;inset:0;background:rgba(15,23,41,.82);display:none;place-items:center;z-index:120;padding:24px;cursor:zoom-out}
 .imgov.open{display:grid}
@@ -1576,7 +1582,7 @@ tbody tr:hover .chev{color:var(--brand)}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
-<script src="app.js?v=157"></script>
+<script src="app.js?v=159"></script>
 <script src="ganancia.js?v=124"></script>
 </body>
 </html>
