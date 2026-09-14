@@ -3731,3 +3731,33 @@ async function crmFicha(id){
   setTimeout(mirar,20000);
   setInterval(mirar,180000);
 })();
+
+/* ALERTAS DE CAMPAÑAS (14-09). El vigia de ritmo de presupuesto (n8n 9iWLRm423KbxFswH) guarda en
+   fin_vigia las campañas que se van a quedar sin presupuesto antes de la noche y las que llevan
+   2 horas sin ventas. Aqui se muestran en una franja roja arriba. El WhatsApp al dueño depende de
+   la ventana de 24 h de Meta, asi que la franja es el aviso que siempre llega. "Ocultar" las
+   esconde solo en esta pestaña; una alerta nueva vuelve a aparecer. */
+(function(){
+  var vistas={};
+  try{ vistas=JSON.parse(sessionStorage.getItem('jaye_alertas_vistas')||'{}')||{}; }catch(e){ vistas={}; }
+  function escA(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function pintar(lista){
+    var box=document.getElementById('alertasCamp'); if(!box) return;
+    lista=(lista||[]).filter(function(a){ return a && a.detalle && !vistas[a.detalle]; });
+    if(!lista.length){ box.hidden=true; box.innerHTML=''; return; }
+    box.innerHTML='<div class="acHead"><b>Alertas de campañas · hoy</b><button type="button" class="acX">Ocultar</button></div>'+
+      lista.map(function(a){ return '<div class="acItem"><span class="acHora">'+escA(a.hora)+'</span>'+escA(a.detalle)+'</div>'; }).join('');
+    box.hidden=false;
+    box.querySelector('.acX').onclick=function(){
+      lista.forEach(function(a){ vistas[a.detalle]=1; });
+      try{ sessionStorage.setItem('jaye_alertas_vistas',JSON.stringify(vistas)); }catch(e){}
+      box.hidden=true;
+    };
+  }
+  function cargarAlertas(){
+    fetch(BASE+'/alertas-campanas',{cache:'no-store'}).then(function(r){ return r.json(); })
+      .then(function(d){ pintar(d && d.alertas); }).catch(function(){});
+  }
+  setTimeout(cargarAlertas,3000);
+  setInterval(cargarAlertas,300000);
+})();

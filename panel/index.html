@@ -685,6 +685,16 @@ tbody tr:hover .chev{color:var(--brand)}
         <svg class="ico" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg>
       </button>
     </header>
+    <!-- Alertas de campañas: las llena el vigia de ritmo de presupuesto (n8n 9iWLRm423KbxFswH) -->
+    <style>
+      .alertasCamp{margin:10px 16px 0;padding:10px 14px;border-radius:10px;background:rgba(229,57,53,.10);border:1px solid rgba(229,57,53,.45);font-size:13px;line-height:1.45}
+      .alertasCamp .acHead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px;color:#e53935}
+      .alertasCamp .acX{border:1px solid rgba(229,57,53,.45);background:transparent;color:#e53935;border-radius:8px;padding:4px 10px;font-size:12px;cursor:pointer}
+      .alertasCamp .acX:focus-visible{outline:2px solid #e53935;outline-offset:2px}
+      .alertasCamp .acItem{padding:4px 0;border-top:1px solid rgba(229,57,53,.18)}
+      .alertasCamp .acHora{font-variant-numeric:tabular-nums;font-weight:700;margin-right:6px}
+    </style>
+    <div id="alertasCamp" class="alertasCamp" role="alert" hidden></div>
 
     <!-- ====== RESUMEN ====== -->
     <div class="content view act" id="view-resumen">
@@ -1582,7 +1592,7 @@ tbody tr:hover .chev{color:var(--brand)}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
-<script src="app.js?v=159"></script>
+<script src="app.js?v=160"></script>
 <script src="ganancia.js?v=124"></script>
 </body>
 </html>
