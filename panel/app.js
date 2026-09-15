@@ -187,8 +187,13 @@ function nombreSirve(n){
   if(letras.length<3) return false;
   return !/^(cliente|clienta|sin nombre|no lo dio|no indica|no dio|pendiente|por confirmar|desconocid[oa]?|anonimo|anonima|n\/a|na|senor|senora|sr|sra|srta|don|dona|usuario|whatsapp)$/i.test(t.replace(/[.]/g,''));
 }
-function celdaAprob(k,montadoHtml,rid,faltaDir,prog){
+function celdaAprob(k,montadoHtml,rid,faltaDir,prog,enRevision){
   if(montadoHtml) return montadoHtml;
+  /* James 15-09: el panel decia "Corregir direccion" apenas entraba la venta, antes de que
+     el inspector la revisara (pasa a los 15 min, por si el cliente sigue escribiendo), y
+     el terminaba corrigiendo a mano lo que el inspector iba a arreglar solo. Mientras no
+     haya veredicto, se avisa que esta en revision. Si despues sigue faltando, vuelve el rojo. */
+  if(faltaDir && enRevision) return '<span class="st st-ab" style="background:#eef1f6;color:#3c4a5e"><i style="background:#7a8699"></i>⏳ El inspector la está revisando</span>';
   if(faltaDir==='nom') return '<span class="st st-ab" style="background:#fdeaea;color:#a01818"><i style="background:#c62828"></i>Falta el nombre</span>';
   if(faltaDir) return '<span class="st st-ab" style="background:#fdeaea;color:#a01818"><i style="background:#c62828"></i>Corregir dirección</span>';
   /* Programada: NO se aprueba todavía. Vuelve sola a Pendientes 3 días antes, y ahí
@@ -1251,8 +1256,21 @@ function dirSinUbicar(dir,nota){
   return true;
 }
 /* aviso rojo: el repartidor no tiene como encontrarla */
-function bloqueSinUbicar(dir,montado,nota){
+/* "El inspector la esta revisando": solo mientras no hay veredicto Y dentro de los primeros
+   30 min. El inspector pasa a los 15 min de la venta (mas su vuelta de 5); si a los 30 no hay
+   veredicto -se cayo, o es una venta que el inspector no revisa, como las de pagina- vuelve el
+   aviso rojo de siempre, para que ninguna quede gris para siempre. */
+function enRevisionInsp(nivel,creadoMs){
+  return String(nivel||'')==='' && Number(creadoMs)>0 && (Date.now()-Number(creadoMs)) < 30*60000;
+}
+function bloqueSinUbicar(dir,montado,nota,enRevision){
   if(!dirSinUbicar(dir,nota)) return '';
+  /* todavia sin veredicto del inspector: no se le pide a James que la corrija, porque el
+     inspector la va a arreglar leyendo la conversacion (15-09, Etelvina y Maria Isabel) */
+  if(!montado && enRevision===true) return '<div style="margin:0 0 12px;padding:11px 13px;border-radius:11px;background:#eef1f6;'
+    +'border:1px solid #c9d1dd;border-left:5px solid #7a8699">'
+    +'<div style="font-size:11.5px;font-weight:800;letter-spacing:.4px;color:#3c4a5e;margin-bottom:3px">⏳ EL INSPECTOR LA ESTÁ REVISANDO</div>'
+    +'<div style="font-size:13.5px;font-weight:600;color:#3c4a5e;line-height:1.35">A la dirección le falta el número. El inspector revisa la conversación a los 15 minutos de la venta y la corrige solo si el cliente dio el número, el local o una referencia. Si después sigue faltando, aquí te avisa.</div></div>';
   return '<div style="margin:0 0 12px;padding:11px 13px;border-radius:11px;background:#fdeaea;'
     +'border:1px solid #e69a9a;border-left:5px solid #c62828">'
     +'<div style="font-size:11.5px;font-weight:800;letter-spacing:.4px;color:#a01818;margin-bottom:3px">SIN CÓMO UBICARLA</div>'
@@ -1583,7 +1601,7 @@ function renderAprobar(){
       <td>${esc(x.comuna||'—')}</td>
       <td>${x.cant}</td>
       <td class="money">${x.total}</td>
-      <td class="cell-aprob" onclick="event.stopPropagation()">${celdaAprob(x.k, x.st==='montado'?'<span class="st st-ok"><i></i>Montado</span>':'', x.rid||'', x.faltaDir, x.vuelve)}</td>
+      <td class="cell-aprob" onclick="event.stopPropagation()">${celdaAprob(x.k, x.st==='montado'?'<span class="st st-ok"><i></i>Montado</span>':'', x.rid||'', x.faltaDir, x.vuelve, enRevisionInsp(x.nivel, x.creadoMs))}</td>
       <td onclick="event.stopPropagation()"><a class="qr" style="text-decoration:none;cursor:pointer" onclick="crmAbrir('${x.tel}')">WhatsApp</a></td>
     </tr>`).join('');
 }
@@ -1612,7 +1630,7 @@ function verAprob(i){
     window._ventaAbierta={cli:o.cli,dir:o.dir+(o.ref?' - '+o.ref:''),region:o.region,tel:o.tel,prod:o.prod,cant:o.cant,precio:o.total};
   }else{
     document.getElementById('mBody').innerHTML=
-      bloqueRev(o)+bloqueNota(o.nota)+bloqueEspera(o.nota,o.montado)+bloqueSinUbicar(o.dir,o.montado,o.nota)+
+      bloqueRev(o)+bloqueNota(o.nota)+bloqueEspera(o.nota,o.montado)+bloqueSinUbicar(o.dir,o.montado,o.nota,enRevisionInsp(o.nivel,o.creadoMs))+
       fila('Canal','WhatsApp · '+(BOTNOM[o.bot]||''))+fila('País',{CL:'Chile',CO:'Colombia',PY:'Paraguay'}[o.loc]||'—')+
       fila('Producto',o.prod)+fila('Cantidad',o.cant+' unidades')+fila('Teléfono','+'+o.tel)+
       fila('Dirección',o.dir)+fila('Comuna / Ciudad',o.zona)+fila('Región / Depto.',o.region)+
