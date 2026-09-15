@@ -1552,7 +1552,7 @@ function renderAprobar(){
     /* rid = id de la fila. SIN esto el borrado se hacia por telefono+fecha y dos
        ventas del mismo cliente el mismo dia se borraban LAS DOS (paso el 3-09 con
        Maria Grandon). El servidor ya tiene el candado; solo hay que mandarle el id. */
-    items.push({k,raw:o,rid:o.rid||'',canal:'WhatsApp',cli:o.cli,tel:o.tel,fecha:o.fecha,prod:o.prod,color:'#0e8074',comuna:o.zona,cant:o.cant,total:o.precio,orden:o.orden,abono:!!o.abono,nota:o.nota||'',desde:o.desde||'',faltaDir:(/falta (direccion|numero)/i.test(String(o.estado||'')) && !dirSirve(o.dir)) ? true : (!nombreSirve(o.cli) ? 'nom' : false),
+    items.push({k,raw:o,rid:o.rid||'',canal:o.bot==='Redes'?redNombre(o.red):'WhatsApp',  /* James 15-09: las de redes decian WhatsApp */cli:o.cli,tel:o.tel,fecha:o.fecha,prod:o.prod,color:'#0e8074',comuna:o.zona,cant:o.cant,total:o.precio,orden:o.orden,abono:!!o.abono,nota:o.nota||'',desde:o.desde||'',faltaDir:(/falta (direccion|numero)/i.test(String(o.estado||'')) && !dirSirve(o.dir)) ? true : (!nombreSirve(o.cli) ? 'nom' : false),
       revision:o.revision||'',nivel:o.nivel||'',creadoMs:o.creadoMs||0,
       st:o.montado?'montado':(esAprobado(k)?'aprobado':(esRechazado(k)?'rechazado':'pendiente'))});
   });
@@ -1631,7 +1631,7 @@ function verAprob(i){
   }else{
     document.getElementById('mBody').innerHTML=
       bloqueRev(o)+bloqueNota(o.nota)+bloqueEspera(o.nota,o.montado)+bloqueSinUbicar(o.dir,o.montado,o.nota,enRevisionInsp(o.nivel,o.creadoMs))+
-      fila('Canal','WhatsApp · '+(BOTNOM[o.bot]||''))+fila('País',{CL:'Chile',CO:'Colombia',PY:'Paraguay'}[o.loc]||'—')+
+      fila('Canal',(o.bot==='Redes'?'Redes · '+redNombre(o.red)+' · ':'WhatsApp · ')+(BOTNOM[o.bot]||''))+fila('País',{CL:'Chile',CO:'Colombia',PY:'Paraguay'}[o.loc]||'—')+
       fila('Producto',o.prod)+fila('Cantidad',o.cant+' unidades')+fila('Teléfono','+'+o.tel)+
       fila('Dirección',o.dir)+fila('Comuna / Ciudad',o.zona)+fila('Región / Depto.',o.region)+
       filaRotulo(o.nota)+
