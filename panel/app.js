@@ -1564,10 +1564,31 @@ function bloqueRevYa(o,n,r){
 /* Que cuenta como DUDOSA: el revisor la marco ROJO (no aprobar), le falta el
    anticipo de $4.700, la nota dice que hay que escribirle al cliente, o le falta
    la direccion o el nombre. Todo lo demas pendiente es de verdad aprobable. */
+/* ZONA ROJA (James 16-09): donde mas se devuelve. La venta NO se bloquea: se va a
+   Dudosas con su aviso rojo y James revisa a mano el historial del cliente antes de
+   aprobar. Dos motivos, medidos con los pedidos cerrados de la tienda 241123:
+   - comuna con 6+ pedidos cerrados y 40%+ de devolucion (lista del 16-09, revisarla
+     cada semana con los datos nuevos). Promedio de la tienda: 24%.
+   - direccion rural o sin numero: 38% de devolucion contra 20% de las urbanas. */
+const ZONA_ROJA_COMUNAS={'SAN CARLOS':67,'COLINA':67,'LA SERENA':60,'TALCA':50,'PENALOLEN':50,
+  'NUEVA IMPERIAL':50,'LINARES':43,'LOS ANGELES':42,'COQUIMBO':40};
+const RURAL_RE=/\b(parcela|parcelas|sector|lote|loteo|sitio|km|kil[oó]metro|camino|fundo|hijuela|comunidad|rural|localidad|villorrio|ruta|chacra|predio|cruce|s\/n|sin n[uú]mero|campo)\b/i;
+/* retiro en sucursal: no tiene numero de calle pero no es rural */
+const SUCURSAL_RE=/oficina starken|sucursal|punto blue|agencia starken|retiro en/i;
+function normComuna(s){ return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase().replace(/\s+/g,' ').trim(); }
+function zonaRoja(x){
+  const o=(x&&x.raw)||{}; const m=[];
+  const c=normComuna(x.comuna||o.comuna||o.zona);
+  if(ZONA_ROJA_COMUNAS[c]) m.push('Comuna '+c+': '+ZONA_ROJA_COMUNAS[c]+'% de devolución');
+  const d=String(o.dir||'');
+  if(d && d!=='—' && !SUCURSAL_RE.test(d) && (RURAL_RE.test(d) || !/[0-9]/.test(d))) m.push('Dirección rural o sin número');
+  return m;
+}
 function esDudosa(x){
   /* lo que James movio a mano manda sobre la regla automatica */
   if(noDudSet().has(x.k)) return false;
   if(dudSet().has(x.k)) return true;
+  if(x.zr && x.zr.length) return true;
   if(String(x.nivel||'').toUpperCase()==='ROJO') return true;
   if(x.abono) return true;
   if(/ESCRIBIRLE|NO APROBAR|SIN APROBAR/i.test(String(x.revision||''))) return true;
@@ -1623,7 +1644,7 @@ function renderAprobar(){
      -el revisor la puso en rojo, le falta el anticipo, hay que escribirle al cliente,
      o no tiene direccion o nombre- se va a su propia pestaña. Pendientes queda solo
      con lo que de verdad esta para aprobar. No se borra nada: es solo otra vista. */
-  items.forEach(x=>{ x.dud = x.st==='pendiente' && !x.prog && esDudosa(x); });
+  items.forEach(x=>{ x.zr = x.st==='montado' ? [] : zonaRoja(x); x.dud = x.st==='pendiente' && !x.prog && esDudosa(x); });
   const nDud=items.filter(x=>x.dud).length;
   const bd=document.getElementById('numDud');
   if(bd){ bd.style.display=nDud?'':'none'; bd.textContent=nDud; }
@@ -1644,7 +1665,7 @@ function renderAprobar(){
   if(!arr.length){ tb.innerHTML='<tr><td colspan="8" class="vacio">'+(fAprob==='pend'?'Nada por aprobar. 🎉':(fAprob==='prog'?'Ninguna venta con fecha pedida por el cliente.':(fAprob==='dud'?'Ninguna venta dudosa.':'Sin ventas recientes.')))+'</td></tr>'; return; }
   tb.innerHTML=arr.slice(0,100).map((x,i)=>`
     <tr onclick="verAprob(${i})"${x.abono?' style="background:#fdecea"':(REV[x.nivel]&&REV[x.nivel].fila?' style="background:'+REV[x.nivel].fila+'"':'')}>
-      <td class="cli">${esc(x.cli)}${huellaBadge(x.tel)}${chipRev(x)}${x.abono?'<span style="display:inline-block;margin-left:6px;background:#c62828;color:#fff;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;vertical-align:middle">ANTICIPO SIN PAGAR</span>':''}${x.prog?'<span style="display:inline-block;margin-left:6px;background:#d97706;color:#fff;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;vertical-align:middle">📅 '+esc(x.desde)+' · en '+x.diasFalta+' días</span>':''}${x.nota?'<span style="display:inline-block;margin-left:6px;background:#e8a800;color:#3d2c00;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;vertical-align:middle">NOTA</span>':''}<small>${esc(x.fecha)} · +${x.tel}</small>${x.nota?'<small style="display:block;color:#8a6100;font-weight:700;white-space:normal;line-height:1.3;margin-top:2px">'+esc(x.nota)+'</small>':''}${motivoRev(x)}</td>
+      <td class="cli">${esc(x.cli)}${huellaBadge(x.tel)}${chipRev(x)}${x.abono?'<span style="display:inline-block;margin-left:6px;background:#c62828;color:#fff;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;vertical-align:middle">ANTICIPO SIN PAGAR</span>':''}${(x.zr&&x.zr.length)?'<span title="'+esc(x.zr.join(' · '))+'" style="display:inline-block;margin-left:6px;background:#b71c1c;color:#fff;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;vertical-align:middle">ZONA ROJA</span>':''}${x.prog?'<span style="display:inline-block;margin-left:6px;background:#d97706;color:#fff;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;vertical-align:middle">📅 '+esc(x.desde)+' · en '+x.diasFalta+' días</span>':''}${x.nota?'<span style="display:inline-block;margin-left:6px;background:#e8a800;color:#3d2c00;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;vertical-align:middle">NOTA</span>':''}<small>${esc(x.fecha)} · +${x.tel}</small>${x.nota?'<small style="display:block;color:#8a6100;font-weight:700;white-space:normal;line-height:1.3;margin-top:2px">'+esc(x.nota)+'</small>':''}${(x.zr&&x.zr.length)?'<small style="display:block;color:#b71c1c;font-weight:700;white-space:normal;line-height:1.3;margin-top:2px">Zona roja · '+esc(x.zr.join(' · '))+' · revisar historial antes de aprobar</small>':''}${motivoRev(x)}</td>
       <td>${x.canal}</td>
       <td><span class="pchip"><i style="background:${x.color}"></i>${esc(x.prod)}</span></td>
       <td>${esc(x.comuna||'—')}</td>
@@ -1659,8 +1680,9 @@ function verAprob(i){
   const x=(window._aprobF||[])[i]; if(!x) return; const o=x.raw||{};
   const fila=(k,v)=>`<div class="dl"><span class="k">${k}</span><span class="v">${esc(v)}</span></div>`;
   document.getElementById('mTitulo').textContent=o.cli||x.cli;
+  const zrHtml=(x.zr&&x.zr.length)?'<div style="background:#fdecea;border-left:4px solid #b71c1c;padding:10px 12px;border-radius:8px;margin-bottom:10px"><div style="color:#b71c1c;font-weight:800;font-size:12.5px;margin-bottom:4px">ZONA ROJA · revisar el historial del cliente antes de aprobar</div><div style="color:#7f1d1d;font-weight:600;line-height:1.4;white-space:normal">'+esc(x.zr.join(' · '))+'</div></div>':'';
   if(x.canal==='Página'){
-    document.getElementById('mBody').innerHTML=
+    document.getElementById('mBody').innerHTML=zrHtml+
       fila('Canal','Página · '+o.prod)+fila('Producto',o.prod)+fila('Cantidad',o.cant+' unidades')+
       fila('Teléfono','+'+o.tel)+(o.correo?fila('Correo',o.correo):'')+fila('Dirección',o.dir)+
       (o.ref?fila('Referencia',o.ref):'')+fila('Comuna',o.comuna)+fila('Región',o.region)+
@@ -1678,7 +1700,7 @@ function verAprob(i){
     }
     window._ventaAbierta={cli:o.cli,dir:o.dir+(o.ref?' - '+o.ref:''),region:o.region,tel:o.tel,prod:o.prod,cant:o.cant,precio:o.total};
   }else{
-    document.getElementById('mBody').innerHTML=
+    document.getElementById('mBody').innerHTML=zrHtml+
       bloqueRev(o)+bloqueNota(o.nota)+bloqueEspera(o.nota,o.montado)+bloqueSinUbicar(o.dir,o.montado,o.nota,enRevisionInsp(o.nivel,o.creadoMs))+
       fila('Canal',(o.bot==='Redes'?'Redes · '+redNombre(o.red)+' · ':'WhatsApp · ')+(BOTNOM[o.bot]||''))+fila('País',{CL:'Chile',CO:'Colombia',PY:'Paraguay'}[o.loc]||'—')+
       fila('Producto',o.prod)+fila('Cantidad',o.cant+' unidades')+fila('Teléfono','+'+o.tel)+
