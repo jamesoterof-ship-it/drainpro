@@ -84,6 +84,26 @@ function rechazSet(){ try{ return new Set(JSON.parse(localStorage.getItem('jaye_
 function guardarSet(n,s){ try{ localStorage.setItem(n, JSON.stringify([...s])); }catch(e){} }
 function esAprobado(k){ return aprobSet().has(k); }
 function esRechazado(k){ return rechazSet().has(k); }
+/* DUDOSAS a mano (James 16-09): "que yo mismo las pueda pasar". jaye_dud = las que
+   el mando a Dudosas; jaye_nodud = las que el devolvio a Pendientes aunque el revisor
+   las tenga en rojo. La verdad vive en el servidor (pedidos_dudosos) y se baja con
+   los aprobados, para que se vea igual en el celular y en el computador. */
+function dudSet(){ try{ return new Set(JSON.parse(localStorage.getItem('jaye_dud')||'[]')); }catch(e){ return new Set(); } }
+function noDudSet(){ try{ return new Set(JSON.parse(localStorage.getItem('jaye_nodud')||'[]')); }catch(e){ return new Set(); } }
+function marcarDudosa(k){
+  var d=dudSet(); d.add(k); guardarSet('jaye_dud',d);
+  var n=noDudSet(); if(n.delete(k)) guardarSet('jaye_nodud',n);
+  if(typeof toast==='function') toast('Pasó a Dudosas');
+  refrescarAprob();
+  fetch(URL_APROBAR,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:k,accion:'dudosa'})}).catch(function(){});
+}
+function quitarDudosa(k){
+  var n=noDudSet(); n.add(k); guardarSet('jaye_nodud',n);
+  var d=dudSet(); if(d.delete(k)) guardarSet('jaye_dud',d);
+  if(typeof toast==='function') toast('Volvió a Pendientes');
+  refrescarAprob();
+  fetch(URL_APROBAR,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:k,accion:'quitar-dudosa'})}).catch(function(){});
+}
 async function sincronizarAprob(){
   /* la verdad vive en el servidor: así ves lo mismo desde el celular y el computador */
   try{
@@ -96,6 +116,8 @@ async function sincronizarAprob(){
        localStorage del aparato: si la llave se borraba en el servidor, ese teléfono
        seguía escondiendo la venta para siempre (pasó con Maria Grandon el 3-09). */
     if(Array.isArray(j.rechazados)) guardarSet('jaye_rechaz', new Set(j.rechazados.map(String)));
+    if(Array.isArray(j.dudosos)) guardarSet('jaye_dud', new Set(j.dudosos.map(String)));
+    if(Array.isArray(j.nodudosos)) guardarSet('jaye_nodud', new Set(j.nodudosos.map(String)));
     refrescarAprob();
   }catch(e){}
 }
@@ -103,6 +125,7 @@ function refrescarAprob(){ if(typeof renderPedidosWeb==='function') renderPedido
 function aprobar(k){
   var a=aprobSet(); a.add(k); guardarSet('jaye_aprob',a);
   var r=rechazSet(); if(r.delete(k)) guardarSet('jaye_rechaz',r);   // aprobar manda sobre rechazar
+  var dd=dudSet(); if(dd.delete(k)) guardarSet('jaye_dud',dd);      // y sobre dudosa
   refrescarAprob();
   /* El servidor es el que manda: si no confirma, se reintenta y se avisa.
      Antes el error se tragaba en silencio y el pedido quedaba "Aprobado" sin montarse. */
@@ -187,21 +210,23 @@ function nombreSirve(n){
   if(letras.length<3) return false;
   return !/^(cliente|clienta|sin nombre|no lo dio|no indica|no dio|pendiente|por confirmar|desconocid[oa]?|anonimo|anonima|n\/a|na|senor|senora|sr|sra|srta|don|dona|usuario|whatsapp)$/i.test(t.replace(/[.]/g,''));
 }
-function celdaAprob(k,montadoHtml,rid,faltaDir,prog,enRevision){
+/* el boton para mover la venta entre Pendientes y Dudosas, a mano */
+var BTN_DUD='border:1px solid #c62828;background:#fff;color:#c62828;border-radius:8px;padding:4px 9px;font-weight:700;font-size:11.5px;cursor:pointer;margin-left:4px';
+var BTN_NODUD='border:1px solid #5f6368;background:#fff;color:#3c4043;border-radius:8px;padding:4px 9px;font-weight:700;font-size:11.5px;cursor:pointer;margin-left:4px';
+function btnDud(k,dud){
+  return dud ? '<button style="'+BTN_NODUD+'" title="Devolver a Pendientes" onclick="quitarDudosa(&quot;'+k+'&quot;)">↩ Pendiente</button>'
+             : '<button style="'+BTN_DUD+'" title="Pasar a la pestaña Dudosas, sin borrarla" onclick="marcarDudosa(&quot;'+k+'&quot;)">⚠ Dudosa</button>';
+}
+function celdaAprob(k,montadoHtml,rid,faltaDir,prog,enRevision,dud){
   if(montadoHtml) return montadoHtml;
-  /* James 15-09: el panel decia "Corregir direccion" apenas entraba la venta, antes de que
-     el inspector la revisara (pasa a los 15 min, por si el cliente sigue escribiendo), y
-     el terminaba corrigiendo a mano lo que el inspector iba a arreglar solo. Mientras no
-     haya veredicto, se avisa que esta en revision. Si despues sigue faltando, vuelve el rojo. */
-  if(faltaDir && enRevision) return '<span class="st st-ab" style="background:#eef1f6;color:#3c4a5e"><i style="background:#7a8699"></i>⏳ El inspector la está revisando</span>';
-  if(faltaDir==='nom') return '<span class="st st-ab" style="background:#fdeaea;color:#a01818"><i style="background:#c62828"></i>Falta el nombre</span>';
-  if(faltaDir) return '<span class="st st-ab" style="background:#fdeaea;color:#a01818"><i style="background:#c62828"></i>Corregir dirección</span>';
-  /* Programada: NO se aprueba todavía. Vuelve sola a Pendientes 3 días antes, y ahí
-     James la aprueba después de avisarle al cliente que su pedido va en camino. */
-  if(prog) return '<span class="st st-ab" style="background:#fff3e2;color:#b45309"><i style="background:#d97706"></i>Vuelve el '+esc(prog)+'</span>';
   if(esAprobado(k)) return '<span class="st st-rec"><i></i>Aprobado ⏳</span>';
   if(esRechazado(k)) return '<span class="st st-ab"><i></i>Eliminado</span><button class="b-desh" onclick="deshacerRechazo(&quot;'+k+'&quot;)">Deshacer</button>';
-  return '<button class="b-apr" onclick="aprobar(&quot;'+k+'&quot;)">✓ Aprobar</button><button class="b-rech" title="Eliminar — sale de la lista y no se monta en Dropi" onclick="eliminar(&quot;'+k+'&quot;,&quot;'+(rid||'')+'&quot;)">🗑</button>';
+  var mover=prog?'':btnDud(k,dud);
+  if(faltaDir && enRevision) return '<span class="st st-ab" style="background:#eef1f6;color:#3c4a5e"><i style="background:#7a8699"></i>⏳ El inspector la está revisando</span>'+mover;
+  if(faltaDir==='nom') return '<span class="st st-ab" style="background:#fdeaea;color:#a01818"><i style="background:#c62828"></i>Falta el nombre</span>'+mover;
+  if(faltaDir) return '<span class="st st-ab" style="background:#fdeaea;color:#a01818"><i style="background:#c62828"></i>Corregir dirección</span>'+mover;
+  if(prog) return '<span class="st st-ab" style="background:#fff3e2;color:#b45309"><i style="background:#d97706"></i>Vuelve el '+esc(prog)+'</span>';
+  return '<button class="b-apr" onclick="aprobar(&quot;'+k+'&quot;)">✓ Aprobar</button>'+mover+'<button class="b-rech" title="Eliminar — sale de la lista y no se monta en Dropi" onclick="eliminar(&quot;'+k+'&quot;,&quot;'+(rid||'')+'&quot;)">🗑</button>';
 }
 
 const PAGINAS=[
@@ -1536,6 +1561,21 @@ function bloqueRevYa(o,n,r){
     +'<div style="color:'+r.bg+';font-weight:800;font-size:12.5px;margin-bottom:4px">'+r.et+'</div>'
     +'<div style="color:'+r.txt+';font-weight:600;line-height:1.4;white-space:normal">'+esc(o.revision||'')+'</div></div>';
 }
+/* Que cuenta como DUDOSA: el revisor la marco ROJO (no aprobar), le falta el
+   anticipo de $4.700, la nota dice que hay que escribirle al cliente, o le falta
+   la direccion o el nombre. Todo lo demas pendiente es de verdad aprobable. */
+function esDudosa(x){
+  /* lo que James movio a mano manda sobre la regla automatica */
+  if(noDudSet().has(x.k)) return false;
+  if(dudSet().has(x.k)) return true;
+  if(String(x.nivel||'').toUpperCase()==='ROJO') return true;
+  if(x.abono) return true;
+  if(/ESCRIBIRLE|NO APROBAR|SIN APROBAR/i.test(String(x.revision||''))) return true;
+  const e=String((x.raw&&x.raw.estado)||'');
+  if(/ABONO PENDIENTE|FALTA (NUMERO|NÚMERO|DIRECCION|DIRECCIÓN)|TRABAD/i.test(e)) return true;
+  if(x.faltaDir) return true;
+  return false;
+}
 function renderAprobar(){
   const tb=document.getElementById('tbodyAprobar'); if(!tb) return;
   const dosDias=Date.now()-2*864e5;
@@ -1579,7 +1619,15 @@ function renderAprobar(){
   const nProg=items.filter(x=>x.prog).length;
   const bp=document.getElementById('numProg');
   if(bp){ bp.style.display=nProg?'':'none'; bp.textContent=nProg; }
-  const nPend=items.filter(x=>x.st==='pendiente' && !x.prog).length;
+  /* DUDOSAS (James 16-09): lo que esta pendiente pero NO se puede aprobar tal cual
+     -el revisor la puso en rojo, le falta el anticipo, hay que escribirle al cliente,
+     o no tiene direccion o nombre- se va a su propia pestaña. Pendientes queda solo
+     con lo que de verdad esta para aprobar. No se borra nada: es solo otra vista. */
+  items.forEach(x=>{ x.dud = x.st==='pendiente' && !x.prog && esDudosa(x); });
+  const nDud=items.filter(x=>x.dud).length;
+  const bd=document.getElementById('numDud');
+  if(bd){ bd.style.display=nDud?'':'none'; bd.textContent=nDud; }
+  const nPend=items.filter(x=>x.st==='pendiente' && !x.prog && !x.dud).length;
   const bg=document.getElementById('badgeAprobar');
   if(bg){ bg.style.display=nPend?'':'none'; bg.textContent=nPend; }
   agRiesgoCalc(items);
@@ -1589,10 +1637,11 @@ function renderAprobar(){
      venta de la manana no se hundiera. James lo pidio al reves el 07-09: al abrir
      el panel quiere ver primero lo que acaba de entrar. */
   let arr=items.sort((a,b)=>b.orden-a.orden);
-  if(fAprob==='pend')  arr=arr.filter(x=>x.st==='pendiente' && !x.prog);
+  if(fAprob==='pend')  arr=arr.filter(x=>x.st==='pendiente' && !x.prog && !x.dud);
+  if(fAprob==='dud')   arr=arr.filter(x=>x.dud);
   if(fAprob==='prog'){ arr=arr.filter(x=>x.prog).sort((a,b)=>Date.parse(a.desde)-Date.parse(b.desde)); }
   window._aprobF=arr;
-  if(!arr.length){ tb.innerHTML='<tr><td colspan="8" class="vacio">'+(fAprob==='pend'?'Nada por aprobar. 🎉':(fAprob==='prog'?'Ninguna venta con fecha pedida por el cliente.':'Sin ventas recientes.'))+'</td></tr>'; return; }
+  if(!arr.length){ tb.innerHTML='<tr><td colspan="8" class="vacio">'+(fAprob==='pend'?'Nada por aprobar. 🎉':(fAprob==='prog'?'Ninguna venta con fecha pedida por el cliente.':(fAprob==='dud'?'Ninguna venta dudosa.':'Sin ventas recientes.')))+'</td></tr>'; return; }
   tb.innerHTML=arr.slice(0,100).map((x,i)=>`
     <tr onclick="verAprob(${i})"${x.abono?' style="background:#fdecea"':(REV[x.nivel]&&REV[x.nivel].fila?' style="background:'+REV[x.nivel].fila+'"':'')}>
       <td class="cli">${esc(x.cli)}${huellaBadge(x.tel)}${chipRev(x)}${x.abono?'<span style="display:inline-block;margin-left:6px;background:#c62828;color:#fff;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;vertical-align:middle">ANTICIPO SIN PAGAR</span>':''}${x.prog?'<span style="display:inline-block;margin-left:6px;background:#d97706;color:#fff;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;vertical-align:middle">📅 '+esc(x.desde)+' · en '+x.diasFalta+' días</span>':''}${x.nota?'<span style="display:inline-block;margin-left:6px;background:#e8a800;color:#3d2c00;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;vertical-align:middle">NOTA</span>':''}<small>${esc(x.fecha)} · +${x.tel}</small>${x.nota?'<small style="display:block;color:#8a6100;font-weight:700;white-space:normal;line-height:1.3;margin-top:2px">'+esc(x.nota)+'</small>':''}${motivoRev(x)}</td>
@@ -1601,7 +1650,7 @@ function renderAprobar(){
       <td>${esc(x.comuna||'—')}</td>
       <td>${x.cant}</td>
       <td class="money">${x.total}</td>
-      <td class="cell-aprob" onclick="event.stopPropagation()">${celdaAprob(x.k, x.st==='montado'?'<span class="st st-ok"><i></i>Montado</span>':'', x.rid||'', x.faltaDir, x.vuelve, enRevisionInsp(x.nivel, x.creadoMs))}</td>
+      <td class="cell-aprob" onclick="event.stopPropagation()">${celdaAprob(x.k, x.st==='montado'?'<span class="st st-ok"><i></i>Montado</span>':'', x.rid||'', x.faltaDir, x.vuelve, enRevisionInsp(x.nivel, x.creadoMs), !!x.dud)}</td>
       <td onclick="event.stopPropagation()"><a class="qr" style="text-decoration:none;cursor:pointer" onclick="crmAbrir('${x.tel}')">WhatsApp</a></td>
     </tr>`).join('');
 }
