@@ -1,7 +1,13 @@
 /* Pestaña GANANCIA — la plata del dueño, aparte de las pantallas de operación.
    Se mide por lo que Dropi ENTREGÓ, no por lo vendido: una venta se puede
    perder en el camino, una entrega ya es plata cobrada al cliente.
-   Los datos salen de fin_caja_diaria, que se llena sola cada hora. */
+   Los datos salen de fin_caja_diaria, que se llena sola cada hora.
+   DEVOLUCIONES (James, 16-sep): Dropi cobra el flete de IDA de la billetera al
+   crear el pedido; si el pedido vuelve, ese flete se pierde (el de regreso no
+   se cobra). Antes esto no se restaba en ningun lado y TE QUEDA salia inflado:
+   en septiembre decia +4,2 millones y lo real era -0,3. El webhook caja-jaye
+   ahora trae por dia `devoluciones` (pedidos) y `devol` (flete perdido en COP),
+   y `queda` ya viene con eso descontado. */
 (function () {
   var URL_CAJA = 'https://n8n-production-8a42.up.railway.app/webhook/caja-jaye';
   var SUELDO_MES = 5000000;
@@ -57,7 +63,7 @@
          que el dia sin entregas tenia plata. */
       var tbv = document.querySelector('#tablaGan tbody');
       var esHoy = (rangoGan === 'hoy');
-      if (tbv) tbv.innerHTML = '<tr><td colspan="7" class="vacio">'
+      if (tbv) tbv.innerHTML = '<tr><td colspan="8" class="vacio">'
         + (esHoy ? 'Todavía no hay entregas registradas hoy. Dropi las va marcando durante el día.'
                  : 'No hay entregas en esa fecha.') + '</td></tr>';
       var tfv = document.querySelector('#tablaGan tfoot'); if (tfv) tfv.innerHTML = '';
@@ -71,36 +77,42 @@
       var sv = document.getElementById('ganChartSub'); if (sv) sv.textContent = '—';
       return;
     }
-    var t = { e: 0, en: 0, m: 0, c: 0, s: 0, q: 0 };
+    var t = { e: 0, en: 0, m: 0, c: 0, s: 0, q: 0, d: 0, dn: 0 };
     arr.forEach(function (x) {
       t.e += num(x.entregas); t.en += num(x.entra); t.m += num(x.meta);
       t.c += num(x.camila); t.s += num(x.sueldo); t.q += num(x.queda);
+      t.d += num(x.devol); t.dn += num(x.devoluciones);
     });
-    var pctMeta = t.en ? Math.round(t.m / t.en * 100) : 0;
-    var porEnt = t.e ? t.en / t.e : 0;
+    /* lo que de verdad queda de Dropi: lo liquidado menos el flete de lo que volvio */
+    var neto = t.en - t.d;
+    var pctMeta = neto > 0 ? Math.round(t.m / neto * 100) : 0;
+    var porEnt = t.e ? neto / t.e : 0;
+    var tasaDev = (t.e + t.dn) ? Math.round(t.dn / (t.e + t.dn) * 100) : 0;
     var k = document.getElementById('ganKpis');
     if (k) k.innerHTML =
       tar('Te liquida Dropi', pes(t.en), arr.length + (arr.length === 1 ? ' día · ' : ' días · ') + t.e + ' entregas', '') +
-      tar('Meta', pes(t.m), pctMeta + '% de lo que entra', pctMeta > 55 ? 'mal' : '') +
+      tar('Devoluciones', '−' + pes(t.d), t.dn + ' pedidos volvieron · ' + tasaDev + '% · flete perdido', t.d > 0 ? 'mal' : '') +
+      tar('Meta', pes(t.m), pctMeta + '% de lo que queda de Dropi', pctMeta > 55 ? 'mal' : '') +
       tar('Bots', pes(t.c), 'Camila, Carlos y 3 más', '') +
       tar('Tu sueldo', pes(t.s), 'de los $5.000.000 del mes', '') +
       tar('TE QUEDA', pes(t.q), 'ya con tu sueldo descontado', t.q >= 0 ? 'ok' : 'mal') +
-      tar('Cada entrega deja', pes(porEnt), 'de lo que te liquida Dropi', '');
+      tar('Cada entrega deja', pes(porEnt), 'ya descontadas las devoluciones', '');
 
     /* el mes contra el sueldo */
     var mes = dias.filter(function (x) { return x.dia.slice(0, 7) === HOY.slice(0, 7); });
-    var qMes = 0, enMes = 0, mMes = 0;
-    mes.forEach(function (x) { qMes += num(x.queda); enMes += num(x.entra); mMes += num(x.meta); });
+    var qMes = 0, enMes = 0, mMes = 0, dMes = 0;
+    mes.forEach(function (x) { qMes += num(x.queda); enMes += num(x.entra); mMes += num(x.meta); dMes += num(x.devol); });
     var av = '';
     if (mes.length) {
       var restan = Math.max(1, 30 - mes.length);
+      var detalle = 'En ' + mes.length + ' días Dropi liquidó ' + pes(enMes) + ', las devoluciones se llevaron '
+        + pes(dMes) + ' en flete y Meta ' + pes(mMes) + '.';
       if (qMes >= 0) {
-        av = caja('#179f6b', 'El mes va cubierto.', 'En ' + mes.length + ' días entraron ' + pes(enMes) +
-          ', se fueron ' + pes(mMes) + ' en Meta, y después de tus ' + pes(SUELDO_MES) +
+        av = caja('#179f6b', 'El mes va cubierto.', detalle + ' Después de tus ' + pes(SUELDO_MES) +
           ' queda <b>' + pes(qMes) + '</b> libre para reinvertir.');
       } else {
         av = caja('#e8a800', 'Faltan ' + pes(-qMes) + ' para cubrir tu sueldo este mes.',
-          'Quedan ' + restan + ' días, o sea ' + pes(-qMes / restan) + ' por día.');
+          detalle + ' Quedan ' + restan + ' días, o sea ' + pes(-qMes / restan) + ' por día.');
       }
     }
     var rojos = arr.filter(function (x) { return num(x.queda) < 0; }).length;
@@ -118,20 +130,22 @@
       var porMes = {};
       arr.forEach(function (x) {
         var k = String(x.dia).slice(0, 7);
-        if (!porMes[k]) porMes[k] = { e:0, en:0, m:0, c:0, s:0, d:0 };
+        if (!porMes[k]) porMes[k] = { e:0, en:0, m:0, c:0, s:0, d:0, dv:0, dn:0 };
         porMes[k].e += num(x.entregas); porMes[k].en += num(x.entra);
         porMes[k].m += num(x.meta); porMes[k].c += num(x.camila);
         porMes[k].s += num(x.sueldo); porMes[k].d += 1;
+        porMes[k].dv += num(x.devol); porMes[k].dn += num(x.devoluciones);
       });
       var claves = Object.keys(porMes).sort().reverse();
       if (tb) tb.innerHTML = claves.map(function (k) {
-        var v = porMes[k], q = v.en - v.m - v.c - v.s;
+        var v = porMes[k], q = v.en - v.dv - v.m - v.c - v.s;
         var pp = k.split('-');
         return '<tr>'
           + '<td><b>' + MESL[+pp[1]-1] + ' ' + pp[0] + '</b><small style="display:block;color:var(--ink-3)">'
           + v.d + ' días · ' + (v.d ? Math.round(v.e/v.d) : 0) + ' entregas al día</small></td>'
           + '<td style="text-align:right">' + v.e + '</td>'
           + '<td style="text-align:right">' + pes(v.en) + '</td>'
+          + celDev(v.dv, v.dn)
           + '<td style="text-align:right;color:var(--ink-2)">−' + pes(v.m) + '</td>'
           + '<td style="text-align:right;color:var(--ink-2)">−' + pes(v.c) + '</td>'
           + '<td style="text-align:right;color:var(--ink-2)">−' + pes(v.s) + '</td>'
@@ -140,17 +154,19 @@
       var tfm = document.querySelector('#tablaGan tfoot');
       if (tfm) tfm.innerHTML = '<tr style="font-weight:800;background:var(--surface-2)"><td>Todos los meses</td>'
         + '<td style="text-align:right">' + t.e + '</td><td style="text-align:right">' + pes(t.en) + '</td>'
+        + celDev(t.d, t.dn, true)
         + '<td style="text-align:right">−' + pes(t.m) + '</td><td style="text-align:right">−' + pes(t.c) + '</td>'
         + '<td style="text-align:right">−' + pes(t.s) + '</td>'
         + '<td style="text-align:right;color:' + (t.q >= 0 ? 'var(--green)' : 'var(--red)') + '">' + pes(t.q) + '</td></tr>';
     }
     else if (tb) tb.innerHTML = arr.map(function (x) {
-      /* TE QUEDA es lo ultimo: despues de Meta, de los bots y del sueldo. */
-      var q = num(x.entra) - num(x.meta) - num(x.camila) - num(x.sueldo);
+      /* TE QUEDA es lo ultimo: despues de devoluciones, Meta, bots y sueldo. */
+      var q = num(x.entra) - num(x.devol) - num(x.meta) - num(x.camila) - num(x.sueldo);
       return '<tr' + (x.dia === HOY ? ' style="background:var(--brand-tint)"' : '') + '>'
         + '<td><b>' + corto(x.dia) + '</b><small style="display:block;color:var(--ink-3)">' + diaSem(x.dia) + (x.dia === HOY ? ' · hoy' : '') + '</small></td>'
         + '<td style="text-align:right">' + num(x.entregas) + '</td>'
         + '<td style="text-align:right">' + pes(x.entra) + '</td>'
+        + celDev(x.devol, x.devoluciones)
         + '<td style="text-align:right;color:var(--ink-2)">−' + pes(x.meta) + '</td>'
         + '<td style="text-align:right;color:var(--ink-2)">−' + pes(x.camila) + '</td>'
         + '<td style="text-align:right;color:var(--ink-2)">−' + pes(x.sueldo) + '</td>'
@@ -160,6 +176,7 @@
     /* en "Por mes" el pie ya lo escribio el bloque de arriba; no se pisa */
     if (tf && rangoGan !== 'mes') tf.innerHTML = '<tr style="font-weight:800;background:var(--surface-2)"><td>Total</td>'
       + '<td style="text-align:right">' + t.e + '</td><td style="text-align:right">' + pes(t.en) + '</td>'
+      + celDev(t.d, t.dn, true)
       + '<td style="text-align:right">−' + pes(t.m) + '</td><td style="text-align:right">−' + pes(t.c) + '</td>'
       + '<td style="text-align:right">−' + pes(t.s) + '</td>'
       + '<td style="text-align:right;color:' + (t.q >= 0 ? 'var(--green)' : 'var(--red)') + '">' + pes(t.q) + '</td></tr>';
@@ -170,6 +187,15 @@
 
     grafico(arr);
     plan(porEnt);
+  }
+
+  /* celda de devoluciones: el flete perdido en rojo y debajo cuantos pedidos volvieron */
+  function celDev(monto, pedidos, pie) {
+    var m = num(monto), p = num(pedidos);
+    if (!m && !p) return '<td style="text-align:right;color:var(--ink-3)">—</td>';
+    return '<td style="text-align:right;color:var(--red)">−' + pes(m)
+      + (pie ? '' : '<small style="display:block;color:var(--ink-3)">' + p + (p === 1 ? ' pedido' : ' pedidos') + '</small>')
+      + '</td>';
   }
 
   function tar(l, v, n, cls) {
@@ -208,6 +234,8 @@
       series: [
         { name: 'Entra', type: 'bar', data: d.map(function (x) { return num(x.entra); }),
           itemStyle: { color: '#179f6b', borderRadius: [4, 4, 0, 0] }, barMaxWidth: 26 },
+        { name: 'Devoluciones', type: 'bar', data: d.map(function (x) { return num(x.devol); }),
+          itemStyle: { color: '#e0444b', borderRadius: [4, 4, 0, 0] }, barMaxWidth: 26 },
         { name: 'Meta', type: 'bar', data: d.map(function (x) { return num(x.meta); }),
           itemStyle: { color: '#3056c9', borderRadius: [4, 4, 0, 0] }, barMaxWidth: 26 },
         { name: 'Queda', type: 'line', smooth: true, data: d.map(function (x) { return num(x.queda); }),
@@ -227,9 +255,10 @@
       { n: 'Actual', e: 35, m: 600000 },
       { n: 'Escalado', e: 40, m: 700000 },
     ];
-    /* La cuenta va SOLO con lo entregado, que es la plata que Dropi liquida.
-       Las devoluciones no se restan aparte: lo que se cobra por una entrega ya
-       viene neto de flete y de costo del producto. */
+    /* porEnt ya viene con las devoluciones descontadas: es lo que de verdad deja
+       cada entrega despues de pagar el flete de los pedidos que volvieron.
+       (Antes aca decia que no hacia falta restarlas, y era falso: Dropi cobra el
+       flete de ida de cada pedido, se entregue o no.) */
     var mejor = 0, mq = -Infinity;
     ESC.forEach(function (x, i) {
       x.entra = x.e * 30 * porEnt;
@@ -268,7 +297,7 @@
       pintarGanancia();
     }).catch(function () {
       var tb = document.querySelector('#tablaGan tbody');
-      if (tb) tb.innerHTML = '<tr><td colspan="7" class="vacio">No se pudo cargar la caja.</td></tr>';
+      if (tb) tb.innerHTML = '<tr><td colspan="8" class="vacio">No se pudo cargar la caja.</td></tr>';
     });
   };
 
