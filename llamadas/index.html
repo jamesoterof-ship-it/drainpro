@@ -191,6 +191,7 @@ table.est{min-width:1500px}
     var E = norm(f.estado || f.s_estado);
     if (f.s_devolucion || E.indexOf('DEVOLUCI') >= 0) return { k: 'dev', t: 'Devolución', cls: 'c-dir' };
     if (f.s_entregado || E === 'ENTREGADO') return { k: 'ent', t: 'Entregado', cls: 'c-conf' };
+    if (E === 'NOVEDAD' && f.segunda) return { k: 'nov', t: 'Segunda novedad · va a devolución (no se llama)', cls: 'c-dir' };
     if (E === 'NOVEDAD') return { k: 'nov', t: f.pendiente ? 'En novedad · por llamar' : (/PENDIENTE JAMES/i.test(f.resultado_gestion || '') ? 'En novedad · decide James' : 'En novedad'), cls: 'c-warn' };
     if (E.indexOf('REPARTO') >= 0) return { k: 'rep', t: 'En reparto', cls: 'c-rep' };
     if (E.indexOf('OFICINA') >= 0 || E.indexOf('RETIRO') >= 0 || E.indexOf('SUCURSAL') >= 0) return { k: 'rep', t: 'En oficina de la transportadora', cls: 'c-rep' };
