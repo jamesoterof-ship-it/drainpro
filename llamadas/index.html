@@ -95,9 +95,9 @@ select:focus,input:focus,textarea:focus{outline:2px solid #b89b16;outline-offset
     '<header><div><h1>Llamadas de novedades</h1><div class="sub" id="sub">Cargando…</div></div>' +
     '<div class="filtros" id="filtros"></div><div class="spacer"></div><div class="estado" id="estado"></div></header>' +
     '<div id="aviso">Llama en orden de arriba hacia abajo. Elige el <b>resultado</b>, escribe la fecha, la dirección nueva y la <b>nota de la llamada</b>, y toca <b>Guardar</b>: se gestiona en Dropi en ese momento. ' +
-    'Aunque el cliente haya contestado el mensaje, igual llámalo para reforzar. Cuando una novedad se soluciona en Dropi, sale sola de la lista. Recuerda: el cliente paga al recibir. Nunca prometas día ni hora exacta. Nunca ofrezcas descuentos ni anular el pedido.</div>' +
+    'Aunque el cliente haya contestado el mensaje, igual llámalo para reforzar. Cuando una novedad se soluciona en Dropi, pasa sola a Seguimiento, donde se ve si salió a reparto, se entregó o se devolvió. Recuerda: el cliente paga al recibir. Nunca prometas día ni hora exacta. Nunca ofrezcas descuentos ni anular el pedido.</div>' +
     '<div class="wrap"><table><thead><tr>' +
-    '<th>Novedad</th><th>Motivo de la novedad</th><th>Aviso enviado (hora Chile)</th><th>Días en entrega</th><th>Lo que contestó al mensaje</th><th>Gestión ya hecha</th>' +
+    '<th>Novedad / estado actual</th><th>Motivo de la novedad</th><th>Aviso enviado (hora Chile)</th><th>Días en entrega</th><th>Lo que contestó al mensaje</th><th>Gestión ya hecha</th>' +
     '<th>Cliente</th><th>Teléfono</th><th>Dirección</th><th>Ciudad</th><th>Producto</th><th>Valor a pagar</th><th>Pedido Dropi</th><th>Guía</th>' +
     '<th class="am">Resultado de la llamada</th><th class="am">Fecha u horario que da</th><th class="am">Dirección nueva o referencia</th><th class="am nota">Nota de la llamada</th><th class="am"></th><th>Gestión en Dropi</th>' +
     '</tr></thead><tbody id="tb"></tbody></table></div>';
@@ -105,14 +105,12 @@ select:focus,input:focus,textarea:focus{outline:2px solid #b89b16;outline-offset
   var tb = document.getElementById('tb');
 
   function grupo(f){
-    if (!f.resultado) return f.pendiente ? 'llamar' : 'otras';
-    if (f.pendiente && (/no contesta/i.test(f.resultado) || /no respondi|rechaz|falta/i.test(f.gestion || ''))) return 'llamar';
-    return 'hechas';
+    return f.pendiente ? 'llamar' : 'seguimiento';
   }
   function pintarFiltros(){
-    var n = { llamar: 0, hechas: 0, todas: filas.length };
-    filas.forEach(function(f){ var g = grupo(f); if (g === 'llamar') n.llamar++; if (g === 'hechas') n.hechas++; });
-    var defs = [['llamar','Por llamar'],['hechas','Con resultado'],['todas','Todas']];
+    var n = { llamar: 0, seguimiento: 0, todas: filas.length };
+    filas.forEach(function(f){ n[grupo(f)]++; });
+    var defs = [['llamar','Por llamar'],['seguimiento','Seguimiento 5 días'],['todas','Todas']];
     document.getElementById('filtros').innerHTML = defs.map(function(d){ return '<button data-f="' + d[0] + '" class="' + (filtro === d[0] ? 'on' : '') + '">' + d[1] + ' · ' + n[d[0]] + '</button>'; }).join('');
     Array.prototype.forEach.call(document.querySelectorAll('#filtros button'), function(b){ b.onclick = function(){ filtro = b.getAttribute('data-f'); try { localStorage.setItem('jaye_llamadas_filtro', filtro); } catch (e) {} pintar(); }; });
   }
@@ -127,8 +125,14 @@ select:focus,input:focus,textarea:focus{outline:2px solid #b89b16;outline-offset
   function fila(f){
     var tel = String(f.telefono || '').replace(/\D/g, '').slice(-9);
     var esDir = /direcci/i.test(f.que_hacer);
-    var conf = /contest/i.test(f.que_hacer);
-    var chip = !f.pendiente && !f.resultado ? '<span class="chip c-no">No llamar: escribió que no quiere</span>' : '<span class="chip ' + (conf ? 'c-conf' : (esDir ? 'c-dir' : 'c-rep')) + '">' + esc(f.que_hacer) + '</span>';
+    var chip;
+    if (f.pendiente) chip = '<span class="chip ' + (esDir ? 'c-dir' : 'c-rep') + '">' + esc(f.que_hacer) + '</span>';
+    else {
+      var e = String(f.estado || '').toUpperCase().replace(/_/g, ' ');
+      var cls = /ENTREGADO/.test(e) ? 'c-conf' : (/DEVOLUCI|RECHAZ/.test(e) ? 'c-dir' : (/REPARTO/.test(e) ? 'c-rep' : 'c-no'));
+      var txt = /ENTREGADO/.test(e) ? 'Entregado' + (f.entregado ? ' ' + f.entregado : '') : (/DEVOLUCI/.test(e) ? 'Devolución' : (/REPARTO/.test(e) ? 'En reparto' : (e === 'NOVEDAD SOLUCIONADA' ? 'Reprogramada, esperando reparto' : (e === 'NOVEDAD' ? (/PENDIENTE JAMES/i.test(f.resultado_gestion || '') ? 'Frenada: decide James' : 'Novedad') : e.charAt(0) + e.slice(1).toLowerCase()))));
+      chip = '<span class="chip ' + cls + '">' + esc(txt) + '</span>';
+    }
     var contesto = f.contesto ? '<div class="resp">Se le envió mensaje y contestó:</div>' + esc(f.contesto).split(String.fromCharCode(10)).join('<br>') : 'No contestó el mensaje' + (f.ultimo_msg ? '<div class="sub">Último mensaje antes: ' + esc(f.ultimo_msg_h) + ': ' + esc(String(f.ultimo_msg).slice(0, 120)) + '</div>' : '');
     var opciones = '<option value="">Elegir…</option>' + RESULTADOS.map(function(r){ return '<option' + (f.resultado === r ? ' selected' : '') + '>' + esc(r) + '</option>'; }).join('');
     return '<tr data-id="' + esc(f.pedido) + '" class="' + (f.resultado ? 'guardada' : '') + '">' +
@@ -159,7 +163,7 @@ select:focus,input:focus,textarea:focus{outline:2px solid #b89b16;outline-offset
   function pintar(){
     pintarFiltros();
     var lista = filas.filter(function(f){ return filtro === 'todas' || grupo(f) === filtro; });
-    if (!lista.length) { tb.innerHTML = '<tr><td colspan="20" class="vacio">' + (filtro === 'llamar' ? 'No hay novedades por llamar ahora.' : 'Nada por aquí.') + '</td></tr>'; return; }
+    if (!lista.length) { tb.innerHTML = '<tr><td colspan="20" class="vacio">' + (filtro === 'llamar' ? 'No hay novedades por llamar ahora.' : 'Sin novedades en seguimiento.') + '</td></tr>'; return; }
     tb.innerHTML = lista.map(fila).join('');
     Array.prototype.forEach.call(tb.querySelectorAll('tr[data-id]'), function(tr){
       var id = tr.getAttribute('data-id');
