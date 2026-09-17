@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Llamadas de novedades · Jaye Group</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📞</text></svg>">
+<style>
+:root{--bg:#f4f5f7;--card:#fff;--ink:#1d2330;--ink2:#5b6475;--line:#dde1e8;--head:#2f343c;--amarillo:#fff4c2;--amarillo2:#f3e39a;--ok:#e3f4ea;--okt:#17663a;--warn:#fdf0d9;--warnt:#8a5300;--mal:#fde6e4;--malt:#9b1c1c;--azul:#1f6fb2;--gris:#eef0f3}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:var(--ink);background:var(--bg)}
+header{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding:12px 16px;background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+h1{font-size:16px;margin:0;font-weight:700}
+.sub{color:var(--ink2);font-size:12px}
+.filtros{display:flex;gap:6px;flex-wrap:wrap}
+.filtros button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:5px 12px;font-size:12px;cursor:pointer;color:var(--ink)}
+.filtros button.on{background:var(--head);color:#fff;border-color:var(--head)}
+.spacer{flex:1}
+.estado{font-size:12px;color:var(--ink2)}
+#aviso{margin:10px 16px 0;padding:10px 12px;border-radius:8px;background:var(--gris);color:var(--ink2);font-size:12px;line-height:1.5}
+.wrap{margin:12px 16px 24px;background:var(--card);border:1px solid var(--line);border-radius:8px;overflow:auto;max-height:calc(100vh - 150px)}
+table{border-collapse:separate;border-spacing:0;min-width:1900px;width:100%}
+th,td{border-bottom:1px solid var(--line);border-right:1px solid var(--line);padding:6px 8px;vertical-align:top;text-align:left}
+th{position:sticky;top:0;background:var(--head);color:#fff;font-size:12px;font-weight:700;z-index:2;white-space:nowrap}
+th.am{background:#e0c64f;color:#2b2300}
+td.am{background:var(--amarillo)}
+tr.guardada td.am{background:#f7f0cf}
+td.fija,th.fija{position:sticky;left:0;z-index:1;background:inherit}
+th.fija{z-index:3;background:var(--head)}
+tbody tr{background:#fff}
+tbody tr:nth-child(even){background:#fafbfc}
+td.fija{background:inherit;min-width:190px;max-width:220px}
+.nom{font-weight:700}
+.chip{display:inline-block;padding:2px 7px;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap}
+.c-dir{background:var(--mal);color:var(--malt)}
+.c-rep{background:#e6eefb;color:#1b4f9c}
+.c-no{background:var(--gris);color:var(--ink2)}
+.tel a{color:var(--azul);text-decoration:none;font-weight:700;white-space:nowrap}
+.wa{display:inline-block;margin-top:3px;font-size:11px;color:#128c4a;text-decoration:none;font-weight:700}
+.dir{min-width:220px;max-width:280px}
+.msg{min-width:200px;max-width:260px;color:var(--ink2)}
+.num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.dias5{color:var(--malt);font-weight:700}
+select,input,textarea{font:inherit;font-size:13px;width:100%;border:1px solid #cdbf7a;border-radius:6px;padding:5px 6px;background:#fffdf3;color:var(--ink)}
+textarea{min-height:52px;resize:vertical}
+select:focus,input:focus,textarea:focus{outline:2px solid #b89b16;outline-offset:0}
+.btn{border:0;background:var(--head);color:#fff;border-radius:6px;padding:7px 12px;font-weight:700;cursor:pointer;white-space:nowrap}
+.btn:disabled{opacity:.5;cursor:wait}
+.gest{min-width:230px;max-width:300px;line-height:1.4}
+.g-ok{color:var(--okt);font-weight:700}
+.g-warn{color:var(--warnt);font-weight:700}
+.g-mal{color:var(--malt);font-weight:700}
+.hist{margin-top:4px;font-size:11px;color:var(--ink2);white-space:pre-line}
+.err{color:var(--malt);font-size:11px;margin-top:3px}
+.vacio{padding:30px;text-align:center;color:var(--ink2)}
+.bloqueo{max-width:420px;margin:60px auto;background:#fff;border:1px solid var(--line);border-radius:10px;padding:24px;text-align:center;line-height:1.6}
+@media (max-width:700px){header{padding:10px 12px}.wrap{margin:10px 8px 20px;max-height:none}#aviso{margin:8px 8px 0}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+(function(){
+  var BASE = 'https://n8n-production-8a42.up.railway.app/webhook';
+  var RESULTADOS = ['Recibe - reintentar entrega','Da otra fecha','Da dirección nueva','Retira en sucursal','No quiere el pedido','No contesta','Número equivocado'];
+
+  /* la clave llega una vez por el enlace (?k=...) y queda guardada en este navegador */
+  var clave = '';
+  try {
+    var u = new URL(location.href);
+    if (u.searchParams.get('k')) { clave = u.searchParams.get('k'); try { localStorage.setItem('jaye_llamadas_k', clave); } catch (e) {} u.searchParams.delete('k'); history.replaceState(null, '', u.pathname + (u.search || '')); }
+    if (!clave) { try { clave = localStorage.getItem('jaye_llamadas_k') || ''; } catch (e) {} }
+  } catch (e) {}
+
+  var app = document.getElementById('app');
+  var filas = [], filtro = 'llamar', editando = {}, quien = '';
+  try { filtro = localStorage.getItem('jaye_llamadas_filtro') || 'llamar'; } catch (e) {}
+
+  function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function clp(n){ return '$' + Number(n || 0).toLocaleString('es-CL'); }
+  function telFmt(t){ t = String(t || '').replace(/\D/g, '').slice(-9); return t.length === 9 ? '+56 ' + t[0] + ' ' + t.slice(1,5) + ' ' + t.slice(5) : t; }
+
+  function bloqueo(txt){ app.innerHTML = '<div class="bloqueo"><h1>Llamadas de novedades</h1><p>' + esc(txt) + '</p></div>'; }
+  if (!clave) { bloqueo('Abre esta página con el enlace que te enviaron.'); return; }
+
+  app.innerHTML =
+    '<header><div><h1>Llamadas de novedades</h1><div class="sub" id="sub">Cargando…</div></div>' +
+    '<div class="filtros" id="filtros"></div><div class="spacer"></div><div class="estado" id="estado"></div></header>' +
+    '<div id="aviso">Llama en orden de arriba hacia abajo. Elige el <b>resultado</b>, escribe la fecha, la dirección nueva y la <b>nota de la llamada</b>, y toca <b>Guardar</b>: se gestiona en Dropi en ese momento. ' +
+    'Recuerda: el cliente paga al recibir. Nunca prometas día ni hora exacta. Nunca ofrezcas descuentos ni anular el pedido.</div>' +
+    '<div class="wrap"><table><thead><tr>' +
+    '<th class="fija">Cliente</th><th>Qué hacer</th><th>Teléfono</th><th>Dirección</th><th>Ciudad</th><th>Producto</th><th>Valor a pagar</th><th>Pedido Dropi</th><th>Guía</th><th>Días en entrega</th><th>Motivo de la novedad</th><th>Aviso (hora Chile)</th><th>Último mensaje por WhatsApp</th>' +
+    '<th class="am">Resultado de la llamada</th><th class="am">Fecha u horario que da</th><th class="am">Dirección nueva o referencia</th><th class="am">Nota de la llamada</th><th class="am"></th><th>Gestión en Dropi</th>' +
+    '</tr></thead><tbody id="tb"></tbody></table></div>';
+
+  var tb = document.getElementById('tb');
+
+  function grupo(f){
+    if (!f.resultado) return f.pendiente ? 'llamar' : 'otras';
+    if (f.pendiente && (/no contesta/i.test(f.resultado) || /no respondi|rechaz|falta/i.test(f.gestion || ''))) return 'llamar';
+    return 'hechas';
+  }
+  function pintarFiltros(){
+    var n = { llamar: 0, hechas: 0, todas: filas.length };
+    filas.forEach(function(f){ var g = grupo(f); if (g === 'llamar') n.llamar++; if (g === 'hechas') n.hechas++; });
+    var defs = [['llamar','Por llamar'],['hechas','Con resultado'],['todas','Todas']];
+    document.getElementById('filtros').innerHTML = defs.map(function(d){ return '<button data-f="' + d[0] + '" class="' + (filtro === d[0] ? 'on' : '') + '">' + d[1] + ' · ' + n[d[0]] + '</button>'; }).join('');
+    Array.prototype.forEach.call(document.querySelectorAll('#filtros button'), function(b){ b.onclick = function(){ filtro = b.getAttribute('data-f'); try { localStorage.setItem('jaye_llamadas_filtro', filtro); } catch (e) {} pintar(); }; });
+  }
+
+  function claseGestion(g){
+    if (!g) return '';
+    if (/reprogramada|confirma/i.test(g)) return 'g-ok';
+    if (/rechaz|no respondi|falta/i.test(g)) return 'g-mal';
+    return 'g-warn';
+  }
+
+  function fila(f){
+    var tel = String(f.telefono || '').replace(/\D/g, '').slice(-9);
+    var esDir = /direcci/i.test(f.que_hacer);
+    var chip = !f.pendiente && !f.resultado ? '<span class="chip c-no">No llamar</span>' : '<span class="chip ' + (esDir ? 'c-dir' : 'c-rep') + '">' + esc(f.que_hacer) + '</span>';
+    var ult = f.ultimo_msg ? esc(f.ultimo_msg_h) + ': ' + esc(String(f.ultimo_msg).slice(0, 160)) : 'No ha escrito';
+    var opciones = '<option value="">Elegir…</option>' + RESULTADOS.map(function(r){ return '<option' + (f.resultado === r ? ' selected' : '') + '>' + esc(r) + '</option>'; }).join('');
+    return '<tr data-id="' + esc(f.pedido) + '" class="' + (f.resultado ? 'guardada' : '') + '">' +
+      '<td class="fija"><div class="nom">' + esc(f.nombre) + '</div>' + (f.llamadas ? '<div class="sub">' + f.llamadas + ' llamada' + (f.llamadas > 1 ? 's' : '') + '</div>' : '') + '</td>' +
+      '<td>' + chip + '</td>' +
+      '<td class="tel"><a href="tel:+56' + tel + '">' + esc(telFmt(tel)) + '</a><br><a class="wa" href="https://wa.me/56' + tel + '" target="_blank" rel="noopener">Abrir WhatsApp</a></td>' +
+      '<td class="dir">' + esc(f.direccion || 'ver en Dropi') + '</td>' +
+      '<td>' + esc(f.ciudad) + '</td>' +
+      '<td>' + esc(f.producto) + '</td>' +
+      '<td class="num">' + clp(f.valor) + '</td>' +
+      '<td class="num">' + esc(f.pedido) + '</td>' +
+      '<td>' + esc(f.guia || 'sin guía') + '<div class="sub">' + esc(f.transportadora || '') + '</div></td>' +
+      '<td class="num ' + (Number(f.dias) >= 5 ? 'dias5' : '') + '">' + esc(f.dias) + '</td>' +
+      '<td>' + esc(f.motivo || '—') + '</td>' +
+      '<td>' + esc(f.aviso) + '</td>' +
+      '<td class="msg">' + ult + '</td>' +
+      '<td class="am"><select data-c="resultado">' + opciones + '</select></td>' +
+      '<td class="am"><input data-c="fecha_horario" value="' + esc(f.fecha_horario || '') + '" placeholder="jueves en la tarde"></td>' +
+      '<td class="am"><input data-c="direccion_nueva" value="' + esc(f.direccion_nueva || '') + '" placeholder="calle, número, referencia"></td>' +
+      '<td class="am"><textarea data-c="nota" placeholder="Qué se habló en la llamada">' + esc(f.nota || '') + '</textarea></td>' +
+      '<td class="am"><button class="btn" data-g="1">Guardar</button><div class="err"></div></td>' +
+      '<td class="gest">' + (f.gestion ? '<div class="' + claseGestion(f.gestion) + '">' + esc(f.gestion) + '</div><div class="sub">' + esc(f.guardado || '') + (f.por ? ' · ' + esc(f.por) : '') + '</div>' : '<span class="sub">Sin llamar todavía</span>') +
+        (f.historial && f.llamadas > 1 ? '<div class="hist">' + esc(f.historial) + '</div>' : '') + '</td>' +
+      '</tr>';
+  }
+
+  function pintar(){
+    pintarFiltros();
+    var lista = filas.filter(function(f){ return filtro === 'todas' || grupo(f) === filtro; });
+    if (!lista.length) { tb.innerHTML = '<tr><td colspan="19" class="vacio">' + (filtro === 'llamar' ? 'No hay novedades por llamar ahora.' : 'Nada por aquí.') + '</td></tr>'; return; }
+    tb.innerHTML = lista.map(fila).join('');
+    Array.prototype.forEach.call(tb.querySelectorAll('tr[data-id]'), function(tr){
+      var id = tr.getAttribute('data-id');
+      Array.prototype.forEach.call(tr.querySelectorAll('[data-c]'), function(el){ el.addEventListener('input', function(){ editando[id] = true; }); el.addEventListener('change', function(){ editando[id] = true; }); });
+      tr.querySelector('[data-g]').onclick = function(){ guardar(tr, id); };
+    });
+  }
+
+  function valor(tr, c){ var el = tr.querySelector('[data-c="' + c + '"]'); return el ? el.value : ''; }
+
+  function guardar(tr, id){
+    var btn = tr.querySelector('[data-g]'), err = tr.querySelector('.err');
+    var datos = { k: clave, order_id: id, resultado: valor(tr, 'resultado'), fecha_horario: valor(tr, 'fecha_horario'), direccion_nueva: valor(tr, 'direccion_nueva'), nota: valor(tr, 'nota') };
+    err.textContent = '';
+    if (!datos.resultado) { err.textContent = 'Elige el resultado de la llamada.'; return; }
+    if (datos.resultado === 'Da dirección nueva' && !datos.direccion_nueva.trim()) { err.textContent = 'Escribe la dirección nueva.'; return; }
+    if (datos.resultado === 'Da otra fecha' && !datos.fecha_horario.trim()) { err.textContent = 'Escribe la fecha u horario.'; return; }
+    btn.disabled = true; btn.textContent = 'Guardando…';
+    fetch(BASE + '/llamadas-guardar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(datos) })
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        if (!j.ok) { err.textContent = j.error || 'No se pudo guardar. Intenta de nuevo.'; btn.disabled = false; btn.textContent = 'Guardar'; return; }
+        delete editando[id];
+        var f = filas.filter(function(x){ return x.pedido === id; })[0];
+        if (f) { f.resultado = datos.resultado; f.fecha_horario = datos.fecha_horario; f.direccion_nueva = datos.direccion_nueva; f.nota = datos.nota; f.gestion = j.gestion; f.guardado = 'recién'; f.por = quien; f.llamadas = (f.llamadas || 0) + 1; }
+        pintar(); cargar();
+      })
+      .catch(function(){ err.textContent = 'Sin conexión. Intenta de nuevo.'; btn.disabled = false; btn.textContent = 'Guardar'; });
+  }
+
+  function cargar(){
+    fetch(BASE + '/llamadas-lista?k=' + encodeURIComponent(clave))
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        if (!j.ok) { try { localStorage.removeItem('jaye_llamadas_k'); } catch (e) {} bloqueo('El enlace no es válido. Pide uno nuevo.'); return; }
+        quien = j.quien;
+        /* lo que se está escribiendo en una fila no se pisa con la actualización */
+        var nuevas = j.filas || [];
+        if (Object.keys(editando).length) {
+          var viejas = {}; filas.forEach(function(f){ viejas[f.pedido] = f; });
+          var enPantalla = {};
+          Array.prototype.forEach.call(tb.querySelectorAll('tr[data-id]'), function(tr){ var id = tr.getAttribute('data-id'); if (editando[id]) enPantalla[id] = { resultado: valor(tr,'resultado'), fecha_horario: valor(tr,'fecha_horario'), direccion_nueva: valor(tr,'direccion_nueva'), nota: valor(tr,'nota') }; });
+          nuevas.forEach(function(f){ var e = enPantalla[f.pedido]; if (e) { f.resultado = e.resultado; f.fecha_horario = e.fecha_horario; f.direccion_nueva = e.direccion_nueva; f.nota = e.nota; } });
+          if (document.activeElement && tb.contains(document.activeElement)) { filas = nuevas; document.getElementById('estado').textContent = 'Hay cambios sin guardar'; return; }
+        }
+        filas = nuevas;
+        var hora = new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+        document.getElementById('sub').textContent = 'Entraste como ' + (quien === 'Llamadas' ? 'encargada de llamadas' : quien) + ' · se actualiza sola cada minuto';
+        document.getElementById('estado').textContent = 'Actualizado ' + hora;
+        pintar();
+      })
+      .catch(function(){ document.getElementById('estado').textContent = 'Sin conexión, reintentando…'; });
+  }
+  cargar();
+  setInterval(cargar, 60000);
+})();
+</script>
+</body>
+</html>
