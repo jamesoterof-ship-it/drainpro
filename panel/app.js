@@ -245,7 +245,7 @@ const FLAG={CL:'flag-cl',CO:'flag-co',PY:'flag-py'};
    no habia forma de saber cual estabas mirando, y una regla que faltaba en uno se
    buscaba en el otro. La CLAVE interna sigue siendo Carlos (la usan los filtros);
    lo que cambia es solo el nombre que se ve. */
-const BOTNOM={Carlos:'Camila · Chile',Logistica:'Carlos · Logística',James:'James · Colombia',Ramon:'Ramón · Paraguay',Redes:'Camila Redes · Chile'};
+const BOTNOM={Carlos:'Camila · Chile',Logistica:'Laura · Logística',James:'James · Colombia',Ramon:'Ramón · Paraguay',Redes:'Camila Redes · Chile'};
 const BOTLOC={Carlos:'CL',Logistica:'CL',James:'CO',Ramon:'PY',Redes:'CL'};
 const BOTCOLOR={Carlos:'linear-gradient(135deg,#0e8074,#3aa897)',Logistica:'linear-gradient(135deg,#d97706,#f0a94a)',James:'linear-gradient(135deg,#3060ea,#6a92f5)',Ramon:'linear-gradient(135deg,#7c4dd8,#a98aec)',Redes:'linear-gradient(135deg,#d8256b,#f0699b)'};
 /* Konecta marca TODO pedido como canal "whatsapp", asi que el canal de verdad se
@@ -259,7 +259,7 @@ const redBadge=o=>(o&&o.bot==='Redes')?'<span class="redchip red-'+(o.red||'na')
    cambia es qué se muestra en pantalla. */
 const esVistaLog=()=>fBot==='Logistica';
 /* los dos se llaman Carlos: en las tarjetas hay que distinguirlos */
-const nomCorto=b=>b==='Logistica'?'Carlos · Log.':BOTNOM[b].split(' ·')[0];
+const nomCorto=b=>b==='Logistica'?'Laura · Log.':BOTNOM[b].split(' ·')[0];
 const convDelBot=b=>b==='Logistica'?convos.filter(c=>c.log):convos.filter(c=>c.bot===b);
 
 let convos=[], ordenes=[], pedidosWeb=[], abandonadosWeb=[], visitasWeb=[], selTel=null;
@@ -942,7 +942,7 @@ function renderConvList(){
       <div class="cav" style="background:${BOTCOLOR[esVistaLog()?'Logistica':c.bot]}">${inicialesDe(nombreConv(c))}<span class="bdot ${c.estado==='activa'?'bdot-on':'bdot-paused'}"></span></div>
       <div class="cinfo">
         <div class="l1"><span class="nm">${esc(nombreConv(c))}</span><span class="tm">${esc(c.hora||c.fecha)}</span></div>
-        <div class="l2">${confBadgeHTML(pedWebDe(c.tel))}${(!esVistaLog()&&c.log)?'<span class="tag-log">Carlos</span> ':''}${esc((esVistaLog()&&c.ultLog)?c.ultLog:c.ultimo)||'—'}</div>
+        <div class="l2">${confBadgeHTML(pedWebDe(c.tel))}${(!esVistaLog()&&c.log)?'<span class="tag-log">Laura</span> ':''}${esc((esVistaLog()&&c.ultLog)?c.ultLog:c.ultimo)||'—'}</div>
       </div>
       <span class="ctag ${c.estado==='activa'?'ctag-bot':'ctag-ag'}">${c.estado==='activa'?'Bot':'Agente'}</span>
     </div>`).join('');
@@ -1115,7 +1115,7 @@ function renderBubbles(c){
        para que no se confunda con lo que dijo ella */
   let msgs=c.msgs;
   if(esVistaLog()) msgs=msgs.filter(m=>m.from==='cliente'||m.from==='logistica'||m.from==='sistema');
-  if(!msgs.length){box.innerHTML='<div class="vacio">'+(esVistaLog()?'Aquí no ha escrito Carlos.':'Sin mensajes todavía.')+'</div>';return;}
+  if(!msgs.length){box.innerHTML='<div class="vacio">'+(esVistaLog()?'Aquí no ha escrito Laura.':'Sin mensajes todavía.')+'</div>';return;}
   let _diaAct='';
   box.innerHTML=msgs.map(m=>{
     const mk=_marca(m.time);
@@ -1127,7 +1127,7 @@ function renderBubbles(c){
     if(m.from==='sistema'){const rojo=/link de pago|anticipo|abono|riesgo/i.test(m.text||'');return sep+`<div class="msg m-sys${rojo?' m-sys-rojo':''}"><div class="who">${rojo?'⛔':'⚠'} Sistema</div>${cuerpoMensaje(m)}${pie}</div>`;}
     const cls=m.from==='cliente'?'m-cli':(m.from==='agente'?'m-ag':(m.from==='logistica'?'m-log':'m-bot'));
     const who=m.from==='cliente'?'Cliente':(m.from==='agente'?'Tú · Agente':
-      (m.from==='logistica'?'Carlos · Logística':BOTNOM[c.bot].split(' ·')[0]+' · Bot'));
+      (m.from==='logistica'?'Laura · Logística':BOTNOM[c.bot].split(' ·')[0]+' · Bot'));
     return sep+`<div class="msg ${cls}"><div class="who">${who}</div>${cuerpoMensaje(m)}${pie}</div>`;
   }).join('');
   box.scrollTop=box.scrollHeight;
@@ -1402,7 +1402,7 @@ function irConvBot(b){
   mostrarVista('conv'); setTabConv('conv'); renderConvList();
   document.getElementById('vtitle').textContent=BOTNOM[b];
   document.getElementById('vsub').textContent=b==='Logistica'
-    ? 'Solo lo que escribe Carlos: confirmaciones, anticipos, novedades y carritos'
+    ? 'Solo lo que escribe Laura: confirmaciones, anticipos, novedades y carritos'
     : 'Conversaciones y ventas de este bot';
 }
 function irVentasDeBot(b){ irConvBot(b); setTabConv('ventas'); }
