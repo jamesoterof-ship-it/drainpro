@@ -150,7 +150,10 @@ table.est{min-width:1500px}
     var tel = String(f.telefono || '').replace(/\D/g, '').slice(-9);
     var esDir = /direcci/i.test(f.que_hacer);
     var chip;
-    if (f.pendiente) chip = '<span class="chip ' + (esDir ? 'c-dir' : 'c-rep') + '">' + esc(f.que_hacer) + '</span>';
+    /* si Dropi ya no la tiene en novedad (el sistema ya la reprogramó), la llamada es para confirmar */
+    if (f.pendiente) chip = String(f.estado || '').toUpperCase() !== 'NOVEDAD'
+      ? '<span class="chip c-conf">Confirmar: ya reprogramada</span>'
+      : '<span class="chip ' + (esDir ? 'c-dir' : 'c-rep') + '">' + esc(f.que_hacer) + '</span>';
     else {
       var e = String(f.estado || '').toUpperCase().replace(/_/g, ' ');
       var cls = /ENTREGADO/.test(e) ? 'c-conf' : (/DEVOLUCI|RECHAZ/.test(e) ? 'c-dir' : (/REPARTO/.test(e) ? 'c-rep' : 'c-no'));
@@ -287,7 +290,7 @@ table.est{min-width:1500px}
           if (document.activeElement && tb.contains(document.activeElement)) { filas = nuevas; document.getElementById('estado').textContent = 'Hay cambios sin guardar'; return; }
         }
         filas = nuevas;
-        var hora = new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+        var hora = new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Santiago' }) + ' hora Chile';
         document.getElementById('sub').textContent = 'Entraste como ' + (quien === 'Llamadas' ? 'encargada de llamadas' : quien) + ' · se actualiza sola cada minuto';
         document.getElementById('estado').textContent = 'Actualizado ' + hora;
         pintar();
