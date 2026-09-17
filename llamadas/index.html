@@ -20,7 +20,7 @@ h1{font-size:16px;margin:0;font-weight:700}
 .estado{font-size:12px;color:var(--ink2)}
 #aviso{margin:10px 16px 0;padding:10px 12px;border-radius:8px;background:var(--gris);color:var(--ink2);font-size:12px;line-height:1.5}
 .wrap{margin:12px 16px 24px;background:var(--card);border:1px solid var(--line);border-radius:8px;overflow:auto;max-height:calc(100vh - 150px)}
-table{border-collapse:separate;border-spacing:0;min-width:2300px;width:100%}
+table{border-collapse:separate;border-spacing:0;min-width:2550px;width:100%}
 th,td{border-bottom:1px solid var(--line);border-right:1px solid var(--line);padding:6px 8px;vertical-align:top;text-align:left}
 th{position:sticky;top:0;background:var(--head);color:#fff;font-size:12px;font-weight:700;z-index:2;white-space:nowrap}
 th.am{background:#e0c64f;color:#2b2300}
@@ -33,6 +33,8 @@ tbody tr:nth-child(even){background:#fafbfc}
 .c-dir{background:var(--mal);color:var(--malt)}
 .c-rep{background:#e6eefb;color:#1b4f9c}
 .c-no{background:var(--gris);color:var(--ink2)}
+.c-conf{background:var(--ok);color:var(--okt)}
+.resp{font-weight:700;color:var(--ink);margin-bottom:2px}
 .tel a{color:var(--azul);text-decoration:none;font-weight:700;white-space:nowrap}
 .wa{display:inline-block;margin-top:3px;font-size:11px;color:#128c4a;text-decoration:none;font-weight:700}
 .dir{min-width:220px;max-width:280px}
@@ -93,9 +95,9 @@ select:focus,input:focus,textarea:focus{outline:2px solid #b89b16;outline-offset
     '<header><div><h1>Llamadas de novedades</h1><div class="sub" id="sub">Cargando…</div></div>' +
     '<div class="filtros" id="filtros"></div><div class="spacer"></div><div class="estado" id="estado"></div></header>' +
     '<div id="aviso">Llama en orden de arriba hacia abajo. Elige el <b>resultado</b>, escribe la fecha, la dirección nueva y la <b>nota de la llamada</b>, y toca <b>Guardar</b>: se gestiona en Dropi en ese momento. ' +
-    'Recuerda: el cliente paga al recibir. Nunca prometas día ni hora exacta. Nunca ofrezcas descuentos ni anular el pedido.</div>' +
+    'Llama también a los que ya contestaron el mensaje, para confirmar lo que dijeron. Recuerda: el cliente paga al recibir. Nunca prometas día ni hora exacta. Nunca ofrezcas descuentos ni anular el pedido.</div>' +
     '<div class="wrap"><table><thead><tr>' +
-    '<th>Novedad</th><th>Motivo de la novedad</th><th>Aviso (hora Chile)</th><th>Días en entrega</th><th>Último mensaje del cliente</th>' +
+    '<th>Novedad</th><th>Motivo de la novedad</th><th>Aviso enviado (hora Chile)</th><th>Días en entrega</th><th>Lo que contestó al mensaje</th><th>Gestión ya hecha</th>' +
     '<th>Cliente</th><th>Teléfono</th><th>Dirección</th><th>Ciudad</th><th>Producto</th><th>Valor a pagar</th><th>Pedido Dropi</th><th>Guía</th>' +
     '<th class="am">Resultado de la llamada</th><th class="am">Fecha u horario que da</th><th class="am">Dirección nueva o referencia</th><th class="am nota">Nota de la llamada</th><th class="am"></th><th>Gestión en Dropi</th>' +
     '</tr></thead><tbody id="tb"></tbody></table></div>';
@@ -125,15 +127,17 @@ select:focus,input:focus,textarea:focus{outline:2px solid #b89b16;outline-offset
   function fila(f){
     var tel = String(f.telefono || '').replace(/\D/g, '').slice(-9);
     var esDir = /direcci/i.test(f.que_hacer);
-    var chip = !f.pendiente && !f.resultado ? '<span class="chip c-no">No llamar</span>' : '<span class="chip ' + (esDir ? 'c-dir' : 'c-rep') + '">' + esc(f.que_hacer) + '</span>';
-    var ult = f.ultimo_msg ? esc(f.ultimo_msg_h) + ': ' + esc(String(f.ultimo_msg).slice(0, 160)) : 'No ha escrito';
+    var conf = /contest/i.test(f.que_hacer);
+    var chip = !f.pendiente && !f.resultado ? '<span class="chip c-no">No llamar: escribió que no quiere</span>' : '<span class="chip ' + (conf ? 'c-conf' : (esDir ? 'c-dir' : 'c-rep')) + '">' + esc(f.que_hacer) + '</span>';
+    var contesto = f.contesto ? '<div class="resp">Se le envió mensaje y contestó:</div>' + esc(f.contesto).split(String.fromCharCode(10)).join('<br>') : 'No contestó el mensaje' + (f.ultimo_msg ? '<div class="sub">Último mensaje antes: ' + esc(f.ultimo_msg_h) + ': ' + esc(String(f.ultimo_msg).slice(0, 120)) + '</div>' : '');
     var opciones = '<option value="">Elegir…</option>' + RESULTADOS.map(function(r){ return '<option' + (f.resultado === r ? ' selected' : '') + '>' + esc(r) + '</option>'; }).join('');
     return '<tr data-id="' + esc(f.pedido) + '" class="' + (f.resultado ? 'guardada' : '') + '">' +
       '<td>' + chip + (f.llamadas ? '<div class="sub">' + f.llamadas + ' llamada' + (f.llamadas > 1 ? 's' : '') + '</div>' : '') + '</td>' +
       '<td class="mot">' + esc(f.motivo || '—') + '</td>' +
       '<td>' + esc(f.aviso) + '</td>' +
       '<td class="num ' + (Number(f.dias) >= 5 ? 'dias5' : '') + '">' + esc(f.dias) + '</td>' +
-      '<td class="msg">' + ult + '</td>' +
+      '<td class="msg">' + contesto + '</td>' +
+      '<td class="msg">' + esc(f.gestion_previa || 'Sin gestionar todavía') + '</td>' +
       '<td><div class="nom">' + esc(f.nombre) + '</div></td>' +
       '<td class="tel"><a href="tel:+56' + tel + '">' + esc(telFmt(tel)) + '</a><br><a class="wa" href="https://wa.me/56' + tel + '" target="_blank" rel="noopener">Abrir WhatsApp</a></td>' +
       '<td class="dir">' + esc(f.direccion || 'ver en Dropi') + '</td>' +
@@ -155,7 +159,7 @@ select:focus,input:focus,textarea:focus{outline:2px solid #b89b16;outline-offset
   function pintar(){
     pintarFiltros();
     var lista = filas.filter(function(f){ return filtro === 'todas' || grupo(f) === filtro; });
-    if (!lista.length) { tb.innerHTML = '<tr><td colspan="19" class="vacio">' + (filtro === 'llamar' ? 'No hay novedades por llamar ahora.' : 'Nada por aquí.') + '</td></tr>'; return; }
+    if (!lista.length) { tb.innerHTML = '<tr><td colspan="20" class="vacio">' + (filtro === 'llamar' ? 'No hay novedades por llamar ahora.' : 'Nada por aquí.') + '</td></tr>'; return; }
     tb.innerHTML = lista.map(fila).join('');
     Array.prototype.forEach.call(tb.querySelectorAll('tr[data-id]'), function(tr){
       var id = tr.getAttribute('data-id');
