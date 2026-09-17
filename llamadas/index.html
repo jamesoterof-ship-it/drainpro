@@ -130,7 +130,7 @@ select:focus,input:focus,textarea:focus{outline:2px solid #b89b16;outline-offset
     else {
       var e = String(f.estado || '').toUpperCase().replace(/_/g, ' ');
       var cls = /ENTREGADO/.test(e) ? 'c-conf' : (/DEVOLUCI|RECHAZ/.test(e) ? 'c-dir' : (/REPARTO/.test(e) ? 'c-rep' : 'c-no'));
-      var txt = /ENTREGADO/.test(e) ? 'Entregado' + (f.entregado ? ' ' + f.entregado : '') : (/DEVOLUCI/.test(e) ? 'Devolución' : (/REPARTO/.test(e) ? 'En reparto' : (e === 'NOVEDAD SOLUCIONADA' ? 'Reprogramada, esperando reparto' : (e === 'NOVEDAD' ? (/PENDIENTE JAMES/i.test(f.resultado_gestion || '') ? 'Frenada: decide James' : 'Novedad') : e.charAt(0) + e.slice(1).toLowerCase()))));
+      var txt = /ENTREGADO/.test(e) ? 'Entregado' + (f.entregado ? ' ' + f.entregado : '') : (/DEVOLUCI/.test(e) ? 'Devolución' : (/REPARTO/.test(e) ? 'En reparto' : (/PENDIENTE JAMES/i.test(f.resultado_gestion || '') ? 'Frenada: decide James' : e === 'NOVEDAD SOLUCIONADA' ? 'Reprogramada, esperando reparto' : (e === 'NOVEDAD' ? (/PENDIENTE JAMES/i.test(f.resultado_gestion || '') ? 'Frenada: decide James' : 'Novedad') : e.charAt(0) + e.slice(1).toLowerCase()))));
       chip = '<span class="chip ' + cls + '">' + esc(txt) + '</span>';
     }
     var contesto = f.contesto ? '<div class="resp">Se le envió mensaje y contestó:</div>' + esc(f.contesto).split(String.fromCharCode(10)).join('<br>') : 'No contestó el mensaje' + (f.ultimo_msg ? '<div class="sub">Último mensaje antes: ' + esc(f.ultimo_msg_h) + ': ' + esc(String(f.ultimo_msg).slice(0, 120)) + '</div>' : '');
