@@ -1585,17 +1585,11 @@ function zonaRoja(x){
   return m;
 }
 function esDudosa(x){
-  /* lo que James movio a mano manda sobre la regla automatica */
+  /* James 16-09: NADA pasa solo a Dudosas. Todas las ventas llegan a Pendientes y
+     es el quien decide con el boton "Dudosa" cuales mover. Antes se movian solas
+     las riesgosas, las de anticipo, "no aprobar", zona roja y falta de direccion. */
   if(noDudSet().has(x.k)) return false;
-  if(dudSet().has(x.k)) return true;
-  if(x.zr && x.zr.length) return true;
-  if(String(x.nivel||'').toUpperCase()==='ROJO') return true;
-  if(x.abono) return true;
-  if(/ESCRIBIRLE|NO APROBAR|SIN APROBAR/i.test(String(x.revision||''))) return true;
-  const e=String((x.raw&&x.raw.estado)||'');
-  if(/ABONO PENDIENTE|FALTA (NUMERO|NÚMERO|DIRECCION|DIRECCIÓN)|TRABAD/i.test(e)) return true;
-  if(x.faltaDir) return true;
-  return false;
+  return dudSet().has(x.k);
 }
 function renderAprobar(){
   const tb=document.getElementById('tbodyAprobar'); if(!tb) return;
