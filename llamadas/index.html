@@ -62,6 +62,23 @@ select:focus,input:focus,textarea:focus{outline:2px solid #b89b16;outline-offset
 .err{color:var(--malt);font-size:11px;margin-top:3px}
 .vacio{padding:30px;text-align:center;color:var(--ink2)}
 .bloqueo{max-width:420px;margin:60px auto;background:#fff;border:1px solid var(--line);border-radius:10px;padding:24px;text-align:center;line-height:1.6}
+[hidden]{display:none!important}
+/* pestaña Estado de las novedades */
+.c-warn{background:var(--warn);color:var(--warnt)}
+.resumen{display:flex;flex-wrap:wrap;gap:8px;margin:10px 16px 0}
+.resumen button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 12px;cursor:pointer;min-width:120px;font:inherit;color:var(--ink)}
+.resumen button b{font-size:20px;font-variant-numeric:tabular-nums}
+.resumen button span{font-size:11px;color:var(--ink2)}
+.resumen button.on{border-color:var(--head);box-shadow:inset 0 0 0 1px var(--head)}
+.resumen .r-ent b{color:var(--okt)} .resumen .r-dev b{color:var(--malt)} .resumen .r-rep b{color:#1b4f9c} .resumen .r-nov b{color:var(--warnt)}
+table.est{min-width:1500px}
+.si{color:var(--okt);font-weight:700}
+.si-mal{color:var(--malt);font-weight:700}
+.nop{color:var(--ink2)}
+.cuando{display:block;font-size:11px;color:var(--ink2);font-weight:400;white-space:nowrap}
+.rec{white-space:pre-line;font-size:11px;color:var(--ink2);min-width:210px;line-height:1.5}
+.dropi{display:block;margin-top:4px;font-size:11px;color:var(--ink2)}
+@media (max-width:700px){.resumen{margin:8px 8px 0}.resumen button{min-width:calc(50% - 4px)}}
 @media (max-width:700px){header{padding:10px 12px}.wrap{margin:10px 8px 20px;max-height:none}#aviso{margin:8px 8px 0}}
 </style>
 </head>
@@ -82,7 +99,9 @@ select:focus,input:focus,textarea:focus{outline:2px solid #b89b16;outline-offset
 
   var app = document.getElementById('app');
   var filas = [], filtro = 'llamar', editando = {}, quien = '';
+  var subEstado = 'todas';
   try { filtro = localStorage.getItem('jaye_llamadas_filtro') || 'llamar'; } catch (e) {}
+  if (filtro === 'seguimiento') filtro = 'estado';
 
   function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
   function clp(n){ return '$' + Number(n || 0).toLocaleString('es-CL'); }
@@ -96,21 +115,26 @@ select:focus,input:focus,textarea:focus{outline:2px solid #b89b16;outline-offset
     '<div class="filtros" id="filtros"></div><div class="spacer"></div><div class="estado" id="estado"></div></header>' +
     '<div id="aviso">Llama en orden de arriba hacia abajo. Elige el <b>resultado</b>, escribe la fecha, la dirección nueva y la <b>nota de la llamada</b>, y toca <b>Guardar</b>: se gestiona en Dropi en ese momento. ' +
     'Aunque el cliente haya contestado el mensaje, igual llámalo para reforzar. Cuando una novedad se soluciona en Dropi, pasa sola a Seguimiento, donde se ve si salió a reparto, se entregó o se devolvió. Recuerda: el cliente paga al recibir. Nunca prometas día ni hora exacta. Nunca ofrezcas descuentos ni anular el pedido.</div>' +
-    '<div class="wrap"><table><thead><tr>' +
+    '<div id="resumen" class="resumen" hidden></div>' +
+    '<div class="wrap" id="wrapEst" hidden><table class="est"><thead><tr>' +
+    '<th>Estado ahora</th><th>Cliente</th><th>Producto y valor</th><th>Motivo de la novedad</th><th>Novedad</th><th>Qué se hizo</th>' +
+    '<th>¿Salió a reparto?</th><th>¿Se entregó?</th><th>¿Devolución?</th><th>Recorrido en Dropi desde la novedad</th><th>Pedido Dropi / guía</th>' +
+    '</tr></thead><tbody id="tbEst"></tbody></table></div>' +
+    '<div class="wrap" id="wrapLlamar"><table><thead><tr>' +
     '<th>Novedad / estado actual</th><th>Motivo de la novedad</th><th>Aviso enviado (hora Chile)</th><th>Días en entrega</th><th>Lo que contestó al mensaje</th><th>Gestión ya hecha</th>' +
     '<th>Cliente</th><th>Teléfono</th><th>Dirección</th><th>Ciudad</th><th>Producto</th><th>Valor a pagar</th><th>Pedido Dropi</th><th>Guía</th>' +
     '<th class="am">Resultado de la llamada</th><th class="am">Fecha u horario que da</th><th class="am">Dirección nueva o referencia</th><th class="am nota">Nota de la llamada</th><th class="am"></th><th>Gestión en Dropi</th>' +
     '</tr></thead><tbody id="tb"></tbody></table></div>';
 
-  var tb = document.getElementById('tb');
+  var tb = document.getElementById('tb'), tbEst = document.getElementById('tbEst');
 
   function grupo(f){
     return f.pendiente ? 'llamar' : 'seguimiento';
   }
   function pintarFiltros(){
-    var n = { llamar: 0, seguimiento: 0, todas: filas.length };
+    var n = { llamar: 0, seguimiento: 0, estado: filas.length, todas: filas.length };
     filas.forEach(function(f){ n[grupo(f)]++; });
-    var defs = [['llamar','Por llamar'],['seguimiento','Seguimiento 5 días'],['todas','Todas']];
+    var defs = [['llamar','Por llamar'],['estado','Estado de las novedades'],['todas','Todas']];
     document.getElementById('filtros').innerHTML = defs.map(function(d){ return '<button data-f="' + d[0] + '" class="' + (filtro === d[0] ? 'on' : '') + '">' + d[1] + ' · ' + n[d[0]] + '</button>'; }).join('');
     Array.prototype.forEach.call(document.querySelectorAll('#filtros button'), function(b){ b.onclick = function(){ filtro = b.getAttribute('data-f'); try { localStorage.setItem('jaye_llamadas_filtro', filtro); } catch (e) {} pintar(); }; });
   }
@@ -160,8 +184,60 @@ select:focus,input:focus,textarea:focus{outline:2px solid #b89b16;outline-offset
       '</tr>';
   }
 
+  /* ---- pestaña Estado de las novedades: qué pasó con cada novedad después ---- */
+  function norm(s){ return String(s || '').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '').split('_').join(' ').trim(); }
+  function bonito(s){ s = norm(s); return s ? s.charAt(0) + s.slice(1).toLowerCase() : ''; }
+  function estadoDe(f){
+    var E = norm(f.estado || f.s_estado);
+    if (f.s_devolucion || E.indexOf('DEVOLUCI') >= 0) return { k: 'dev', t: 'Devolución', cls: 'c-dir' };
+    if (f.s_entregado || E === 'ENTREGADO') return { k: 'ent', t: 'Entregado', cls: 'c-conf' };
+    if (E === 'NOVEDAD') return { k: 'nov', t: f.pendiente ? 'En novedad · por llamar' : (/PENDIENTE JAMES/i.test(f.resultado_gestion || '') ? 'En novedad · decide James' : 'En novedad'), cls: 'c-warn' };
+    if (E.indexOf('REPARTO') >= 0) return { k: 'rep', t: 'En reparto', cls: 'c-rep' };
+    if (E.indexOf('OFICINA') >= 0 || E.indexOf('RETIRO') >= 0 || E.indexOf('SUCURSAL') >= 0) return { k: 'rep', t: 'En oficina de la transportadora', cls: 'c-rep' };
+    return { k: 'esp', t: 'Reprogramada, esperando reparto', cls: 'c-no' };
+  }
+  function siNo(si, cuando, mal, extra){
+    return si ? '<span class="' + (mal ? 'si-mal' : 'si') + '">Sí' + (extra ? ' · ' + esc(extra) : '') + '</span>' + (cuando ? '<span class="cuando">' + esc(cuando) + '</span>' : '') : '<span class="nop">No</span>';
+  }
+  function filaEst(f){
+    var st = estadoDe(f), E = norm(f.estado || f.s_estado);
+    var tel = String(f.telefono || '').replace(/\D/g, '').slice(-9);
+    var repartoSi = !!f.s_reparto || E.indexOf('REPARTO') >= 0 || !!f.s_entregado || E === 'ENTREGADO';
+    var hecho = f.gestion ? 'Llamada: ' + f.gestion + (f.guardado ? ' (' + f.guardado + ')' : '') : (f.gestion_previa || 'Sin gestionar todavía');
+    var sinDatos = !f.s_revisado;
+    return '<tr>' +
+      '<td><span class="chip ' + st.cls + '">' + esc(st.t) + '</span><span class="dropi">Dropi: ' + esc(bonito(f.estado || f.s_estado)) + '</span></td>' +
+      '<td><div class="nom">' + esc(f.nombre) + '</div><a class="wa" href="https://wa.me/56' + tel + '" target="_blank" rel="noopener">' + esc(telFmt(tel)) + '</a><div class="sub">' + esc(f.ciudad || '') + '</div></td>' +
+      '<td>' + esc(f.producto) + '<div class="sub">' + clp(f.valor) + '</div></td>' +
+      '<td class="mot">' + esc(f.motivo || '—') + '</td>' +
+      '<td style="white-space:nowrap">' + esc(f.s_novedad || f.aviso) + (Number(f.s_novedades) > 1 ? '<div class="g-mal">' + f.s_novedades + ' novedades</div>' : '') + '</td>' +
+      '<td class="msg">' + esc(hecho) + '</td>' +
+      '<td>' + (sinDatos && !repartoSi ? '<span class="nop">Revisando…</span>' : siNo(repartoSi, f.s_reparto, false, Number(f.s_repartos) > 1 ? f.s_repartos + ' veces' : '')) + '</td>' +
+      '<td>' + siNo(st.k === 'ent', f.s_entregado, false) + '</td>' +
+      '<td>' + siNo(st.k === 'dev', f.s_devolucion, true) + '</td>' +
+      '<td class="rec">' + (f.s_recorrido ? esc(f.s_recorrido) : '<span class="nop">Se carga de Dropi cada 15 minutos</span>') + '</td>' +
+      '<td class="num">' + esc(f.pedido) + '<div class="sub">' + esc(f.guia || 'sin guía') + ' · ' + esc(f.transportadora || '') + '</div></td>' +
+      '</tr>';
+  }
+  function pintarEstado(){
+    var grupos = [['todas','Todas las novedades',''],['ent','Entregados','r-ent'],['rep','En reparto','r-rep'],['esp','Reprogramadas, esperando reparto','r-esp'],['nov','Siguen en novedad','r-nov'],['dev','Devoluciones','r-dev']];
+    var n = { todas: filas.length, ent: 0, rep: 0, esp: 0, nov: 0, dev: 0 };
+    filas.forEach(function(f){ n[estadoDe(f).k]++; });
+    var res = document.getElementById('resumen');
+    res.innerHTML = grupos.map(function(g){ return '<button class="' + g[2] + (subEstado === g[0] ? ' on' : '') + '" data-s="' + g[0] + '"><b>' + n[g[0]] + '</b><span>' + g[1] + '</span></button>'; }).join('');
+    Array.prototype.forEach.call(res.querySelectorAll('button'), function(b){ b.onclick = function(){ subEstado = b.getAttribute('data-s'); pintarEstado(); }; });
+    var lista = filas.filter(function(f){ return subEstado === 'todas' || estadoDe(f).k === subEstado; });
+    tbEst.innerHTML = lista.length ? lista.map(filaEst).join('') : '<tr><td colspan="11" class="vacio">No hay novedades en este grupo.</td></tr>';
+  }
+
   function pintar(){
     pintarFiltros();
+    var esEst = filtro === 'estado';
+    document.getElementById('wrapEst').hidden = !esEst;
+    document.getElementById('resumen').hidden = !esEst;
+    document.getElementById('wrapLlamar').hidden = esEst;
+    document.getElementById('aviso').hidden = esEst;
+    if (esEst) { pintarEstado(); return; }
     var lista = filas.filter(function(f){ return filtro === 'todas' || grupo(f) === filtro; });
     if (!lista.length) { tb.innerHTML = '<tr><td colspan="20" class="vacio">' + (filtro === 'llamar' ? 'No hay novedades por llamar ahora.' : 'Sin novedades en seguimiento.') + '</td></tr>'; return; }
     tb.innerHTML = lista.map(fila).join('');
