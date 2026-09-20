@@ -1468,6 +1468,18 @@ function kpi(lbl,val,meta,bg,col){
 
 /* ---------- APROBACIÓN UNIFICADA (página + WhatsApp en una sola lista) ---------- */
 let fAprob='pend';
+/* 20-09 James: filtro por canal en Ventas por aprobar. Se recuerda en el aparato. */
+let fCanalAprob=(function(){ try{ return localStorage.getItem('jaye_canal_aprob')||'todos'; }catch(e){ return 'todos'; } })();
+function setCanalAprob(c){ fCanalAprob=c; try{ localStorage.setItem('jaye_canal_aprob',c); }catch(e){} renderAprobar(); }
+function canalGrupo(x){ return x.canal==='Página'?'pagina':(x.canal==='WhatsApp'?'whatsapp':'redes'); }
+function pintarCanalAprob(arr){
+  const el=document.getElementById('canalAprob'); if(!el) return;
+  const money=x=>Number(String(x.total||'').replace(/D/g,''))||0;
+  const g={todos:{n:0,s:0},whatsapp:{n:0,s:0},pagina:{n:0,s:0},redes:{n:0,s:0}};
+  arr.forEach(x=>{ const k=canalGrupo(x); g[k].n++; g[k].s+=money(x); g.todos.n++; g.todos.s+=money(x); });
+  const NOM={todos:'Todos',whatsapp:'WhatsApp',pagina:'Página',redes:'Redes'};
+  el.innerHTML=Object.keys(NOM).map(k=>'<button type="button" onclick="setCanalAprob(\x27'+k+'\x27)" style="border:1.5px solid '+(fCanalAprob===k?'#0e8074':'#dcdfe3')+';background:'+(fCanalAprob===k?'#0e8074':'#fff')+';color:'+(fCanalAprob===k?'#fff':'#26332e')+';border-radius:999px;padding:6px 12px;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer">'+NOM[k]+' <span style="opacity:.85;font-weight:600">'+g[k].n+' · $'+g[k].s.toLocaleString('es-CL')+'</span></button>').join('');
+}
 document.querySelectorAll('#segAprob .minitab').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('#segAprob .minitab').forEach(x=>x.classList.remove('act'));
   b.classList.add('act'); fAprob=b.dataset.a; renderAprobar();
@@ -1655,6 +1667,9 @@ function renderAprobar(){
   if(fAprob==='pend')  arr=arr.filter(x=>x.st==='pendiente' && !x.prog && !x.dud);
   if(fAprob==='dud')   arr=arr.filter(x=>x.dud);
   if(fAprob==='prog'){ arr=arr.filter(x=>x.prog).sort((a,b)=>Date.parse(a.desde)-Date.parse(b.desde)); }
+  /* 20-09: totales por canal de lo que muestra la pestaña, y despues se filtra por el canal elegido */
+  pintarCanalAprob(arr);
+  if(fCanalAprob!=='todos') arr=arr.filter(x=>canalGrupo(x)===fCanalAprob);
   window._aprobF=arr;
   if(!arr.length){ tb.innerHTML='<tr><td colspan="8" class="vacio">'+(fAprob==='pend'?'Nada por aprobar. 🎉':(fAprob==='prog'?'Ninguna venta con fecha pedida por el cliente.':(fAprob==='dud'?'Ninguna venta dudosa.':'Sin ventas recientes.')))+'</td></tr>'; return; }
   tb.innerHTML=arr.slice(0,100).map((x,i)=>`

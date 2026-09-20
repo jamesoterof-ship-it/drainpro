@@ -850,6 +850,8 @@ tbody tr:hover .chev{color:var(--brand)}
             <button class="minitab" data-a="todas">Todas</button>
           </div>
         </div>
+        <!-- 20-09 James: filtro por CANAL con totales, para ver WhatsApp, Página y Redes por separado -->
+        <div id="canalAprob" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 14px 10px;border-bottom:1px solid #eef0f2"></div>
         <table>
           <thead><tr><th>Cliente</th><th>Canal</th><th>Producto</th><th>Comuna</th><th>Cant.</th><th>Total</th><th>Aprobación</th><th></th></tr></thead>
           <tbody id="tbodyAprobar"><tr><td colspan="7" class="vacio">Cargando…</td></tr></tbody>
@@ -1594,7 +1596,7 @@ tbody tr:hover .chev{color:var(--brand)}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
-<script src="app.js?v=168"></script>
+<script src="app.js?v=169"></script>
 <script src="ganancia.js?v=125"></script>
 </body>
 </html>
