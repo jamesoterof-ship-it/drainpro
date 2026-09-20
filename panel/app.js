@@ -1474,7 +1474,7 @@ function setCanalAprob(c){ fCanalAprob=c; try{ localStorage.setItem('jaye_canal_
 function canalGrupo(x){ return x.canal==='Página'?'pagina':(x.canal==='WhatsApp'?'whatsapp':'redes'); }
 function pintarCanalAprob(arr){
   const el=document.getElementById('canalAprob'); if(!el) return;
-  const money=x=>Number(String(x.total||'').replace(/D/g,''))||0;
+  const money=x=>Number(String(x.total||'').replace(/[^0-9]/g,''))||0;
   const g={todos:{n:0,s:0},whatsapp:{n:0,s:0},pagina:{n:0,s:0},redes:{n:0,s:0}};
   arr.forEach(x=>{ const k=canalGrupo(x); g[k].n++; g[k].s+=money(x); g.todos.n++; g.todos.s+=money(x); });
   const NOM={todos:'Todos',whatsapp:'WhatsApp',pagina:'Página',redes:'Redes'};
