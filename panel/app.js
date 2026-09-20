@@ -1486,7 +1486,7 @@ const REV={
    proposito, para darle tiempo al cliente a cambiar de idea, corregir la direccion
    o cancelar. El panel dice cuanto falta y cuando ya se puede. Sin esto se
    aprobaba a los 3, 5 y 13 minutos y salian pedidos ya cancelados. */
-const ESPERA_MIN=60;
+const ESPERA_MIN=180; /* 20-09 James: 3 horas, por si el cliente cambia la direccion o se arrepiente */
 function minutosDe(x){ return x.creadoMs ? Math.floor((Date.now()-x.creadoMs)/60000) : null; }
 function pastilla(bg,fg,txt){ return '<span style="display:inline-block;margin-left:6px;background:'+bg+';color:'+fg+';font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;vertical-align:middle">'+txt+'</span>'; }
 const enAtributo=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
@@ -1550,7 +1550,7 @@ function bloqueRev(o){
        y sin esto el "faltan N min" tampoco se movia */
     return '<div data-espera="'+o.creadoMs+'" data-frase="⏳ Faltan {n} min para poder aprobarla" data-luego="'+enAtributo(bloqueRevYa(o,n,r))+'" style="background:#f1f3f4;border-left:4px solid #9aa0a6;padding:10px 12px;border-radius:8px;margin-bottom:10px">'
       +'<span style="display:block;color:#3c4043;font-weight:800;font-size:12.5px;margin-bottom:4px">⏳ Faltan '+(ESPERA_MIN-m)+' min para poder aprobarla</span>'
-      +'<div style="color:#5f6368;line-height:1.4;white-space:normal">Se espera una hora desde la venta por si el cliente cambia la dirección, pone una condición o la cancela.</div></div>';
+      +'<div style="color:#5f6368;line-height:1.4;white-space:normal">Se esperan tres horas desde la venta por si el cliente cambia la dirección, pone una condición o la cancela.</div></div>';
   }
   return bloqueRevYa(o,n,r);
 }
