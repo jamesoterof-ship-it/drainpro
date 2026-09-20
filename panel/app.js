@@ -447,7 +447,10 @@ const mapPedido=r=>({fecha:r.fecha||'',cli:r.nombre||'—',tel:soloNum((r.indica
     dropi:String(r.dropi||'').toUpperCase()==='ENVIADO',fila:r.fila,orden:fechaOrden(r.fecha,''),
     /* el estado tal cual viene ("Nueva", "ABONO PENDIENTE", "MONTADA DROPI #7820845"):
        de aqui salen el numero de Dropi y el abono pendiente en la vista de Camila */
-    estado:String(r.estado||'')});
+    estado:String(r.estado||''),
+    /* 20-09: veredicto del inspector (ahora tambien revisa las de pagina) */
+    revision:String(r.revision||''),nivel:String(r.nivel||''),nota:String(r.nota||''),creadoMs:Number(r.creado_ms)||0,
+    montado:String(r.dropi||'').toUpperCase()==='ENVIADO'});
 async function cargarPaginas(){
   const conectadas=PAGINAS.filter(p=>p.url);
   let peds=[], abs=[], vis=[], pedsArch=[], visArch=[];
@@ -1612,7 +1615,7 @@ function renderAprobar(){
   const sieteDias=Date.now()-7*864e5;
   const items=[];
   (pedidosWeb||[]).forEach(o=>{ if(!o.conf) return; const k=keyPag(o);
-    items.push({k,raw:o,canal:'Página',cli:o.cli,tel:o.tel,fecha:o.fecha,prod:o.prod,color:o.color,comuna:o.comuna,cant:o.cant,total:o.total,orden:o.orden,abono:!!(o.abono||/abono pendiente/i.test(String(o.estado||''))),
+    items.push({k,raw:o,canal:'Página',cli:o.cli,tel:o.tel,fecha:o.fecha,prod:o.prod,color:o.color,comuna:o.comuna,cant:o.cant,total:o.total,orden:o.orden,revision:o.revision||'',nivel:o.nivel||'',creadoMs:o.creadoMs||0,abono:!!(o.abono||/abono pendiente/i.test(String(o.estado||''))),
       st:o.dropi?'montado':(esAprobado(k)?'aprobado':(esRechazado(k)?'rechazado':'pendiente'))});
   });
   (ordenes||[]).forEach(o=>{ if(o.loc!=='CL') return; if(o.orden < (o.montado?dosDias:sieteDias)) return; const k=keyWa(o);
@@ -1691,7 +1694,7 @@ function verAprob(i){
   document.getElementById('mTitulo').textContent=o.cli||x.cli;
   const zrHtml=(x.zr&&x.zr.length)?'<div style="background:#fdecea;border-left:4px solid #b71c1c;padding:10px 12px;border-radius:8px;margin-bottom:10px"><div style="color:#b71c1c;font-weight:800;font-size:12.5px;margin-bottom:4px">ZONA ROJA · revisar el historial del cliente antes de aprobar</div><div style="color:#7f1d1d;font-weight:600;line-height:1.4;white-space:normal">'+esc(x.zr.join(' · '))+'</div></div>':'';
   if(x.canal==='Página'){
-    document.getElementById('mBody').innerHTML=zrHtml+
+    document.getElementById('mBody').innerHTML=zrHtml+bloqueRev(o)+bloqueNota(o.nota||'')+
       fila('Canal','Página · '+o.prod)+fila('Producto',o.prod)+fila('Cantidad',o.cant+' unidades')+
       fila('Teléfono','+'+o.tel)+(o.correo?fila('Correo',o.correo):'')+fila('Dirección',o.dir)+
       (o.ref?fila('Referencia',o.ref):'')+fila('Comuna',o.comuna)+fila('Región',o.region)+
