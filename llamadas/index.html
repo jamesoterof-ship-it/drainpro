@@ -58,6 +58,12 @@ select:focus,input:focus,textarea:focus{outline:2px solid #b89b16;outline-offset
 .g-ok{color:var(--okt);font-weight:700}
 .g-warn{color:var(--warnt);font-weight:700}
 .g-mal{color:var(--malt);font-weight:700}
+/* 21-09 James: "ponle una nota de lo que hemos hecho antes de que ella llame" */
+.yah{min-width:250px;max-width:320px;font-size:12px;line-height:1.5;color:var(--ink2)}
+.yah b{color:var(--ink)}
+.yah .si{color:var(--okt);font-weight:700}
+.yah .no{color:var(--malt);font-weight:700}
+.yah .ll{display:block;margin-top:4px;padding-top:4px;border-top:1px dashed var(--line);color:var(--azul);font-weight:700}
 .hist{margin-top:4px;font-size:11px;color:var(--ink2);white-space:pre-line}
 .err{color:var(--malt);font-size:11px;margin-top:3px}
 .vacio{padding:30px;text-align:center;color:var(--ink2)}
@@ -114,14 +120,14 @@ table.est{min-width:1500px}
     '<header><div><h1>Llamadas de novedades</h1><div class="sub" id="sub">Cargando…</div></div>' +
     '<div class="filtros" id="filtros"></div><div class="spacer"></div><div class="estado" id="estado"></div></header>' +
     '<div id="aviso">Llama en orden de arriba hacia abajo. Elige el <b>resultado</b>, escribe la fecha, la dirección nueva y la <b>nota de la llamada</b>, y toca <b>Guardar</b>: se gestiona en Dropi en ese momento. ' +
-    'Aunque el cliente haya contestado el mensaje, igual llámalo para reforzar. Aquí están las novedades de las últimas 24 horas, aunque el sistema ya las haya reprogramado: llama para confirmar. Cada una sale cuando guardas la llamada. No aparecen las entregadas, las devueltas, las segundas novedades ni los clientes que dijeron que no quieren el pedido. En la pestaña Estado de las novedades se ve si salió a reparto, se entregó o se devolvió. Recuerda: el cliente paga al recibir. Nunca prometas día ni hora exacta. Nunca ofrezcas descuentos ni anular el pedido.</div>' +
+    'Aunque el cliente haya contestado el mensaje, igual llámalo para reforzar. En la columna <b>Lo que ya se hizo</b> ves cuántos mensajes se le mandaron, si contestó y qué se gestionó, para que no le repitas lo mismo. Aquí están <b>todas</b> las novedades abiertas de los últimos 7 días, aunque el sistema ya las haya reprogramado: llama para confirmar. Cada una sale cuando guardas la llamada. No aparecen las entregadas, las devueltas, las segundas novedades ni los clientes que dijeron que no quieren el pedido. En la pestaña Estado de las novedades se ve si salió a reparto, se entregó o se devolvió. Recuerda: el cliente paga al recibir. Nunca prometas día ni hora exacta. Nunca ofrezcas descuentos ni anular el pedido.</div>' +
     '<div id="resumen" class="resumen" hidden></div>' +
     '<div class="wrap" id="wrapEst" hidden><table class="est"><thead><tr>' +
     '<th>Estado ahora</th><th>Cliente</th><th>Producto y valor</th><th>Motivo de la novedad</th><th>Novedad</th><th>Qué se hizo</th>' +
     '<th>¿Salió a reparto?</th><th>¿Se entregó?</th><th>¿Devolución?</th><th>Recorrido en Dropi desde la novedad</th><th>Pedido Dropi / guía</th>' +
     '</tr></thead><tbody id="tbEst"></tbody></table></div>' +
     '<div class="wrap" id="wrapLlamar"><table><thead><tr>' +
-    '<th>Novedad / estado actual</th><th>Motivo de la novedad</th><th>Aviso enviado (hora Chile)</th><th>Días en entrega</th><th>Lo que contestó al mensaje</th><th>Gestión ya hecha</th>' +
+    '<th>Novedad / estado actual</th><th>Lo que ya se hizo</th><th>Motivo de la novedad</th><th>Aviso enviado (hora Chile)</th><th>Días en entrega</th><th>Lo que contestó al mensaje</th><th>Gestión ya hecha</th>' +
     '<th>Cliente</th><th>Teléfono</th><th>Dirección</th><th>Ciudad</th><th>Producto</th><th>Valor a pagar</th><th>Pedido Dropi</th><th>Guía</th>' +
     '<th class="am">Resultado de la llamada</th><th class="am">Fecha u horario que da</th><th class="am">Dirección nueva o referencia</th><th class="am nota">Nota de la llamada</th><th class="am"></th><th>Gestión en Dropi</th>' +
     '</tr></thead><tbody id="tb"></tbody></table></div>';
@@ -162,8 +168,24 @@ table.est{min-width:1500px}
     }
     var contesto = f.contesto ? '<div class="resp">Se le envió mensaje y contestó:</div>' + esc(f.contesto).split(String.fromCharCode(10)).join('<br>') : 'No contestó el mensaje' + (f.ultimo_msg ? '<div class="sub">Último mensaje antes: ' + esc(f.ultimo_msg_h) + ': ' + esc(String(f.ultimo_msg).slice(0, 120)) + '</div>' : '');
     var opciones = '<option value="">Elegir…</option>' + RESULTADOS.map(function(r){ return '<option' + (f.resultado === r ? ' selected' : '') + '>' + esc(r) + '</option>'; }).join('');
+
+    /* 21-09 James: la nota de lo que ya se hizo, para que ella sepa antes de marcar y no le
+       repita al cliente lo mismo. Sale de los avisos que se le mandaron, de los mensajes que
+       el cliente escribió después del aviso y de las gestiones que ya se hicieron en Dropi. */
+    var ya = [], nMsg = Number(f.msgs_n || 0), nTras = Number(f.resp_tras_aviso || 0);
+    if (nMsg) ya.push('<b>' + nMsg + ' mensaje' + (nMsg > 1 ? 's' : '') + ' ya enviado' + (nMsg > 1 ? 's' : '') + ':</b> ' + esc(f.msgs_detalle || ''));
+    else ya.push('<span class="no">Todavía no se le ha mandado ningún mensaje</span>');
+    if (nTras > 0) ya.push('<span class="si">El cliente SÍ contestó el aviso</span> · ' + nTras + ' mensaje' + (nTras > 1 ? 's' : '') + ', el último ' + esc(f.resp_ult || ''));
+    else if (Number(f.resp_n || 0) > 0) ya.push('<span class="no">No contestó el aviso de novedad.</span> Su último mensaje fue el ' + esc(f.resp_ult || ''));
+    else ya.push('<span class="no">El cliente nunca ha escrito.</span> Vas a llamar en frío');
+    if (f.gestiones) ya.push('<b>Ya se gestionó en Dropi:</b> ' + esc(f.gestiones));
+    else ya.push('<span class="no">Todavía NO se ha gestionado en Dropi</span>');
+    if (Number(f.llamadas || 0) > 0) ya.push('<b>Ya se le llamó ' + f.llamadas + ' vez' + (f.llamadas > 1 ? 'ces' : '') + ' antes</b>');
+    ya.push('<span class="ll">Llámalo igual para confirmar</span>');
+
     return '<tr data-id="' + esc(f.pedido) + '" class="' + (f.resultado ? 'guardada' : '') + '">' +
       '<td>' + chip + (f.llamadas ? '<div class="sub">' + f.llamadas + ' llamada' + (f.llamadas > 1 ? 's' : '') + '</div>' : '') + '</td>' +
+      '<td class="yah">' + ya.join('<br>') + '</td>' +
       '<td class="mot">' + esc(f.motivo || '—') + '</td>' +
       '<td>' + esc(f.aviso) + '</td>' +
       '<td class="num ' + (Number(f.dias) >= 5 ? 'dias5' : '') + '">' + esc(f.dias) + '</td>' +
