@@ -2756,7 +2756,10 @@ document.addEventListener('input',function(e){ if(e.target&&e.target.id==='finBu
 setInterval(function(){ var f=document.getElementById('view-finanzas'),d=document.getElementById('view-dropi'); if((f&&f.classList.contains('act'))||(d&&d.classList.contains('act'))) cargarFinanzas(); }, 180000);
 
 cargarConvos(); cargarVentas(); cargarPaginas(); cargarHuellas(); sincronizarAprob();
-setInterval(()=>{cargarConvos();cargarVentas();cargarPaginas();},15000);
+/* 22-09: de 15 s a 60 s. Cada vuelta llama a 5 flujos de n8n y n8n guarda cada
+   respuesta completa (Control Ventas WA sola pesa 629 KB por llamada, ~1 GB al dia).
+   Eso era el grueso del gasto de Railway. Aprobado por James el 22-09. */
+setInterval(()=>{cargarConvos();cargarVentas();cargarPaginas();},60000);
 setInterval(sincronizarAprob,30000);   // las aprobaciones se leen del servidor, no del navegador
 setInterval(cargarHuellas,300000);
 document.getElementById('fechaHead').textContent=new Date().toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'});
