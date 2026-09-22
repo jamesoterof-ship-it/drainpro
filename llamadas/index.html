@@ -54,6 +54,12 @@ td.mot{min-width:150px;font-weight:700}
 select:focus,input:focus,textarea:focus{outline:2px solid #b89b16;outline-offset:0}
 .btn{border:0;background:var(--head);color:#fff;border-radius:6px;padding:7px 12px;font-weight:700;cursor:pointer;white-space:nowrap}
 .btn:disabled{opacity:.5;cursor:wait}
+/* 21-09 James: el boton que hace sonar la llamada */
+.bcall{border:0;background:var(--okt);color:#fff;border-radius:6px;padding:6px 11px;font-weight:700;cursor:pointer;margin-top:5px;white-space:nowrap}
+.bcall:disabled{opacity:.6;cursor:wait}
+.callmsg{font-size:11px;margin-top:3px;line-height:1.35}
+.callmsg.ok{color:var(--okt);font-weight:700}
+.callmsg.mal{color:var(--malt);font-weight:700}
 .gest{min-width:230px;max-width:300px;line-height:1.4}
 .g-ok{color:var(--okt);font-weight:700}
 .g-warn{color:var(--warnt);font-weight:700}
@@ -192,7 +198,8 @@ table.est{min-width:1500px}
       '<td class="msg">' + contesto + '</td>' +
       '<td class="msg">' + esc(f.gestion_previa || 'Sin gestionar todavía') + '</td>' +
       '<td><div class="nom">' + esc(f.nombre) + '</div></td>' +
-      '<td class="tel"><a href="tel:+56' + tel + '">' + esc(telFmt(tel)) + '</a><br><a class="wa" href="https://wa.me/56' + tel + '" target="_blank" rel="noopener">Abrir WhatsApp</a></td>' +
+      '<td class="tel"><a href="tel:+56' + tel + '">' + esc(telFmt(tel)) + '</a><br><a class="wa" href="https://wa.me/56' + tel + '" target="_blank" rel="noopener">Abrir WhatsApp</a>' +
+        '<br><button class="bcall" data-llamar="1">Llamar</button><div class="callmsg"></div></td>' +
       '<td class="dir">' + esc(f.direccion || 'ver en Dropi') + '</td>' +
       '<td>' + esc(f.ciudad) + '</td>' +
       '<td>' + esc(f.producto) + '</td>' +
@@ -271,6 +278,8 @@ table.est{min-width:1500px}
       var id = tr.getAttribute('data-id');
       Array.prototype.forEach.call(tr.querySelectorAll('[data-c]'), function(el){ el.addEventListener('input', function(){ editando[id] = true; }); el.addEventListener('change', function(){ editando[id] = true; }); });
       tr.querySelector('[data-g]').onclick = function(){ guardar(tr, id); };
+      var bll = tr.querySelector('[data-llamar]');
+      if (bll) bll.onclick = function(){ marcar(tr, id); };
     });
   }
 
@@ -294,6 +303,25 @@ table.est{min-width:1500px}
         pintar(); cargar();
       })
       .catch(function(){ err.textContent = 'Sin conexión. Intenta de nuevo.'; btn.disabled = false; btn.textContent = 'Guardar'; });
+  }
+
+  /* 21-09 James: el boton hace sonar la llamada sin que ella marque ningun numero.
+     Zadarma llama primero a la extension de quien esta en la pagina y, cuando contesta, la
+     conecta con el cliente mostrandole el +56 2 3384 4485. Si su telefono de Zadarma no esta
+     abierto, el sistema lo avisa y no se gasta saldo. */
+  function marcar(tr, id){
+    var btn = tr.querySelector('[data-llamar]'), msg = tr.querySelector('.callmsg');
+    if (!btn) return;
+    btn.disabled = true; btn.textContent = 'Llamando…';
+    msg.className = 'callmsg'; msg.textContent = '';
+    fetch(BASE + '/llamadas-marcar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ k: clave, order_id: id }) })
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        if (j && j.ok) { msg.className = 'callmsg ok'; msg.textContent = 'Te va a sonar el teléfono. Contesta y quedas con el cliente.'; btn.textContent = 'Llamar otra vez'; }
+        else { msg.className = 'callmsg mal'; msg.textContent = (j && j.error) || 'No se pudo llamar. Intenta de nuevo.'; btn.textContent = 'Llamar'; }
+        btn.disabled = false;
+      })
+      .catch(function(){ msg.className = 'callmsg mal'; msg.textContent = 'Sin conexión. Intenta de nuevo.'; btn.disabled = false; btn.textContent = 'Llamar'; });
   }
 
   function cargar(){
