@@ -2858,12 +2858,15 @@ async function agEjecutar(a,d){ var b=d.querySelector('.agAccB'); b.innerHTML='<
    producción 30 min. Servicio, repo y base propios — no comparte nada. */
 const URL_RADAR='https://radar-jaye-production.up.railway.app/api/jaye/radar';
 const RADAR_CAT={Colombia:'https://app.dropi.co/dashboard/search',
-                 Chile:'https://app.dropi.cl/dashboard/search'};
+                 Chile:'https://app.dropi.cl/dashboard/search',
+                 /* España es Dropi PRO (otra plataforma): su catálogo busca con ?search= */
+                 'España':'https://dropipro.com/app/products'};
 /* El enlace REAL al producto: el catálogo de Dropi lee el parámetro ?q= y busca.
    (No existe una URL directa a la ficha del producto — se probaron
    /dashboard/product-details/ID y similares y todas rebotan al inicio.) */
 function radDropiURL(nombre){
-  return (RADAR_CAT[radarPais]||RADAR_CAT.Colombia)+'?q='+encodeURIComponent(nombre||'');
+  var par=(radarPais==='España')?'?search=':'?q=';
+  return (RADAR_CAT[radarPais]||RADAR_CAT.Colombia)+par+encodeURIComponent(nombre||'');
 }
 /* Banderas DIBUJADAS, no emoji: Windows no pinta los emoji de bandera y salían
    como cuadros vacíos. */
@@ -2874,12 +2877,18 @@ const RADAR_BANDERA={
   Chile:'<svg width="18" height="12" viewBox="0 0 9 6" style="border-radius:2px;vertical-align:-1px">'
     +'<rect width="9" height="3" fill="#fff"/><rect y="3" width="9" height="3" fill="#D52B1E"/>'
     +'<rect width="3" height="3" fill="#0039A6"/>'
-    +'<path d="M1.5 0.6l.28.86h.9l-.73.53.28.86-.73-.53-.73.53.28-.86-.73-.53h.9z" fill="#fff"/></svg>'
+    +'<path d="M1.5 0.6l.28.86h.9l-.73.53.28.86-.73-.53-.73.53.28-.86-.73-.53h.9z" fill="#fff"/></svg>',
+  'España':'<svg width="18" height="12" viewBox="0 0 6 4" style="border-radius:2px;vertical-align:-1px">'
+    +'<rect width="6" height="4" fill="#AA151B"/><rect y="1" width="6" height="2" fill="#F1BF00"/></svg>'
 };
 var radarPais='Colombia', radarFecha='', radarVentana=14, radarDatos=null;
 
 function radNum(v){ return Number(v||0).toLocaleString('es-CO'); }
-function radPlata(v){ return (radarPais==='Chile'?'$':'$')+Number(v||0).toLocaleString(radarPais==='Chile'?'es-CL':'es-CO'); }
+function radPlata(v){
+  /* España va en euros, con coma decimal y el símbolo detrás (3,99 €) */
+  if(radarPais==='España') return Number(v||0).toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';
+  return '$'+Number(v||0).toLocaleString(radarPais==='Chile'?'es-CL':'es-CO');
+}
 function radEsc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){
   return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
 /* El ID de Dropi: se copia con un clic para pegarlo en el buscador de Dropi. */
@@ -2931,7 +2940,7 @@ async function cargarRadar(){
 
 function radarPintaPaises(){
   var c=document.getElementById('radarPaises'); if(!c) return;
-  var lista=[{p:'Colombia'},{p:'Chile'}];
+  var lista=[{p:'Colombia'},{p:'Chile'},{p:'España'}];
   c.innerHTML=lista.map(function(x){
     var act=x.p===radarPais;
     return '<button class="rad-pais'+(act?' on':'')+'" onclick="radarVerPais(\''+x.p+'\')">'
