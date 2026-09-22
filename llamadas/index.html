@@ -99,7 +99,10 @@ table.est{min-width:1500px}
 <script>
 (function(){
   var BASE = 'https://n8n-production-8a42.up.railway.app/webhook';
-  var RESULTADOS = ['Recibe - reintentar entrega','Da otra fecha','Da dirección nueva','Retira en sucursal','No quiere el pedido','No contesta','Número equivocado'];
+  /* 22-09: se quita "Retira en sucursal". Con pago contra entrega NINGUNA transportadora
+     entrega en sucursal (Manual de novedades de Dropi, pag. 22), asi que ofrecerlo en la
+     llamada solo hace perder el pedido. Si el cliente lo pide, se le ofrece otra direccion. */
+  var RESULTADOS = ['Recibe - reintentar entrega','Da otra fecha','Da dirección nueva','No quiere el pedido','No contesta','Número equivocado'];
 
   /* la clave llega una vez por el enlace (?k=...) y queda guardada en este navegador */
   var clave = '';
