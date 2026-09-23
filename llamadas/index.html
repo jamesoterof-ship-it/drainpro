@@ -99,6 +99,18 @@ table.conf{min-width:1750px}
 .prod{min-width:170px}
 .notacli{min-width:200px;max-width:260px;color:var(--ink2);font-style:italic}
 td.cotro{min-width:150px}
+/* 23-09 James: pestaña CAS. Lo que contestaron Starken y Blue en los casos que abrimos. */
+table.cas{min-width:1900px}
+.c-cerr{background:var(--gris);color:var(--ink2)}
+.c-act{background:var(--ok);color:var(--okt)}
+.c-cola{background:var(--warn);color:var(--warnt)}
+.pedi{min-width:230px;max-width:300px;color:var(--ink2);font-size:12px;line-height:1.45}
+.cont{min-width:330px;max-width:460px;line-height:1.5;white-space:pre-line}
+.cont.vacio2{color:var(--malt);font-weight:700;white-space:normal}
+.plant{color:var(--ink2);font-style:italic}
+.sinleer{background:#fde6e4;color:var(--malt);font-weight:700;padding:2px 7px;border-radius:999px;font-size:11px;white-space:nowrap}
+.tokviejo{background:#fde6e4;border:1px solid #f0b6b2;border-left:4px solid var(--malt);
+  padding:10px 12px;border-radius:8px;margin:10px 16px 0;color:var(--malt);font-size:12px;line-height:1.5}
 @media (max-width:700px){.resumen{margin:8px 8px 0}.resumen button{min-width:calc(50% - 4px)}}
 @media (max-width:700px){header{padding:10px 12px}.wrap{margin:10px 8px 20px;max-height:none}#aviso,#avisoConf{margin:8px 8px 0}}
 </style>
@@ -126,6 +138,8 @@ td.cotro{min-width:150px}
   var subEstado = 'todas';
   /* 23-09: pestaña Confirmaciones (pedidos de la página cuyo WhatsApp rebota) */
   var confs = [], editandoC = {};
+  /* 23-09: pestaña CAS (respuestas de Starken y Blue) */
+  var cas = [], casSub = 'contestados';
   var RES_CONF = ['Confirmo el pedido','No contesta','Ya no lo quiere','Numero equivocado'];
   try { filtro = localStorage.getItem('jaye_llamadas_filtro') || 'llamar'; } catch (e) {}
   if (filtro === 'seguimiento') filtro = 'estado';
@@ -148,7 +162,17 @@ td.cotro{min-width:150px}
     'El cliente <b>paga al recibir</b>. Nunca prometas día ni hora exacta: Santiago de 1 a 3 días hábiles, regiones de 2 a 4. ' +
     'Si dice que ya no lo quiere, se le agradece y se corta: <b>no se le insiste ni se le ofrece nada</b>. ' +
     'Cuando guardas <b>Confirmó el pedido</b>, la venta queda lista para que James la apruebe.</div>' +
+    '<div id="avisoCas" hidden>Aquí está <b>lo que contestaron</b> en los casos que abrimos en el CAS de Dropi. ' +
+    'Ojo: quien responde ahí <b>no es Dropi, es la propia transportadora</b> — Starken y Blue. ' +
+    'Se separa lo que dice algo de verdad (fecha de reparto, estado real, gestión) de la <b>despedida de plantilla</b> con la que cierran la mayoría. ' +
+    'Se actualiza solo cada 10 minutos.</div>' +
+    '<div id="tokAviso" class="tokviejo" hidden></div>' +
     '<div id="resumen" class="resumen" hidden></div>' +
+    '<div id="resumenCas" class="resumen" hidden></div>' +
+    '<div class="wrap" id="wrapCas" hidden><table class="cas"><thead><tr>' +
+    '<th>Estado del caso</th><th>Días</th><th>Pedido</th><th>Cliente</th><th>Guía</th><th>Transportadora</th>' +
+    '<th>Qué pedimos</th><th>Qué contestaron</th><th>Quién responde</th><th>Estado del pedido hoy</th><th>Último mensaje</th>' +
+    '</tr></thead><tbody id="tbCas"></tbody></table></div>' +
     '<div class="wrap" id="wrapConf" hidden><table class="conf"><thead><tr>' +
     '<th>Estado</th><th>Días esperando</th><th>Pedido del</th><th>Cliente</th><th>Teléfono que rebota</th>' +
     '<th>Producto</th><th>Total a pagar</th><th>Dirección</th><th>Comuna</th><th>Referencia que dejó</th>' +
@@ -164,7 +188,7 @@ td.cotro{min-width:150px}
     '<th class="am">Resultado de la llamada</th><th class="am">Fecha u horario que da</th><th class="am">Dirección nueva o referencia</th><th class="am nota">Nota de la llamada</th><th class="am"></th><th>Gestión en Dropi</th>' +
     '</tr></thead><tbody id="tb"></tbody></table></div>';
 
-  var tb = document.getElementById('tb'), tbEst = document.getElementById('tbEst'), tbConf = document.getElementById('tbConf');
+  var tb = document.getElementById('tb'), tbEst = document.getElementById('tbEst'), tbConf = document.getElementById('tbConf'), tbCas = document.getElementById('tbCas');
 
   function grupo(f){
     return f.pendiente ? 'llamar' : 'seguimiento';
@@ -172,8 +196,8 @@ td.cotro{min-width:150px}
   function pintarFiltros(){
     var n = { llamar: 0, seguimiento: 0, estado: filas.length, todas: filas.length };
     filas.forEach(function(f){ n[grupo(f)]++; });
-    n.conf = confs.length;
-    var defs = [['llamar','Por llamar'],['conf','Confirmaciones'],['estado','Estado de las novedades'],['todas','Todas']];
+    n.conf = confs.length; n.cas = cas.length;
+    var defs = [['llamar','Por llamar'],['conf','Confirmaciones'],['cas','CAS \u00b7 respuestas'],['estado','Estado de las novedades'],['todas','Todas']];
     document.getElementById('filtros').innerHTML = defs.map(function(d){ return '<button data-f="' + d[0] + '" class="' + (filtro === d[0] ? 'on' : '') + '">' + d[1] + ' · ' + n[d[0]] + '</button>'; }).join('');
     Array.prototype.forEach.call(document.querySelectorAll('#filtros button'), function(b){ b.onclick = function(){ filtro = b.getAttribute('data-f'); try { localStorage.setItem('jaye_llamadas_filtro', filtro); } catch (e) {} pintar(); }; });
   }
@@ -372,15 +396,92 @@ td.cotro{min-width:150px}
       .catch(function(){});
   }
 
+  /* ---- pestana CAS: lo que contestaron Starken y Blue en los casos que abrimos ---- */
+  function filaCas(f){
+    var est = String(f.estado || '');
+    var cls = est === 'active' ? 'c-act' : (est === 'queues' ? 'c-cola' : 'c-cerr');
+    var txt = est === 'active' ? 'Abierto \u00b7 puedes responder'
+            : est === 'queues' ? 'En cola \u00b7 sin tomar'
+            : est === 'finalized' ? 'Finalizado' : 'Cerrado';
+    var reales = Number(f.n_reales || 0);
+    var cont = reales
+      ? '<div class="cont">' + esc(f.respuestas).split('  \u00b7  ').join('\n\n') + '</div>'
+      : '<div class="cont vacio2">No contestaron nada con contenido' +
+        (f.ultimo_msg ? '<div class="plant" style="font-weight:400;margin-top:5px">Solo la plantilla: \u201c' + esc(String(f.ultimo_msg).slice(0,90)) + '\u201d</div>' : '') + '</div>';
+    var pedido = String(f.estado_pedido || '').toUpperCase().split('_').join(' ');
+    var pcls = /ENTREGADO/.test(pedido) ? 'si' : (/DEVOL|RECHAZ/.test(pedido) ? 'si-mal' : 'nop');
+    return '<tr>' +
+      '<td><span class="chip ' + cls + '">' + esc(txt) + '</span>' +
+        (Number(f.sin_leer) > 0 ? '<div style="margin-top:5px"><span class="sinleer">' + f.sin_leer + ' sin leer</span></div>' : '') +
+        '<div class="sub">abierto ' + esc(f.abierto || '') + '</div></td>' +
+      '<td class="num ' + (Number(f.dias) >= 7 ? 'dias5' : '') + '">' + esc(f.dias) + '</td>' +
+      '<td class="num">' + esc(f.pedido) + '</td>' +
+      '<td><div class="nom">' + esc(f.cliente || '\u2014') + '</div><div class="sub">' + (f.valor ? clp(f.valor) : '') + '</div></td>' +
+      '<td>' + esc(f.guia || '\u2014') + '</td>' +
+      '<td>' + esc(f.transportadora || '?') + '</td>' +
+      '<td class="pedi">' + esc(f.descripcion || '\u2014') + '<div class="sub" style="margin-top:4px">' + esc(f.tipo || '') + '</div></td>' +
+      '<td>' + cont + '</td>' +
+      '<td>' + (f.asesor ? esc(f.asesor) + '<div class="sub">' + esc(f.asesor_mail || '') + '</div>' : '<span class="nop">sin asesor</span>') + '</td>' +
+      '<td><span class="' + pcls + '">' + esc(pedido || '\u2014') + '</span></td>' +
+      '<td style="white-space:nowrap">' + esc(f.ultimo_en || '\u2014') + '</td>' +
+      '</tr>';
+  }
+  function pintarCas(){
+    var grupos = [['contestados','Contestaron algo',''],['plantilla','Solo plantilla','r-nov'],['sinleer','Con mensajes sin leer','r-dev'],['abiertos','Abiertos','r-ent'],['todos','Todos los casos','']];
+    var pasa = function(f, g){
+      if (g === 'todos') return true;
+      if (g === 'contestados') return Number(f.n_reales || 0) > 0;
+      if (g === 'plantilla') return Number(f.n_reales || 0) === 0;
+      if (g === 'sinleer') return Number(f.sin_leer || 0) > 0;
+      if (g === 'abiertos') return f.estado === 'active' || f.estado === 'queues';
+      return true;
+    };
+    var res = document.getElementById('resumenCas');
+    res.innerHTML = grupos.map(function(g){
+      return '<button class="' + g[2] + (casSub === g[0] ? ' on' : '') + '" data-c="' + g[0] + '"><b>' +
+        cas.filter(function(f){ return pasa(f, g[0]); }).length + '</b><span>' + g[1] + '</span></button>'; }).join('');
+    Array.prototype.forEach.call(res.querySelectorAll('button'), function(b){
+      b.onclick = function(){ casSub = b.getAttribute('data-c'); pintarCas(); }; });
+    var lista = cas.filter(function(f){ return pasa(f, casSub); });
+    tbCas.innerHTML = lista.length ? lista.map(filaCas).join('')
+      : '<tr><td colspan="11" class="vacio">No hay casos en este grupo.</td></tr>';
+  }
+  function cargarCas(){
+    fetch(BASE + '/cas-lista?k=' + encodeURIComponent(clave))
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        if (!j || !j.ok) return;
+        cas = j.filas || [];
+        /* si lo ultimo que se bajo es de hace rato, la llave del CAS vencio */
+        var av = document.getElementById('tokAviso'), viejo = false;
+        if (cas.length && cas[0].bajado) {
+          var hm = String(cas[0].bajado).split(' ')[1] || '';
+          var d = new Date(); var q = hm.split(':');
+          d.setHours(Number(q[0] || 0), Number(q[1] || 0), 0, 0);
+          viejo = (Date.now() - d.getTime()) > 3600000;
+        }
+        if (viejo) av.innerHTML = 'Lo \u00faltimo que se pudo bajar del CAS fue a las <b>' + esc(cas[0].bajado) + '</b>. ' +
+          'La llave del CAS dura 25 horas y hay que renovarla desde el navegador para que esto se siga actualizando solo.';
+        av.hidden = !(viejo && filtro === 'cas');
+        if (filtro === 'cas') pintarCas(); else pintarFiltros();
+      })
+      .catch(function(){});
+  }
+
   function pintar(){
     pintarFiltros();
-    var esEst = filtro === 'estado', esConf = filtro === 'conf';
+    var esEst = filtro === 'estado', esConf = filtro === 'conf', esCas = filtro === 'cas';
     document.getElementById('wrapEst').hidden = !esEst;
     document.getElementById('resumen').hidden = !esEst;
     document.getElementById('wrapConf').hidden = !esConf;
-    document.getElementById('wrapLlamar').hidden = esEst || esConf;
-    document.getElementById('aviso').hidden = esEst || esConf;
+    document.getElementById('wrapCas').hidden = !esCas;
+    document.getElementById('resumenCas').hidden = !esCas;
+    document.getElementById('wrapLlamar').hidden = esEst || esConf || esCas;
+    document.getElementById('aviso').hidden = esEst || esConf || esCas;
     document.getElementById('avisoConf').hidden = !esConf;
+    document.getElementById('avisoCas').hidden = !esCas;
+    if (!esCas) document.getElementById('tokAviso').hidden = true;
+    if (esCas) { pintarCas(); return; }
     if (esConf) { pintarConf(); return; }
     if (esEst) { pintarEstado(); return; }
     var lista = filas.filter(function(f){ return filtro === 'todas' || grupo(f) === filtro; });
@@ -459,9 +560,10 @@ td.cotro{min-width:150px}
       })
       .catch(function(){ document.getElementById('estado').textContent = 'Sin conexión, reintentando…'; });
   }
-  cargar(); cargarConf();
+  cargar(); cargarConf(); cargarCas();
   setInterval(cargar, 60000);
   setInterval(cargarConf, 60000);
+  setInterval(cargarCas, 60000);
 })();
 </script>
 </body>
