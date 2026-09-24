@@ -427,8 +427,11 @@ async function cargarVentas(){
 }
 /* OJO: `clorofila` va ANTES que `foco|solar`, porque si no la clorofila NO se
    cuela por ahi pero si lo haria cualquier nombre que traiga "solar". El orden
-   de esta cadena es el que manda: el primero que calza se lleva el nombre. */
-const nombreCortoProd=s=>{var t=String(s||'');return /pesta|masc/i.test(t)?'Máscara Pestañas':/antena/i.test(t)?'Antena TV':/lente|gafa/i.test(t)?'Lentes One Power':/carga|bater/i.test(t)?'Cargador 12V':/clorofila/i.test(t)?'Clorofila 60 ml':/foco|solar/i.test(t)?'Foco Solar':/ducha|cabezal/i.test(t)?'Cabezal de Ducha':/shilajit/i.test(t)?'Shilajit Ultra':/lymphoria/i.test(t)?'Lymphoria 60 ml':/drainpro|drenaje/i.test(t)?'DRAINPRO':/organiz/i.test(t)?'Organizador Ropa':/almohada|cervical/i.test(t)?'Almohada Cervical':/kinoki|parche/i.test(t)?'Parches Kinoki':/cepillo|parrilla/i.test(t)?'Cepillo Parrilla':t.split('+')[0].trim();};
+   de esta cadena es el que manda: el primero que calza se lleva el nombre.
+   24-09: paso exactamente eso con la GUIRNALDA SOLAR. Sus dos primeras ventas
+   salieron en el panel contadas como "Foco Solar", que ese dia no vendio nada.
+   Por eso `guirnalda|ampolleta` va ANTES que `foco|solar`. */
+const nombreCortoProd=s=>{var t=String(s||'');return /pesta|masc/i.test(t)?'Máscara Pestañas':/antena/i.test(t)?'Antena TV':/lente|gafa/i.test(t)?'Lentes One Power':/carga|bater/i.test(t)?'Cargador 12V':/clorofila/i.test(t)?'Clorofila 60 ml':/guirnalda|ampolleta/i.test(t)?'Guirnalda Solar':/foco|solar/i.test(t)?'Foco Solar':/ducha|cabezal/i.test(t)?'Cabezal de Ducha':/shilajit/i.test(t)?'Shilajit Ultra':/lymphoria/i.test(t)?'Lymphoria 60 ml':/drainpro|drenaje/i.test(t)?'DRAINPRO':/organiz/i.test(t)?'Organizador Ropa':/almohada|cervical/i.test(t)?'Almohada Cervical':/kinoki|parche/i.test(t)?'Parches Kinoki':/cepillo|parrilla/i.test(t)?'Cepillo Parrilla':t.split('+')[0].trim();};
 /* El nombre que se ve en VISITAS. Antes salia el nombre crudo entero
    ("Mascara de Pestañas Flamenco Mega Volume"), que desbordaba la tarjeta y
    se comia la columna de al lado. Ahora se acorta, y a las paginas de la
