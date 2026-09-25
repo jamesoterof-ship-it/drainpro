@@ -235,7 +235,7 @@ function celdaAprob(k,montadoHtml,rid,faltaDir,prog,enRevision,dud,creadoMs){
   if(faltaDir && enRevision) return '<span class="st st-ab" style="background:#eef1f6;color:#3c4a5e"><i style="background:#7a8699"></i>⏳ El inspector la está revisando</span>'+mover;
   if(faltaDir==='nom') return '<span class="st st-ab" style="background:#fdeaea;color:#a01818"><i style="background:#c62828"></i>Falta el nombre</span>'+mover;
   if(faltaDir) return '<span class="st st-ab" style="background:#fdeaea;color:#a01818"><i style="background:#c62828"></i>Corregir dirección</span>'+mover;
-  if(prog) return '<span class="st st-ab" style="background:#fff3e2;color:#b45309"><i style="background:#d97706"></i>Vuelve el '+esc(prog)+'</span>';
+  if(prog) return '<span class="st st-ab" style="background:#fff3e2;color:#b45309"><i style="background:#d97706"></i>'+esc(prog.charAt(0).toUpperCase()+prog.slice(1))+'</span>';
   return '<button class="b-apr" onclick="aprobar(&quot;'+k+'&quot;)">✓ Aprobar</button>'+mover+'<button class="b-rech" title="Eliminar — sale de la lista y no se monta en Dropi" onclick="eliminar(&quot;'+k+'&quot;,&quot;'+(rid||'')+'&quot;)">🗑</button>';
 }
 
@@ -1656,15 +1656,14 @@ function renderAprobar(){
        cliente — justo por haberlo esperado. Es la misma regla del montador. */
     const _reg = String((x.raw && x.raw.region) || x.region || '').toUpperCase();
     x.margen = /METROP/.test(_reg) ? 3 : 4;
-    /* 25-09 James: "acuerdate los tiempos de entrega". Antes contaba dias CORRIDOS y
-       con fin de semana de por medio la venta volvia DESPUES del ultimo dia para
-       despachar. Ahora: dia de despacho = fecha - 3 habiles (Santiago) / 4 (regiones),
-       sin sab/dom/feriados, igual que el montador; y vuelve a Pendientes 1 habil ANTES
-       para alcanzar a aprobarla (el montador igual la guarda hasta su dia). */
-    const _sale = d ? _restarHabiles(d, x.margen) : 0;
-    const _vuelve = d ? _restarHabiles(_sale, 1) : 0;
-    x.prog = !!(d && x.st!=='montado' && hoyDia < _vuelve);
-    x.vuelve = x.prog ? new Date(_vuelve).toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',timeZone:'UTC'}) : '';
+    /* 25-09 James: la programada que NO contesto la plantilla no se aprueba. Se queda
+       en Programadas mientras tenga fecha; el flujo "Programadas · preguntar y soltar"
+       le pregunta 5 dias CORRIDOS antes (sab y dom cuentan) y, cuando confirma, le
+       quita la fecha y cae sola en Pendientes. */
+    const _pregunta = d ? d - 5*864e5 : 0;
+    x.prog = !!(d && x.st!=='montado');
+    x.vuelve = !x.prog ? '' : (hoyDia >= _pregunta ? 'esperando que confirme'
+      : 'se le pregunta el '+new Date(_pregunta).toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',timeZone:'UTC'}));
   });
   const nProg=items.filter(x=>x.prog).length;
   const bp=document.getElementById('numProg');
@@ -1824,15 +1823,6 @@ function ajustarStickyTop(){
   }
   document.documentElement.style.setProperty('--th-top', off+'px');
 }
-/* Dias habiles: MISMA lista que _FERIADOS del montador l682yMOKI6QaiK8d y que
-   fin_restar_habiles() en la base. Si se agrega un feriado, va en los tres. */
-var _FERIADOS_CL=['2026-09-18','2026-09-19','2026-10-12','2026-10-31','2026-12-08','2026-12-25','2027-01-01'];
-function _restarHabiles(ms,n){
-  let d=ms;
-  while(n>0){ d-=864e5; const f=new Date(d), g=f.getUTCDay(); if(g!==0&&g!==6&&_FERIADOS_CL.indexOf(f.toISOString().slice(0,10))<0) n--; }
-  return d;
-}
-
 /* ---------- Cancelaciones (25-09): cliente cancelo y el pedido YA esta montado.
    James: "el inspector se equivoca y cancela lo que no debe, mejor que me avisa a mi
    y reviso yo". NADA se cancela solo: solo el boton, con confirmacion. El flujo n8n
