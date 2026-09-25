@@ -1656,8 +1656,15 @@ function renderAprobar(){
        cliente — justo por haberlo esperado. Es la misma regla del montador. */
     const _reg = String((x.raw && x.raw.region) || x.region || '').toUpperCase();
     x.margen = /METROP/.test(_reg) ? 3 : 4;
-    x.prog = !!(d && x.st!=='montado' && x.diasFalta > x.margen);
-    x.vuelve = x.prog ? new Date(d-x.margen*864e5).toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',timeZone:'UTC'}) : '';
+    /* 25-09 James: "acuerdate los tiempos de entrega". Antes contaba dias CORRIDOS y
+       con fin de semana de por medio la venta volvia DESPUES del ultimo dia para
+       despachar. Ahora: dia de despacho = fecha - 3 habiles (Santiago) / 4 (regiones),
+       sin sab/dom/feriados, igual que el montador; y vuelve a Pendientes 1 habil ANTES
+       para alcanzar a aprobarla (el montador igual la guarda hasta su dia). */
+    const _sale = d ? _restarHabiles(d, x.margen) : 0;
+    const _vuelve = d ? _restarHabiles(_sale, 1) : 0;
+    x.prog = !!(d && x.st!=='montado' && hoyDia < _vuelve);
+    x.vuelve = x.prog ? new Date(_vuelve).toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',timeZone:'UTC'}) : '';
   });
   const nProg=items.filter(x=>x.prog).length;
   const bp=document.getElementById('numProg');
@@ -1817,6 +1824,15 @@ function ajustarStickyTop(){
   }
   document.documentElement.style.setProperty('--th-top', off+'px');
 }
+/* Dias habiles: MISMA lista que _FERIADOS del montador l682yMOKI6QaiK8d y que
+   fin_restar_habiles() en la base. Si se agrega un feriado, va en los tres. */
+var _FERIADOS_CL=['2026-09-18','2026-09-19','2026-10-12','2026-10-31','2026-12-08','2026-12-25','2027-01-01'];
+function _restarHabiles(ms,n){
+  let d=ms;
+  while(n>0){ d-=864e5; const f=new Date(d), g=f.getUTCDay(); if(g!==0&&g!==6&&_FERIADOS_CL.indexOf(f.toISOString().slice(0,10))<0) n--; }
+  return d;
+}
+
 /* ---------- Cancelaciones (25-09): cliente cancelo y el pedido YA esta montado.
    James: "el inspector se equivoca y cancela lo que no debe, mejor que me avisa a mi
    y reviso yo". NADA se cancela solo: solo el boton, con confirmacion. El flujo n8n
