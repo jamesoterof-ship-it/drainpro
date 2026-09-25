@@ -217,9 +217,19 @@ function btnDud(k,dud){
   return dud ? '<button style="'+BTN_NODUD+'" title="Devolver a Pendientes" onclick="quitarDudosa(&quot;'+k+'&quot;)">↩ Pendiente</button>'
              : '<button style="'+BTN_DUD+'" title="Pasar a la pestaña Dudosas, sin borrarla" onclick="marcarDudosa(&quot;'+k+'&quot;)">⚠ Dudosa</button>';
 }
-function celdaAprob(k,montadoHtml,rid,faltaDir,prog,enRevision,dud){
+function celdaAprob(k,montadoHtml,rid,faltaDir,prog,enRevision,dud,creadoMs){
   if(montadoHtml) return montadoHtml;
   if(esAprobado(k)) return '<span class="st st-rec"><i></i>Aprobado ⏳</span>';
+  /* 25-09 James: "bloquea la aprobacion por una hora". Hasta ahora el reloj de
+     espera era solo un letrero: el boton Aprobar estaba igual y se aprobaba a los
+     pocos minutos. Ahora, antes de la hora, en vez del boton va el reloj, y al
+     cumplirse relojEspera() pone los botones solo. El montador ademas no manda
+     nada a Dropi antes de la hora aunque llegue una aprobacion vieja. */
+  var _m = Number(creadoMs)>0 ? Math.floor((Date.now()-Number(creadoMs))/60000) : null;
+  if(_m!==null && _m<ESPERA_MIN && !esRechazado(k)){
+    var _luego = celdaAprob(k,montadoHtml,rid,faltaDir,prog,enRevision,dud,0);
+    return '<span data-espera="'+Number(creadoMs)+'" data-luego="'+enAtributo(_luego)+'"><span class="st st-ab" style="background:#eef1f6;color:#3c4a5e"><i style="background:#7a8699"></i>⏳ faltan '+(ESPERA_MIN-_m)+' min</span></span>';
+  }
   if(esRechazado(k)) return '<span class="st st-ab"><i></i>Eliminado</span><button class="b-desh" onclick="deshacerRechazo(&quot;'+k+'&quot;)">Deshacer</button>';
   var mover=prog?'':btnDud(k,dud);
   if(faltaDir && enRevision) return '<span class="st st-ab" style="background:#eef1f6;color:#3c4a5e"><i style="background:#7a8699"></i>⏳ El inspector la está revisando</span>'+mover;
@@ -664,7 +674,7 @@ function renderPedidosWeb(){
       <td>${o.cant}</td>
       <td class="money">${o.total}</td>
       <td>${o.abono?'<span class="st st-rec"><i></i>Abono pendiente</span>':(o.conf?'<span class="st st-ok"><i></i>Confirmado</span>':'<span class="st st-rec"><i></i>Pendiente</span>')}</td>
-      <td class="cell-aprob" onclick="event.stopPropagation()">${celdaAprob(keyPag(o), o.dropi?'<span class="st st-ok"><i></i>Montado</span>':'')}</td>
+      <td class="cell-aprob" onclick="event.stopPropagation()">${celdaAprob(keyPag(o), o.dropi?'<span class="st st-ok"><i></i>Montado</span>':'','',false,'',false,false,o.creadoMs)}</td>
       <td><svg class="ico-sm chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></td>
     </tr>`).join('');
   window._pedidosF=arr;
@@ -986,8 +996,8 @@ function renderVentasBot(){
       <td class="money">${o.precio}</td>
       <td>${o.abono?'<span class="st st-rec"><i></i>Abono pendiente</span>':(o.conf?'<span class="st st-ok"><i></i>Confirmado</span>':'<span class="st st-rec"><i></i>Pendiente</span>')}</td>
       <td class="cell-aprob" onclick="event.stopPropagation()">${o.esWeb
-        ? celdaAprob(keyPag(o), o.montado?'<span class="st st-ok"><i></i>Montado'+(o.ordenDropi?' #'+o.ordenDropi:'')+'</span>':'')
-        : celdaAprob(keyWa(o), o.montado?'<span class="st st-ok"><i></i>Montado'+(o.ordenDropi?' #'+o.ordenDropi:'')+'</span>':'', o.rid, /falta direccion/i.test(String(o.estado||'')))}</td>
+        ? celdaAprob(keyPag(o), o.montado?'<span class="st st-ok"><i></i>Montado'+(o.ordenDropi?' #'+o.ordenDropi:'')+'</span>':'','',false,'',false,false,o.creadoMs)
+        : celdaAprob(keyWa(o), o.montado?'<span class="st st-ok"><i></i>Montado'+(o.ordenDropi?' #'+o.ordenDropi:'')+'</span>':'', o.rid, /falta direccion/i.test(String(o.estado||'')),'',false,false,o.creadoMs)}</td>
       <td><svg class="ico-sm chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></td>
     </tr>`).join('');
   window._ventasBotF=arr;
@@ -1231,7 +1241,7 @@ function renderVentasWA(){
       <td>${o.cant}</td>
       <td class="money">${o.precio}</td>
       <td>${o.abono?'<span class="st st-rec"><i></i>Abono pendiente</span>':(o.conf?'<span class="st st-ok"><i></i>Confirmado</span>':'<span class="st st-rec"><i></i>Pendiente</span>')}</td>
-      <td class="cell-aprob" onclick="event.stopPropagation()">${celdaAprob(keyWa(o), o.montado?'<span class="st st-ok"><i></i>Montado'+(o.ordenDropi?' #'+o.ordenDropi:'')+'</span>':'', o.rid, /falta direccion/i.test(String(o.estado||'')))}</td>
+      <td class="cell-aprob" onclick="event.stopPropagation()">${celdaAprob(keyWa(o), o.montado?'<span class="st st-ok"><i></i>Montado'+(o.ordenDropi?' #'+o.ordenDropi:'')+'</span>':'', o.rid, /falta direccion/i.test(String(o.estado||'')),'',false,false,o.creadoMs)}</td>
       <td><svg class="ico-sm chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></td>
     </tr>`).join('');
   window._ventasF=arr;
@@ -1504,7 +1514,7 @@ const REV={
    proposito, para darle tiempo al cliente a cambiar de idea, corregir la direccion
    o cancelar. El panel dice cuanto falta y cuando ya se puede. Sin esto se
    aprobaba a los 3, 5 y 13 minutos y salian pedidos ya cancelados. */
-const ESPERA_MIN=180; /* 20-09 James: 3 horas, por si el cliente cambia la direccion o se arrepiente */
+const ESPERA_MIN=60; /* 25-09 James: "bloquea la aprobacion por una hora" (antes 180, pero era solo un letrero: el boton aprobaba igual) */
 function minutosDe(x){ return x.creadoMs ? Math.floor((Date.now()-x.creadoMs)/60000) : null; }
 function pastilla(bg,fg,txt){ return '<span style="display:inline-block;margin-left:6px;background:'+bg+';color:'+fg+';font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;vertical-align:middle">'+txt+'</span>'; }
 const enAtributo=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
@@ -1568,7 +1578,7 @@ function bloqueRev(o){
        y sin esto el "faltan N min" tampoco se movia */
     return '<div data-espera="'+o.creadoMs+'" data-frase="⏳ Faltan {n} min para poder aprobarla" data-luego="'+enAtributo(bloqueRevYa(o,n,r))+'" style="background:#f1f3f4;border-left:4px solid #9aa0a6;padding:10px 12px;border-radius:8px;margin-bottom:10px">'
       +'<span style="display:block;color:#3c4043;font-weight:800;font-size:12.5px;margin-bottom:4px">⏳ Faltan '+(ESPERA_MIN-m)+' min para poder aprobarla</span>'
-      +'<div style="color:#5f6368;line-height:1.4;white-space:normal">Se esperan tres horas desde la venta por si el cliente cambia la dirección, pone una condición o la cancela.</div></div>';
+      +'<div style="color:#5f6368;line-height:1.4;white-space:normal">Se espera una hora desde la venta por si el cliente cambia la dirección, pone una condición o la cancela.</div></div>';
   }
   return bloqueRevYa(o,n,r);
 }
@@ -1686,7 +1696,7 @@ function renderAprobar(){
       <td>${esc(x.comuna||'—')}</td>
       <td>${x.cant}</td>
       <td class="money">${x.total}</td>
-      <td class="cell-aprob" onclick="event.stopPropagation()">${celdaAprob(x.k, x.st==='montado'?'<span class="st st-ok"><i></i>Montado</span>':'', x.rid||'', x.faltaDir, x.vuelve, enRevisionInsp(x.nivel, x.creadoMs), !!x.dud)}</td>
+      <td class="cell-aprob" onclick="event.stopPropagation()">${celdaAprob(x.k, x.st==='montado'?'<span class="st st-ok"><i></i>Montado</span>':'', x.rid||'', x.faltaDir, x.vuelve, enRevisionInsp(x.nivel, x.creadoMs), !!x.dud, x.creadoMs)}</td>
       <td onclick="event.stopPropagation()"><a class="qr" style="text-decoration:none;cursor:pointer" onclick="crmAbrir('${x.tel}')">WhatsApp</a></td>
     </tr>`).join('');
 }
