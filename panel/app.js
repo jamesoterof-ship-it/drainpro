@@ -1788,6 +1788,7 @@ async function guardarAprob(i){
 const TITULOS={
   novedades:['Novedades','Pedidos detenidos - escribeles tu, las mas nuevas arriba'],
   listanegra:['Lista negra','Clientes con devoluciones — anticipo obligatorio si vuelven a comprar'],
+  cancelar:['Cancelaciones','El cliente canceló y el pedido ya está montado · tú decides si se cancela en Dropi'],
   direcciones:['Direcciones incompletas','Pedidos que NO se aprueban hasta corregir la dirección — contáctalos tú de parte de logística'],
   crm:['CRM · Clientes','Novedades, garantías, avisos y seguimiento — todo en un solo lugar'],resumen:['Resumen general','Todos los canales · monedas separadas por país'],
   ganancia:['Ganancia','Lo que entra de Dropi menos devoluciones, Meta, bots y tu sueldo · en pesos colombianos'],
@@ -1816,6 +1817,56 @@ function ajustarStickyTop(){
   }
   document.documentElement.style.setProperty('--th-top', off+'px');
 }
+/* ---------- Cancelaciones (25-09): cliente cancelo y el pedido YA esta montado.
+   James: "el inspector se equivoca y cancela lo que no debe, mejor que me avisa a mi
+   y reviso yo". NADA se cancela solo: solo el boton, con confirmacion. El flujo n8n
+   4ZfNTLxTRltwQ04V solo acepta ventas de esta lista y relee Dropi antes de marcar. ---------- */
+function _cnEsc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+function cargarCancelar(){
+  var tb=document.getElementById('tbodyCancelar');
+  if(tb && document.getElementById('view-cancelar').classList.contains('act')) tb.innerHTML='<tr><td colspan="5" class="vacio">Cargando…</td></tr>';
+  fetch(BASE+'/cancelar-pendientes',{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
+    var filas=((d&&d.filas)||[]).filter(function(f){return f&&f.venta_id;});
+    var badge=document.getElementById('badgeCancelar');
+    if(badge){ badge.textContent=filas.length; badge.style.display=filas.length?'':'none'; }
+    if(!tb) return;
+    if(!filas.length){ tb.innerHTML='<tr><td colspan="5" class="vacio">✅ Ningún cliente canceló con el pedido ya montado.</td></tr>'; return; }
+    tb.innerHTML=filas.map(function(f){
+      var tel=String(f.telefono||'').replace(/\D/g,'');
+      var motivo=String(f.motivo||'').replace(/^YA MONTADA · /,'');
+      var puede=f.se_puede==='SE_PUEDE';
+      var accion=puede
+        ? '<button onclick="cnCancelar(\''+f.venta_id+'\',this)" style="font-size:12px;padding:7px 12px;border:0;border-radius:8px;background:#e1283c;color:#fff;font-weight:800;cursor:pointer;margin:0 6px 6px 0">⛔ Cancelar en Dropi</button>'
+        : '<span style="display:inline-block;font-size:11.5px;color:#d98200;font-weight:700;margin:0 6px 6px 0">Ya tiene guía: por API no se puede.<br>Anúlalo en el panel de Dropi.</span><br>';
+      accion+='<button onclick="crmAbrir(\''+tel+'\')" style="font-size:11.5px;padding:6px 10px;border:0;border-radius:8px;background:#25D366;color:#fff;font-weight:700;cursor:pointer;margin:0 6px 6px 0">💬 Chat</button>'+
+        '<button onclick="cnDescartar(\''+f.venta_id+'\',this)" style="font-size:11.5px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);color:var(--ink-2);font-weight:700;cursor:pointer">No cancelar</button>';
+      return '<tr>'+
+        '<td><b>'+_cnEsc(f.nombre||'—')+'</b><br><span style="color:#8a93a0;font-size:11.5px">+'+tel+' · venta '+f.venta_id+'</span></td>'+
+        '<td>'+_cnEsc(f.producto||'')+'<br><span style="color:#8a93a0;font-size:11.5px">$'+Number(String(f.precio||0).replace(/\D/g,'')||0).toLocaleString('es-CO')+'</span></td>'+
+        '<td style="font-size:12.5px;max-width:380px">'+_cnEsc(motivo)+'</td>'+
+        '<td><b>#'+_cnEsc(f.order_id)+'</b><br><span style="font-size:11.5px;color:'+(puede?'#1f9d55':'#d98200')+';font-weight:700">'+_cnEsc(f.estado_dropi||'PENDIENTE')+'</span>'+(f.guia?'<br><span style="color:#8a93a0;font-size:11px">guía '+_cnEsc(f.guia)+'</span>':'')+(f.resultado?'<br><span style="color:#d33;font-size:11px">'+_cnEsc(f.resultado)+'</span>':'')+'</td>'+
+        '<td style="white-space:nowrap">'+accion+'</td>'+
+      '</tr>';
+    }).join('');
+  }).catch(function(){ if(tb) tb.innerHTML='<tr><td colspan="5" class="vacio">No se pudo cargar (¿flujo «Aviso · cliente cancelo con pedido montado» activo en n8n?).</td></tr>'; });
+}
+function _cnEnviar(body,btn){
+  if(btn){ btn.disabled=true; btn.textContent='Enviando…'; }
+  return fetch(BASE+'/cancelar-dropi',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+    .then(function(r){return r.json();})
+    .then(function(j){ alert(j&&j.resultado?j.resultado:'Sin respuesta de n8n.'); cargarCancelar(); })
+    .catch(function(){ alert('No se pudo conectar con n8n. No se canceló nada.'); cargarCancelar(); });
+}
+function cnCancelar(id,btn){
+  if(!confirm('¿Cancelar este pedido en Dropi?\n\nNo tiene vuelta atrás.')) return;
+  _cnEnviar({venta_id:String(id),accion:'cancelar'},btn);
+}
+function cnDescartar(id,btn){
+  if(!confirm('¿Lo revisaste y NO se cancela? Sale de esta lista y el pedido sigue normal.')) return;
+  _cnEnviar({venta_id:String(id),accion:'descartar'},btn);
+}
+cargarCancelar(); setInterval(cargarCancelar, 300000);
+
 /* ---------- Direcciones incompletas: no se aprueban; James contacta y puede pausar a Camila ---------- */
 function cargarDirecciones(){
   var tb=document.getElementById('tbodyDirecciones'); if(!tb) return;
@@ -2364,6 +2415,7 @@ function mostrarVista(v){
   document.getElementById('vtitle').textContent=t[0];
   document.getElementById('vsub').textContent=t[1];
   if(v==='direcciones') cargarDirecciones();
+  if(v==='cancelar') cargarCancelar();
   if(v==='novedades') novTab(_novTab);
   if(v==='listanegra') cargarListaNegra();
   if(v==='historico') renderHistorico();
