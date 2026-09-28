@@ -530,41 +530,56 @@ async function cargarPaginas(){
 /* ---------- RESUMEN (canal + rango funcionales) ---------- */
 function renderResumen(){
   const el=id=>document.getElementById(id);
-  const enR  =ordenes.filter(o=>enRango(o.orden));
+  /* 28-09: el MISMO tablero sirve a cada país (pestañas de arriba). _ordP/_webP
+     dan las ventas del país elegido y fmtMonP las pone en su moneda. */
+  const enR  =_ordP().filter(o=>enRango(o.orden));
   const waR  =enR.filter(o=>o.bot!=='Redes');       // WhatsApp puro
   const redR =enR.filter(o=>o.bot==='Redes');       // Facebook e Instagram
-  const webR=pedidosWeb.filter(o=>enRango(o.orden));
+  const webR=_webP().filter(o=>enRango(o.orden));
   const usaWA = fCanal==='todos'||fCanal==='wa', usaWeb = fCanal==='todos'||fCanal==='web';
   const usaRed = fCanal==='todos'||fCanal==='redes';
   const lbl=rangoTxt();
-  ['lTot','lWa','lWeb','lMon'].forEach((id,i)=>{ if(el(id)) el(id).textContent=['Ventas totales ('+lbl+')','Ventas por WhatsApp ('+lbl+')','Ventas por página ('+lbl+')','Ventas '+lbl+' · por moneda'][i]; });
+  const MON=fPais==='ES'?'EUR':fPais==='CO'?'COP':'CLP';
+  ['lTot','lWa','lWeb','lMon'].forEach((id,i)=>{ if(el(id)) el(id).textContent=['Ventas totales ('+lbl+')','Ventas por WhatsApp ('+lbl+')','Ventas por página ('+lbl+')','Ventas '+lbl+' · en '+MON][i]; });
   if(el('lRed')) el('lRed').textContent='Ventas por redes ('+lbl+')';
   if(el('kRed')) el('kRed').textContent=usaRed?redR.length:'—';
-  if(el('kRedMeta')) el('kRedMeta').textContent=usaRed&&redR.length?(fmtCLP(redR.reduce((a,b)=>a+b.precioNum,0))+' CLP'):'—';
+  if(el('kRedMeta')) el('kRedMeta').textContent=usaRed&&redR.length?fmtMonP(redR.reduce((a,b)=>a+_val(b,'precioNum'),0)):'—';
   if(el('kTot')) el('kTot').textContent=(usaWA?waR.length:0)+(usaRed?redR.length:0)+(usaWeb?webR.length:0);
   if(el('kWa'))  el('kWa').textContent=usaWA?waR.length:'—';
   if(el('kWeb')) el('kWeb').textContent=usaWeb?(PAGINAS.some(p=>p.url)?webR.length:'—'):'—';
-  if(el('kWebMeta')) el('kWebMeta').textContent=usaWeb&&PAGINAS.some(p=>p.url)?(fmtCLP(webR.reduce((a,b)=>a+b.totalNum,0))+' CLP'):'—';
-  if(el('kMonedas')){
-    const tCL=(usaWA?waR.filter(o=>o.loc==='CL').reduce((a,b)=>a+b.precioNum,0):0)
-             +(usaRed?redR.reduce((a,b)=>a+b.precioNum,0):0)
-             +(usaWeb?webR.reduce((a,b)=>a+b.totalNum,0):0);
-    const tCO=usaWA?waR.filter(o=>o.loc==='CO').reduce((a,b)=>a+b.precioNum,0):0;
-    /* 28-09: Paraguay fuera (James), entra España y Portugal en euros */
-    const tES=(typeof ventasES!=='undefined'?ventasES:[]).filter(o=>enRango(o.orden)).reduce((a,b)=>a+b.totalNum,0);
+  if(el('kWebMeta')) el('kWebMeta').textContent=usaWeb&&PAGINAS.some(p=>p.url)?fmtMonP(webR.reduce((a,b)=>a+_val(b,'totalNum'),0)):'—';
+  if(el('kMonedas') && fPais==='todos'){
+    /* Resumen: cada moneda por separado y el total en pesos colombianos */
+    const s=(arr,campo,m)=>arr.filter(o=>_mon(o)===m).reduce((a,b)=>a+(b[campo]||0),0);
+    const tCL=(usaWA?s(waR,'precioNum','CLP'):0)+(usaRed?s(redR,'precioNum','CLP'):0)+(usaWeb?s(webR,'totalNum','CLP'):0);
+    const tEU=usaWeb?s(webR,'totalNum','EUR'):0;
+    const tCO=(usaWA?s(waR,'precioNum','COP'):0)+(usaRed?s(redR,'precioNum','COP'):0);
+    const tot=TASAS?tCL*TASAS.clp+tEU*TASAS.eur+tCO:null;
+    el('lMon').textContent='Ventas '+lbl+' · por moneda';
     el('kMonedas').innerHTML=
       '<div class="mm"><span class="flag flag-cl"></span>'+fmtCLP(tCL)+'<small>CLP</small></div>'+
-      '<div class="mm"><span class="flag flag-es"></span>'+fmtEUR(tES).replace(' €','')+'<small>EUR</small></div>'+
-      '<div class="mm"><span class="flag flag-co"></span>'+fmtCOP(tCO)+'<small>COP</small></div>';
+      '<div class="mm"><span class="flag flag-es"></span>'+fmtEUR(tEU).replace(' €','')+'<small>EUR</small></div>'+
+      '<div class="mm"><span class="flag flag-co"></span>'+fmtCOP(tCO)+'<small>COP</small></div>'+
+      '<div class="mm" style="border-top:1px solid var(--border);padding-top:6px">= '+(tot===null?'sin tasa':fmtCOP(tot))+'<small>total COP</small></div>';
+  } else if(el('kMonedas')){
+    /* 28-09: lo vendido del país en SU moneda y, debajo, cuánto es en pesos colombianos */
+    const tLoc=(usaWA?waR.reduce((a,b)=>a+b.precioNum,0):0)
+              +(usaRed?redR.reduce((a,b)=>a+b.precioNum,0):0)
+              +(usaWeb?webR.reduce((a,b)=>a+b.totalNum,0):0);
+    const tasa=fPais==='ES'?(TASAS&&TASAS.eur):fPais==='CO'?1:(TASAS&&TASAS.clp);
+    const num=fPais==='ES'?fmtEUR(tLoc).replace(' €',''):fPais==='CO'?fmtCOP(tLoc):fmtCLP(tLoc);
+    el('kMonedas').innerHTML=
+      '<div class="mm"><span class="flag '+(fPais==='ES'?'flag-es':fPais==='CO'?'flag-co':'flag-cl')+'"></span>'+num+'<small>'+MON+'</small></div>'+
+      (fPais==='CO'?'':'<div class="mm" style="font-size:13.5px;color:var(--ink-2)">≈ '+(tasa?fmtCOP(tLoc*tasa):'sin tasa')+'<small>COP</small></div>');
   }
   renderChart(); renderPaises(); renderActividad(); renderTopProd();
   renderPaisTab();
 }
 function renderActividad(){
   const cont=document.getElementById('actividadReciente'); if(!cont) return;
-  const wa=ordenes.map(o=>({cli:o.cli,canal:o.bot==='Redes'?'redes':'wa',red:o.red,prod:o.prod,loc:o.loc,bot:o.bot,money:o.precio,orden:o.orden,
+  const wa=_ordP().map(o=>({cli:o.cli,canal:o.bot==='Redes'?'redes':'wa',red:o.red,prod:o.prod,loc:o.loc,bot:o.bot,money:o.precio,orden:o.orden,
     fecha:o.fecha,hora:o.hora}));
-  const web=pedidosWeb.map(o=>({cli:o.cli,canal:'web',prod:o.prod,loc:'CL',color:o.color,money:o.total+' CLP',orden:o.orden,fecha:o.fecha}));
+  const web=_webP().map(o=>({cli:o.cli,canal:'web',prod:(o.sub?o.sub+' · ':'')+o.prod,loc:'CL',color:o.color,money:o.sub?o.total:o.total+' CLP',orden:o.orden,fecha:o.fecha}));
   const todo=wa.concat(web).sort((a,b)=>b.orden-a.orden).slice(0,8);
   if(!todo.length){cont.innerHTML='<div class="vacio">Aún no hay ventas.</div>';return;}
   cont.innerHTML='<div class="actfeed">'+todo.map(a=>{
@@ -579,7 +594,7 @@ function renderActividad(){
 }
 function renderTopProd(){
   const cont=document.getElementById('topProductos'); if(!cont) return;
-  const waR=ordenes.filter(o=>enRango(o.orden)), webR=pedidosWeb.filter(o=>enRango(o.orden));
+  const waR=_ordP().filter(o=>enRango(o.orden)), webR=_webP().filter(o=>enRango(o.orden));
   /* Se agrupa por el nombre CORTO, no por el crudo: "Foco Solar Tipo Cámara" y
      "Foco Solar Tipo Camara" son el mismo producto y salian como dos filas.
      Se cuentan VENTAS: una venta es una venta, lleve 1 producto o 20. */
@@ -610,8 +625,8 @@ function renderChart(){
   for(let i=0;i<nD;i++){const d=new Date(base+i*864e5);dias.push({key:d.toDateString(),lbl:nD>10?String(d.getDate()):(d.toDateString()===new Date().toDateString()?'Hoy':d.toLocaleDateString('es-CL',{weekday:'short'})),wa:0,web:0,red:0});}
   /* las de redes vienen dentro de `ordenes` marcadas bot==='Redes' (mismo criterio
      que usan la lista de actividad y el contador del menu) */
-  ordenes.forEach(o=>{if(!o.orden)return;const d=dias.find(x=>x.key===new Date(o.orden).toDateString());if(!d)return;if(o.bot==='Redes')d.red++;else d.wa++;});
-  pedidosWeb.forEach(o=>{if(!o.orden)return;const d=dias.find(x=>x.key===new Date(o.orden).toDateString());if(d)d.web++;});
+  _ordP().forEach(o=>{if(!o.orden)return;const d=dias.find(x=>x.key===new Date(o.orden).toDateString());if(!d)return;if(o.bot==='Redes')d.red++;else d.wa++;});
+  _webP().forEach(o=>{if(!o.orden)return;const d=dias.find(x=>x.key===new Date(o.orden).toDateString());if(d)d.web++;});
   /* el filtro de canal decide QUE series se dibujan; el total es la suma de las
      que se ven, para que el numero de arriba siempre cuadre con las barras */
   const vis = fCanal==='todos' ? CH_SERIES : CH_SERIES.filter(s=>s.k===(fCanal==='web'?'web':fCanal==='redes'?'red':'wa'));
@@ -646,6 +661,16 @@ function renderChart(){
 }
 function renderPaises(){
   const cont=document.getElementById('paisesReal'); if(!cont) return;
+  /* en la pestaña de España el panel reparte entre España y Portugal */
+  if(fPais==='ES'){
+    const e={ES:{n:0,t:0},PT:{n:0,t:0}};
+    ventasES.filter(o=>enRango(o.orden)).forEach(o=>{e[o.sub].n++;e[o.sub].t+=o.totalNum;});
+    const tt=e.ES.n+e.PT.n||1;
+    cont.innerHTML=[['ES','España','#aa151b'],['PT','Portugal','#006600']].map(([k,nom,col])=>{const p=Math.round(e[k].n/tt*100);
+      return `<div class="pais"><span class="flag flag-${k.toLowerCase()}"></span>${nom}<div class="track"><i style="width:${p}%;background:${col}"></i></div><b>${e[k].n} · ${fmtEUR(e[k].t)}</b><span class="pct">${p}%</span></div>`;}).join('');
+    const ps0=document.getElementById('paisesSub'); if(ps0) ps0.textContent=rangoTxt()+' · España y Portugal';
+    return;
+  }
   /* 28-09: Paraguay fuera (James), España y Portugal dentro (en euros) */
   const g={CL:{n:0,t:0},CO:{n:0,t:0},PY:{n:0,t:0},ES:{n:0,t:0}};
   if(fCanal!=='web') ordenes.filter(o=>enRango(o.orden)).forEach(o=>{g[o.loc].n++;g[o.loc].t+=o.precioNum;});
@@ -4028,60 +4053,77 @@ function totalesPais(){
 function kpiHtml(lbl,val,meta){
   return '<div class="kpi"><div class="top-r"><span class="lbl">'+lbl+'</span></div><div class="val">'+val+'</div>'+(meta?'<div class="meta">'+meta+'</div>':'')+'</div>';
 }
-function irPais(p){ fPais=p; try{ localStorage.setItem('jaye_pais',p); }catch(e){} renderPaisTab(); }
+/* ---- qué ventas mira el tablero según la pestaña ----
+   Resumen: todos los países juntos (sin Paraguay). Chile / Colombia: su WhatsApp,
+   redes y páginas. España y Portugal: sus pedidos de página, en euros. */
+function _ordP(){
+  if(fPais==='ES') return [];
+  if(fPais==='todos') return ordenes.filter(function(o){return o.loc==='CL'||o.loc==='CO';});
+  var loc=fPais==='CO'?'CO':'CL';
+  return ordenes.filter(function(o){return o.loc===loc;});
+}
+function _webES(){
+  return ventasES.map(function(o){return {orden:o.orden,totalNum:o.totalNum,prod:o.prod,cli:o.cli,fecha:o.fecha,
+    color:o.sub==='PT'?'#006600':'#aa151b',total:fmtEUR(o.totalNum),sub:o.sub};});
+}
+function _webP(){
+  if(fPais==='ES') return _webES();
+  if(fPais==='CO') return [];
+  if(fPais==='todos') return pedidosWeb.concat(_webES());
+  return pedidosWeb;
+}
+function _mon(o){ return o.sub?'EUR':(o.loc==='CO'?'COP':'CLP'); }
+/* en el Resumen se suman monedas distintas: cada venta se pasa a pesos colombianos */
+function _val(o,campo){
+  var n=o[campo]||0; if(fPais!=='todos') return n;
+  var m=_mon(o), t=m==='EUR'?(TASAS&&TASAS.eur):m==='CLP'?(TASAS&&TASAS.clp):1;
+  return t? n*t : 0;
+}
+function fmtMonP(n){
+  if(fPais==='todos') return TASAS? fmtCOP(n)+' COP' : 'sin tasa del día';
+  return fPais==='ES'?fmtEUR(n):fPais==='CO'?fmtCOP(n)+' COP':fmtCLP(n)+' CLP';
+}
+
+function irPais(p){ fPais=p; try{ localStorage.setItem('jaye_pais',p); }catch(e){} renderResumen(); }
 
 function renderPaisTab(){
   var box=document.getElementById('resPais'), chi=document.getElementById('resChile'); if(!box||!chi) return;
   document.querySelectorAll('#segPais .minitab').forEach(function(b){ b.classList.toggle('act',b.dataset.p===fPais); });
-  var sc=document.getElementById('segCanal'); if(sc) sc.style.display=fPais==='CL'?'':'none';   /* el canal (WhatsApp/página/redes) es cosa de Chile */
-  if(fPais==='CL'){ box.hidden=true; chi.hidden=false; return; }
-  chi.hidden=true; box.hidden=false;
+  chi.hidden=false;
+  if(fPais==='CL'){ box.hidden=true; return; }
+  box.hidden=false;
   var T=totalesPais(), lbl=rangoTxt();
   var cop=function(v,t){ return TASAS? '≈ '+fmtCOP(v*t)+' COP' : 'sin tasa del día'; };
 
   if(fPais==='todos'){
     var tot=TASAS? T.cl.t*TASAS.clp+T.es.t*TASAS.eur+T.co.t : null;
     var card=function(p,flag,nom,n,local,enCop){
-      return '<div class="rp-pais" onclick="irPais(\''+p+'\')"><div class="t"><span class="flag '+flag+'"></span>'+nom+
-        '<span style="margin-left:auto;font-weight:600;color:var(--ink-3)">'+n+' venta'+(n===1?'':'s')+'</span></div>'+
-        '<div class="v">'+local+'</div><div class="c">'+enCop+'</div></div>';
+      return '<div class="rp-pais" onclick="irPais(\''+p+'\')"><div class="t"><span class="flag '+flag+'"></span>'+nom+'</div>'+
+        '<div class="v">'+n+' venta'+(n===1?'':'s')+'</div><div class="c" style="font-size:14px;color:var(--ink-2);font-weight:700">'+local+'</div><div class="c">'+enCop+'</div></div>';
     };
-    box.innerHTML='<div class="rp-total"><div class="lbl">Ventas de '+lbl+' · todos los países, en pesos colombianos</div>'+
-      '<div class="big">'+(tot===null?'—':fmtCOP(tot)+' COP')+'</div>'+
-      '<div class="tasa">'+(T.cl.n+T.es.n+T.co.n)+' ventas · '+esc(tasaTxt())+'</div>'+
+    box.innerHTML='<div class="rp-total"><div style="display:flex;gap:40px;flex-wrap:wrap">'+
+        '<div><div class="lbl">Ventas de '+lbl+' · todos los países</div><div class="big">'+(T.cl.n+T.es.n+T.co.n)+'</div></div>'+
+        '<div><div class="lbl">Vendido '+lbl+' · en pesos colombianos</div><div class="big">'+(tot===null?'—':fmtCOP(tot)+' COP')+'</div></div>'+
+      '</div>'+
+      '<div class="tasa">'+esc(tasaTxt())+'</div>'+
       '<div class="rp-paises">'+
         card('CL','flag-cl','Chile',T.cl.n,fmtCLP(T.cl.t)+' CLP',cop(T.cl.t,TASAS&&TASAS.clp))+
-        card('ES','flag-es','España y Portugal',T.es.n,fmtEUR(T.es.t),cop(T.es.t,TASAS&&TASAS.eur)+(T.es.n?' · ES '+T.es.ES+' · PT '+T.es.PT:''))+
+        card('ES','flag-es','España y Portugal',T.es.n,fmtEUR(T.es.t)+(T.es.n?' · ES '+T.es.ES+' · PT '+T.es.PT:''),cop(T.es.t,TASAS&&TASAS.eur))+
         card('CO','flag-co','Colombia',T.co.n,fmtCOP(T.co.t)+' COP',T.co.n?'':'todavía sin ventas')+
-      '</div></div>'+
-      '<div class="rp-aviso">Toca un país para ver su detalle. Ventas = pedidos registrados (WhatsApp, redes y páginas), sin los eliminados.</div>';
+      '</div></div>';
     return;
   }
 
   if(fPais==='ES'){
-    var enR=ventasES.filter(function(o){return enRango(o.orden);});
     var pend=ventasES.filter(function(o){return !o.montado&&!esAprobado('es:'+o.id)&&!esRechazado('es:'+o.id);}).length;
-    var apr=ventasES.filter(function(o){return !o.montado&&esAprobado('es:'+o.id);}).length;
-    var mont=ventasES.filter(function(o){return o.montado;}).length;
-    box.innerHTML='<div class="rp-kpis">'+
-        kpiHtml('Ventas ('+lbl+')',T.es.n,'España '+T.es.ES+' · Portugal '+T.es.PT)+
-        kpiHtml('Vendido ('+lbl+')',fmtEUR(T.es.t),cop(T.es.t,TASAS&&TASAS.eur))+
-        kpiHtml('Por aprobar',pend,'<a href="#" onclick="verAprobarPais(\'ES\');return false">ir a aprobar →</a>')+
-        kpiHtml('Aprobadas · en Dropi PRO',apr+' · '+mont,'esperando montaje · ya creadas')+
-      '</div>'+
-      '<div class="rp-aviso">Los pedidos de España y Portugal van a <b>Dropi PRO</b>. El montador automático todavía no está hecho: por ahora lo aprobado se crea a mano en Dropi PRO.</div>'+
-      tablaVentasPais(enR,true,'Sin ventas de España ni Portugal '+lbl+'.');
+    box.innerHTML='<div class="rp-aviso"><span class="flag flag-es"></span> <b>España y Portugal</b> · montos en euros ('+esc(TASAS?'1 € = '+TASAS.eur.toLocaleString('es-CO',{maximumFractionDigits:2})+' COP':'sin tasa del día')+'). '+
+      'Por aprobar: <b>'+pend+'</b> · <a href="#" onclick="verAprobarPais(\'ES\');return false">ir a aprobar →</a> · '+
+      'Van a Dropi PRO: el montador automático todavía no está, lo aprobado se crea a mano.</div>';
     return;
   }
-
-  /* Colombia */
-  var co=ordenes.filter(function(o){return o.loc==='CO'&&enRango(o.orden);});
-  box.innerHTML='<div class="rp-kpis">'+
-      kpiHtml('Ventas ('+lbl+')',T.co.n,'')+
-      kpiHtml('Vendido ('+lbl+')',fmtCOP(T.co.t)+' COP','')+
-    '</div>'+
-    (T.co.n?'':'<div class="rp-aviso">Colombia todavía no tiene ventas registradas. Cuando arranque, sus pedidos se aprueban aquí y van a <b>Dropi Colombia</b>. El radar de Colombia está en la pestaña <b>Radar</b>.</div>')+
-    tablaVentasPais(co.map(function(o){return {fecha:o.fecha,cli:o.cli,prod:o.prod,cant:o.cant,total:o.precio,estado:o.estado};}),false,'Sin ventas de Colombia '+lbl+'.');
+  box.innerHTML='<div class="rp-aviso"><span class="flag flag-co"></span> <b>Colombia</b> · montos en pesos colombianos. '+
+    (T.co.n?'':'Todavía no tiene ventas registradas; cuando arranque, se aprueban aquí y van a Dropi Colombia. ')+
+    'El radar de Colombia está en la pestaña Radar.</div>';
 }
 
 function tablaVentasPais(lista,esEU,vacio){
