@@ -161,6 +161,23 @@ nav{padding:0 12px;display:flex;flex-direction:column;gap:2px}
 .flag-cl::after{content:"";position:absolute;left:0;top:0;width:38%;height:50%;background:#0039a6}
 .flag-co{background:linear-gradient(180deg,#fcd116 0 50%,#003893 50% 75%,#ce1126 75% 100%)}
 .flag-py{background:linear-gradient(180deg,#d52b1e 0 33%,#fff 33% 66%,#0038a8 66% 100%)}
+.flag-es{background:linear-gradient(180deg,#aa151b 0 25%,#f1bf00 25% 75%,#aa151b 75% 100%)}
+.flag-pt{background:linear-gradient(90deg,#006600 0 40%,#ff0000 40% 100%)}
+/* pestañas por país (28-09) */
+.paistabs{flex-wrap:wrap;margin:0 0 12px}
+.paistabs .minitab{font-size:13.5px;padding:8px 16px}
+.rp-total{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);padding:20px 22px;margin-bottom:16px}
+.rp-total .lbl{font-size:13px;color:var(--ink-2);font-weight:500}
+.rp-total .big{font-size:34px;font-weight:800;letter-spacing:-.02em;margin:6px 0 4px;font-variant-numeric:tabular-nums}
+.rp-total .tasa{font-size:12.5px;color:var(--ink-3)}
+.rp-paises{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin-top:16px}
+.rp-pais{border:1px solid var(--border);border-radius:12px;padding:14px 16px;cursor:pointer;background:var(--surface-2)}
+.rp-pais:hover{border-color:var(--ink-3)}
+.rp-pais .t{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:700}
+.rp-pais .v{font-size:21px;font-weight:800;margin-top:8px;font-variant-numeric:tabular-nums}
+.rp-pais .c{font-size:12.5px;color:var(--ink-3);margin-top:3px;font-variant-numeric:tabular-nums}
+.rp-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:16px}
+.rp-aviso{font-size:13px;color:var(--ink-2);background:var(--surface-2);border:1px dashed var(--border);border-radius:10px;padding:12px 14px;margin-bottom:14px}
 .daterange{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 12px;margin:0 0 14px auto;width:fit-content;box-shadow:var(--shadow)}
 .daterange[hidden]{display:none}
 .daterange .drl{font-size:12.5px;color:var(--ink-3);font-weight:600}
@@ -704,6 +721,14 @@ tbody tr:hover .chev{color:var(--brand)}
 
     <!-- ====== RESUMEN ====== -->
     <div class="content view act" id="view-resumen">
+      <!-- 28-09 James: una pestaña por país, cada una en su moneda, y un Resumen que
+           suma todo en pesos colombianos ("es donde me va a entrar a mí"). -->
+      <div class="minitabs paistabs" id="segPais">
+        <button class="minitab act" data-p="todos">Resumen · todo en COP</button>
+        <button class="minitab" data-p="CL"><span class="flag flag-cl"></span>Chile</button>
+        <button class="minitab" data-p="ES"><span class="flag flag-es"></span>España y Portugal</button>
+        <button class="minitab" data-p="CO"><span class="flag flag-co"></span>Colombia</button>
+      </div>
       <div class="filters">
         <div class="seg" id="segCanal">
           <button class="act" data-c="todos">Todos los canales</button>
@@ -725,6 +750,10 @@ tbody tr:hover .chev{color:var(--brand)}
         <button class="apply" id="btnAplicarFechas">Aplicar</button>
       </div>
 
+      <!-- Resumen total y pestañas de España/Colombia: lo pinta renderPaisTab() -->
+      <div id="resPais" hidden></div>
+
+      <div id="resChile">
       <div class="kpis">
         <div class="kpi">
           <div class="top-r"><span class="lbl" id="lTot">Ventas totales (hoy)</span><span class="icn" style="background:var(--border-2);color:var(--ink)"><svg class="ico-sm" viewBox="0 0 24 24"><path d="M6 2 3 6v13a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></span></div>
@@ -776,6 +805,7 @@ tbody tr:hover .chev{color:var(--brand)}
           <div class="paislist" id="topProductos"><div class="vacio">Cargando…</div></div>
         </div>
       </div>
+      </div><!-- /resChile -->
     </div>
 
     <!-- ====== NOVEDADES ====== -->
@@ -861,7 +891,14 @@ tbody tr:hover .chev{color:var(--brand)}
 
     <!-- ====== APROBACIÓN DE VENTAS (página + WhatsApp) ====== -->
     <div class="content view" id="view-aprobar">
-      <div class="panel">
+      <!-- 28-09: cada país aprueba lo SUYO y lo manda a SU Dropi. Chile no ve España ni al revés. -->
+      <div class="minitabs paistabs" id="paisAprob">
+        <button class="minitab act" data-p="CL"><span class="flag flag-cl"></span>Chile</button>
+        <button class="minitab" data-p="ES"><span class="flag flag-es"></span>España y Portugal <span id="numAprobES" style="display:none;background:#3056c9;color:#fff;border-radius:999px;font-size:10.5px;font-weight:800;padding:0 6px;margin-left:4px"></span></button>
+        <button class="minitab" data-p="CO"><span class="flag flag-co"></span>Colombia</button>
+      </div>
+      <div id="aprobOtro" hidden></div>
+      <div class="panel" id="aprobChile">
         <div class="tbl-head">
           <h2>Ventas por aprobar</h2>
           <div class="minitabs" id="segAprob">
@@ -1541,7 +1578,7 @@ tbody tr:hover .chev{color:var(--brand)}
      apagado. Para devolverlo: recuperar este bloque del commit anterior y activar el flujo. -->
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
-<script src="app.js?v=181"></script>
+<script src="app.js?v=184"></script>
 <script src="ganancia.js?v=125"></script>
 </body>
 </html>
