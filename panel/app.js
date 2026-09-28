@@ -4002,7 +4002,8 @@ try{ fPais=localStorage.getItem('jaye_pais')||'todos'; }catch(e){}
 
 function esFilaES(r){
   var p=String(r.PAIS||'').toUpperCase();
-  return p==='ES'||p==='PT'||/p[aá]gina\s+(es|pt)\b/i.test(String(r.BOT||''));
+  /* 'Carmen' = el bot de WhatsApp de España y Portugal (+34), 28-09 */
+  return p==='ES'||p==='PT'||/p[aá]gina\s+(es|pt)\b|^carmen\b/i.test(String(r.BOT||''));
 }
 /* "29,90" / "29.90" / "1.234,50" -> número con decimales (el numero() de Chile
    borra los puntos y "29.90" quedaba en 2990) */
@@ -4014,7 +4015,8 @@ function numEUR(v){
 }
 function fmtEUR(n){ return (Math.round(n*100)/100).toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2})+' €'; }
 function filaES(r){
-  var pt=String(r.PAIS||'').toUpperCase()==='PT'||/p[aá]gina\s+pt\b/i.test(String(r.BOT||''));
+  /* las de Carmen no dicen el país en el bot: el prefijo +351 del teléfono lo dice */
+  var pt=String(r.PAIS||'').toUpperCase()==='PT'||/p[aá]gina\s+pt\b/i.test(String(r.BOT||''))||soloNum(r.TELEFONO).indexOf('351')===0;
   var est=String(r.ESTADO||''), cms=Number(r.CREADO_MS)||0;
   return {id:String(r.row_number||''),sub:pt?'PT':'ES',cli:r.NOMBRE||'—',tel:soloNum(r.TELEFONO),prod:r.PRODUCTO||'—',
     cant:numero(r.CANTIDAD)||1,totalNum:numEUR(r.PRECIO),dir:r.DIRECCION||'—',zona:r.COMUNA||'—',region:r.REGION||'—',
