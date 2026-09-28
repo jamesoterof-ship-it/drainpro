@@ -3030,8 +3030,9 @@ function radarPintaChips(d){
     : ' <span class="'+(cambio>=0?'rad-sube':'rad-baja')+'">'+(cambio>=0?'▲':'▼')+' '+Math.abs(cambio)+'%</span>';
   /* 22-09: James apagó el radar de Colombia (consumía full en Railway). La foto del
      22-09 quedó a medias (3999/4000 páginas) y el panel la pintaba "barriendo" para
-     siempre. Aquí se dice la verdad: apagado, con datos hasta esa fecha. */
-  var RADAR_APAGADO={Colombia:'22-09-2026'};
+     siempre. Aquí se dice la verdad: apagado, con datos hasta esa fecha.
+     28-09: Colombia PRENDIDO otra vez con el radar nuevo (guarda solo lo que cambia). */
+  var RADAR_APAGADO={};
   var cob=RADAR_APAGADO[d.pais]?'<span class="rad-baja" title="Radar apagado el '+RADAR_APAGADO[d.pais]+' por James. Datos hasta esa fecha.">apagado '+RADAR_APAGADO[d.pais]+'</span>'
     :(r.catalogo&&r.barrido_completo)?'<span class="rad-sube">completo</span>'
     :'<span class="rad-baja">barriendo</span>';
