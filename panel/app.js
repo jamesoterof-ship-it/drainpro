@@ -4159,7 +4159,10 @@ function renderAprobarPais(){
       lista.map(function(o){
         var k='es:'+o.id, falta=!nombreSirve(o.cli)?'nom':(!dirSirve(o.dir)?true:false);
         return '<tr><td><b>'+esc(o.cli)+'</b><div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.fecha)+' · +'+esc(o.tel)+'</div></td>'+
-          '<td><span class="flag flag-'+o.sub.toLowerCase()+'"></span> '+o.sub+'</td><td>'+esc(o.prod)+'</td>'+
+          '<td><span class="flag flag-'+o.sub.toLowerCase()+'"></span> '+o.sub+'</td><td>'+esc(o.prod)+
+          /* pago anticipado (Carmen o la página): el enlace de pago lo manda James a mano por ahora */
+          (/pago:\s*pre/i.test(o.nota)?'<div style="margin-top:4px;display:inline-block;background:#fff3e2;color:#b45309;border-radius:6px;padding:2px 7px;font-size:11.5px;font-weight:700">💳 Pago anticipado · enviar enlace de pago</div>':'')+
+          (/canal:\s*whatsapp/i.test(o.nota)?'<div style="font-size:11px;color:var(--ink-3)">por WhatsApp (Carmen)</div>':'')+'</td>'+
           '<td>'+esc(o.dir)+'<div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.zona)+(o.region&&o.region!=='—'?', '+esc(o.region):'')+'</div></td>'+
           '<td>'+esc(o.cant)+'</td><td>'+fmtEUR(o.totalNum)+'</td><td>'+celdaAprob(k,'',o.id,falta,'',false,false,o.creadoMs)+'</td></tr>';
       }).join('')+'</tbody></table>'
