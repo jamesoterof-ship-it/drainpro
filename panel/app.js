@@ -183,7 +183,9 @@ function dirSirve(d){
   if(/(^|\b)(solicitar|preguntar|confirmar|contactar|verificar)\b/i.test(t)) return false;  // es un recado, no una direccion
   /* el retiro en sucursal no lleva numero de casa y es una entrega valida */
   if(/retir[ao]\s+en\s+sucursal|sucursal\s+(starken|blue)/i.test(t)) return true;
-  if(/\b\d{1,5}\b/.test(t)) return true;
+  /* 28-09: numero con letra pegada ("01625b", "12B", "340a") tambien es numero de casa.
+     Antes "Cobquecura 01625b" (Juana, San Bernardo) quedaba en "Corregir direccion" sin boton Aprobar. */
+  if(/\b\d{1,5}[a-z]?\b/i.test(t)) return true;
   if(/(casa|sitio|lote|manzana|mz|depto|departamento|parcela|block|bloc|torre|edificio)\s*\.?\s*n?°?\s*[a-z0-9]{1,4}\b/i.test(t)) return true;
   /* Asentamientos que POR DEFINICION no tienen numeracion: una toma, un
      campamento, una comunidad. Ahi el nombre propio del lugar ES la direccion
