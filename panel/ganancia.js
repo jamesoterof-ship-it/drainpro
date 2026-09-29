@@ -18,6 +18,11 @@
      completa, que no representan como se opera ahora). */
   var INICIO = '2026-09-01';
   var dias = [], rangoGan = 7;
+  /* 28-09 (James: "la ganancia igual a la de Chile, la misma cosa"): la MISMA pantalla
+     sirve a cada país. Chile descuenta bots y tu sueldo; España y Colombia no (el sueldo
+     ya se descuenta una sola vez, en Chile). */
+  var MODO = { pais: 'CL', sueldo: SUELDO_MES, bots: BOTS_DIA, botsTxt: 'Camila, Carlos y 3 más', dropi: 'Dropi' };
+  function paisGan() { return (window.fPais === 'ES' || window.fPais === 'CO') ? window.fPais : 'CL'; }
 
   var pes = function (n) { return '$' + Math.round(Number(n) || 0).toLocaleString('es-CO'); };
   var num = function (n) { return Math.round(Number(n) || 0); };
@@ -55,8 +60,7 @@
   }
 
   function pintarGanancia() {
-    if (!dias.length) return;
-    var arr = seleccion();
+    var arr = dias.length ? seleccion() : [];
     if (!arr.length) {
       /* Se limpia TODO, no solo la tabla: antes quedaban el total de abajo,
          las tarjetas y el plan con los numeros del rango anterior, y parecia
@@ -65,7 +69,8 @@
       var esHoy = (rangoGan === 'hoy');
       if (tbv) tbv.innerHTML = '<tr><td colspan="8" class="vacio">'
         + (esHoy ? 'Todavía no hay entregas registradas hoy. Dropi las va marcando durante el día.'
-                 : 'No hay entregas en esa fecha.') + '</td></tr>';
+                 : 'No hay entregas en esa fecha.')
+        + (MODO.pais !== 'CL' ? ' ' + (MODO.pais === 'CO' ? 'Colombia todavía no vende.' : 'España y Portugal todavía no tienen entregas de Dropi PRO.') : '') + '</td></tr>';
       var tfv = document.querySelector('#tablaGan tfoot'); if (tfv) tfv.innerHTML = '';
       var kv = document.getElementById('ganKpis'); if (kv) kv.innerHTML = '';
       var av2 = document.getElementById('ganAvisos'); if (av2) av2.innerHTML = '';
@@ -90,12 +95,12 @@
     var tasaDev = (t.e + t.dn) ? Math.round(t.dn / (t.e + t.dn) * 100) : 0;
     var k = document.getElementById('ganKpis');
     if (k) k.innerHTML =
-      tar('Te liquida Dropi', pes(t.en), arr.length + (arr.length === 1 ? ' día · ' : ' días · ') + t.e + ' entregas', '') +
+      tar('Te liquida ' + MODO.dropi, pes(t.en), arr.length + (arr.length === 1 ? ' día · ' : ' días · ') + t.e + ' entregas', '') +
       tar('Devoluciones', '−' + pes(t.d), t.dn + ' pedidos volvieron · ' + tasaDev + '% · flete perdido', t.d > 0 ? 'mal' : '') +
-      tar('Meta', pes(t.m), pctMeta + '% de lo que queda de Dropi', pctMeta > 55 ? 'mal' : '') +
-      tar('Bots', pes(t.c), 'Camila, Carlos y 3 más', '') +
-      tar('Tu sueldo', pes(t.s), 'de los $5.000.000 del mes', '') +
-      tar('TE QUEDA', pes(t.q), 'ya con tu sueldo descontado', t.q >= 0 ? 'ok' : 'mal') +
+      tar('Meta', pes(t.m), pctMeta + '% de lo que queda de ' + MODO.dropi, pctMeta > 55 ? 'mal' : '') +
+      tar('Bots', pes(t.c), MODO.botsTxt, '') +
+      tar('Tu sueldo', pes(t.s), MODO.sueldo ? 'de los $5.000.000 del mes' : 'se descuenta en Chile', '') +
+      tar('TE QUEDA', pes(t.q), MODO.sueldo ? 'ya con tu sueldo descontado' : 'después de devoluciones y Meta', t.q >= 0 ? 'ok' : 'mal') +
       tar('Cada entrega deja', pes(porEnt), 'ya descontadas las devoluciones', '');
 
     /* el mes contra el sueldo */
@@ -105,9 +110,11 @@
     var av = '';
     if (mes.length) {
       var restan = Math.max(1, 30 - mes.length);
-      var detalle = 'En ' + mes.length + ' días Dropi liquidó ' + pes(enMes) + ', las devoluciones se llevaron '
+      var detalle = 'En ' + mes.length + ' días ' + MODO.dropi + ' liquidó ' + pes(enMes) + ', las devoluciones se llevaron '
         + pes(dMes) + ' en flete y Meta ' + pes(mMes) + '.';
-      if (qMes >= 0) {
+      if (!MODO.sueldo) {
+        av = caja(qMes >= 0 ? '#179f6b' : '#e8a800', qMes >= 0 ? 'El mes va en positivo.' : 'El mes va en ' + pes(qMes) + '.', detalle + ' Queda <b>' + pes(qMes) + '</b>.');
+      } else if (qMes >= 0) {
         av = caja('#179f6b', 'El mes va cubierto.', detalle + ' Después de tus ' + pes(SUELDO_MES) +
           ' queda <b>' + pes(qMes) + '</b> libre para reinvertir.');
       } else {
@@ -255,6 +262,16 @@
       { n: 'Actual', e: 35, m: 600000 },
       { n: 'Escalado', e: 40, m: 700000 },
     ];
+    /* en España/Colombia los escenarios salen de SU promedio real (entregas y pauta por
+       día), no de los números de Chile: actual, ×1,5 y ×2 */
+    if (MODO.pais !== 'CL') {
+      var sel = seleccion(), eD = 0, mD = 0;
+      sel.forEach(function (x) { eD += num(x.entregas); mD += num(x.meta); });
+      eD = sel.length ? eD / sel.length : 0; mD = sel.length ? mD / sel.length : 0;
+      ESC = [{ n: 'Actual', e: Math.round(eD * 10) / 10, m: Math.round(mD) },
+             { n: '×1,5', e: Math.round(eD * 15) / 10, m: Math.round(mD * 1.5) },
+             { n: '×2', e: Math.round(eD * 20) / 10, m: Math.round(mD * 2) }];
+    }
     /* porEnt ya viene con las devoluciones descontadas: es lo que de verdad deja
        cada entrega despues de pagar el flete de los pedidos que volvieron.
        (Antes aca decia que no hacia falta restarlas, y era falso: Dropi cobra el
@@ -262,7 +279,7 @@
     var mejor = 0, mq = -Infinity;
     ESC.forEach(function (x, i) {
       x.entra = x.e * 30 * porEnt;
-      x.queda = x.entra - x.m * 30 - BOTS_DIA * 30 - SUELDO_MES;
+      x.queda = x.entra - x.m * 30 - MODO.bots * 30 - MODO.sueldo;
       if (x.queda > mq) { mq = x.queda; mejor = i; }
     });
     var html = ESC.map(function (x, i) {
@@ -275,11 +292,11 @@
         + '<div style="font-size:12px;color:var(--ink-2);margin-top:9px;padding-top:9px;border-top:1px solid var(--border);line-height:1.9">'
         + 'Entra <b style="float:right;color:var(--ink)">' + pes(x.entra) + '</b><br>'
         + 'Meta <b style="float:right;color:var(--ink)">−' + pes(x.m * 30) + '</b><br>'
-        + 'Bots <b style="float:right;color:var(--ink)">−' + pes(BOTS_DIA * 30) + '</b><br>'
-        + 'Tu sueldo <b style="float:right;color:var(--ink)">−' + pes(SUELDO_MES) + '</b></div></div>';
+        + 'Bots <b style="float:right;color:var(--ink)">−' + pes(MODO.bots * 30) + '</b><br>'
+        + 'Tu sueldo <b style="float:right;color:var(--ink)">−' + pes(MODO.sueldo) + '</b></div></div>';
     }).join('');
     var base = ESC[1];
-    var techo = (base.entra - BOTS_DIA * 30 - SUELDO_MES) / 30;
+    var techo = (base.entra - MODO.bots * 30 - MODO.sueldo) / 30;
     html += '<div style="grid-column:1/-1;border:1px solid var(--amber);border-radius:12px;padding:14px;background:var(--amber-tint)">'
       + '<div style="font-size:13px;font-weight:800">Hasta dónde aguanta la pauta</div>'
       + '<div style="font-size:13px;color:var(--ink-2);margin-top:6px;line-height:1.65">'
@@ -292,7 +309,17 @@
   }
 
   window.cargarGanancia = function () {
+    var P = paisGan();
+    if (P !== 'CL') {
+      MODO = { pais: P, sueldo: 0, bots: 0, botsTxt: 'sin costo asignado aquí', dropi: P === 'ES' ? 'Dropi PRO' : 'Dropi' };
+      dias = [];
+      if (typeof window.diasGananciaPais === 'function') window.diasGananciaPais(P, function (arr) { if (paisGan() !== P) return; dias = arr; pintarGanancia(); });
+      pintarGanancia();
+      return;
+    }
+    MODO = { pais: 'CL', sueldo: SUELDO_MES, bots: BOTS_DIA, botsTxt: 'Camila, Carlos y 3 más', dropi: 'Dropi' };
     fetch(URL_CAJA, { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) {
+      if (paisGan() !== 'CL') return;
       dias = (Array.isArray(j) ? j : [j]).filter(function (x) { return x && x.dia && x.dia >= INICIO; });
       pintarGanancia();
     }).catch(function () {

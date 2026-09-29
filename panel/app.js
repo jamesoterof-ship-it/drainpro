@@ -4221,7 +4221,7 @@ function aplicarPaisMenu(){
   /* las alertas de campañas son de Chile: en España y Colombia no se muestran */
   var al=document.getElementById('alertasCamp'); if(al) al.style.display=(fPais==='ES'||fPais==='CO')?'none':'';
   if(TITULOS&&TITULOS.ganancia){ if(!TITULOS._ganCL) TITULOS._ganCL=TITULOS.ganancia[1];
-    TITULOS.ganancia[1]=fPais==='ES'?'Lo entregado por Dropi PRO menos producto, envío y la pauta de España · en pesos colombianos'
+    TITULOS.ganancia[1]=fPais==='ES'?'Lo que liquida Dropi PRO menos devoluciones y la pauta de España · en pesos colombianos'
       :fPais==='CO'?'Colombia · en pesos colombianos':TITULOS._ganCL; }
 }
 function vistaActual(){ var v=document.querySelector('.view.act'); return v?v.id.replace('view-',''):'resumen'; }
@@ -4244,43 +4244,35 @@ document.querySelectorAll('#paisNav button').forEach(function(b){ b.addEventList
    su tarifa, menos lo gastado en Meta en las campañas de España/Portugal, en COP a la tasa
    del día. Colombia: todavía no vende. */
 var CAJA_ES=null, _cajaEsPidiendo=false;
+/* La Ganancia es la MISMA pantalla de Chile (ganancia.js) para los tres países
+   (James 28-09: "igual a la de Chile, la misma cosa"). Aquí solo se arman los días de
+   España con la misma forma que la caja de Chile. */
 function renderGananciaPais(){
-  var box=document.getElementById('ganOtro'), view=document.getElementById('view-ganancia'); if(!box||!view) return;
-  [].forEach.call(view.children,function(c){ if(c!==box) c.style.display=(fPais==='ES'||fPais==='CO')?'none':''; });
-  box.hidden=!(fPais==='ES'||fPais==='CO');
-  if(fPais==='CL'||fPais==='todos'){ if(typeof cargarGanancia==='function') cargarGanancia(); return; }
-  if(fPais==='CO'){ box.innerHTML='<div class="panel"><div class="vacio" style="padding:26px">Colombia todavía no tiene ventas. Cuando arranque, su ganancia sale aquí, aparte, en pesos colombianos.</div></div>'; return; }
-  if(!CAJA_ES){
-    box.innerHTML='<div class="panel"><div class="vacio" style="padding:26px">Cargando la ganancia de España y Portugal…</div></div>';
-    if(!_cajaEsPidiendo){ _cajaEsPidiendo=true;
-      fetch(BASE+'/caja-espana',{cache:'no-store'}).then(function(r){return r.json();}).then(function(j){ CAJA_ES=j; _cajaEsPidiendo=false; renderGananciaPais(); })
-        .catch(function(){ _cajaEsPidiendo=false; box.innerHTML='<div class="panel"><div class="vacio" style="padding:26px">No se pudo cargar la ganancia de España (flujo caja-espana).</div></div>'; }); }
-    return;
-  }
-  var C=CAJA_ES.costos||{}, V=CAJA_ES.ventas||[], tasa=TASAS&&TASAS.eur;
-  var ent=V.filter(function(v){return /entreg/i.test(v.dropi||'');}), dev=V.filter(function(v){return /devol|rechaz/i.test(v.dropi||'');});
-  var camino=V.filter(function(v){return v.dropi&&!/entreg|devol|rechaz|cancel/i.test(v.dropi);});
-  var ingresos=0, costo=0, envio=0;
-  ent.forEach(function(v){ var cant=Number(v.cant)||1; ingresos+=Number(v.precio)||0; costo+=cant*(C.producto_eur||0);
-    envio+=String(v.cp||'').indexOf('07')===0?(C.envio_baleares_eur||0):(C.envio_eur||0); });
-  var queda=ingresos-costo-envio, pautaCop=(CAJA_ES.pauta||[]).reduce(function(s,p){return s+(p.cop||0);},0);
-  var netoCop=tasa? queda*tasa-pautaCop : null;
-  var vendido=V.reduce(function(s,v){return s+(Number(v.precio)||0);},0);
-  var k=function(l,v,m,col){ return '<div class="kpi"><div class="top-r"><span class="lbl">'+l+'</span></div><div class="val"'+(col?' style="color:'+col+'"':'')+'>'+v+'</div>'+(m?'<div class="meta">'+m+'</div>':'')+'</div>'; };
-  box.innerHTML='<div class="kpis">'+
-      k('Vendido (90 días)',fmtEUR(vendido),V.length+' pedido'+(V.length===1?'':'s'))+
-      k('Entregado por Dropi PRO',fmtEUR(ingresos),ent.length+' entregado'+(ent.length===1?'':'s')+' · '+camino.length+' en camino · '+dev.length+' devuelto'+(dev.length===1?'':'s'))+
-      k('Producto + envío',fmtEUR(costo+envio),'de lo entregado · devoluciones 0 €')+
-      k('Pauta Meta (España/Portugal)',fmtCOP(pautaCop)+' COP',(CAJA_ES.pauta||[]).length+' día'+((CAJA_ES.pauta||[]).length===1?'':'s')+' con gasto')+
-      k('Ganancia neta',netoCop===null?'sin tasa del día':fmtCOP(netoCop)+' COP',tasa?'= '+fmtEUR(queda)+' × '+tasa.toLocaleString('es-CO',{maximumFractionDigits:2})+' − pauta':'',netoCop===null?'':(netoCop>=0?'#0f7a52':'#c0392b'))+
-    '</div>'+
-    '<div class="panel" style="padding:12px 16px;font-size:12.5px;color:var(--ink-2);line-height:1.6">'+
-      'Se cuenta la plata cuando Dropi PRO marca el pedido como <b>entregado</b>, igual que en Chile. '+
-      'Costos: '+esc(C.fuente||'')+'. Envío a Baleares '+fmtEUR(C.envio_baleares_eur||0)+'. '+
-      'La pauta sale de las campañas de Meta cuyo nombre dice ESPAÑA o PORTUGAL. '+esc(tasaTxt())+
-      (CAJA_ES.ok===false?'<br><b style="color:#c0392b">Meta no respondió: '+esc(CAJA_ES.error||'')+'</b>':'')+
-    '</div>';
+  var box=document.getElementById('ganOtro'), view=document.getElementById('view-ganancia'); if(!view) return;
+  if(box) box.hidden=true;
+  [].forEach.call(view.children,function(c){ if(c!==box) c.style.display=''; });
+  if(typeof cargarGanancia==='function') cargarGanancia();
 }
+window.diasGananciaPais=function(P,cb){
+  if(P!=='ES'){ cb([]); return; }
+  var armar=function(){
+    var C=CAJA_ES.costos||{}, t=TASAS&&TASAS.eur, por={};
+    if(!t){ cb([]); return; }
+    var dia=function(k){ return por[k]||(por[k]={dia:k,entregas:0,entra:0,devol:0,devoluciones:0,meta:0,camila:0,sueldo:0,queda:0}); };
+    (CAJA_ES.ventas||[]).forEach(function(v){
+      if(!v.dropi_dia) return; var k=String(v.dropi_dia).slice(0,10);
+      if(/entreg/i.test(v.dropi||'')){ var x=dia(k), cant=Number(v.cant)||1;
+        var env=String(v.cp||'').indexOf('07')===0?(C.envio_baleares_eur||0):(C.envio_eur||0);
+        x.entregas++; x.entra+=((Number(v.precio)||0)-cant*(C.producto_eur||0)-env)*t; }
+      else if(/devol|rechaz/i.test(v.dropi||'')){ var y=dia(k); y.devoluciones++; y.devol+=(C.devolucion_eur||0)*t; }
+    });
+    (CAJA_ES.pauta||[]).forEach(function(p){ dia(p.dia).meta+=Number(p.cop)||0; });
+    cb(Object.keys(por).map(function(k){ var x=por[k]; x.entra=Math.round(x.entra); x.devol=Math.round(x.devol); x.queda=x.entra-x.devol-x.meta; return x; })
+      .sort(function(a,b){ return a.dia<b.dia?1:-1; }));
+  };
+  if(CAJA_ES) armar();
+  else fetch(BASE+'/caja-espana',{cache:'no-store'}).then(function(r){return r.json();}).then(function(j){ CAJA_ES=j; armar(); }).catch(function(){ cb([]); });
+};
 document.querySelectorAll('.nav-i[data-view="ganancia"]').forEach(function(n){ n.addEventListener('click',function(){ setTimeout(renderGananciaPais,80); }); });
 
 function renderPaisTab(){
