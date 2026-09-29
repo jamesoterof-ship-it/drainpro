@@ -4141,10 +4141,18 @@ function tablaVentasPais(lista,esEU,vacio){
 
 /* ---------- aprobación por país ---------- */
 function verAprobarPais(p){ fPaisAprob=p; if(typeof mostrarVista==='function') mostrarVista('aprobar'); renderAprobarPais(); }
+function esPagoPend(o){ return /pago\s*pendiente/i.test(o.estado||''); }
+function pildoraPago(o){
+  var st='margin-top:4px;display:inline-block;border-radius:6px;padding:2px 7px;font-size:11.5px;font-weight:700;';
+  if(/PAGADO/.test(o.nota)) return '<div style="'+st+'background:#e3f6ea;color:#15803d">💳 Pagado · comprobante recibido, verificar en PayPal</div>';
+  if(esPagoPend(o)) return '<div style="'+st+'background:#fff3e2;color:#b45309">💳 Pago anticipado · botón enviado, falta comprobante</div>';
+  return '<div style="'+st+'background:#fff3e2;color:#b45309">💳 Pago anticipado · enviar enlace de pago</div>';
+}
 function renderAprobarPais(){
   var ch=document.getElementById('aprobChile'), ot=document.getElementById('aprobOtro'); if(!ch||!ot) return;
   document.querySelectorAll('#paisAprob .minitab').forEach(function(b){ b.classList.toggle('act',b.dataset.p===fPaisAprob); });
-  var pend=ventasES.filter(function(o){return !o.montado&&!esAprobado('es:'+o.id)&&!esRechazado('es:'+o.id);});
+  /* PAGO PENDIENTE (anticipado sin comprobante todavía) no cuenta ni se puede aprobar */
+  var pend=ventasES.filter(function(o){return !o.montado&&!esPagoPend(o)&&!esAprobado('es:'+o.id)&&!esRechazado('es:'+o.id);});
   var nb=document.getElementById('numAprobES'); if(nb){ nb.textContent=pend.length; nb.style.display=pend.length?'':'none'; }
   if(fPaisAprob==='CL'){ ch.hidden=false; ot.hidden=true; return; }
   ch.hidden=true; ot.hidden=false;
@@ -4160,11 +4168,13 @@ function renderAprobarPais(){
         var k='es:'+o.id, falta=!nombreSirve(o.cli)?'nom':(!dirSirve(o.dir)?true:false);
         return '<tr><td><b>'+esc(o.cli)+'</b><div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.fecha)+' · +'+esc(o.tel)+'</div></td>'+
           '<td><span class="flag flag-'+o.sub.toLowerCase()+'"></span> '+o.sub+'</td><td>'+esc(o.prod)+
-          /* pago anticipado (Carmen o la página): el enlace de pago lo manda James a mano por ahora */
-          (/pago:\s*pre/i.test(o.nota)?'<div style="margin-top:4px;display:inline-block;background:#fff3e2;color:#b45309;border-radius:6px;padding:2px 7px;font-size:11.5px;font-weight:700">💳 Pago anticipado · enviar enlace de pago</div>':'')+
+          /* pago anticipado: Carmen manda el botón de PayPal y lee el comprobante; la página todavía no cobra */
+          (/pago:\s*pre/i.test(o.nota)?pildoraPago(o):'')+
           (/canal:\s*whatsapp/i.test(o.nota)?'<div style="font-size:11px;color:var(--ink-3)">por WhatsApp (Carmen)</div>':'')+'</td>'+
           '<td>'+esc(o.dir)+'<div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.zona)+(o.region&&o.region!=='—'?', '+esc(o.region):'')+'</div></td>'+
-          '<td>'+esc(o.cant)+'</td><td>'+fmtEUR(o.totalNum)+'</td><td>'+celdaAprob(k,'',o.id,falta,'',false,false,o.creadoMs)+'</td></tr>';
+          '<td>'+esc(o.cant)+'</td><td>'+fmtEUR(o.totalNum)+'</td><td>'+(esPagoPend(o)
+            ?'<span style="font-size:12px;color:#b45309;font-weight:700">Esperando el pago</span><div style="font-size:11px;color:var(--ink-3)">se aprueba cuando llegue el comprobante</div>'
+            :celdaAprob(k,'',o.id,falta,'',false,false,o.creadoMs))+'</td></tr>';
       }).join('')+'</tbody></table>'
       :'<div class="vacio" style="padding:22px">Sin pedidos de España ni Portugal por aprobar.</div>')+'</div>';
 }
