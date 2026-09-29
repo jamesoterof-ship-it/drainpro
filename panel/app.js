@@ -4206,7 +4206,7 @@ function htmlOtroPais(v){
       var key=k+'|'+id; if(!porPag[key]) porPag[key]={pais:k,prod:String(x.producto||id).replace(/ · (España|Portugal)$/,''),vis:0,form:0,peds:0};
       porPag[key].vis+=numero(x.visitas); porPag[key].form+=numero(x.formulario); });
     ventasES.filter(function(o){return /p[aá]gina/i.test(o.bot)&&o.orden>=desde;}).forEach(function(o){
-      var key=o.sub+'|'+(/vitalis|b[aá]lsamo/i.test(o.prod)?'balsamo':o.prod);
+      var key=o.sub+'|'+(/vitalis|b[aá]lsamo/i.test(o.prod)?'balsamo':/cabezal|ducha/i.test(o.prod)?'ducha':o.prod);
       if(!porPag[key]) porPag[key]={pais:o.sub,prod:o.prod,vis:0,form:0,peds:0}; porPag[key].peds++; });
     var filas=Object.keys(porPag).map(function(k){return porPag[k];}).sort(function(a,b){return b.vis-a.vis;});
     var btn=function(n,t){ return '<button class="minitab'+(_visEsR===n?' act':'')+'" onclick="_visEsR='+n+';pintarOtroPais(\'visitas\')">'+t+'</button>'; };
@@ -4297,7 +4297,8 @@ window.diasGananciaPais=function(P,cb){
       if(!v.dropi_dia) return; var k=String(v.dropi_dia).slice(0,10);
       if(/entreg/i.test(v.dropi||'')){ var x=dia(k), cant=Number(v.cant)||1;
         var env=String(v.cp||'').indexOf('07')===0?(C.envio_baleares_eur||0):(C.envio_eur||0);
-        x.entregas++; x.entra+=((Number(v.precio)||0)-cant*(C.producto_eur||0)-env)*t; }
+        x.entregas++; var cu=(C.producto_eur_por&&C.producto_eur_por[v.prod])||C.producto_eur||0; /* 29-09: coste de CADA producto (cabezal 4,22 · bálsamo 2,41) */
+        x.entra+=((Number(v.precio)||0)-cant*cu-env)*t; }
       else if(/devol|rechaz/i.test(v.dropi||'')){ var y=dia(k); y.devoluciones++; y.devol+=(C.devolucion_eur||0)*t; }
     });
     (CAJA_ES.pauta||[]).forEach(function(p){ dia(p.dia).meta+=Number(p.cop)||0; });
