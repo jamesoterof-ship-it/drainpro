@@ -4148,6 +4148,16 @@ function pildoraPago(o){
   if(esPagoPend(o)) return '<div style="'+st+'background:#fff3e2;color:#b45309">💳 Pago anticipado · botón enviado, falta comprobante</div>';
   return '<div style="'+st+'background:#fff3e2;color:#b45309">💳 Pago anticipado · enviar enlace de pago</div>';
 }
+/* en qué quedó el montaje a Dropi PRO (montador España, n8n) */
+function pildoraMontaje(o,k){
+  var st='margin-top:4px;display:inline-block;border-radius:6px;padding:2px 7px;font-size:11.5px;font-weight:700;';
+  var e=o.estado||'', det=(String(o.nota).split('DROPI PRO: ')[1]||'').slice(0,160);
+  if(/^MONTANDO/i.test(e)) return '<div style="'+st+'background:#e8eefc;color:#3056c9">⏳ Creando en Dropi PRO…</div>';
+  if(/^ERROR DROPI PRO/i.test(e)) return '<div style="'+st+'background:#fde8e8;color:#b91c1c">⚠️ No se creó en Dropi PRO: '+esc(det)+'</div>';
+  if(/^REVISAR DROPI PRO/i.test(e)) return '<div style="'+st+'background:#fde8e8;color:#b91c1c">⚠️ Revisar en Dropi PRO si quedó creado (no se reintenta solo)'+(det?': '+esc(det):'')+'</div>';
+  if(/pago:\s*pre/i.test(o.nota)&&esAprobado(k)&&!o.montado) return '<div style="'+st+'background:#fff3e2;color:#b45309">✋ Aprobado · crear A MANO en Dropi PRO (pago anticipado)</div>';
+  return '';
+}
 function renderAprobarPais(){
   var ch=document.getElementById('aprobChile'), ot=document.getElementById('aprobOtro'); if(!ch||!ot) return;
   document.querySelectorAll('#paisAprob .minitab').forEach(function(b){ b.classList.toggle('act',b.dataset.p===fPaisAprob); });
@@ -4162,14 +4172,14 @@ function renderAprobarPais(){
   }
   var lista=ventasES.filter(function(o){return !o.montado;});
   ot.innerHTML='<div class="panel"><div class="tbl-head"><h2>España y Portugal · por aprobar</h2>'+
-    '<span style="font-size:12px;color:#8a93a0">Van a Dropi PRO, nunca a Dropi Chile. El montador automático de España todavía no está: lo aprobado se crea a mano en Dropi PRO.</span></div>'+
+    '<span style="font-size:12px;color:#8a93a0">Van a Dropi PRO, nunca a Dropi Chile. Lo que apruebes contra reembolso se crea solo en Dropi PRO (cada 5 min). El pago anticipado, por ahora, se crea a mano.</span></div>'+
     (lista.length?'<table><thead><tr><th>Cliente</th><th>País</th><th>Producto</th><th>Dirección</th><th>Cant.</th><th>Total</th><th>Aprobación</th></tr></thead><tbody>'+
       lista.map(function(o){
         var k='es:'+o.id, falta=!nombreSirve(o.cli)?'nom':(!dirSirve(o.dir)?true:false);
         return '<tr><td><b>'+esc(o.cli)+'</b><div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.fecha)+' · +'+esc(o.tel)+'</div></td>'+
           '<td><span class="flag flag-'+o.sub.toLowerCase()+'"></span> '+o.sub+'</td><td>'+esc(o.prod)+
           /* pago anticipado: Carmen manda el botón de PayPal y lee el comprobante; la página todavía no cobra */
-          (/pago:\s*pre/i.test(o.nota)?pildoraPago(o):'')+
+          (/pago:\s*pre/i.test(o.nota)?pildoraPago(o):'')+pildoraMontaje(o,k)+
           (/canal:\s*whatsapp/i.test(o.nota)?'<div style="font-size:11px;color:var(--ink-3)">por WhatsApp (Carmen)</div>':'')+'</td>'+
           '<td>'+esc(o.dir)+'<div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.zona)+(o.region&&o.region!=='—'?', '+esc(o.region):'')+'</div></td>'+
           '<td>'+esc(o.cant)+'</td><td>'+fmtEUR(o.totalNum)+'</td><td>'+(esPagoPend(o)
