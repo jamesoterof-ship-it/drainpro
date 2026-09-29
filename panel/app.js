@@ -1715,7 +1715,8 @@ function renderAprobar(){
   if(bd){ bd.style.display=nDud?'':'none'; bd.textContent=nDud; }
   const nPend=items.filter(x=>x.st==='pendiente' && !x.prog && !x.dud).length;
   const bg=document.getElementById('badgeAprobar');
-  if(bg){ bg.style.display=nPend?'':'none'; bg.textContent=nPend; }
+  if(bg){ bg.style.display=(nPend&&fPais!=='ES'&&fPais!=='CO')?'':'none'; bg.textContent=nPend; }
+  var pnCL=document.getElementById('pnNumCL'); if(pnCL) pnCL.textContent=nPend||'';
   agRiesgoCalc(items);
   /* LO MAS NUEVO ARRIBA, lo mas viejo abajo. Sin excepciones y sin separar por
      estado: la lista se lee como llegan las ventas.
@@ -4088,7 +4089,97 @@ function fmtMonP(n){
   return fPais==='ES'?fmtEUR(n):fPais==='CO'?fmtCOP(n)+' COP':fmtCLP(n)+' CLP';
 }
 
-function irPais(p){ fPais=p; try{ localStorage.setItem('jaye_pais',p); }catch(e){} renderResumen(); }
+function irPais(p){ elegirPais(p); }
+
+/* ---------- el país manda sobre TODO el panel (James 28-09: "cada quien por aparte") ----------
+   Cada entrada del menú dice de qué países es. "todos" = solo el Resumen en COP y lo general. */
+var MENU_PAIS={ resumen:'todos,CL,ES,CO', aprobar:'CL,ES,CO', ganancia:'CL,ES,CO',
+  radar:'todos,CL,ES,CO', historico:'todos,CL,ES,CO', config:'todos,CL,ES,CO' };
+function paisesDe(n){
+  if(n.dataset.bot==='James') return 'CO';
+  return MENU_PAIS[n.dataset.view]||'CL';   /* lo demás (cancelaciones, novedades, páginas, bots, redes) es de Chile */
+}
+var NOM_PAIS={todos:'Resumen general',CL:'Resumen de Chile',ES:'Resumen de España y Portugal',CO:'Resumen de Colombia'};
+function aplicarPaisMenu(){
+  document.querySelectorAll('#paisNav button').forEach(function(b){ b.classList.toggle('act',b.dataset.p===fPais); });
+  document.querySelectorAll('.side .nav-i[data-view]').forEach(function(n){
+    n.style.display=(','+paisesDe(n)+',').indexOf(','+fPais+',')>=0?'':'none';
+  });
+  /* el título de un grupo se esconde si no le queda ninguna entrada */
+  document.querySelectorAll('.side .grouplabel').forEach(function(g){
+    var nav=g.nextElementSibling; if(!nav||nav.tagName!=='NAV') return;
+    var vis=[].some.call(nav.querySelectorAll('.nav-i'),function(n){return n.style.display!=='none';});
+    g.style.display=vis?'':'none'; nav.style.display=vis?'':'none';
+  });
+  var t=document.getElementById('navResTxt'); if(t) t.textContent=NOM_PAIS[fPais]||NOM_PAIS.todos;
+  if(TITULOS&&TITULOS.resumen) TITULOS.resumen[0]=NOM_PAIS[fPais]||NOM_PAIS.todos;
+  /* contadores de aprobación: cada país el suyo */
+  var bCL=document.getElementById('badgeAprobar'), bES=document.getElementById('badgeAprobarES');
+  if(bCL) bCL.style.display=(fPais==='CL'&&bCL.textContent&&bCL.textContent!=='0')?'':'none';
+  if(bES) bES.style.display=(fPais==='ES'&&bES.textContent&&bES.textContent!=='0')?'':'none';
+  /* las alertas de campañas son de Chile: en España y Colombia no se muestran */
+  var al=document.getElementById('alertasCamp'); if(al) al.style.display=(fPais==='ES'||fPais==='CO')?'none':'';
+  if(TITULOS&&TITULOS.ganancia){ if(!TITULOS._ganCL) TITULOS._ganCL=TITULOS.ganancia[1];
+    TITULOS.ganancia[1]=fPais==='ES'?'Lo entregado por Dropi PRO menos producto, envío y la pauta de España · en pesos colombianos'
+      :fPais==='CO'?'Colombia · en pesos colombianos':TITULOS._ganCL; }
+}
+function vistaActual(){ var v=document.querySelector('.view.act'); return v?v.id.replace('view-',''):'resumen'; }
+function elegirPais(p){
+  fPais=p; try{ localStorage.setItem('jaye_pais',p); }catch(e){}
+  fPaisAprob=(p==='todos')?'CL':p;
+  aplicarPaisMenu();
+  var v=vistaActual(), n=document.querySelector('.side .nav-i[data-view="'+v+'"]');
+  if(v!=='conv'&&(!n||n.style.display==='none')) v='resumen';
+  if(v==='conv'&&fPais!=='CL') v='resumen';
+  mostrarVista(v);
+  renderResumen(); renderAprobarPais();
+  if(v==='ganancia') renderGananciaPais();
+}
+document.querySelectorAll('#paisNav button').forEach(function(b){ b.addEventListener('click',function(){ elegirPais(b.dataset.p); }); });
+
+/* ---------- GANANCIA por país ----------
+   Chile: la de siempre (caja de Dropi Chile). España y Portugal: entregas de Dropi PRO con
+   su tarifa, menos lo gastado en Meta en las campañas de España/Portugal, en COP a la tasa
+   del día. Colombia: todavía no vende. */
+var CAJA_ES=null, _cajaEsPidiendo=false;
+function renderGananciaPais(){
+  var box=document.getElementById('ganOtro'), view=document.getElementById('view-ganancia'); if(!box||!view) return;
+  [].forEach.call(view.children,function(c){ if(c!==box) c.style.display=(fPais==='ES'||fPais==='CO')?'none':''; });
+  box.hidden=!(fPais==='ES'||fPais==='CO');
+  if(fPais==='CL'||fPais==='todos'){ if(typeof cargarGanancia==='function') cargarGanancia(); return; }
+  if(fPais==='CO'){ box.innerHTML='<div class="panel"><div class="vacio" style="padding:26px">Colombia todavía no tiene ventas. Cuando arranque, su ganancia sale aquí, aparte, en pesos colombianos.</div></div>'; return; }
+  if(!CAJA_ES){
+    box.innerHTML='<div class="panel"><div class="vacio" style="padding:26px">Cargando la ganancia de España y Portugal…</div></div>';
+    if(!_cajaEsPidiendo){ _cajaEsPidiendo=true;
+      fetch(BASE+'/caja-espana',{cache:'no-store'}).then(function(r){return r.json();}).then(function(j){ CAJA_ES=j; _cajaEsPidiendo=false; renderGananciaPais(); })
+        .catch(function(){ _cajaEsPidiendo=false; box.innerHTML='<div class="panel"><div class="vacio" style="padding:26px">No se pudo cargar la ganancia de España (flujo caja-espana).</div></div>'; }); }
+    return;
+  }
+  var C=CAJA_ES.costos||{}, V=CAJA_ES.ventas||[], tasa=TASAS&&TASAS.eur;
+  var ent=V.filter(function(v){return /entreg/i.test(v.dropi||'');}), dev=V.filter(function(v){return /devol|rechaz/i.test(v.dropi||'');});
+  var camino=V.filter(function(v){return v.dropi&&!/entreg|devol|rechaz|cancel/i.test(v.dropi);});
+  var ingresos=0, costo=0, envio=0;
+  ent.forEach(function(v){ var cant=Number(v.cant)||1; ingresos+=Number(v.precio)||0; costo+=cant*(C.producto_eur||0);
+    envio+=String(v.cp||'').indexOf('07')===0?(C.envio_baleares_eur||0):(C.envio_eur||0); });
+  var queda=ingresos-costo-envio, pautaCop=(CAJA_ES.pauta||[]).reduce(function(s,p){return s+(p.cop||0);},0);
+  var netoCop=tasa? queda*tasa-pautaCop : null;
+  var vendido=V.reduce(function(s,v){return s+(Number(v.precio)||0);},0);
+  var k=function(l,v,m,col){ return '<div class="kpi"><div class="top-r"><span class="lbl">'+l+'</span></div><div class="val"'+(col?' style="color:'+col+'"':'')+'>'+v+'</div>'+(m?'<div class="meta">'+m+'</div>':'')+'</div>'; };
+  box.innerHTML='<div class="kpis">'+
+      k('Vendido (90 días)',fmtEUR(vendido),V.length+' pedido'+(V.length===1?'':'s'))+
+      k('Entregado por Dropi PRO',fmtEUR(ingresos),ent.length+' entregado'+(ent.length===1?'':'s')+' · '+camino.length+' en camino · '+dev.length+' devuelto'+(dev.length===1?'':'s'))+
+      k('Producto + envío',fmtEUR(costo+envio),'de lo entregado · devoluciones 0 €')+
+      k('Pauta Meta (España/Portugal)',fmtCOP(pautaCop)+' COP',(CAJA_ES.pauta||[]).length+' día'+((CAJA_ES.pauta||[]).length===1?'':'s')+' con gasto')+
+      k('Ganancia neta',netoCop===null?'sin tasa del día':fmtCOP(netoCop)+' COP',tasa?'= '+fmtEUR(queda)+' × '+tasa.toLocaleString('es-CO',{maximumFractionDigits:2})+' − pauta':'',netoCop===null?'':(netoCop>=0?'#0f7a52':'#c0392b'))+
+    '</div>'+
+    '<div class="panel" style="padding:12px 16px;font-size:12.5px;color:var(--ink-2);line-height:1.6">'+
+      'Se cuenta la plata cuando Dropi PRO marca el pedido como <b>entregado</b>, igual que en Chile. '+
+      'Costos: '+esc(C.fuente||'')+'. Envío a Baleares '+fmtEUR(C.envio_baleares_eur||0)+'. '+
+      'La pauta sale de las campañas de Meta cuyo nombre dice ESPAÑA o PORTUGAL. '+esc(tasaTxt())+
+      (CAJA_ES.ok===false?'<br><b style="color:#c0392b">Meta no respondió: '+esc(CAJA_ES.error||'')+'</b>':'')+
+    '</div>';
+}
+document.querySelectorAll('.nav-i[data-view="ganancia"]').forEach(function(n){ n.addEventListener('click',function(){ setTimeout(renderGananciaPais,80); }); });
 
 function renderPaisTab(){
   var box=document.getElementById('resPais'), chi=document.getElementById('resChile'); if(!box||!chi) return;
@@ -4122,7 +4213,7 @@ function renderPaisTab(){
     var pend=ventasES.filter(function(o){return !o.montado&&!esAprobado('es:'+o.id)&&!esRechazado('es:'+o.id);}).length;
     box.innerHTML='<div class="rp-aviso"><span class="flag flag-es"></span> <b>España y Portugal</b> · montos en euros ('+esc(TASAS?'1 € = '+TASAS.eur.toLocaleString('es-CO',{maximumFractionDigits:2})+' COP':'sin tasa del día')+'). '+
       'Por aprobar: <b>'+pend+'</b> · <a href="#" onclick="verAprobarPais(\'ES\');return false">ir a aprobar →</a> · '+
-      'Van a Dropi PRO: el montador automático todavía no está, lo aprobado se crea a mano.</div>';
+      'Lo que apruebes contra reembolso se crea solo en Dropi PRO; el pago anticipado, por ahora, a mano.</div>';
     return;
   }
   box.innerHTML='<div class="rp-aviso"><span class="flag flag-co"></span> <b>Colombia</b> · montos en pesos colombianos. '+
@@ -4164,6 +4255,8 @@ function renderAprobarPais(){
   /* PAGO PENDIENTE (anticipado sin comprobante todavía) no cuenta ni se puede aprobar */
   var pend=ventasES.filter(function(o){return !o.montado&&!esPagoPend(o)&&!esAprobado('es:'+o.id)&&!esRechazado('es:'+o.id);});
   var nb=document.getElementById('numAprobES'); if(nb){ nb.textContent=pend.length; nb.style.display=pend.length?'':'none'; }
+  var pnES=document.getElementById('pnNumES'); if(pnES) pnES.textContent=pend.length||'';
+  var bES=document.getElementById('badgeAprobarES'); if(bES){ bES.textContent=pend.length; bES.style.display=(pend.length&&fPais==='ES')?'':'none'; }
   if(fPaisAprob==='CL'){ ch.hidden=false; ot.hidden=true; return; }
   ch.hidden=true; ot.hidden=false;
   if(fPaisAprob==='CO'){
@@ -4192,5 +4285,7 @@ function renderAprobarPais(){
 (function(){
   document.querySelectorAll('#segPais .minitab').forEach(function(b){ b.addEventListener('click',function(){ irPais(b.dataset.p); }); });
   document.querySelectorAll('#paisAprob .minitab').forEach(function(b){ b.addEventListener('click',function(){ fPaisAprob=b.dataset.p; renderAprobarPais(); }); });
-  cargarTasas(); renderPaisTab(); renderAprobarPais();
+  fPaisAprob=(fPais==='todos')?'CL':fPais;
+  aplicarPaisMenu(); cargarTasas(); renderPaisTab(); renderAprobarPais();
+  if(vistaActual()==='resumen'){ var vt=document.getElementById('vtitle'); if(vt) vt.textContent=NOM_PAIS[fPais]||NOM_PAIS.todos; }
 })();

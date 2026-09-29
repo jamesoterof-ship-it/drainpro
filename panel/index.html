@@ -537,6 +537,13 @@ tbody tr:hover .chev{color:var(--brand)}
 .crm-b .msgimg{max-width:170px;border-radius:8px;display:block;cursor:pointer}
 .crm-h{display:block;font-size:10px;color:var(--ink-3);margin-top:3px;text-align:right}
 @media(max-width:600px){ .crm-col{flex:0 0 84vw} }
+.paisnav{display:flex;flex-direction:column;gap:4px;padding:6px 12px 10px;border-bottom:1px solid var(--border)}
+.paisnav button{display:flex;align-items:center;gap:7px;text-align:left;border:1px solid var(--border);background:var(--surface-2);border-radius:9px;padding:7px 10px;font:inherit;font-size:13px;font-weight:600;color:var(--ink-2);cursor:pointer}
+.paisnav button:hover{border-color:var(--ink-3)}
+.paisnav button.act{background:var(--ink);color:#fff;border-color:var(--ink)}
+.paisnav .pn-num{margin-left:auto;background:#e1283c;color:#fff;border-radius:999px;font-size:10.5px;padding:0 6px}
+.paisnav .pn-num:empty{display:none}
+#segPais[hidden],#paisAprob[hidden]{display:none!important}
 </style>
 </head>
 <body>
@@ -549,14 +556,24 @@ tbody tr:hover .chev{color:var(--brand)}
       <div class="t">Jaye <span>Group</span></div>
     </div>
 
+    <!-- 28-09 James: "cada país por aparte". El país elegido aquí manda sobre TODO el
+         panel: el menú muestra solo lo de ese país (su aprobación, su ganancia, sus chats). -->
+    <div class="paisnav" id="paisNav">
+      <button data-p="todos">Resumen · todo en COP</button>
+      <button data-p="CL"><span class="flag flag-cl"></span>Chile <b class="pn-num" id="pnNumCL"></b></button>
+      <button data-p="ES"><span class="flag flag-es"></span>España y Portugal <b class="pn-num" id="pnNumES"></b></button>
+      <button data-p="CO"><span class="flag flag-co"></span>Colombia</button>
+    </div>
+
     <nav style="padding-top:4px">
       <div class="nav-i act" data-view="resumen">
         <svg class="ico" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
-        Resumen general
+        <span id="navResTxt">Resumen general</span>
       </div>
       <div class="nav-i" data-view="aprobar">
         <svg class="ico" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
         Aprobación de ventas
+        <span id="badgeAprobarES" style="display:none;margin-left:auto;background:#3056c9;color:#fff;border-radius:999px;font-size:11px;font-weight:800;padding:1px 8px"></span>
         <span id="badgeAprobar" style="display:none;margin-left:auto;background:#e1283c;color:#fff;border-radius:999px;font-size:11px;font-weight:800;padding:1px 8px"></span>
       </div>
       <div class="nav-i" data-view="cancelar">
@@ -569,44 +586,18 @@ tbody tr:hover .chev{color:var(--brand)}
         Novedades
         <span id="badgeNovedades" style="display:none;margin-left:auto;background:#e1283c;color:#fff;border-radius:999px;font-size:11px;font-weight:800;padding:1px 8px"></span>
       </div>
-      <div class="nav-i" data-view="direcciones">
-        <svg class="ico" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-        Direcciones incompletas
-        <span id="badgeDirecciones" style="display:none;margin-left:auto;background:#e1283c;color:#fff;border-radius:999px;font-size:11px;font-weight:800;padding:1px 8px"></span>
-      </div>
       <div class="nav-i" data-view="listanegra">
         <svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/></svg>
         Lista negra
         <span id="badgeListanegra" style="display:none;margin-left:auto;background:#e1283c;color:#fff;border-radius:999px;font-size:11px;font-weight:800;padding:1px 8px"></span>
       </div>
-      <div class="nav-i" data-view="crm">
-        <svg class="ico" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        CRM · Clientes
-        <span id="badgeCrm" style="display:none;margin-left:auto;background:#e1283c;color:#fff;border-radius:999px;font-size:11px;font-weight:800;padding:1px 8px"></span>
-      </div>
       <div class="nav-i nav-oro" data-view="ganancia">
         <svg class="ico" viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M17 7h4v4"/></svg>
         Ganancia
       </div>
-      <div class="nav-i" data-view="finanzas">
-        <svg class="ico" viewBox="0 0 24 24"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-        Finanzas
-      </div>
-      <div class="nav-i" data-view="dropi">
-        <svg class="ico" viewBox="0 0 24 24"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 12l9 4 9-4"/><path d="M3 17l9 4 9-4"/></svg>
-        Dropi · Guías
-      </div>
       <div class="nav-i" data-view="radar">
         <svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><path d="M12 12l6.5-4.5"/></svg>
         Radar de productos
-      </div>
-      <div class="nav-i" data-view="calc">
-        <svg class="ico" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8"/><path d="M8 10h2M12 10h2M16 10h.01"/><path d="M8 14h2M12 14h2M16 14h.01"/><path d="M8 18h6"/></svg>
-        Calculadora
-      </div>
-      <div class="nav-i" data-view="anuncios">
-        <svg class="ico" viewBox="0 0 24 24"><path d="M3 11l15-5v12L3 13v-2z"/><path d="M18 8a3 3 0 0 1 0 6"/><path d="M7 13v4a2 2 0 0 0 2 2h1"/></svg>
-        Creador de anuncios
       </div>
     </nav>
 
@@ -650,7 +641,6 @@ tbody tr:hover .chev{color:var(--brand)}
       <div class="nav-i sub" data-view="conv" data-bot="Carlos"><span class="subdot" style="background:#0e8074"></span>Camila · Chile</div>
       <div class="nav-i sub" data-view="conv" data-bot="Logistica"><span class="subdot" style="background:#d97706"></span>Laura · Logística</div>
       <div class="nav-i sub" data-view="conv" data-bot="James"><span class="subdot" style="background:#3060ea"></span>James · Colombia</div>
-      <div class="nav-i sub" data-view="conv" data-bot="Ramon"><span class="subdot" style="background:#7c4dd8"></span>Ramón · Paraguay</div>
     </nav>
 
     <div class="grouplabel">
@@ -723,7 +713,7 @@ tbody tr:hover .chev{color:var(--brand)}
     <div class="content view act" id="view-resumen">
       <!-- 28-09 James: una pestaña por país, cada una en su moneda, y un Resumen que
            suma todo en pesos colombianos ("es donde me va a entrar a mí"). -->
-      <div class="minitabs paistabs" id="segPais">
+      <div class="minitabs paistabs" id="segPais" hidden>
         <button class="minitab act" data-p="todos">Resumen · todo en COP</button>
         <button class="minitab" data-p="CL"><span class="flag flag-cl"></span>Chile</button>
         <button class="minitab" data-p="ES"><span class="flag flag-es"></span>España y Portugal</button>
@@ -758,12 +748,12 @@ tbody tr:hover .chev{color:var(--brand)}
         <div class="kpi">
           <div class="top-r"><span class="lbl" id="lTot">Ventas totales (hoy)</span><span class="icn" style="background:var(--border-2);color:var(--ink)"><svg class="ico-sm" viewBox="0 0 24 24"><path d="M6 2 3 6v13a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></span></div>
           <div class="val" id="kTot">…</div>
-          <div class="meta">páginas + WhatsApp, todos los países</div>
+          <div class="meta" id="metaTotPais">páginas + WhatsApp + redes</div>
         </div>
         <div class="kpi">
           <div class="top-r"><span class="lbl" id="lWa">Ventas por WhatsApp (hoy)</span><span class="icn icn-g"><svg class="ico-sm" viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.6A8.4 8.4 0 1 1 21 11.5z"/></svg></span></div>
           <div class="val" id="kWa">…</div>
-          <div class="meta">cerradas por Carlos, James y Ramón</div>
+          <div class="meta">cerradas por los bots de WhatsApp</div>
         </div>
         <div class="kpi">
           <div class="top-r"><span class="lbl" id="lRed">Ventas por redes (hoy)</span><span class="icn icn-r"><svg class="ico-sm" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" stroke="none"/></svg></span></div>
@@ -892,7 +882,7 @@ tbody tr:hover .chev{color:var(--brand)}
     <!-- ====== APROBACIÓN DE VENTAS (página + WhatsApp) ====== -->
     <div class="content view" id="view-aprobar">
       <!-- 28-09: cada país aprueba lo SUYO y lo manda a SU Dropi. Chile no ve España ni al revés. -->
-      <div class="minitabs paistabs" id="paisAprob">
+      <div class="minitabs paistabs" id="paisAprob" hidden>
         <button class="minitab act" data-p="CL"><span class="flag flag-cl"></span>Chile</button>
         <button class="minitab" data-p="ES"><span class="flag flag-es"></span>España y Portugal <span id="numAprobES" style="display:none;background:#3056c9;color:#fff;border-radius:999px;font-size:10.5px;font-weight:800;padding:0 6px;margin-left:4px"></span></button>
         <button class="minitab" data-p="CO"><span class="flag flag-co"></span>Colombia</button>
@@ -924,6 +914,7 @@ tbody tr:hover .chev{color:var(--brand)}
     </div>
 
     <div class="content view" id="view-ganancia">
+      <div id="ganOtro" hidden></div>
       <div class="filters">
         <div class="seg" id="segGan">
           <button data-g="hoy">Hoy</button>
@@ -1578,7 +1569,7 @@ tbody tr:hover .chev{color:var(--brand)}
      apagado. Para devolverlo: recuperar este bloque del commit anterior y activar el flujo. -->
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
-<script src="app.js?v=189"></script>
+<script src="app.js?v=190"></script>
 <script src="ganancia.js?v=125"></script>
 </body>
 </html>
