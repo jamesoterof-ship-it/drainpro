@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ventas Colombia · Jaye Group</title>
+<link rel="icon" type="image/png" sizes="192x192" href="../panel/icon-192.png">
+<link rel="apple-touch-icon" href="../panel/icon-180.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#000000">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Ventas CO">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f6f7f9; --surface:#ffffff; --surface-2:#fbfcfd;
+  --border:#e9ebf0; --border-2:#eef0f4;
+  --ink:#0f1729; --ink-2:#5b6573; --ink-3:#98a1b0;
+  --brand:#3056c9; --brand-tint:#eef2fe;
+  --green:#179f6b; --green-tint:#e7f6ef;
+  --red:#e0444b; --red-tint:#fdecec;
+  --amber:#c98a16; --amber-tint:#fbf2df;
+  --blue:#3060ea; --blue-tint:#eef2fe;
+  --shadow:0 1px 2px rgba(16,23,41,.04), 0 1px 3px rgba(16,23,41,.06);
+  --shadow-lg:0 12px 32px rgba(16,23,41,.12);
+  --r:14px;
+}
+:root[data-theme="dark"]{
+  --bg:#0f1420; --surface:#171d2b; --surface-2:#1d2536;
+  --border:#2a3344; --border-2:#222a3b;
+  --ink:#e9edf4; --ink-2:#a3adbe; --ink-3:#6b768a;
+  --brand:#5d7df2; --brand-tint:#1b2540;
+  --green:#27b083; --green-tint:#14271e;
+  --red:#f0696e; --red-tint:#2c1a1c;
+  --amber:#e0a93a; --amber-tint:#292414;
+  --blue:#5b8def; --blue-tint:#172139;
+  --shadow:0 1px 2px rgba(0,0,0,.3), 0 1px 3px rgba(0,0,0,.4);
+  --shadow-lg:0 12px 36px rgba(0,0,0,.55);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;min-height:100vh}
+button{font-family:inherit;cursor:pointer}
+.wrap{max-width:1180px;margin:0 auto;padding:0 16px 48px}
+
+/* barra superior */
+.top{position:sticky;top:0;z-index:20;background:#000;color:#fff}
+.top .wrap{display:flex;align-items:center;gap:12px;padding-top:12px;padding-bottom:12px}
+.logo{font-weight:800;letter-spacing:.14em;font-size:15px;white-space:nowrap}
+.logo .g{color:#d8a52e}
+.sep{width:1px;height:20px;background:#333}
+.ttl{font-weight:600;font-size:15px;display:flex;align-items:center;gap:8px;white-space:nowrap}
+.flag-co{display:inline-block;width:20px;height:14px;border-radius:2px;background:linear-gradient(#fcd116 0 50%,#003893 50% 75%,#ce1126 75%)}
+.sp{flex:1}
+.upd{font-size:12px;color:#9aa3b2;white-space:nowrap}
+.ib{background:#1b1b1b;border:1px solid #333;color:#fff;border-radius:10px;height:34px;min-width:34px;padding:0 10px;font-size:13px}
+.ib:hover{background:#262626}
+
+/* periodo y filtros */
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:18px 0 14px}
+.seg{display:inline-flex;background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:3px;box-shadow:var(--shadow)}
+.seg button{border:0;background:transparent;color:var(--ink-2);font-size:13px;font-weight:600;padding:7px 12px;border-radius:8px}
+.seg button.act{background:var(--ink);color:var(--surface)}
+:root[data-theme="dark"] .seg button.act{background:var(--brand);color:#fff}
+select,input[type=search]{font-family:inherit;font-size:13px;color:var(--ink);background:var(--surface);border:1px solid var(--border);border-radius:10px;height:36px;padding:0 10px;box-shadow:var(--shadow)}
+input[type=search]{min-width:200px;flex:1;max-width:320px}
+
+/* tarjetas de resumen */
+.kpis{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;margin-bottom:18px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;box-shadow:var(--shadow);min-width:0}
+.kpi .l{font-size:12px;color:var(--ink-2);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi .v{font-size:22px;font-weight:800;margin-top:6px;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi .s{font-size:11.5px;color:var(--ink-3);margin-top:3px}
+.kpi.money .v{font-size:19px}
+.v.green{color:var(--green)} .v.red{color:var(--red)} .v.blue{color:var(--blue)}
+
+/* pestañas de estado */
+.tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{border:1px solid var(--border);background:var(--surface);color:var(--ink-2);border-radius:999px;padding:7px 13px;font-size:13px;font-weight:600;white-space:nowrap;box-shadow:var(--shadow)}
+.tab .n{display:inline-block;min-width:20px;padding:1px 6px;margin-left:6px;border-radius:999px;background:var(--border-2);color:var(--ink-2);font-size:11.5px}
+.tab.act{background:var(--brand);border-color:var(--brand);color:#fff}
+.tab.act .n{background:rgba(255,255,255,.22);color:#fff}
+
+/* tabla */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-size:11.5px;font-weight:700;color:var(--ink-3);text-transform:uppercase;letter-spacing:.04em;padding:11px 12px;border-bottom:1px solid var(--border);background:var(--surface-2);white-space:nowrap}
+td{padding:11px 12px;border-bottom:1px solid var(--border-2);vertical-align:top}
+tbody tr{cursor:pointer}
+tbody tr:hover{background:var(--surface-2)}
+tbody tr:last-child td{border-bottom:0}
+.muted{color:var(--ink-3);font-size:12px}
+td:first-child{white-space:nowrap}
+.num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.chip{display:inline-block;font-size:11.5px;font-weight:700;padding:3px 8px;border-radius:999px;white-space:nowrap}
+.c-gray{background:var(--border-2);color:var(--ink-2)}
+.c-blue{background:var(--blue-tint);color:var(--blue)}
+.c-green{background:var(--green-tint);color:var(--green)}
+.c-red{background:var(--red-tint);color:var(--red)}
+.c-amber{background:var(--amber-tint);color:var(--amber)}
+
+/* vacío / error */
+.empty{padding:48px 20px;text-align:center;color:var(--ink-2)}
+.empty > b{display:block;color:var(--ink);font-size:16px;margin-bottom:6px}
+.empty p{max-width:520px;margin:0 auto;font-size:13.5px;line-height:1.5}
+.err{background:var(--red-tint);color:var(--red);border-radius:12px;padding:10px 14px;font-size:13px;margin-bottom:12px;display:none}
+
+/* ventana de detalle */
+.ov{position:fixed;inset:0;background:rgba(10,14,24,.45);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+.ov.on{display:flex}
+.modal{background:var(--surface);border-radius:16px;box-shadow:var(--shadow-lg);width:100%;max-width:520px;max-height:88vh;overflow:auto}
+.mh{display:flex;align-items:center;gap:10px;padding:16px 18px;border-bottom:1px solid var(--border)}
+.mh b{flex:1;font-size:16px}
+.mx{border:0;background:var(--border-2);color:var(--ink);width:32px;height:32px;border-radius:9px;font-size:16px}
+.mb{padding:6px 18px 16px}
+.fila{display:flex;gap:12px;padding:9px 0;border-bottom:1px solid var(--border-2);font-size:13.5px}
+.fila:last-child{border-bottom:0}
+.fila .k{width:140px;flex-shrink:0;color:var(--ink-2)}
+.fila .val{flex:1;word-break:break-word}
+
+/* celular: la tabla pasa a tarjetas */
+@media (max-width:900px){
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .kpi.money{grid-column:span 2}
+}
+@media (max-width:720px){
+  .upd{display:none}
+  .ttl .t2{display:none}
+  thead{display:none}
+  table,tbody,tr,td{display:block;width:100%}
+  tbody tr{padding:12px 14px;border-bottom:1px solid var(--border-2)}
+  td{border:0;padding:2px 0}
+  td.hide-m{display:none}
+  td.num{text-align:left}
+  .card{border-radius:12px}
+  input[type=search]{max-width:none;min-width:0;flex:1 1 100%}
+  select{flex:1 1 auto}
+}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="wrap">
+    <div class="logo">JAYE <span class="g">GROUP</span></div>
+    <div class="sep"></div>
+    <div class="ttl"><span class="flag-co"></span>Ventas Colombia<span class="t2 muted" style="color:#9aa3b2;font-weight:500">· solo lectura</span></div>
+    <div class="sp"></div>
+    <div class="upd" id="upd">Cargando…</div>
+    <button class="ib" id="btnRef" title="Actualizar">↻</button>
+    <button class="ib" id="btnTema" title="Modo claro / oscuro">◐</button>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="bar">
+    <div class="seg" id="segPer">
+      <button data-p="hoy">Hoy</button>
+      <button data-p="7d">7 días</button>
+      <button data-p="mes" class="act">Este mes</button>
+      <button data-p="todo">Todo</button>
+    </div>
+    <select id="selProd"><option value="">Todos los productos</option></select>
+    <input type="search" id="q" placeholder="Buscar cliente, teléfono, ciudad o guía">
+  </div>
+
+  <div class="err" id="err"></div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="tabs" id="tabs"></div>
+
+  <div class="card" id="lista"></div>
+</div>
+
+<div class="ov" id="ov">
+  <div class="modal">
+    <div class="mh"><b id="mt">Pedido</b><button class="mx" id="mx">✕</button></div>
+    <div class="mb" id="mb"></div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   VENTAS COLOMBIA — página aparte del panel, SOLO LECTURA.
+   Lee los mismos datos del panel (n8n → Postgres) y se queda
+   solo con lo de Colombia:
+   - pedidos de la tienda: /leer-pedidos-landing, páginas que empiezan con "co-"
+   - ventas por WhatsApp:  /ventas, bot de Colombia (James / Colombia / CO)
+   - estado de entrega:    /leer-pedidos-dropi, cruzado por nº de orden Dropi
+   Aquí NO se aprueba nada: la aprobación (que manda a Dropi) sigue en el panel.
+   ============================================================ */
+const BASE = 'https://n8n-production-8a42.up.railway.app/webhook';
+const URL_LANDING = BASE + '/leer-pedidos-landing';
+const URL_VENTAS  = BASE + '/ventas';
+const URL_DROPI   = BASE + '/leer-pedidos-dropi';
+const PREFIJO_CO  = 'co-';                              // páginas de la tienda de Colombia
+const BOT_CO      = /colombia|james|(^|[^a-z])co([^a-z]|$)/i;  // bot de WhatsApp de Colombia
+const TZ = 'America/Bogota';
+
+/* Solo para que yo pruebe el dibujo con datos reales: ?probar=chile trata
+   las páginas de Chile como si fueran de Colombia. No cambia nada en ningún lado. */
+const PROBAR = new URLSearchParams(location.search).get('probar') === 'chile';
+
+let PEDIDOS = [], periodo = 'mes', pestana = 'todos';
+
+/* ---------- utilidades ---------- */
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const cop = n => '$' + Math.round(n || 0).toLocaleString('es-CO');
+const numero = v => { const d = String(v == null ? '' : v).replace(/[^0-9]/g, ''); return d ? Number(d) : 0; };
+function fechaTxt(ms) {
+  if (!ms) return '—';
+  return new Intl.DateTimeFormat('es-CO', { timeZone: TZ, day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(ms));
+}
+function diaBogota(ms) {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(ms));
+}
+function ordenDropi(txt) { const m = String(txt || '').match(/#\s*(\d{5,})/); return m ? m[1] : ''; }
+
+/* ---------- estado del pedido ---------- */
+function clasificar(p, dropi) {
+  if (p.ordenDropi) {
+    const d = dropi[p.ordenDropi];
+    if (!d) return { cat: 'camino', txt: 'En Dropi #' + p.ordenDropi, cls: 'c-blue' };
+    const e = String(d.estado || '').toUpperCase();
+    if (e === 'ENTREGADO') return { cat: 'entregado', txt: 'Entregado', cls: 'c-green' };
+    if (/DEVOLU|REHUSA|REHUZA|CANCELAD/.test(e)) return { cat: 'devuelto', txt: d.estado, cls: 'c-red' };
+    if (/NOVEDAD/.test(e) && !/SOLUCIONADA/.test(e)) return { cat: 'devuelto', txt: d.estado, cls: 'c-amber' };
+    return { cat: 'camino', txt: d.estado || 'En Dropi', cls: 'c-blue' };
+  }
+  if (p.confirmado) return { cat: 'confirmado', txt: 'Confirmado · sin montar', cls: 'c-green' };
+  return { cat: 'porconfirmar', txt: p.abonoPendiente ? 'Espera pago anticipado' : 'Por confirmar', cls: 'c-amber' };
+}
+function formaPago(estado, nota) {
+  const t = (String(estado || '') + ' ' + String(nota || '')).toUpperCase();
+  if (/PAGAD/.test(t) && /ANTICIP|ABONO|WOMPI|TARJETA/.test(t)) return 'Anticipado · pagado';
+  if (/ABONO|ANTICIP|WOMPI|TARJETA/.test(t)) return 'Anticipado · pendiente';
+  return 'Contra entrega';
+}
+
+/* ---------- carga de datos ---------- */
+async function traer(url) {
+  const r = await fetch(url, { cache: 'no-store' });
+  if (!r.ok) throw new Error(url.split('/').pop() + ' respondió ' + r.status);
+  return r.json();
+}
+async function cargar() {
+  $('upd').textContent = 'Actualizando…';
+  try {
+    const [land, ventas, dropiArr] = await Promise.all([traer(URL_LANDING), traer(URL_VENTAS), traer(URL_DROPI)]);
+    const dropi = {};
+    (Array.isArray(dropiArr) ? dropiArr : []).forEach(d => { if (d && d.id != null) dropi[String(d.id)] = d; });
+
+    const lista = [];
+    const pedidos = (land && land.pedidos) || [];
+    pedidos.forEach(r => {
+      const pag = String(r.pagina || '');
+      const esCO = pag.toLowerCase().startsWith(PREFIJO_CO) || (PROBAR && pag.startsWith('tienda-'));
+      if (!esCO) return;
+      const est = String(r.estado || '');
+      lista.push({
+        canal: 'Tienda', pagina: pag, id: 'web-' + r.id,
+        ms: Number(r.creado_ms) || Date.parse(r.fecha) || 0,
+        nombre: r.nombre, telefono: r.telefono, producto: r.producto,
+        cantidad: Number(r.cantidad) || 1, total: numero(r.total),
+        direccion: r.direccion, ciudad: r.comuna, depto: r.region,
+        estadoTxt: est, nota: r.nota,
+        confirmado: String(r.confirmado || '').toUpperCase() === 'SI',
+        abonoPendiente: /ABONO PENDIENTE/i.test(est),
+        ordenDropi: ordenDropi(est),
+        pago: formaPago(est, r.nota)
+      });
+    });
+    (Array.isArray(ventas) ? ventas : []).forEach(r => {
+      if (!BOT_CO.test(String(r.BOT || ''))) return;
+      const est = String(r.ESTADO || '');
+      lista.push({
+        canal: 'WhatsApp', pagina: r.BOT, id: 'wa-' + r.row_number,
+        ms: Number(r.CREADO_MS) || 0,
+        nombre: r.NOMBRE, telefono: r.TELEFONO, producto: r.PRODUCTO,
+        cantidad: Number(r.CANTIDAD) || 1, total: numero(r.PRECIO),
+        direccion: r.DIRECCION, ciudad: r.COMUNA, depto: r.REGION,
+        estadoTxt: est, nota: r.NOTA,
+        confirmado: true,          // la venta por WhatsApp nace confirmada en el chat
+        abonoPendiente: false,
+        ordenDropi: ordenDropi(est),
+        pago: formaPago(est, r.NOTA)
+      });
+    });
+    lista.forEach(p => {
+      p.st = clasificar(p, dropi);
+      const d = p.ordenDropi ? dropi[p.ordenDropi] : null;
+      p.guia = d ? (d.guia || '') : '';
+      p.transportadora = d ? (d.transportadora || '') : '';
+      /* Recaudado = total de la venta (en Colombia ya es COP). No se usa d.recaudo:
+         en la tabla de Dropi viene convertido de moneda y no cuadra con el precio. */
+      p.recaudo = p.total;
+      p.entregadoMs = d && d.entregado_en ? Date.parse(d.entregado_en) : 0;
+      p.motivoDev = d ? (d.motivo_devolucion || '') : '';
+    });
+    lista.sort((a, b) => b.ms - a.ms);
+    PEDIDOS = lista;
+    llenarProductos();
+    pintar();
+    $('err').style.display = 'none';
+    $('upd').textContent = 'Actualizado ' + new Intl.DateTimeFormat('es-CO', { timeZone: TZ, hour: '2-digit', minute: '2-digit' }).format(new Date());
+  } catch (e) {
+    $('err').textContent = 'No se pudieron traer los datos (' + e.message + '). Se reintenta solo en 1 minuto.';
+    $('err').style.display = 'block';
+    $('upd').textContent = 'Sin conexión';
+  }
+}
+
+/* ---------- filtros ---------- */
+function enPeriodo(ms) {
+  if (periodo === 'todo') return true;
+  if (!ms) return false;
+  const hoy = diaBogota(Date.now()), dia = diaBogota(ms);
+  if (periodo === 'hoy') return dia === hoy;
+  if (periodo === 'mes') return dia.slice(0, 7) === hoy.slice(0, 7);
+  return Date.now() - ms <= 7 * 864e5;
+}
+function filtrados() {
+  const prod = $('selProd').value, q = $('q').value.trim().toLowerCase();
+  return PEDIDOS.filter(p => enPeriodo(p.ms)
+    && (!prod || p.producto === prod)
+    && (!q || [p.nombre, p.telefono, p.ciudad, p.depto, p.guia].join(' ').toLowerCase().includes(q)));
+}
+function llenarProductos() {
+  const sel = $('selProd'), actual = sel.value;
+  const prods = [...new Set(PEDIDOS.map(p => p.producto).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">Todos los productos</option>' + prods.map(p => '<option' + (p === actual ? ' selected' : '') + '>' + esc(p) + '</option>').join('');
+}
+
+/* ---------- dibujo ---------- */
+const TABS = [
+  ['todos', 'Todos'], ['porconfirmar', 'Por confirmar'], ['confirmado', 'Confirmados'],
+  ['camino', 'En camino (Dropi)'], ['entregado', 'Entregados'], ['devuelto', 'Devueltos / novedad']
+];
+function pintar() {
+  const base = filtrados();
+  const cuenta = c => base.filter(p => p.st.cat === c).length;
+  const ent = cuenta('entregado'), dev = cuenta('devuelto');
+  const confirmados = base.filter(p => p.st.cat !== 'porconfirmar').length;
+  const enDropi = base.filter(p => p.ordenDropi).length;
+  const recaudado = base.filter(p => p.st.cat === 'entregado').reduce((s, p) => s + p.recaudo, 0);
+  const pct = ent + dev ? Math.round(ent * 100 / (ent + dev)) + '%' : '—';
+  $('kpis').innerHTML =
+    kpi('Pedidos', base.length, '', 'todas las ventas') +
+    kpi('Confirmados', confirmados, '', 'confirmados por el cliente') +
+    kpi('En Dropi', enDropi, 'blue', 'montados') +
+    kpi('Entregados', ent, 'green', '') +
+    kpi('Devueltos', dev, 'red', 'incluye novedades') +
+    kpi('% entrega', pct, '', 'de los ya cerrados') +
+    '<div class="kpi money"><div class="l">Recaudado</div><div class="v green">' + cop(recaudado) + '</div><div class="s">COP · solo entregados</div></div>';
+
+  $('tabs').innerHTML = TABS.map(([k, t]) =>
+    '<button class="tab' + (k === pestana ? ' act' : '') + '" data-t="' + k + '">' + t +
+    '<span class="n">' + (k === 'todos' ? base.length : cuenta(k)) + '</span></button>').join('');
+
+  const filas = pestana === 'todos' ? base : base.filter(p => p.st.cat === pestana);
+  if (!PEDIDOS.length) {
+    $('lista').innerHTML = '<div class="empty"><b>Todavía no hay ventas de Colombia</b><p>Esta página se llena sola apenas entre el primer pedido de la tienda de Colombia (páginas <b>co-…</b>) o del WhatsApp de Colombia. Se actualiza cada minuto.</p></div>';
+    return;
+  }
+  if (!filas.length) {
+    $('lista').innerHTML = '<div class="empty"><b>Nada en esta vista</b><p>No hay pedidos con este estado en el periodo y filtros elegidos.</p></div>';
+    return;
+  }
+  $('lista').innerHTML = '<table><thead><tr>' +
+    '<th>Fecha</th><th>Cliente</th><th>Ciudad</th><th>Producto</th><th class="num">Total</th><th>Pago</th><th>Estado</th><th>Guía</th>' +
+    '</tr></thead><tbody>' + filas.map(p => {
+      const i = PEDIDOS.indexOf(p);
+      return '<tr data-i="' + i + '">' +
+        '<td><div>' + esc(fechaTxt(p.ms)) + '</div><div class="muted">' + esc(p.canal) + '</div></td>' +
+        '<td><div style="font-weight:600">' + esc(p.nombre || '—') + '</div><div class="muted">' + esc(p.telefono || '') + '</div></td>' +
+        '<td class="hide-m"><div>' + esc(p.ciudad || '—') + '</div><div class="muted">' + esc(p.depto || '') + '</div></td>' +
+        '<td><div>' + esc(p.producto || '—') + '</div><div class="muted">x' + p.cantidad + '</div></td>' +
+        '<td class="num" style="font-weight:700">' + cop(p.total) + '</td>' +
+        '<td><span class="chip ' + (p.pago === 'Contra entrega' ? 'c-gray' : p.pago.endsWith('pagado') ? 'c-green' : 'c-amber') + '">' + esc(p.pago) + '</span></td>' +
+        '<td><span class="chip ' + p.st.cls + '">' + esc(p.st.txt) + '</span></td>' +
+        '<td class="hide-m"><div>' + esc(p.guia || '—') + '</div><div class="muted">' + esc(p.transportadora || '') + '</div></td>' +
+        '</tr>';
+    }).join('') + '</tbody></table>';
+}
+function kpi(l, v, color, s) {
+  return '<div class="kpi"><div class="l">' + l + '</div><div class="v ' + color + '">' + v + '</div><div class="s">' + (s || '&nbsp;') + '</div></div>';
+}
+function verPedido(i) {
+  const p = PEDIDOS[i]; if (!p) return;
+  const f = (k, v) => '<div class="fila"><div class="k">' + k + '</div><div class="val">' + (v || '—') + '</div></div>';
+  $('mt').textContent = p.nombre || 'Pedido';
+  $('mb').innerHTML =
+    f('Fecha', esc(fechaTxt(p.ms))) +
+    f('Canal', esc(p.canal + (p.pagina ? ' · ' + p.pagina : ''))) +
+    f('Teléfono', esc(p.telefono)) +
+    f('Dirección', esc(p.direccion)) +
+    f('Ciudad', esc(p.ciudad)) +
+    f('Departamento', esc(p.depto)) +
+    f('Producto', esc(p.producto) + ' · x' + p.cantidad) +
+    f('Total', '<b>' + cop(p.total) + ' COP</b>') +
+    f('Forma de pago', esc(p.pago)) +
+    f('Estado', '<span class="chip ' + p.st.cls + '">' + esc(p.st.txt) + '</span>') +
+    f('Orden Dropi', p.ordenDropi ? '#' + esc(p.ordenDropi) : '') +
+    f('Guía', esc([p.guia, p.transportadora].filter(Boolean).join(' · '))) +
+    (p.entregadoMs ? f('Entregado', esc(fechaTxt(p.entregadoMs))) : '') +
+    (p.motivoDev ? f('Motivo devolución', esc(p.motivoDev)) : '') +
+    (p.nota ? f('Nota', esc(p.nota)) : '');
+  $('ov').classList.add('on');
+}
+
+/* ---------- eventos ---------- */
+$('segPer').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  periodo = b.dataset.p;
+  [...$('segPer').children].forEach(x => x.classList.toggle('act', x === b));
+  pintar();
+});
+$('tabs').addEventListener('click', e => { const b = e.target.closest('.tab'); if (!b) return; pestana = b.dataset.t; pintar(); });
+$('selProd').addEventListener('change', pintar);
+$('q').addEventListener('input', pintar);
+$('lista').addEventListener('click', e => { const tr = e.target.closest('tr[data-i]'); if (tr) verPedido(Number(tr.dataset.i)); });
+$('mx').addEventListener('click', () => $('ov').classList.remove('on'));
+$('ov').addEventListener('click', e => { if (e.target === $('ov')) $('ov').classList.remove('on'); });
+$('btnRef').addEventListener('click', cargar);
+
+/* tema claro/oscuro: el mismo que el panel */
+function ponerTema(t) { document.documentElement.setAttribute('data-theme', t); try { localStorage.setItem('jaye_tema', t); } catch (e) {} }
+$('btnTema').addEventListener('click', () => ponerTema(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'));
+(function () {
+  let t = null; try { t = localStorage.getItem('jaye_tema'); } catch (e) {}
+  if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', t);
+})();
+
+cargar();
+setInterval(cargar, 60000);
+</script>
+</body>
+</html>
