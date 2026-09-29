@@ -7,6 +7,10 @@ const URL_CONV=BASE+'/leer-conversaciones';
 const URL_HIST=BASE+'/historial';
 const URL_PAUSA=BASE+'/pausar-activar';
 const URL_RESP=BASE+'/responder';
+/* Carmen (España, +34): sus chats, respuestas y pausas van por SUS webhooks, así lo que
+   respondes sale por el WhatsApp de España y nunca por el de Chile */
+const URL_CONV_CARMEN=BASE+'/carmen-conversaciones', URL_HIST_CARMEN=BASE+'/carmen-historial',
+      URL_RESP_CARMEN=BASE+'/carmen-responder', URL_PAUSA_CARMEN=BASE+'/carmen-pausar';
 const URL_VENTAS=BASE+'/ventas';
 const URL_APROBAR=BASE+'/aprobar-pedido';
 const URL_EDITARWA=BASE+'/editar-pedido-wa';
@@ -257,9 +261,9 @@ const FLAG={CL:'flag-cl',CO:'flag-co',PY:'flag-py',ES:'flag-es'};
    no habia forma de saber cual estabas mirando, y una regla que faltaba en uno se
    buscaba en el otro. La CLAVE interna sigue siendo Carlos (la usan los filtros);
    lo que cambia es solo el nombre que se ve. */
-const BOTNOM={Carlos:'Camila · Chile',Logistica:'Laura · Logística',James:'James · Colombia',Ramon:'Ramón · Paraguay',Redes:'Camila Redes · Chile'};
-const BOTLOC={Carlos:'CL',Logistica:'CL',James:'CO',Ramon:'PY',Redes:'CL'};
-const BOTCOLOR={Carlos:'linear-gradient(135deg,#0e8074,#3aa897)',Logistica:'linear-gradient(135deg,#d97706,#f0a94a)',James:'linear-gradient(135deg,#3060ea,#6a92f5)',Ramon:'linear-gradient(135deg,#7c4dd8,#a98aec)',Redes:'linear-gradient(135deg,#d8256b,#f0699b)'};
+const BOTNOM={Carmen:'Carmen · España',Carlos:'Camila · Chile',Logistica:'Laura · Logística',James:'James · Colombia',Ramon:'Ramón · Paraguay',Redes:'Camila Redes · Chile'};
+const BOTLOC={Carmen:'ES',Carlos:'CL',Logistica:'CL',James:'CO',Ramon:'PY',Redes:'CL'};
+const BOTCOLOR={Carmen:'linear-gradient(135deg,#aa151b,#e0a800)',Carlos:'linear-gradient(135deg,#0e8074,#3aa897)',Logistica:'linear-gradient(135deg,#d97706,#f0a94a)',James:'linear-gradient(135deg,#3060ea,#6a92f5)',Ramon:'linear-gradient(135deg,#7c4dd8,#a98aec)',Redes:'linear-gradient(135deg,#d8256b,#f0699b)'};
 /* Konecta marca TODO pedido como canal "whatsapp", asi que el canal de verdad se
    cruza por el chat y llega aca dentro del nombre del bot. Sin sufijo = venta
    vieja, de antes del cruce: se muestra "Redes" a secas y no se inventa cual fue. */
@@ -318,9 +322,9 @@ function normConv(r){
   const tel=soloNum(r.TELEFONO);
   const bot=String(r.BOT||'').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
   const modo=String(r.MODO||'bot').trim().toLowerCase();
-  const esR=bot.includes('ramon'); const esJ=bot.includes('james');
+  const esR=bot.includes('ramon'); const esJ=bot.includes('james'); const esC=bot.includes('carmen');
   return {n:r.NOMBRE||tel||'Sin nombre',tel,ultimo:r.ULTIMO_MENSAJE||'',hora:r.HORA||'',fecha:r.FECHA||'',
-    orden:fechaOrden(r.FECHA,r.HORA),bot:esR?'Ramon':esJ?'James':'Carlos',loc:esR?'PY':esJ?'CO':'CL',
+    orden:fechaOrden(r.FECHA,r.HORA),bot:esC?'Carmen':esR?'Ramon':esJ?'James':'Carlos',loc:esC?'ES':esR?'PY':esJ?'CO':'CL',
     estado:modo==='agente'?'pausada':'activa',msgs:[],loaded:false,
     /* marcas que manda la consulta: si Carlos (logística) habló en este chat y su última línea */
     log:(r.LOGISTICA===true||r.LOGISTICA==='true'||r.LOGISTICA==='t'),ultLog:r.ULT_LOG||'',
@@ -360,7 +364,9 @@ function parseHist(txt){
 async function cargarConvos(){
   try{
     const res=await fetch(URL_CONV); const data=await res.json();
-    const rows=Array.isArray(data)?data:(data.body||[]);
+    let rows=Array.isArray(data)?data:(data.body||[]);
+    /* 28-09: los chats de Carmen (España) viven en sus propias tablas */
+    try{ const rc=await fetch(URL_CONV_CARMEN,{cache:'no-store'}); const dc=await rc.json(); rows=rows.concat(Array.isArray(dc)?dc:(dc.body||[])); }catch(e){}
     const previo={}; convos.forEach(c=>{previo[c.tel]={msgs:c.msgs,loaded:c.loaded,sig:c.sig};});
     convos=rows.filter(r=>r&&r.TELEFONO).map(normConv).sort((a,b)=>b.orden-a.orden);
     // solo reusamos lo cacheado si el último mensaje es el mismo; si llegó uno nuevo, se recarga
@@ -969,7 +975,7 @@ function renderConvStats(){
   const ventas=esVistaLog()
     ? (function(){const s={};base.forEach(c=>s[soloNum(c.tel)]=1);
         return ordenes.filter(o=>s[soloNum(o.tel)] && enRangoDe(o.orden,Rconv)).length;})()
-    : ordenes.filter(o=>o.bot===fBot && enRangoDe(o.orden,Rconv)).length
+    : (fBot==='Carmen'?ventasCarmen():ordenes.filter(o=>o.bot===fBot)).filter(o=>enRangoDe(o.orden,Rconv)).length
       /* en «Camila · Chile» las ventas de PAGINA tambien cuentan (ver renderVentasBot) */
       + (fBot==='Carlos' ? (pedidosWeb||[]).filter(p=>enRangoDe(p.orden,Rconv)).length : 0);
   const conAgente=cs.filter(c=>c.estado==='pausada').length;
@@ -1030,7 +1036,7 @@ function renderVentasBot(){
   let arr=esVistaLog()
     ? (function(){const s={};convDelBot('Logistica').forEach(c=>s[soloNum(c.tel)]=1);
         return ordenes.filter(o=>s[soloNum(o.tel)]);})()
-    : ordenes.filter(o=>o.bot===fBot);
+    : (fBot==='Carmen'?ventasCarmen():ordenes.filter(o=>o.bot===fBot));
   /* Las ventas de PAGINA de Chile tambien van aqui. `ordenes` las excluye a
      proposito (son canal pagina, no WhatsApp), asi que en «Camila · Chile» la
      subpestaña Ventas no mostraba ninguna venta de la tienda: el 9-sep el
@@ -1058,10 +1064,16 @@ function renderVentasBot(){
       <td>${o.abono?'<span class="st st-rec"><i></i>Abono pendiente</span>':(o.conf?'<span class="st st-ok"><i></i>Confirmado</span>':'<span class="st st-rec"><i></i>Pendiente</span>')}</td>
       <td class="cell-aprob" onclick="event.stopPropagation()">${o.esWeb
         ? celdaAprob(keyPag(o), o.montado?'<span class="st st-ok"><i></i>Montado'+(o.ordenDropi?' #'+o.ordenDropi:'')+'</span>':'','',false,'',false,false,o.creadoMs)
-        : celdaAprob(keyWa(o), o.montado?'<span class="st st-ok"><i></i>Montado'+(o.ordenDropi?' #'+o.ordenDropi:'')+'</span>':'', o.rid, /falta direccion/i.test(String(o.estado||'')),'',false,false,o.creadoMs)}</td>
+        : celdaAprob(o.llave||keyWa(o), o.montado?'<span class="st st-ok"><i></i>Montado'+(o.ordenDropi?' #'+o.ordenDropi:'')+'</span>':'', o.rid, /falta direccion/i.test(String(o.estado||'')),'',false,false,o.creadoMs)}</td>
       <td><svg class="ico-sm chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></td>
     </tr>`).join('');
   window._ventasBotF=arr;
+}
+function ventasCarmen(){
+  return ventasES.filter(function(o){return /^carmen/i.test(o.bot);}).map(function(o){ return {rid:o.id,cli:o.cli,tel:o.tel,prod:o.prod,cant:o.cant,
+    precioNum:o.totalNum,precio:fmtEUR(o.totalNum),dir:o.dir,zona:o.zona,region:o.region,nota:o.nota,desde:'',revision:'',nivel:'',fecha:o.fecha,hora:'',
+    orden:o.orden,conf:!/pago\s*pendiente|falta/i.test(o.estado),abono:false,montado:o.montado,ordenDropi:(String(o.estado).match(/#(\d+)/)||[])[1]||'',
+    estado:o.estado,bot:'Carmen',loc:'ES',red:'',llave:'es:'+o.id,creadoMs:o.creadoMs,eur:true}; });
 }
 function verVentaBot(i){window._ventasF=window._ventasBotF;verVenta(i);}
 function setTabConv(t){
@@ -1123,7 +1135,7 @@ async function abrirChat(tel){
 // trae el historial de verdad desde n8n. Devuelve true si pudo.
 async function traerHist(c){
   try{
-    const res=await fetch(URL_HIST+'?telefono='+soloNum(c.tel)+'&pais='+(c.loc||'CL')+'&t='+Date.now());
+    const res=await fetch(c.bot==='Carmen'?URL_HIST_CARMEN+'?telefono='+soloNum(c.tel)+'&t='+Date.now():URL_HIST+'?telefono='+soloNum(c.tel)+'&pais='+(c.loc||'CL')+'&t='+Date.now());
     const data=await res.json();
     const arr=Array.isArray(data)?data:(data?[data]:[]);
     const row=arr.find(r=>r&&r.historial&&soloNum(r.telefono)===soloNum(c.tel))||arr.find(r=>r&&r.historial);
@@ -1218,7 +1230,7 @@ async function togglePausa(){
   const c=convos.find(x=>x.tel===selTel); if(!c) return;
   const nuevo=c.estado==='pausada'?'bot':'agente';
   try{
-    await fetch(URL_PAUSA,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({telefono:soloNum(c.tel),modo:nuevo})});
+    await fetch(c.bot==='Carmen'?URL_PAUSA_CARMEN:URL_PAUSA,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({telefono:soloNum(c.tel),modo:nuevo})});
     c.estado=nuevo==='agente'?'pausada':'activa';
     pintarChatHead(c); renderConvList(); toast(nuevo==='agente'?'Bot pausado: tú atiendes esta conversación':'Bot reactivado');
   }catch(e){ toast('No se pudo cambiar el modo','err'); }
@@ -1227,6 +1239,16 @@ async function enviarRespuesta(){
   const inp=document.getElementById('chInput'); const t=inp.value.trim(); if(!t||!selTel) return;
   const c=convos.find(x=>x.tel===selTel); if(!c) return;
   inp.value=''; c.msgs.push({from:'agente',text:t}); renderBubbles(c);
+  if(c.bot==='Carmen'){
+    /* sale por el WhatsApp de España; si WhatsApp no lo acepta se avisa y se quita el globo */
+    try{
+      const r=await fetch(URL_RESP_CARMEN,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({telefono:soloNum(c.tel),mensaje:t})});
+      const j=await r.json().catch(()=>({}));
+      if(!j||j.ok!==true) throw new Error((j&&j.error)||'No se pudo enviar');
+      c.estado='pausada'; pintarChatHead(c); renderConvList(); refrescarChat(c);
+    }catch(e){ c.msgs.pop(); renderBubbles(c); inp.value=t; toast(String(e.message||'No se pudo enviar'),'err'); }
+    return;
+  }
   try{
     const r=await fetch(URL_RESP,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({telefono:soloNum(c.tel),mensaje:t,pais:c.loc})});
     if(!r.ok) throw 0;
@@ -1240,6 +1262,7 @@ const quickReply=txt=>{const i=document.getElementById('chInput');i.value=txt;i.
 function sendImg(input){
   const f=input.files&&input.files[0]; input.value=''; if(!f||!selTel) return;
   const c=convos.find(x=>x.tel===selTel); if(!c) return;
+  if(c.bot==='Carmen'){ toast('Las fotos a clientes de España todavía no se mandan desde el panel','err'); return; }
   const rd=new FileReader();
   rd.onload=()=>{
     const img=new Image();
@@ -1268,7 +1291,7 @@ function _fVms(f){ const m=String(f||'').match(/(\d{1,2})-(\d{1,2})-(\d{4})/); i
 function renderVentasWA(){
   const tb=document.getElementById('tbodyVentasWA'); if(!tb) return;
   const q=(document.getElementById('vbuscar')?.value||'').toLowerCase();
-  let arr=ordenes;
+  let arr=visPaisSel()==='ES'?ventasCarmen():ordenes.filter(o=>o.loc===visPaisSel());   /* 28-09: solo el país elegido */
   const _d1=(document.getElementById('vDesde')||{}).value, _d2=(document.getElementById('vHasta')||{}).value;
   if(_d1||_d2){
     const desde=_d1?new Date(_d1+'T00:00:00').getTime():0;
@@ -1285,9 +1308,9 @@ function renderVentasWA(){
   (function(){
     const el=document.getElementById('vTotales'); if(!el) return;
     const sum={};
-    arr.forEach(o=>{ const v=Number(String(o.precio||'').replace(/\D/g,''))||0; sum[o.loc]=(sum[o.loc]||0)+v; });
+    arr.forEach(o=>{ const v=o.eur?o.precioNum:(Number(String(o.precio||'').replace(/\D/g,''))||0); sum[o.loc]=(sum[o.loc]||0)+v; });
     const MON={CL:'CLP',CO:'COP',PY:'PYG'};
-    const partes=Object.keys(sum).map(k=>MON[k]+' $'+sum[k].toLocaleString('es-CO'));
+    const partes=Object.keys(sum).map(k=>k==='ES'?fmtEUR(sum[k]):MON[k]+' $'+sum[k].toLocaleString('es-CO'));
     el.textContent=arr.length+' venta'+(arr.length===1?'':'s')+(partes.length?' · '+partes.join(' · '):'');
   })();
   if(fPaisV!=='todas') arr=arr.filter(o=>o.loc===fPaisV);
@@ -1302,7 +1325,7 @@ function renderVentasWA(){
       <td>${o.cant}</td>
       <td class="money">${o.precio}</td>
       <td>${o.abono?'<span class="st st-rec"><i></i>Abono pendiente</span>':(o.conf?'<span class="st st-ok"><i></i>Confirmado</span>':'<span class="st st-rec"><i></i>Pendiente</span>')}</td>
-      <td class="cell-aprob" onclick="event.stopPropagation()">${celdaAprob(keyWa(o), o.montado?'<span class="st st-ok"><i></i>Montado'+(o.ordenDropi?' #'+o.ordenDropi:'')+'</span>':'', o.rid, /falta direccion/i.test(String(o.estado||'')),'',false,false,o.creadoMs)}</td>
+      <td class="cell-aprob" onclick="event.stopPropagation()">${celdaAprob(o.llave||keyWa(o), o.montado?'<span class="st st-ok"><i></i>Montado'+(o.ordenDropi?' #'+o.ordenDropi:'')+'</span>':'', o.rid, /falta direccion/i.test(String(o.estado||'')),'',false,false,o.creadoMs)}</td>
       <td><svg class="ico-sm chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></td>
     </tr>`).join('');
   window._ventasF=arr;
@@ -1456,12 +1479,12 @@ function renderBots(){
   const cont=document.getElementById('botcards'); if(!cont) return;
   const hoyV=ordenes.filter(o=>o.orden>=inicioDia(0));
   /* 28-09: cada país ve solo sus bots (Colombia y Paraguay ya no salen en Chile) */
-  cont.innerHTML=['Carlos','Logistica','Redes'].map(b=>{
+  cont.innerHTML=(visPaisSel()==='ES'?['Carmen']:visPaisSel()==='CO'?['James']:['Carlos','Logistica','Redes']).map(b=>{
     const cs=convDelBot(b);
     const pausadas=cs.filter(c=>c.estado==='pausada').length;
     const ventasHoy=b==='Logistica'
       ? (function(){const s={};cs.forEach(c=>s[soloNum(c.tel)]=1);return hoyV.filter(o=>s[soloNum(o.tel)]).length;})()
-      : hoyV.filter(o=>o.bot===b).length;
+      : (b==='Carmen'?ventasCarmen().filter(o=>o.orden>=inicioDia(0)).length:hoyV.filter(o=>o.bot===b).length);
     const loc=BOTLOC[b];
     return `<div class="botmini">
       <span class="bav" style="background:${BOTCOLOR[b]};width:26px;height:26px;font-size:12px;line-height:26px">${b[0]}</span>
@@ -4133,6 +4156,7 @@ function irPais(p){ elegirPais(p); }
 var MENU_PAIS={ radar:'todos,CL,ES,CO', historico:'todos,CL,ES,CO', config:'todos,CL,ES,CO', resumen:'todos,CL,ES,CO' };
 function paisesDe(n){
   if(n.dataset.bot==='James') return 'CO';
+  if(n.dataset.bot==='Carmen') return 'ES';
   if(n.dataset.bot==='Carlos'||n.dataset.bot==='Logistica') return 'CL';
   return MENU_PAIS[n.dataset.view]||'CL,ES,CO';
 }
@@ -4142,7 +4166,7 @@ function paisDePagVis(s){ s=String(s||''); return (/^(es|pt)-/.test(s)||s==='tie
 
 /* Secciones que en España/Portugal y Colombia se pintan aparte: se esconde el contenido de
    Chile de la vista y se muestra una caja propia del país. */
-var VISTAS_OTRO={bots:1,conv:1};   /* pedidos, abandonados y visitas usan la MISMA pantalla de Chile con los datos del país */
+var VISTAS_OTRO={conv:1};   /* solo queda aparte Redes de España/Colombia */   /* pedidos, abandonados y visitas usan la MISMA pantalla de Chile con los datos del país */
 var _visEsR=7;
 function cajaOtro(v){
   var view=document.getElementById('view-'+v); if(!view) return null;
@@ -4153,7 +4177,7 @@ function cajaOtro(v){
 function pintarOtroPais(v){
   Object.keys(VISTAS_OTRO).forEach(function(k){
     var box=cajaOtro(k), view=document.getElementById('view-'+k); if(!box||!view) return;
-    var otro=(fPais==='ES'||fPais==='CO')&&k===v&&!(k==='conv'&&fBot==='James');
+    var otro=(fPais==='ES'||fPais==='CO')&&k===v&&fBot==='Redes';
     [].forEach.call(view.children,function(c){ if(c!==box) c.style.display=otro?'none':''; });
     box.hidden=!otro;
     if(otro) box.innerHTML=htmlOtroPais(k);
@@ -4244,6 +4268,7 @@ function elegirPais(p){
   mostrarVista(v);
   renderResumen(); renderAprobarPais(); fPagV='todas'; fProdP='todos';
   renderVisitas(); renderPedidosWeb(); renderAbandonadosWeb();
+  try{ renderBots(); renderVentasWA(); renderConvList(); }catch(e){}
   if(v==='ganancia') renderGananciaPais();
 }
 document.querySelectorAll('#paisNav button').forEach(function(b){ b.addEventListener('click',function(){ elegirPais(b.dataset.p); }); });
