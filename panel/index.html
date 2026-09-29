@@ -544,6 +544,7 @@ tbody tr:hover .chev{color:var(--brand)}
 .paisnav .pn-num{margin-left:auto;background:#e1283c;color:#fff;border-radius:999px;font-size:10.5px;padding:0 6px}
 .paisnav .pn-num:empty{display:none}
 #segPais[hidden],#paisAprob[hidden]{display:none!important}
+body:not([data-pais="CL"]) :is(#badgeCancelar,#badgeNovedades,#badgeListanegra,#badgeEntregas,#convBadge,#redesBadge){display:none!important}
 </style>
 </head>
 <body>
@@ -1569,7 +1570,7 @@ tbody tr:hover .chev{color:var(--brand)}
      apagado. Para devolverlo: recuperar este bloque del commit anterior y activar el flujo. -->
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
-<script src="app.js?v=190"></script>
+<script src="app.js?v=191"></script>
 <script src="ganancia.js?v=125"></script>
 </body>
 </html>
