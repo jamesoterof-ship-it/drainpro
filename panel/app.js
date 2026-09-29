@@ -688,8 +688,8 @@ function renderPaises(){
 /* ---------- PEDIDOS WEB ---------- */
 function chipsPedidosWeb(){
   const cont=document.getElementById('segProdP'); if(!cont) return;
-  const vistas={}; (pedidosWeb||[]).forEach(o=>{ if(o.pagina&&!vistas[o.pagina]) vistas[o.pagina]={id:o.pagina,nombre:o.prodCorto||o.prod||o.pagina,color:o.color||'#c9a227'}; });
-  PAGINAS.filter(p=>p.url).forEach(p=>{ if(!vistas[p.id]) vistas[p.id]={id:p.id,nombre:p.nombre,color:p.color}; });
+  const vistas={}; (pedidosPais()||[]).forEach(o=>{ if(o.pagina&&!vistas[o.pagina]) vistas[o.pagina]={id:o.pagina,nombre:o.prodCorto||o.prod||o.pagina,color:o.color||'#c9a227'}; });
+  if(visPaisSel()==='CL') PAGINAS.filter(p=>p.url).forEach(p=>{ if(!vistas[p.id]) vistas[p.id]={id:p.id,nombre:p.nombre,color:p.color}; });
   const lista=Object.values(vistas);
   cont.innerHTML='<button class="minitab'+(fProdP==='todos'?' act':'')+'" data-pp="todos">Todos</button>'+
     lista.map(p=>'<button class="minitab'+(fProdP===p.id?' act':'')+'" data-pp="'+p.id+'"><span style="width:8px;height:8px;border-radius:50%;background:'+p.color+';display:inline-block;margin-right:5px"></span>'+esc(p.nombre)+'</button>').join('');
@@ -699,7 +699,7 @@ function renderPedidosWeb(){
   const tb=document.getElementById('tbodyPedidos'); if(!tb) return;
   chipsPedidosWeb();
   const q=(document.getElementById('pbuscar')?.value||'').toLowerCase();
-  let arr=pedidosWeb;
+  let arr=pedidosPais();
   if(fProdP!=='todos') arr=arr.filter(o=>o.pagina===fProdP);
   if(q) arr=arr.filter(o=>(o.cli+' '+o.tel+' '+o.comuna).toLowerCase().includes(q));
   if(!arr.length){tb.innerHTML='<tr><td colspan="9" class="vacio">Sin pedidos aquí.</td></tr>';return;}
@@ -711,10 +711,19 @@ function renderPedidosWeb(){
       <td>${o.cant}</td>
       <td class="money">${o.total}</td>
       <td>${o.abono?'<span class="st st-rec"><i></i>Abono pendiente</span>':(o.conf?'<span class="st st-ok"><i></i>Confirmado</span>':'<span class="st st-rec"><i></i>Pendiente</span>')}</td>
-      <td class="cell-aprob" onclick="event.stopPropagation()">${celdaAprob(keyPag(o), o.dropi?'<span class="st st-ok"><i></i>Montado</span>':'','',false,'',false,false,o.creadoMs)}</td>
+      <td class="cell-aprob" onclick="event.stopPropagation()">${celdaAprob(o.llave||keyPag(o), o.dropi?'<span class="st st-ok"><i></i>Montado</span>':'','',false,'',false,false,o.creadoMs)}</td>
       <td><svg class="ico-sm chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></td>
     </tr>`).join('');
   window._pedidosF=arr;
+}
+/* pedidos de página del país elegido, con la misma forma que los de Chile */
+function pedidosPais(){
+  var P=visPaisSel(); if(P==='CL') return pedidosWeb; if(P==='CO') return [];
+  return ventasES.filter(function(o){return /p[aá]gina/i.test(o.bot);}).map(function(o){
+    return {cli:o.cli,tel:o.tel,fecha:o.fecha,color:o.sub==='PT'?'#006600':'#aa151b',prod:o.prod+' · '+o.sub,comuna:o.zona,region:o.region,
+      cant:o.cant,total:fmtEUR(o.totalNum),conf:!/pago\s*pendiente|falta/i.test(o.estado),abono:false,dropi:o.montado,dir:o.dir,
+      llave:'es:'+o.id,orden:o.orden,creadoMs:o.creadoMs,eur:true,pagina:pagVisES(o)};
+  });
 }
 function verPedido(i){
   const o=(window._pedidosF||pedidosWeb)[i]; if(!o) return;
@@ -725,8 +734,8 @@ function verPedido(i){
     fila('Teléfono','+'+o.tel)+(o.correo?fila('Correo',o.correo):'')+fila('Dirección',o.dir)+
     (o.ref?fila('Referencia',o.ref):'')+fila('Comuna',o.comuna)+fila('Región',o.region)+
     (o.abono?'<div class="dl"><span class="k">Confirmación del cliente</span><span class="v" style="color:#c62828;font-weight:800">🔴 ABONO PENDIENTE — no aprobar hasta ver el comprobante</span></div>':fila('Confirmación del cliente',o.conf?'CONFIRMADO':'Pendiente'))+fila('Dropi',o.dropi?'ENVIADO':'Pendiente')+fila('Fecha',o.fecha)+
-    (o.dropi?'<div style="margin-top:12px;font-size:12px;color:var(--ink-3)">Este pedido ya está montado en Dropi. Para cambiar la dirección se edita directo en Dropi.</div>':'<button onclick="editarPedido()" style="width:100%;margin-top:12px;padding:11px;border:1px solid var(--grid);border-radius:10px;background:var(--card);color:var(--ink);font-weight:600;cursor:pointer">✏️ Editar pedido / estado</button>');
-  document.getElementById('mTotal').textContent=o.total+' CLP';
+    (o.eur?'':o.dropi?'<div style="margin-top:12px;font-size:12px;color:var(--ink-3)">Este pedido ya está montado en Dropi. Para cambiar la dirección se edita directo en Dropi.</div>':'<button onclick="editarPedido()" style="width:100%;margin-top:12px;padding:11px;border:1px solid var(--grid);border-radius:10px;background:var(--card);color:var(--ink);font-weight:600;cursor:pointer">✏️ Editar pedido / estado</button>');
+  document.getElementById('mTotal').textContent=o.eur?o.total:o.total+' CLP';
   window._pedEdit=o; window._pedEditIdx=i; window._pedEditOrigen='pedidos';
   window._ventaAbierta={cli:o.cli,dir:o.dir+(o.ref?' - '+o.ref:''),region:o.region,tel:o.tel,prod:o.prod,cant:o.cant,precio:o.total};
   document.getElementById('ov').classList.add('open');
@@ -800,15 +809,15 @@ function renderAbandonadosWeb(){
   const tb=document.getElementById('tbodyAband'); if(!tb) return;
   if(!PAGINAS.some(p=>p.url)){tb.innerHTML='<tr><td colspan="7" class="vacio">Esperando conexión de las planillas…</td></tr>';return;}
   /* 28-09: aquí solo Chile; los de España/Colombia salen en su país */
-  const abCL=abandonadosWeb.filter(o=>paisDeTel(o.tel)==='CL');
-  if(!abCL.length){tb.innerHTML='<tr><td colspan="7" class="vacio">Sin abandonados pendientes. 🎉</td></tr>';return;}
+  const abCL=abandonadosWeb.filter(o=>paisDeTel(o.tel)===visPaisSel());
+  if(!abCL.length){tb.innerHTML='<tr><td colspan="7" class="vacio">'+(visPaisSel()==='CL'?'Sin abandonados pendientes. 🎉':'Sin carritos abandonados de '+(visPaisSel()==='ES'?'España y Portugal':'Colombia')+' todavía. A estos clientes no les escribe ningún flujo de Chile.')+'</td></tr>';return;}
   tb.innerHTML=abCL.slice(0,100).map((o,i)=>`
     <tr onclick="verAbandonado(${i})" style="cursor:pointer">
       <td class="cli">${esc(o.cli)}<small>${esc(o.fecha)} · +${o.tel}</small></td>
       <td><span class="pchip"><i style="background:${o.color}"></i>${esc(o.prod)}</span></td>
       <td>${esc(o.comuna)}</td>
       <td>${o.cant}</td>
-      <td class="money">${o.total}</td>
+      <td class="money">${paisDeTel(o.tel)==='CL'?o.total:fmtEUR(numEUR(o.totRaw))}</td>
       <td>${o.contactado?'<span class="st st-ok"><i></i>✓ Mensaje enviado</span>'+(o.contactadoFecha?'<small style="display:block;color:var(--ink-3)">'+esc(o.contactadoFecha)+'</small>':''):'<span class="st st-ab"><i></i>Sin contactar</span>'}</td>
       <td onclick="event.stopPropagation()"><a class="qr" style="text-decoration:none;cursor:pointer" onclick="crmAbrir('${o.tel}')">WhatsApp</a></td>
     </tr>`).join('');
@@ -826,7 +835,7 @@ function verAbandonado(i){
     (o.region?fila('Región',o.region):'')+
     fila('Estado',o.contactado?('Mensaje de recuperación enviado'+(o.contactadoFecha?' · '+o.contactadoFecha:'')):'Sin contactar')+
     fila('Fecha',o.fecha);
-  document.getElementById('mTotal').textContent=o.total+' CLP';
+  document.getElementById('mTotal').textContent=paisDeTel(o.tel)==='CL'?o.total+' CLP':fmtEUR(numEUR(o.totRaw));
   window._ventaAbierta={cli:o.cli,dir:(o.dir||'')+(o.ref?' - '+o.ref:''),region:o.region,tel:o.tel,prod:o.prod,cant:o.cant,precio:o.total};
   document.getElementById('ov').classList.add('open');
 }
@@ -834,8 +843,21 @@ function verAbandonado(i){
 /* ---------- VISITAS ---------- */
 let fPagV='todas';
 window.setPagV=function(id){ fPagV=id; renderVisitas(); };
-function pagesVis(){ var m={}; (visitasWeb||[]).forEach(function(v){ if(v&&v.pagina&&!m[v.pagina]&&paisDePagVis(v.pagina)==='CL') m[v.pagina]={id:v.pagina,nombre:nombrePagVis(v.pagina,v.producto),color:v.color||'#6cc24a'}; }); var a=Object.keys(m).map(function(k){return m[k];}); return a.length?a:PAGINAS.filter(p=>p.url); }
-const npV=s=>/^nad/i.test(String(s||''))?'nad':String(s||'');  // nad/nadplus = misma pagina (visitas usan 'nad', pedidos 'nadplus')
+/* 28-09: la pantalla de visitas es la MISMA para los tres países; solo cambian los datos
+   (James: "el diseño es igual, no así simple"). */
+function visPaisSel(){ return fPais==='ES'?'ES':(fPais==='CO'?'CO':'CL'); }
+function pagesVis(){ var P=visPaisSel(), m={}; (visitasWeb||[]).forEach(function(v){ if(!v||!v.pagina||paisDePagVis(v.pagina)!==P) return; var k=npV(v.pagina); if(!m[k]) m[k]={id:k,nombre:nombrePagVis(k,(function(n){ n=n.replace(/ · (España|Portugal)$/,''); return /españa|portugal/i.test(n)?n:n+(/^pt-/.test(k)?' · Portugal':/^es-/.test(k)?' · España':''); })(String(v.producto||''))),color:v.color||'#6cc24a'}; }); var a=Object.keys(m).map(function(k){return m[k];}); return a.length?a:(P==='CL'?PAGINAS.filter(p=>p.url):[]); }
+/* pedidos que cuentan en visitas: Chile = pedidos de página; España = ventas de la página ES/PT */
+function pedsVis(){
+  var P=visPaisSel(); if(P==='CL') return pedidosWeb; if(P==='CO') return [];
+  return ventasES.filter(function(o){return /p[aá]gina/i.test(o.bot);}).map(function(o){ return {orden:o.orden,prod:o.prod,pagina:pagVisES(o)}; });
+}
+function pagVisES(o){
+  var pre=o.sub==='PT'?'pt-':'es-', k=nrmNomPag(o.prod);
+  var v=(visitasWeb||[]).find(function(x){ return x&&x.pagina&&npV(x.pagina).indexOf(pre)===0&&nrmNomPag(String(x.producto||'').replace(/ · (España|Portugal)$/,''))===k; });
+  return v?npV(v.pagina):pre+'otro';
+}
+const npV=s=>{ s=String(s||''); if(/^nad/i.test(s)) return 'nad'; if(s==='tienda-balsamo') return 'es-balsamo'; if(/^tienda-es-/.test(s)) return 'es-'+s.slice(10); return s; };  /* tienda-balsamo = la página de España antes del 28-09 */  // nad/nadplus = misma pagina (visitas usan 'nad', pedidos 'nadplus')
 /* A que pagina pertenece un pedido, para la vista Pagina (visitas -> formulario
    -> pedidos). El endpoint de pedidos de la tienda marca 'otro' en todo
    producto que no tiene en su lista: el 9-sep el Organizador llevaba 7 ventas
@@ -872,7 +894,7 @@ function renderVisitas(){
   const data=pgs.map(p=>{
     let vis=0,form=0;
     visitasWeb.filter(v=>npV(v.pagina)===npV(p.id)&&enRangoDe(fechaOrden(v.fecha,''),Rvis)).forEach(v=>{vis+=numero(v.visitas);form+=numero(v.formulario);});
-    const peds=pedidosWeb.filter(o=>npV(paginaVis(o))===npV(p.id)&&enRangoDe(o.orden,Rvis)).length;
+    const peds=pedsVis().filter(o=>npV(paginaVis(o))===npV(p.id)&&enRangoDe(o.orden,Rvis)).length;
     return {id:p.id,nombre:p.nombre,color:p.color,vis,form,peds};
   });
   const tVis=data.reduce((a,b)=>a+b.vis,0), tForm=data.reduce((a,b)=>a+b.form,0), tPed=data.reduce((a,b)=>a+b.peds,0);
@@ -890,8 +912,8 @@ function renderVisitas(){
   const nD = Rvis.tipo==='30d'?30:(Rvis.tipo==='hoy'||Rvis.tipo==='ayer'?7:7);
   const dias=[];
   for(let i=nD-1;i>=0;i--){const d=new Date(inicioDia(i));dias.push({key:d.toDateString(),lbl:i===0?'Hoy':d.toLocaleDateString('es-CL',{weekday:'short'}),v:0,f:0,p:0});}
-  visitasWeb.filter(v=>fPagV==='todas'||npV(v.pagina)===npV(fPagV)).forEach(v=>{const t=fechaOrden(v.fecha,'');if(!t)return;const d=dias.find(x=>x.key===new Date(t).toDateString());if(d){d.v+=numero(v.visitas);d.f+=numero(v.formulario);}});
-  pedidosWeb.filter(o=>fPagV==='todas'||npV(paginaVis(o))===npV(fPagV)).forEach(o=>{const d=dias.find(x=>x.key===new Date(o.orden).toDateString());if(d)d.p++;});
+  visitasWeb.filter(v=>paisDePagVis(v.pagina)===visPaisSel()&&(fPagV==='todas'||npV(v.pagina)===npV(fPagV))).forEach(v=>{const t=fechaOrden(v.fecha,'');if(!t)return;const d=dias.find(x=>x.key===new Date(t).toDateString());if(d){d.v+=numero(v.visitas);d.f+=numero(v.formulario);}});
+  pedsVis().filter(o=>fPagV==='todas'||npV(paginaVis(o))===npV(fPagV)).forEach(o=>{const d=dias.find(x=>x.key===new Date(o.orden).toDateString());if(d)d.p++;});
   const max=Math.max(4,...dias.map(d=>d.v));
   const W=620,m=40,slot=(W-m-10)/nD,bw=Math.min(11,slot*0.24);
   let bars='',labels='';
@@ -916,7 +938,7 @@ function renderVisitas(){
   const vfs=document.getElementById('visFunSub'); if(vfs) vfs.textContent=lbl;
 
   // tarjetas por página
-  if(!conectadas.length){ box.innerHTML='<div class="vacio">Conecta las planillas para ver visitas.</div>'; return; }
+  if(!conectadas.length){ box.innerHTML='<div class="vacio">'+(visPaisSel()==='CL'?'Conecta las planillas para ver visitas.':(visPaisSel()==='CO'?'Colombia todavía no tiene página: no hay visitas que medir.':'La página de España todavía no tiene visitas.'))+'</div>'; return; }
   box.innerHTML=data.map(p=>{
     const conv=p.vis?(p.peds/p.vis*100):0;
     return `<div class="kpi" style="margin-bottom:14px">
@@ -4111,7 +4133,7 @@ function paisDePagVis(s){ s=String(s||''); return (/^(es|pt)-/.test(s)||s==='tie
 
 /* Secciones que en España/Portugal y Colombia se pintan aparte: se esconde el contenido de
    Chile de la vista y se muestra una caja propia del país. */
-var VISTAS_OTRO={pedidos:1,abandonados:1,visitas:1,entregas:1,bots:1,conv:1,cancelar:1,novedades:1,listanegra:1};
+var VISTAS_OTRO={entregas:1,bots:1,conv:1,cancelar:1,novedades:1,listanegra:1};   /* pedidos, abandonados y visitas usan la MISMA pantalla de Chile con los datos del país */
 var _visEsR=7;
 function cajaOtro(v){
   var view=document.getElementById('view-'+v); if(!view) return null;
@@ -4211,7 +4233,8 @@ function elegirPais(p){
   if(v!=='conv'&&(!n||n.style.display==='none')) v='resumen';
   if(v==='conv') v='resumen';
   mostrarVista(v);
-  renderResumen(); renderAprobarPais();
+  renderResumen(); renderAprobarPais(); fPagV='todas'; fProdP='todos';
+  renderVisitas(); renderPedidosWeb(); renderAbandonadosWeb();
   if(v==='ganancia') renderGananciaPais();
 }
 document.querySelectorAll('#paisNav button').forEach(function(b){ b.addEventListener('click',function(){ elegirPais(b.dataset.p); }); });
