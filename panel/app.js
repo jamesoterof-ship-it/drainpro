@@ -1898,6 +1898,7 @@ function cargarCancelar(){
     var filas=((d&&d.filas)||[]).filter(function(f){return f&&f.venta_id;});
     var badge=document.getElementById('badgeCancelar');
     if(badge){ badge.textContent=filas.length; badge.style.display=filas.length?'':'none'; }
+    filas=filas.filter(function(f){ return paisDeTel(f.telefono)===visPaisSel(); });   /* solo el país elegido */
     if(!tb) return;
     if(!filas.length){ tb.innerHTML='<tr><td colspan="5" class="vacio">✅ Ningún cliente canceló con el pedido ya montado.</td></tr>'; return; }
     tb.innerHTML=filas.map(function(f){
@@ -1987,6 +1988,7 @@ function lnFiltrar(){
   var tb=document.getElementById('tbodyListanegra'); if(!tb) return;
   var q=(document.getElementById('lnBuscar')||{value:''}).value.toLowerCase().trim();
   var filas=_lnFilas.filter(function(f){
+    if(paisDeTel(f.telefono)!==visPaisSel()) return false;   /* solo el país elegido */
     if(!q) return true;
     return String(f.nombre||'').toLowerCase().indexOf(q)>=0 || String(f.telefono||'').indexOf(q.replace(/\D/g,''))>=0;
   });
@@ -2042,6 +2044,8 @@ function cargarNovedades(){
     var conResp=filas.filter(function(f){return f.respondio;}).length;
     var badge=document.getElementById("badgeNovedades");
     if(badge){ badge.textContent=conResp?(conResp+"/"+filas.length):filas.length; badge.style.display=filas.length?"":"none"; }
+    filas=filas.filter(function(f){ return paisDeTel(f.telefono)===visPaisSel(); });   /* solo el país elegido */
+    conResp=filas.filter(function(f){return f.respondio;}).length;
     var av=document.getElementById("avisoNovedades");
     if(av){
       av.innerHTML = conResp
@@ -2355,6 +2359,9 @@ document.addEventListener('DOMContentLoaded', function(){
 });
 
 function novTab(t){
+  /* la estadística de novedades es de Dropi Chile: fuera de Chile solo la lista */
+  var bSt=document.querySelector('#segNov button[data-nov="stats"]'); if(bSt) bSt.style.display=visPaisSel()==='CL'?'':'none';
+  if(visPaisSel()!=='CL') t='pend';
   _novTab = t;
   var p = document.getElementById('novPend'), s = document.getElementById('novStats');
   if(p) p.style.display = (t === 'pend' ? '' : 'none');
@@ -2379,6 +2386,7 @@ function cargarEntregas(){
     var f = ((d && d.filas) || []).filter(function(x){ return x && x.id; });
     var malos = f.filter(function(x){ return x.acuse === 'failed'; }).length;
     _urgPag = malos; _badgeEntregas();
+    f = f.filter(function(x){ return paisDeTel(x.telefono)===visPaisSel(); });   /* solo el país elegido */
     var cnt = {read:0, delivered:0, sent:0, failed:0, nada:0};
     f.forEach(function(x){ cnt[x.acuse ? x.acuse : 'nada']++; });
     var res = document.getElementById('resumenEntregas');
@@ -2431,6 +2439,7 @@ function cargarDespachos(){
     var b = document.getElementById('badgeDesp');
     if(b){ b.textContent = sinAvisar; b.style.display = sinAvisar ? '' : 'none'; }
     _urgDesp = sinAvisar; _badgeEntregas();
+    f = f.filter(function(x){ return paisDeTel(x.telefono)===visPaisSel(); });   /* solo el país elegido */
     var cnt = {lleg:0, camino:0, fallo:0, nada:0};
     f.forEach(function(x){
       if(!x.avisado_en) return;
@@ -4133,7 +4142,7 @@ function paisDePagVis(s){ s=String(s||''); return (/^(es|pt)-/.test(s)||s==='tie
 
 /* Secciones que en España/Portugal y Colombia se pintan aparte: se esconde el contenido de
    Chile de la vista y se muestra una caja propia del país. */
-var VISTAS_OTRO={entregas:1,bots:1,conv:1,cancelar:1,novedades:1,listanegra:1};   /* pedidos, abandonados y visitas usan la MISMA pantalla de Chile con los datos del país */
+var VISTAS_OTRO={bots:1,conv:1};   /* pedidos, abandonados y visitas usan la MISMA pantalla de Chile con los datos del país */
 var _visEsR=7;
 function cajaOtro(v){
   var view=document.getElementById('view-'+v); if(!view) return null;
