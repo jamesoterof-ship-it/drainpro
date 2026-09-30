@@ -2428,7 +2428,7 @@ function _entPinta(a, cod){
 function cargarEntregas(){
   var tb = document.getElementById('tbodyEntregas'); if(!tb) return;
   tb.innerHTML = '<tr><td colspan="6" class="vacio">Cargando...</td></tr>';
-  fetch(BASE+'/entregas-pagina').then(function(r){return r.json();}).then(function(d){
+  fetch(visPaisSel()==='CO'?BASE+'/entregas-co?tipo=pagina':BASE+'/entregas-pagina').then(function(r){return r.json();}).then(function(d){
     var f = ((d && d.filas) || []).filter(function(x){ return x && x.id; });
     var malos = f.filter(function(x){ return x.acuse === 'failed'; }).length;
     _urgPag = malos; _badgeEntregas();
@@ -2450,7 +2450,7 @@ function cargarEntregas(){
       return '<tr>'+
         '<td style="white-space:nowrap"><b>JG-'+x.id+'</b><br><span style="color:#8a93a0;font-size:11px">'+(x.estado||'')+'</span></td>'+
         '<td>'+(x.nombre||'-')+'<br><span style="color:#8a93a0;font-size:11.5px">+'+tel+'</span></td>'+
-        '<td>'+(x.producto||'')+' x'+(x.cantidad||1)+'<br><span style="color:#8a93a0;font-size:11.5px">$'+Number(x.precio||0).toLocaleString('es-CL')+'</span></td>'+
+        '<td>'+(x.producto||'')+' x'+(x.cantidad||1)+'<br><span style="color:#8a93a0;font-size:11.5px">$'+Number(x.precio||0).toLocaleString(visPaisSel()==='CO'?'es-CO':'es-CL')+'</span></td>'+
         '<td style="white-space:nowrap;font-size:12px">'+hora+'</td>'+
         '<td style="white-space:nowrap"><span style="color:'+p[0]+';font-weight:800;font-size:12px">'+p[1]+'</span>'+nota+'</td>'+
         '<td><button onclick="crmAbrir(\''+tel+'\')" style="font-size:11.5px;padding:6px 10px;border:0;border-radius:8px;background:#25D366;color:#fff;font-weight:700;cursor:pointer">\uD83D\uDCAC Escribirle</button></td>'+
@@ -2479,7 +2479,7 @@ function entTab(t){
 function cargarDespachos(){
   var tb = document.getElementById('tbodyDespachos'); if(!tb) return;
   tb.innerHTML = '<tr><td colspan="7" class="vacio">Cargando...</td></tr>';
-  fetch(BASE+'/despachos-panel').then(function(r){return r.json();}).then(function(d){
+  fetch(visPaisSel()==='CO'?BASE+'/entregas-co?tipo=despachos':BASE+'/despachos-panel').then(function(r){return r.json();}).then(function(d){
     var f = ((d && d.filas) || []).filter(function(x){ return x && x.id; });
     var sinAvisar = f.filter(function(x){ return x.alerta; }).length;
     var b = document.getElementById('badgeDesp');
@@ -2503,10 +2503,12 @@ function cargarDespachos(){
     if(!f.length){ tb.innerHTML = '<tr><td colspan="7" class="vacio">Sin despachos en los últimos 14 días.</td></tr>'; return; }
     tb.innerHTML = f.map(function(x){
       var tel = String(x.telefono||'').replace(/\D/g,'');
-      if(tel.length===8) tel = '9'+tel;
-      if(tel.indexOf('56')!==0) tel = '56'+tel;
+      var _co = tel.length===12 && tel.indexOf('57')===0;
+      if(!_co && tel.length===8) tel = '9'+tel;
+      if(!_co && tel.indexOf('56')!==0) tel = '56'+tel;
       var blue = /BLUE/i.test(String(x.transportadora||''));
-      var link = blue ? 'https://www.blue.cl/seguimiento/?guia='+x.guia
+      var link = _co ? 'https://www.google.com/search?q='+encodeURIComponent((x.transportadora||'')+' rastreo guia '+x.guia)
+               : blue ? 'https://www.blue.cl/seguimiento/?guia='+x.guia
                       : 'https://www.starken.cl/seguimiento?codigo='+x.guia;
       var av = x.avisado_en
         ? '<span style="color:#0e8074;font-weight:700;font-size:12px">SÍ · '+new Date(x.avisado_en).toLocaleString('es-CL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+'</span>'
