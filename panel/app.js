@@ -397,13 +397,14 @@ async function cargarVentas(){
   try{
     const res=await fetch(URL_VENTAS); const data=await res.json();
     const rows=Array.isArray(data)?data:(data.body||[]);
-    const ords=[]; const _vistas={}; const _es=[];
+    const ords=[]; const _vistas={}; const _es=[]; const _co=[];
     rows.forEach(r=>{ if(!r||(!r.NOMBRE&&!r.PRODUCTO))return;
       if(/web/i.test(String(r.BOT||''))) return;   // los pedidos de las landings son canal PAGINA, no WhatsApp
       /* 28-09: los pedidos de ESPAÑA y PORTUGAL (bot "Página ES"/"Página PT") van a
          su propia lista, en euros. Antes entraban aquí como venta de Chile y el
          precio "29,90" se leía como 2.990 pesos chilenos. */
       if(esFilaES(r)){ if(!/^ELIMINAD/i.test(String(r.ESTADO||''))) _es.push(filaES(r)); return; }
+      if(esFilaCO(r)){ if(!/^ELIMINAD/i.test(String(r.ESTADO||''))) _co.push(filaCO(r)); return; }
       const bot=String(r.BOT||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
       const esR=bot.includes('ramon'); const esJ=bot.includes('james');
       const esRedes=bot.includes('redes');   // ventas que cierra Camila en Facebook e Instagram
@@ -457,6 +458,7 @@ async function cargarVentas(){
     });
     ordenes=ords.sort((a,b)=>b.orden-a.orden);   // (3) recientes primero
     ventasES=_es.sort((a,b)=>b.orden-a.orden);
+    ventasCO=_co.sort((a,b)=>b.orden-a.orden);
     // contador del canal de redes en el menu
     var _b=document.getElementById('redesBadge');
     if(_b){ var _n=ordenes.filter(o=>o.bot==='Redes').length; _b.textContent=_n; _b.style.display=_n?'':'none'; }
@@ -470,7 +472,7 @@ async function cargarVentas(){
    24-09: paso exactamente eso con la GUIRNALDA SOLAR. Sus dos primeras ventas
    salieron en el panel contadas como "Foco Solar", que ese dia no vendio nada.
    Por eso `guirnalda|ampolleta` va ANTES que `foco|solar`. */
-const nombreCortoProd=s=>{var t=String(s||'');return /pesta|masc/i.test(t)?'Máscara Pestañas':/antena/i.test(t)?'Antena TV':/lente|gafa/i.test(t)?'Lentes One Power':/carga|bater/i.test(t)?'Cargador 12V':/clorofila/i.test(t)?'Clorofila 60 ml':/guirnalda|ampolleta/i.test(t)?'Guirnalda Solar':/foco|solar/i.test(t)?'Foco Solar':/ducha|cabezal/i.test(t)?'Cabezal de Ducha':/shilajit/i.test(t)?'Shilajit Ultra':/lymphoria/i.test(t)?'Lymphoria 60 ml':/drainpro|drenaje/i.test(t)?'DRAINPRO':/organiz/i.test(t)?'Organizador Ropa':/almohada|cervical/i.test(t)?'Almohada Cervical':/kinoki|parche/i.test(t)?'Parches Kinoki':/cepillo|parrilla/i.test(t)?'Cepillo Parrilla':t.split('+')[0].trim();};
+const nombreCortoProd=s=>{var t=String(s||'');return /pesta|masc/i.test(t)?'Máscara Pestañas':/antena/i.test(t)?'Antena TV':/aumento|tr90/i.test(t)?'Gafas TR90':/lente|gafa/i.test(t)?'Lentes One Power':/carga|bater/i.test(t)?'Cargador 12V':/clorofila/i.test(t)?'Clorofila 60 ml':/guirnalda|ampolleta/i.test(t)?'Guirnalda Solar':/foco|solar/i.test(t)?'Foco Solar':/ducha|cabezal/i.test(t)?'Cabezal de Ducha':/shilajit/i.test(t)?'Shilajit Ultra':/lymphoria/i.test(t)?'Lymphoria 60 ml':/drainpro|drenaje/i.test(t)?'DRAINPRO':/organiz/i.test(t)?'Organizador Ropa':/almohada|cervical/i.test(t)?'Almohada Cervical':/kinoki|parche/i.test(t)?'Parches Kinoki':/cepillo|parrilla/i.test(t)?'Cepillo Parrilla':t.split('+')[0].trim();};
 /* El nombre que se ve en VISITAS. Antes salia el nombre crudo entero
    ("Mascara de Pestañas Flamenco Mega Volume"), que desbordaba la tarjeta y
    se comia la columna de al lado. Ahora se acorta, y a las paginas de la
@@ -739,7 +741,12 @@ function renderPedidosWeb(){
 }
 /* pedidos de página del país elegido, con la misma forma que los de Chile */
 function pedidosPais(){
-  var P=visPaisSel(); if(P==='CL') return pedidosWeb; if(P==='CO') return [];
+  var P=visPaisSel(); if(P==='CL') return pedidosWeb;
+  if(P==='CO') return ventasCO.map(function(o){
+    return {cli:o.cli,tel:o.tel,fecha:o.fecha,color:'#A16207',prod:o.prod,comuna:o.zona,region:o.region,
+      cant:o.cant,total:fmtCOP(o.totalNum)+' COP',conf:!/pago\s*pendiente/i.test(o.estado),abono:/abono pendiente/i.test(o.estado),dropi:o.montado,dir:o.dir,
+      llave:'co:'+o.id,orden:o.orden,creadoMs:o.creadoMs,cop:true,pagina:pagCO(o)};
+  });
   return ventasES.filter(function(o){return /p[aá]gina/i.test(o.bot);}).map(function(o){
     return {cli:o.cli,tel:o.tel,fecha:o.fecha,color:o.sub==='PT'?'#006600':'#aa151b',prod:o.prod+' · '+o.sub,comuna:o.zona,region:o.region,
       cant:o.cant,total:fmtEUR(o.totalNum),conf:!/pago\s*pendiente|falta/i.test(o.estado),abono:false,dropi:o.montado,dir:o.dir,
@@ -755,8 +762,8 @@ function verPedido(i){
     fila('Teléfono','+'+o.tel)+(o.correo?fila('Correo',o.correo):'')+fila('Dirección',o.dir)+
     (o.ref?fila('Referencia',o.ref):'')+fila('Comuna',o.comuna)+fila('Región',o.region)+
     (o.abono?'<div class="dl"><span class="k">Confirmación del cliente</span><span class="v" style="color:#c62828;font-weight:800">🔴 ABONO PENDIENTE — no aprobar hasta ver el comprobante</span></div>':fila('Confirmación del cliente',o.conf?'CONFIRMADO':'Pendiente'))+fila('Dropi',o.dropi?'ENVIADO':'Pendiente')+fila('Fecha',o.fecha)+
-    (o.eur?'':o.dropi?'<div style="margin-top:12px;font-size:12px;color:var(--ink-3)">Este pedido ya está montado en Dropi. Para cambiar la dirección se edita directo en Dropi.</div>':'<button onclick="editarPedido()" style="width:100%;margin-top:12px;padding:11px;border:1px solid var(--grid);border-radius:10px;background:var(--card);color:var(--ink);font-weight:600;cursor:pointer">✏️ Editar pedido / estado</button>');
-  document.getElementById('mTotal').textContent=o.eur?o.total:o.total+' CLP';
+    ((o.eur||o.cop)?'':o.dropi?'<div style="margin-top:12px;font-size:12px;color:var(--ink-3)">Este pedido ya está montado en Dropi. Para cambiar la dirección se edita directo en Dropi.</div>':'<button onclick="editarPedido()" style="width:100%;margin-top:12px;padding:11px;border:1px solid var(--grid);border-radius:10px;background:var(--card);color:var(--ink);font-weight:600;cursor:pointer">✏️ Editar pedido / estado</button>');
+  document.getElementById('mTotal').textContent=(o.eur||o.cop)?o.total:o.total+' CLP';
   window._pedEdit=o; window._pedEditIdx=i; window._pedEditOrigen='pedidos';
   window._ventaAbierta={cli:o.cli,dir:o.dir+(o.ref?' - '+o.ref:''),region:o.region,tel:o.tel,prod:o.prod,cant:o.cant,precio:o.total};
   document.getElementById('ov').classList.add('open');
@@ -870,7 +877,8 @@ function visPaisSel(){ return fPais==='ES'?'ES':(fPais==='CO'?'CO':'CL'); }
 function pagesVis(){ var P=visPaisSel(), m={}; (visitasWeb||[]).forEach(function(v){ if(!v||!v.pagina||paisDePagVis(v.pagina)!==P) return; var k=npV(v.pagina); if(!m[k]) m[k]={id:k,nombre:nombrePagVis(k,(function(n){ n=n.replace(/ · (España|Portugal)$/,''); return /españa|portugal/i.test(n)?n:n+(/^pt-/.test(k)?' · Portugal':/^es-/.test(k)?' · España':''); })(String(v.producto||''))),color:v.color||'#6cc24a'}; }); var a=Object.keys(m).map(function(k){return m[k];}); return a.length?a:(P==='CL'?PAGINAS.filter(p=>p.url):[]); }
 /* pedidos que cuentan en visitas: Chile = pedidos de página; España = ventas de la página ES/PT */
 function pedsVis(){
-  var P=visPaisSel(); if(P==='CL') return pedidosWeb; if(P==='CO') return [];
+  var P=visPaisSel(); if(P==='CL') return pedidosWeb;
+  if(P==='CO') return ventasCO.map(function(o){ return {orden:o.orden,prod:o.prod,pagina:pagCO(o)}; });
   return ventasES.filter(function(o){return /p[aá]gina/i.test(o.bot);}).map(function(o){ return {orden:o.orden,prod:o.prod,pagina:pagVisES(o)}; });
 }
 function pagVisES(o){
@@ -4099,6 +4107,21 @@ function filaES(r){
     fecha:r.FECHA||'',orden:cms||fechaOrden(r.FECHA,''),bot:String(r.BOT||'')};
 }
 
+/* 30-09: los pedidos de la PÁGINA de Colombia (jayegroupshop.com, bot "Página CO") van
+   a su propia lista, en pesos colombianos. Antes caían como venta de Chile (Camila) y
+   salían para aprobar en Chile, con riesgo de montarse en Dropi Chile. Su llave de
+   aprobación es "co:<id>", que ningún montador reconoce: Colombia se monta a mano. */
+var ventasCO=[];
+function esFilaCO(r){ return /p[aá]gina\s+co\b/i.test(String(r.BOT||'')); }
+function filaCO(r){
+  var est=String(r.ESTADO||''), cms=Number(r.CREADO_MS)||0;
+  return {id:String(r.row_number||''),cli:r.NOMBRE||'—',tel:soloNum(r.TELEFONO),prod:r.PRODUCTO||'—',
+    cant:numero(r.CANTIDAD)||1,totalNum:numero(r.PRECIO),dir:r.DIRECCION||'—',zona:r.COMUNA||'—',region:r.REGION||'—',
+    estado:est||'—',nota:String(r.NOTA||''),creadoMs:cms,montado:/montad|#\d/i.test(est),
+    fecha:r.FECHA||'',orden:cms||fechaOrden(r.FECHA,''),bot:String(r.BOT||''),loc:'CO'};
+}
+function pagCO(o){ return /gafa|lente|aumento/i.test(String(o.prod||''))?'co-gafas':'co-otro'; }
+
 function cargarTasas(){
   try{ var c=JSON.parse(localStorage.getItem('jaye_tasas')||'null');
     if(c&&c.dia===new Date().toDateString()&&c.clp&&c.eur){ TASAS=c; return; } }catch(e){}
@@ -4143,10 +4166,14 @@ function _webES(){
   return ventasES.map(function(o){return {orden:o.orden,totalNum:o.totalNum,prod:o.prod,cli:o.cli,fecha:o.fecha,
     color:o.sub==='PT'?'#006600':'#aa151b',total:fmtEUR(o.totalNum),sub:o.sub};});
 }
+function _webCO(){
+  return ventasCO.map(function(o){return {orden:o.orden,totalNum:o.totalNum,prod:o.prod,cli:o.cli,fecha:o.fecha,
+    color:'#A16207',total:fmtCOP(o.totalNum)+' COP',loc:'CO'};});
+}
 function _webP(){
   if(fPais==='ES') return _webES();
-  if(fPais==='CO') return [];
-  if(fPais==='todos') return pedidosWeb.concat(_webES());
+  if(fPais==='CO') return _webCO();
+  if(fPais==='todos') return pedidosWeb.concat(_webES(),_webCO());
   return pedidosWeb;
 }
 function _mon(o){ return o.sub?'EUR':(o.loc==='CO'?'COP':'CLP'); }
@@ -4177,7 +4204,7 @@ function paisesDe(n){
 }
 /* de qué país es un teléfono o una página de visitas */
 function paisDeTel(t){ t=soloNum(t); if(/^34\d{9}$/.test(t)||/^351\d{9}$/.test(t)) return 'ES'; if(/^57\d{10}$/.test(t)) return 'CO'; return 'CL'; }
-function paisDePagVis(s){ s=String(s||''); return (/^(es|pt)-/.test(s)||s==='tienda-balsamo'||/^tienda-es-/.test(s))?'ES':'CL'; }
+function paisDePagVis(s){ s=String(s||''); if(/^co-/.test(s)) return 'CO'; return (/^(es|pt)-/.test(s)||s==='tienda-balsamo'||/^tienda-es-/.test(s))?'ES':'CL'; }
 
 /* Secciones que en España/Portugal y Colombia se pintan aparte: se esconde el contenido de
    Chile de la vista y se muestra una caja propia del país. */
@@ -4404,7 +4431,29 @@ function renderAprobarPais(){
   if(fPaisAprob==='CL'){ ch.hidden=false; ot.hidden=true; return; }
   ch.hidden=true; ot.hidden=false;
   if(fPaisAprob==='CO'){
-    ot.innerHTML='<div class="panel"><div class="tbl-head"><h2>Colombia · por aprobar</h2></div><div class="vacio" style="padding:22px">Sin ventas de Colombia por aprobar. Cuando arranque Colombia, lo que se apruebe aquí va a Dropi Colombia.</div></div>';
+    /* 30-09: página (jayegroupshop.com) + WhatsApp de James. Llave "co:<id>": ningún
+       montador la toma, Colombia se crea A MANO en Dropi Colombia. */
+    var listaCO=ventasCO.filter(function(o){return !o.montado;}).map(function(o){return {o:o,canal:'Página',id:o.id,zona:o.zona};})
+      .concat((ordenes||[]).filter(function(o){return o.loc==='CO'&&!o.montado;}).map(function(o){
+        return {o:{cli:o.cli,tel:o.tel,fecha:o.fecha,prod:o.prod,dir:o.dir,zona:o.zona,region:o.region,cant:o.cant,totalNum:o.precioNum,estado:o.estado,nota:o.nota,creadoMs:o.creadoMs},canal:'WhatsApp (James)',id:String(o.rid||'')};}))
+      .filter(function(x){return x.id;}).sort(function(a,b){return (b.o.creadoMs||0)-(a.o.creadoMs||0);});
+    ot.innerHTML='<div class="panel"><div class="tbl-head"><h2>Colombia · por aprobar</h2>'+
+      '<span style="font-size:12px;color:#8a93a0">Aprobar aquí NO crea nada en Dropi: Colombia se monta a mano en Dropi Colombia. El pago anticipado se aprueba cuando Wompi lo marca pagado.</span></div>'+
+      (listaCO.length?'<table><thead><tr><th>Cliente</th><th>Canal</th><th>Producto</th><th>Dirección</th><th>Cant.</th><th>Total</th><th>Aprobación</th></tr></thead><tbody>'+
+        listaCO.map(function(x){
+          var o=x.o, k='co:'+x.id, falta=!nombreSirve(o.cli)?'nom':(!dirSirve(o.dir)?true:false);
+          var pre=/pago:\s*pre/i.test(o.nota||'');
+          return '<tr><td><b>'+esc(o.cli)+'</b><div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.fecha)+' · +'+esc(o.tel)+'</div></td>'+
+            '<td>'+esc(x.canal)+'</td><td>'+esc(o.prod)+
+            (pre?'<div style="margin-top:4px;display:inline-block;border-radius:6px;padding:2px 7px;font-size:11.5px;font-weight:700;background:'+(esPagoPend(o)?'#fff3e2;color:#b45309">💳 Pago anticipado · esperando Wompi':'#e3f6ea;color:#15803d">💳 Pago anticipado · pagado')+'</div>':'')+
+            (/abono pendiente/i.test(o.estado||'')?'<div style="font-size:11.5px;color:#c62828;font-weight:700">🔴 Cliente riesgoso: llamar antes de aprobar</div>':'')+
+            (/grad:/i.test(o.nota||'')?'<div style="font-size:11px;color:var(--ink-3)">'+esc((String(o.nota).match(/grad:[^·]*/i)||[''])[0])+'</div>':'')+'</td>'+
+            '<td>'+esc(o.dir)+'<div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.zona)+(o.region&&o.region!=='—'?', '+esc(o.region):'')+'</div></td>'+
+            '<td>'+esc(o.cant)+'</td><td>'+fmtCOP(o.totalNum)+' COP</td><td>'+(esPagoPend(o)
+              ?'<span style="font-size:12px;color:#b45309;font-weight:700">Esperando el pago</span><div style="font-size:11px;color:var(--ink-3)">se aprueba cuando Wompi lo marque pagado</div>'
+              :celdaAprob(k,'',x.id,falta,'',false,false,o.creadoMs))+'</td></tr>';
+        }).join('')+'</tbody></table>'
+        :'<div class="vacio" style="padding:22px">Sin ventas de Colombia por aprobar.</div>')+'</div>';
     return;
   }
   var lista=ventasES.filter(function(o){return !o.montado;});
