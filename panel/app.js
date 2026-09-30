@@ -32,13 +32,16 @@ async function cargarHuellas(){
   try{
     const r=await fetch(URL_HUELLAS); const arr=await r.json();
     const m={}; (Array.isArray(arr)?arr:[]).forEach(h=>{ if(h&&h.tel8) m[h.tel8]=h; });
+    try{ const rc=await fetch(BASE+'/leer-huellas-co?t='+Date.now(),{cache:'no-store'}); const jc=await rc.json();
+      ((jc&&jc.huellas)||[]).forEach(h=>{ if(h&&h.tel10) m['co'+h.tel10]=h; }); }catch(e){}
     window.huellaMap=m;
     if(typeof refrescarAprob==='function') refrescarAprob();
     else if(typeof renderAprobar==='function') renderAprobar();
   }catch(e){}
 }
 function huellaBadge(tel){
-  var k=String(tel||'').replace(/\D/g,'').slice(-8); if(!k) return '';
+  var _d=String(tel||'').replace(/\D/g,'');
+  var k=(_d.length===12&&_d.indexOf('57')===0)?'co'+_d.slice(-10):_d.slice(-8); if(!k) return '';
   var h=(window.huellaMap||{})[k];
   var rc, sym, t;
   if(!h){ rc='#9aa4b2'; sym='+'; t='Cliente nuevo (sin historial)'; }
@@ -4433,6 +4436,12 @@ function cargarLlamCO(){
     LLAM_CO=(j&&j.filas)||[]; renderAprobarPais(); if(visPaisSel()==='CO'&&typeof renderPedidosWeb==='function') renderPedidosWeb();
   }).catch(function(){});
 }
+/* 30-09 James: cliente riesgoso en Colombia -> se le escribe/llama personalmente antes de montar */
+function alertaHuellaCO(tel){
+  var d=String(tel||'').replace(/\D/g,''); var h=(window.huellaMap||{})['co'+d.slice(-10)];
+  if(!h||!/Riesgosa|Crítica/.test(h.risk_label||'')) return '';
+  return '<div style="font-size:11.5px;color:#b71c1c;font-weight:800;margin-top:3px">🔴 Huella '+esc(h.risk_label)+' en Dropi: '+(+h.dropi_dev||0)+' devoluciones de '+(+h.dropi_total||0)+' pedidos · hablar con el cliente antes de montar</div>';
+}
 function llamadaOkCO(id){
   var fin=LLAM_CO.filter(function(l){return l.tipo==='conf'&&String(l.ref)===String(id)&&/CONFIRMO|CAMBIO_DATOS|CANCELA/.test(l.resultado);}).slice(-1)[0];
   return !!fin&&fin.resultado!=='CANCELA';
@@ -4485,7 +4494,7 @@ function renderAprobarPais(){
         listaCO.map(function(x){
           var o=x.o, k='co:'+x.id, falta=!nombreSirve(o.cli)?'nom':(!dirSirve(o.dir)?true:false);
           var pre=/pago:\s*pre/i.test(o.nota||'');
-          return '<tr><td><b>'+esc(o.cli)+'</b><div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.fecha)+' · +'+esc(o.tel)+'</div></td>'+
+          return '<tr><td><b>'+esc(o.cli)+'</b>'+huellaBadge(o.tel)+'<div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.fecha)+' · +'+esc(o.tel)+'</div>'+alertaHuellaCO(o.tel)+'</td>'+
             '<td>'+esc(x.canal)+'</td><td>'+esc(o.prod)+
             (pre?'<div style="margin-top:4px;display:inline-block;border-radius:6px;padding:2px 7px;font-size:11.5px;font-weight:700;background:'+(esPagoPend(o)?'#fff3e2;color:#b45309">💳 Pago anticipado · esperando Wompi':'#e3f6ea;color:#15803d">💳 Pago anticipado · pagado')+'</div>':'')+
             (/abono pendiente/i.test(o.estado||'')?'<div style="font-size:11.5px;color:#c62828;font-weight:700">🔴 Cliente riesgoso: llamar antes de aprobar</div>':'')+estadoLlamadaCO(x,o,pre)+

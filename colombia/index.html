@@ -271,6 +271,29 @@ function armar(d) {
   return { ventas, dropi, llamadas: L };
 }
 
+/* ---------- huella del cliente en Dropi Colombia (igual que en Chile) ---------- */
+let HUELLAS = {};
+async function cargarHuellas() {
+  try { const j = await (await fetch(BASE + '/leer-huellas-co?t=' + Date.now(), { cache: 'no-store' })).json();
+    const m = {}; (j.huellas || []).forEach(h => { if (h.tel10) m[h.tel10] = h; }); HUELLAS = m; } catch (e) {}
+}
+const COLOR_H = { 'Segura': 'c-green', 'Probable': 'c-amber', 'Riesgosa': 'c-red', 'Crítica': 'c-red' };
+function chipHuella(tel) {
+  const h = HUELLAS[tel10(tel)];
+  if (!h) return ' <span class="chip c-gray" title="Todavía no se consulta en Dropi">huella…</span>';
+  if (!h.risk_label || h.risk_label === 'Sin Registro') return ' <span class="chip c-gray">Cliente nuevo</span>';
+  return ' <span class="chip ' + (COLOR_H[h.risk_label] || 'c-gray') + '">' + (/Riesgosa|Crítica/.test(h.risk_label) ? '🔴 ' : '') + esc(h.risk_label) + '</span>';
+}
+function textoHuella(tel) {
+  const h = HUELLAS[tel10(tel)];
+  if (!h) return '<span class="muted">Consultando en Dropi…</span>';
+  if (!h.risk_label || h.risk_label === 'Sin Registro') return 'Cliente nuevo: sin historial en Dropi';
+  const mala = /Riesgosa|Crítica/.test(h.risk_label);
+  return '<span class="chip ' + (COLOR_H[h.risk_label] || 'c-gray') + '">' + esc(h.risk_label) + '</span> ' +
+    (+h.dropi_total || 0) + ' pedidos · <b>' + (+h.dropi_ent || 0) + ' recibidos</b> · <b style="color:var(--red)">' + (+h.dropi_dev || 0) + ' devueltos</b>' +
+    (mala ? '<div style="color:var(--red);font-weight:700;margin-top:4px">Cliente riesgoso: confirma bien por llamada y avísale a James antes de montar.</div>' : '');
+}
+
 /* ---------- carga ---------- */
 async function cargar() {
   if (!PIN) return;
@@ -279,6 +302,7 @@ async function cargar() {
     const r = await fetch(BASE + '/co-operacion?pin=' + encodeURIComponent(PIN) + '&t=' + Date.now(), { cache: 'no-store' });
     const j = await r.json();
     if (!j.ok) { salir(j.error || 'PIN incorrecto'); return; }
+    await cargarHuellas();
     YO = j.yo; DATA = armar(j);
     $('quien').textContent = YO.nombre + ' · ' + YO.rol;
     $('err').style.display = 'none';
@@ -314,7 +338,7 @@ function vLlamar() {
   const tabla = arr => '<div class="card"><table class="resp"><thead><tr><th>Esperando</th><th>Cliente</th><th>Llamar</th><th>Pedido</th><th>Estado</th><th>Intentos</th></tr></thead><tbody>' +
     arr.map(v => { const n = tel10(v.telefono); return '<tr class="cl" data-venta="' + v.id + '">' +
       '<td><b>' + hace(v.confMs || v.ms) + '</b><div class="muted">' + esc(fechaTxt(v.confMs || v.ms)) + '</div></td>' +
-      '<td><b>' + esc(v.nombre) + '</b><div class="muted">' + esc([v.comuna, v.region].filter(Boolean).join(', ')) + '</div></td>' +
+      '<td><b>' + esc(v.nombre) + '</b>' + chipHuella(v.telefono) + '<div class="muted">' + esc([v.comuna, v.region].filter(Boolean).join(', ')) + '</div></td>' +
       '<td><a class="btn b-blue" style="padding:10px 14px;font-size:15px" href="tel:+57' + n + '">📞 Llamar ' + n + '</a></td>' +   /* el toque abre la llamada y, al subir a la fila, también la ficha */
       '<td>' + esc(v.producto) + ' x' + esc(v.cantidad) + '<div class="muted">' + cop(v.total) + ' · ' + (v.pre ? 'anticipado' : 'contra entrega') + '</div></td>' +
       '<td><span class="chip ' + (v.nueva ? 'c-gray' : v.pideMod ? 'c-amber' : 'c-green') + '">' + esc(v.nueva ? 'Esperando que confirme por WhatsApp' : v.origen) + '</span>' +
@@ -480,6 +504,7 @@ function verVenta(id) {
   $('mt').textContent = v.nombre || 'Pedido';
   $('mb').innerHTML = llamarBtns(v.telefono) +
     f('Estado', '<span class="chip ' + e[1] + '">' + esc(e[0]) + '</span>' + (v.origen ? ' <span class="chip c-green">' + esc(v.origen) + '</span>' : '')) +
+    f('Huella Dropi', textoHuella(v.telefono)) +
     f('Fecha', esc(fechaTxt(v.ms)) + ' · ' + esc(v.canal)) +
     f('Producto', esc(v.producto) + ' · x' + esc(v.cantidad)) +
     f('Valor', '<b>' + cop(v.total) + ' COP</b> · ' + (v.pre ? 'pago anticipado' + (v.prePend ? ' (sin pagar)' : ' (pagado)') : 'contra entrega')) +
@@ -563,7 +588,7 @@ setInterval(() => { if (PIN && !$('ov').classList.contains('on')) cargar(); }, 1
    1) si se publica una versión nueva de esta página, se recarga sola
    2) cuando entra una venta nueva o un cliente confirma: suena, vibra, notificación
       y el título de la pestaña muestra cuántos hay por llamar */
-const VERSION = '2026-09-30-e';
+const VERSION = '2026-09-30-f';
 setInterval(async () => {
   try {
     const t = await (await fetch('index.html?ping=' + Date.now(), { cache: 'no-store' })).text();
