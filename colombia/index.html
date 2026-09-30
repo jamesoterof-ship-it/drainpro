@@ -318,7 +318,7 @@ function vLlamar() {
       '<td><a class="btn b-blue" style="padding:10px 14px;font-size:15px" href="tel:+57' + n + '">📞 Llamar ' + n + '</a></td>' +   /* el toque abre la llamada y, al subir a la fila, también la ficha */
       '<td>' + esc(v.producto) + ' x' + esc(v.cantidad) + '<div class="muted">' + cop(v.total) + ' · ' + (v.pre ? 'anticipado' : 'contra entrega') + '</div></td>' +
       '<td><span class="chip ' + (v.nueva ? 'c-gray' : v.pideMod ? 'c-amber' : 'c-green') + '">' + esc(v.nueva ? 'Esperando que confirme por WhatsApp' : v.origen) + '</span>' +
-        (/grad:\s*POR DEFINIR/i.test(v.nota) ? '<br><span class="chip c-red">⚠️ No sabe su graduación · escribirle</span>' : '') + '</td>' +
+        (/grad:[^·]*POR DEFINIR/i.test(v.nota) ? '<br><span class="chip c-red">⚠️ No sabe su graduación · escribirle</span>' : '') + '</td>' +
       '<td class="hide-m">' + (v.intentos ? '<span class="chip c-amber">' + v.intentos + ' sin contestar</span>' : '—') + '</td></tr>'; }).join('') +
     '</tbody></table></div>';
   h += '<h3 class="sec">✅ Ya confirmaron · llamar primero (' + L.length + ')</h3>' + (L.length ? tabla(L) : '<div class="card"><div class="empty"><b>Ninguno por ahora</b></div></div>');
@@ -483,7 +483,7 @@ function verVenta(id) {
     f('Fecha', esc(fechaTxt(v.ms)) + ' · ' + esc(v.canal)) +
     f('Producto', esc(v.producto) + ' · x' + esc(v.cantidad)) +
     f('Valor', '<b>' + cop(v.total) + ' COP</b> · ' + (v.pre ? 'pago anticipado' + (v.prePend ? ' (sin pagar)' : ' (pagado)') : 'contra entrega')) +
-    f('Graduación', /grad:\s*POR DEFINIR/i.test(v.nota) ? '<b style="color:var(--red)">⚠️ No sabe su graduación · escríbele por WhatsApp y ayúdale a elegir según su edad</b>'
+    f('Graduación', /grad:[^·]*POR DEFINIR/i.test(v.nota) ? '<b style="color:var(--red)">⚠️ No sabe su graduación · escríbele por WhatsApp y ayúdale a elegir según su edad</b>'
       : esc((String(v.nota).match(/grad:\s*([^·]*)/i) || [,''])[1])) +
     f('Dirección', esc(v.direccion)) + f('Ciudad', esc([v.comuna, v.region].filter(Boolean).join(', '))) +
     (v.guia ? f('Guía', esc(v.guia + ' · ' + (v.transportadora || '') + ' · ' + (v.dropi_estado || ''))) : '') +
@@ -563,7 +563,7 @@ setInterval(() => { if (PIN && !$('ov').classList.contains('on')) cargar(); }, 1
    1) si se publica una versión nueva de esta página, se recarga sola
    2) cuando entra una venta nueva o un cliente confirma: suena, vibra, notificación
       y el título de la pestaña muestra cuántos hay por llamar */
-const VERSION = '2026-09-30-d';
+const VERSION = '2026-09-30-e';
 setInterval(async () => {
   try {
     const t = await (await fetch('index.html?ping=' + Date.now(), { cache: 'no-store' })).text();
