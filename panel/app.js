@@ -4442,6 +4442,10 @@ function alertaHuellaCO(tel){
   if(!h||!/Riesgosa|Crítica/.test(h.risk_label||'')) return '';
   return '<div style="font-size:11.5px;color:#b71c1c;font-weight:800;margin-top:3px">🔴 Huella '+esc(h.risk_label)+' en Dropi: '+(+h.dropi_dev||0)+' devoluciones de '+(+h.dropi_total||0)+' pedidos · hablar con el cliente antes de montar</div>';
 }
+function confirmadoCO(id,o){
+  var wa=LLAM_CO.some(function(l){return l.tipo==='wa'&&String(l.ref)===String(id)&&l.resultado==='CONFIRMO_WA';})||/CONFIRMADO/.test((o&&o.nota)||'');
+  return wa||llamadaOkCO(id);
+}
 function llamadaOkCO(id){
   var fin=LLAM_CO.filter(function(l){return l.tipo==='conf'&&String(l.ref)===String(id)&&/CONFIRMO|CAMBIO_DATOS|CANCELA/.test(l.resultado);}).slice(-1)[0];
   return !!fin&&fin.resultado!=='CANCELA';
@@ -4487,7 +4491,11 @@ function renderAprobarPais(){
     var listaCO=ventasCO.filter(function(o){return !o.montado;}).map(function(o){return {o:o,canal:'Página',id:o.id,zona:o.zona};})
       .concat((ordenes||[]).filter(function(o){return o.loc==='CO'&&!o.montado;}).map(function(o){
         return {o:{cli:o.cli,tel:o.tel,fecha:o.fecha,prod:o.prod,dir:o.dir,zona:o.zona,region:o.region,cant:o.cant,totalNum:o.precioNum,estado:o.estado,nota:o.nota,creadoMs:o.creadoMs},canal:'WhatsApp (James)',id:String(o.rid||'')};}))
-      .filter(function(x){return x.id;}).sort(function(a,b){return (b.o.creadoMs||0)-(a.o.creadoMs||0);});
+      /* 30-09 James: a aprobación SOLO llega lo que el cliente ya confirmó: por mensaje (botón Confirmar)
+         o por llamada (el equipo marcó Confirmó / Cambió datos). Lo demás queda registrado pero no se muestra. */
+      .filter(function(x){return x.id&&confirmadoCO(x.id,x.o);}).sort(function(a,b){return (b.o.creadoMs||0)-(a.o.creadoMs||0);});
+    var sinConfCO=ventasCO.filter(function(o){return !o.montado&&!confirmadoCO(o.id,o);}).length
+      +(ordenes||[]).filter(function(o){return o.loc==='CO'&&!o.montado&&!confirmadoCO(String(o.rid||''),o);}).length;
     ot.innerHTML='<div class="panel"><div class="tbl-head"><h2>Colombia · por aprobar</h2>'+
       '<span style="font-size:12px;color:#8a93a0">Aprobar aquí NO crea nada en Dropi: Colombia se monta a mano en Dropi Colombia. El pago anticipado se aprueba cuando Wompi lo marca pagado.</span></div>'+
       (listaCO.length?'<table><thead><tr><th>Cliente</th><th>Canal</th><th>Producto</th><th>Dirección</th><th>Cant.</th><th>Total</th><th>Aprobación</th></tr></thead><tbody>'+
@@ -4509,7 +4517,8 @@ function renderAprobarPais(){
               ?'<span style="font-size:12px;color:#b45309;font-weight:700">Esperando el anticipo</span><div style="font-size:11px;color:var(--ink-3)">se aprueba cuando Wompi confirme los $20.000</div>'
               :celdaAprob(k,'',x.id,falta,'',false,false,llamadaOkCO(x.id)?0:o.creadoMs))+'</td></tr>';
         }).join('')+'</tbody></table>'
-        :'<div class="vacio" style="padding:22px">Sin ventas de Colombia por aprobar.</div>')+'</div>';
+        :'<div class="vacio" style="padding:22px">Sin ventas de Colombia confirmadas por aprobar.</div>')+
+      (sinConfCO?'<div style="padding:10px 16px;font-size:12px;color:var(--ink-3);border-top:1px solid var(--grid)">'+sinConfCO+(sinConfCO>1?' ventas esperan':' venta espera')+' que el cliente confirme por mensaje o por llamada. Están en Pedidos y en la página del equipo.</div>':'')+'</div>';
     return;
   }
   var lista=ventasES.filter(function(o){return !o.montado;});
