@@ -223,7 +223,21 @@ function btnDud(k,dud){
   return dud ? '<button style="'+BTN_NODUD+'" title="Devolver a Pendientes" onclick="quitarDudosa(&quot;'+k+'&quot;)">↩ Pendiente</button>'
              : '<button style="'+BTN_DUD+'" title="Pasar a la pestaña Dudosas, sin borrarla" onclick="marcarDudosa(&quot;'+k+'&quot;)">⚠ Dudosa</button>';
 }
-function celdaAprob(k,montadoHtml,rid,faltaDir,prog,enRevision,dud,creadoMs){
+/* 29-09 James: "ponme el boton para yo probarlas". Venta de PAGINA que el cliente ya
+   confirmo y el inspector dejo en VERDE: se puede soltar sin esperar la hora. El
+   webhook soltar-ya vuelve a revisar todo en el servidor y el montador sigue pidiendo
+   VERDE; apretar el boton es la aprobacion de James. */
+function soltarYa(k,id){
+  if(typeof confirm==='function' && !confirm('¿Soltar esta venta ya, sin esperar la hora?\n\nEl cliente ya confirmó y el inspector la dejó en verde. Se monta en Dropi en el próximo ciclo (≈5 min).')) return;
+  fetch(BASE+'/soltar-ya',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({venta_id:String(id)})})
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      if(j && (j.ok===true || j.ok==='true')){ aprobar(k); if(typeof toast==='function') toast('Soltada ✓ — se monta en el próximo ciclo'); }
+      else if(typeof toast==='function') toast('⚠ '+((j&&j.error)||'No se pudo soltar'));
+    })
+    .catch(function(){ if(typeof toast==='function') toast('⚠ No se pudo soltar: sin conexión. Intenta otra vez.'); });
+}
+function celdaAprob(k,montadoHtml,rid,faltaDir,prog,enRevision,dud,creadoMs,soltarId){
   if(montadoHtml) return montadoHtml;
   if(esAprobado(k)) return '<span class="st st-rec"><i></i>Aprobado ⏳</span>';
   /* 25-09 James: "bloquea la aprobacion por una hora". Hasta ahora el reloj de
@@ -234,7 +248,8 @@ function celdaAprob(k,montadoHtml,rid,faltaDir,prog,enRevision,dud,creadoMs){
   var _m = Number(creadoMs)>0 ? Math.floor((Date.now()-Number(creadoMs))/60000) : null;
   if(_m!==null && _m<ESPERA_MIN && !esRechazado(k)){
     var _luego = celdaAprob(k,montadoHtml,rid,faltaDir,prog,enRevision,dud,0);
-    return '<span data-espera="'+Number(creadoMs)+'" data-luego="'+enAtributo(_luego)+'"><span class="st st-ab" style="background:#eef1f6;color:#3c4a5e"><i style="background:#7a8699"></i>⏳ faltan '+(ESPERA_MIN-_m)+' min</span></span>';
+    var _soltar = soltarId ? '<button class="b-apr" style="margin-left:6px;background:#b45309" title="El cliente confirmó y está en verde: se monta sin esperar la hora" onclick="soltarYa(&quot;'+k+'&quot;,&quot;'+soltarId+'&quot;)">⚡ Soltar ya</button>' : '';
+    return '<span data-espera="'+Number(creadoMs)+'" data-luego="'+enAtributo(_luego)+'"><span class="st st-ab" style="background:#eef1f6;color:#3c4a5e"><i style="background:#7a8699"></i>⏳ faltan '+(ESPERA_MIN-_m)+' min</span>'+_soltar+'</span>';
   }
   if(esRechazado(k)) return '<span class="st st-ab"><i></i>Eliminado</span><button class="b-desh" onclick="deshacerRechazo(&quot;'+k+'&quot;)">Deshacer</button>';
   var mover=prog?'':btnDud(k,dud);
@@ -1788,7 +1803,7 @@ function renderAprobar(){
       <td>${esc(x.comuna||'—')}</td>
       <td>${x.cant}</td>
       <td class="money">${x.total}</td>
-      <td class="cell-aprob" onclick="event.stopPropagation()">${celdaAprob(x.k, x.st==='montado'?'<span class="st st-ok"><i></i>Montado</span>':'', x.rid||'', x.faltaDir, x.vuelve, enRevisionInsp(x.nivel, x.creadoMs), !!x.dud, x.creadoMs)}</td>
+      <td class="cell-aprob" onclick="event.stopPropagation()">${celdaAprob(x.k, x.st==='montado'?'<span class="st st-ok"><i></i>Montado</span>':'', x.rid||'', x.faltaDir, x.vuelve, enRevisionInsp(x.nivel, x.creadoMs), !!x.dud, x.creadoMs, (x.canal==='Página' && x.nivel==='VERDE' && !x.abono && x.st==='pendiente' && !x.prog) ? String((x.raw&&x.raw.fila)||'').replace(/^wa/,'') : '')}</td>
       <td onclick="event.stopPropagation()"><a class="qr" style="text-decoration:none;cursor:pointer" onclick="crmAbrir('${x.tel}')">WhatsApp</a></td>
     </tr>`).join('');
 }
