@@ -555,7 +555,55 @@ $('btnTema').addEventListener('click', () => ponerTema(document.documentElement.
   try { PIN = localStorage.getItem('co_equipo_pin') || ''; } catch (e) {}
   if (PIN) cargar(); else $('login').classList.add('on');
 })();
-setInterval(() => { if (PIN && !$('ov').classList.contains('on')) cargar(); }, 30000);
+setInterval(() => { if (PIN && !$('ov').classList.contains('on')) cargar(); }, 15000);
+
+/* ---------- 30-09 James: que le aparezca AL INSTANTE a quien llama ----------
+   1) si se publica una versión nueva de esta página, se recarga sola
+   2) cuando entra una venta nueva o un cliente confirma: suena, vibra, notificación
+      y el título de la pestaña muestra cuántos hay por llamar */
+const VERSION = '2026-09-30-b';
+setInterval(async () => {
+  try {
+    const t = await (await fetch('index.html?ping=' + Date.now(), { cache: 'no-store' })).text();
+    const m = t.match(/const VERSION = '([^']+)'/);
+    if (m && m[1] !== VERSION && !$('ov').classList.contains('on')) location.reload();
+  } catch (e) {}
+}, 60000);
+let _vistos = null;
+function sonar() {
+  try {
+    const c = new (window.AudioContext || window.webkitAudioContext)();
+    [0, 0.25, 0.5].forEach(d => { const o = c.createOscillator(), g = c.createGain(); o.frequency.value = 880; o.connect(g); g.connect(c.destination);
+      g.gain.setValueAtTime(0.25, c.currentTime + d); g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + d + 0.2); o.start(c.currentTime + d); o.stop(c.currentTime + d + 0.2); });
+  } catch (e) {}
+  try { navigator.vibrate && navigator.vibrate([300, 150, 300]); } catch (e) {}
+}
+function avisarNuevos() {
+  if (!DATA) return;
+  const lista = DATA.ventas.filter(v => v.porLlamar || v.nueva);
+  const claves = lista.map(v => v.id + (v.porLlamar ? ':c' : ':n'));
+  document.title = (lista.length ? '(' + lista.length + ') ' : '') + 'Equipo Colombia · Jaye Group';
+  if (_vistos === null) { _vistos = new Set(claves); return; }
+  const nuevos = lista.filter((v, i) => !_vistos.has(claves[i]));
+  claves.forEach(k => _vistos.add(k));
+  if (!nuevos.length) return;
+  sonar();
+  const v = nuevos[0];
+  const txt = (v.porLlamar ? '✅ Confirmó: ' : '🆕 Venta nueva: ') + v.nombre + ' · ' + cop(v.total) + (nuevos.length > 1 ? ' (y ' + (nuevos.length - 1) + ' más)' : '');
+  try { if ('Notification' in window && Notification.permission === 'granted') new Notification('📞 Por llamar · Colombia', { body: txt, tag: 'co-llamar' }); } catch (e) {}
+  const b = document.createElement('div');
+  b.textContent = txt + ' · toca para ver';
+  b.style.cssText = 'position:fixed;left:16px;right:16px;bottom:16px;z-index:70;background:#179f6b;color:#fff;font-weight:800;padding:14px 16px;border-radius:14px;box-shadow:0 12px 32px rgba(0,0,0,.3);cursor:pointer;text-align:center';
+  b.onclick = () => { vista = 'llamar'; pintar(); b.remove(); };
+  document.body.appendChild(b); setTimeout(() => b.remove(), 20000);
+}
+const _pintarBase = pintar;
+pintar = function () { _pintarBase(); avisarNuevos(); };
+/* el navegador solo deja pedir permiso de notificaciones después de un toque */
+document.addEventListener('click', function pedirPermiso() {
+  try { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission(); } catch (e) {}
+  document.removeEventListener('click', pedirPermiso);
+});
 </script>
 </body>
 </html>
