@@ -4489,7 +4489,8 @@ function renderAprobarPais(){
             '<td>'+esc(x.canal)+'</td><td>'+esc(o.prod)+
             (pre?'<div style="margin-top:4px;display:inline-block;border-radius:6px;padding:2px 7px;font-size:11.5px;font-weight:700;background:'+(esPagoPend(o)?'#fff3e2;color:#b45309">💳 Pago anticipado · esperando Wompi':'#e3f6ea;color:#15803d">💳 Pago anticipado · pagado')+'</div>':'')+
             (/abono pendiente/i.test(o.estado||'')?'<div style="font-size:11.5px;color:#c62828;font-weight:700">🔴 Cliente riesgoso: llamar antes de aprobar</div>':'')+estadoLlamadaCO(x,o,pre)+
-            (/grad:/i.test(o.nota||'')?'<div style="font-size:11px;color:var(--ink-3)">'+esc((String(o.nota).match(/grad:[^·]*/i)||[''])[0])+'</div>':'')+'</td>'+
+            (/grad:\s*POR DEFINIR/i.test(o.nota||'')?'<div style="font-size:11.5px;color:#c62828;font-weight:800;margin-top:3px">⚠️ Graduación por definir · escribirle por WhatsApp</div>'
+              :/grad:/i.test(o.nota||'')?'<div style="font-size:11px;color:var(--ink-3)">'+esc((String(o.nota).match(/grad:[^·]*/i)||[''])[0])+'</div>':'')+'</td>'+
             '<td>'+esc(o.dir)+'<div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.zona)+(o.region&&o.region!=='—'?', '+esc(o.region):'')+'</div></td>'+
             '<td>'+esc(o.cant)+'</td><td>'+fmtCOP(o.totalNum)+' COP</td><td>'+(esPagoPend(o)
               ?'<span style="font-size:12px;color:#b45309;font-weight:700">Esperando el pago</span><div style="font-size:11px;color:var(--ink-3)">se aprueba cuando Wompi lo marque pagado</div>'
