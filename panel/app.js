@@ -737,8 +737,8 @@ function renderPedidosWeb(){
       <td>${esc(o.comuna)}</td>
       <td>${o.cant}</td>
       <td class="money">${o.total}</td>
-      <td>${o.cop?estadoLlamadaCO({id:String(o.llave).replace('co:',''),canal:'Página'},{nota:o.nota,estado:o.estado},/pago:\s*pre/i.test(o.nota||'')):(o.abono?'<span class="st st-rec"><i></i>Abono pendiente</span>':(o.conf?'<span class="st st-ok"><i></i>Confirmado</span>':'<span class="st st-rec"><i></i>Pendiente</span>'))}</td>
-      <td class="cell-aprob" onclick="event.stopPropagation()">${celdaAprob(o.llave||keyPag(o), o.dropi?'<span class="st st-ok"><i></i>Montado</span>':'','',false,'',false,false,o.creadoMs)}</td>
+      <td>${o.cop?estadoLlamadaCO({id:String(o.llave).replace('co:',''),canal:o.chat?'WhatsApp':'Página'},{nota:o.nota,estado:o.estado},/pago:\s*pre/i.test(o.nota||'')):(o.abono?'<span class="st st-rec"><i></i>Abono pendiente</span>':(o.conf?'<span class="st st-ok"><i></i>Confirmado</span>':'<span class="st st-rec"><i></i>Pendiente</span>'))}</td>
+      <td class="cell-aprob" onclick="event.stopPropagation()">${o.cop?(o.dropi?'<span class="st st-ok"><i></i>Montado</span>':esAprobado(o.llave)?'<span class="st st-rec"><i></i>Aprobado ⏳</span>':confirmadoCO(String(o.llave).replace('co:',''),o)||o.chat?'<span style="font-size:12px;color:#15803d;font-weight:700">Lista para aprobar</span><div style="font-size:11px;color:var(--ink-3)">en la pestaña Aprobación</div>':'<span style="font-size:12px;color:var(--ink-3)">Esperando confirmación</span>'):celdaAprob(o.llave||keyPag(o), o.dropi?'<span class="st st-ok"><i></i>Montado</span>':'','',false,'',false,false,o.creadoMs)}</td>
       <td><svg class="ico-sm chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></td>
     </tr>`).join('');
   window._pedidosF=arr;
@@ -750,7 +750,12 @@ function pedidosPais(){
     return {cli:o.cli,tel:o.tel,fecha:o.fecha,color:'#A16207',prod:o.prod,comuna:o.zona,region:o.region,
       cant:o.cant,total:fmtCOP(o.totalNum)+' COP',conf:/CONFIRMADO/.test(o.nota)||(/pago:\s*pre/i.test(o.nota)&&!/pago\s*pendiente/i.test(o.estado)),abono:/abono pendiente/i.test(o.estado),dropi:o.montado,dir:o.dir,
       llave:'co:'+o.id,orden:o.orden,creadoMs:o.creadoMs,cop:true,pagina:pagCO(o),nota:o.nota,estado:o.estado};
-  });
+  }).concat((ordenes||[]).filter(function(o){return o.loc==='CO';}).map(function(o){
+    /* 30-09 James: en Pedidos salen TODAS las ventas de Colombia, también las del chat de James */
+    return {cli:o.cli,tel:o.tel,fecha:o.fecha,color:'#25D366',prod:o.prod+' · WhatsApp (James)',comuna:o.zona,region:o.region,
+      cant:o.cant,total:fmtCOP(o.precioNum)+' COP',conf:true,abono:/abono pendiente/i.test(o.estado),dropi:o.montado,dir:o.dir,
+      llave:'co:'+o.rid,orden:o.orden,creadoMs:o.creadoMs,cop:true,chat:true,pagina:'co-whatsapp',nota:o.nota,estado:o.estado};
+  })).sort(function(a,b){return (b.creadoMs||b.orden||0)-(a.creadoMs||a.orden||0);});
   return ventasES.filter(function(o){return /p[aá]gina/i.test(o.bot);}).map(function(o){
     return {cli:o.cli,tel:o.tel,fecha:o.fecha,color:o.sub==='PT'?'#006600':'#aa151b',prod:o.prod+' · '+o.sub,comuna:o.zona,region:o.region,
       cant:o.cant,total:fmtEUR(o.totalNum),conf:!/pago\s*pendiente|falta/i.test(o.estado),abono:false,dropi:o.montado,dir:o.dir,
