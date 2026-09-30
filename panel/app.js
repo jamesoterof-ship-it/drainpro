@@ -4493,9 +4493,9 @@ function renderAprobarPais(){
         return {o:{cli:o.cli,tel:o.tel,fecha:o.fecha,prod:o.prod,dir:o.dir,zona:o.zona,region:o.region,cant:o.cant,totalNum:o.precioNum,estado:o.estado,nota:o.nota,creadoMs:o.creadoMs},canal:'WhatsApp (James)',id:String(o.rid||'')};}))
       /* 30-09 James: a aprobación SOLO llega lo que el cliente ya confirmó: por mensaje (botón Confirmar)
          o por llamada (el equipo marcó Confirmó / Cambió datos). Lo demás queda registrado pero no se muestra. */
-      .filter(function(x){return x.id&&confirmadoCO(x.id,x.o);}).sort(function(a,b){return (b.o.creadoMs||0)-(a.o.creadoMs||0);});
+      .filter(function(x){return x.id&&(x.canal!=='Página'||confirmadoCO(x.id,x.o));})   /* la venta del chat de James ya la confirmó el cliente en el chat */.sort(function(a,b){return (b.o.creadoMs||0)-(a.o.creadoMs||0);});
     var sinConfCO=ventasCO.filter(function(o){return !o.montado&&!confirmadoCO(o.id,o);}).length
-      +(ordenes||[]).filter(function(o){return o.loc==='CO'&&!o.montado&&!confirmadoCO(String(o.rid||''),o);}).length;
+;
     ot.innerHTML='<div class="panel"><div class="tbl-head"><h2>Colombia · por aprobar</h2>'+
       '<span style="font-size:12px;color:#8a93a0">Aprobar aquí NO crea nada en Dropi: Colombia se monta a mano en Dropi Colombia. El pago anticipado se aprueba cuando Wompi lo marca pagado.</span></div>'+
       (listaCO.length?'<table><thead><tr><th>Cliente</th><th>Canal</th><th>Producto</th><th>Dirección</th><th>Cant.</th><th>Total</th><th>Aprobación</th></tr></thead><tbody>'+
