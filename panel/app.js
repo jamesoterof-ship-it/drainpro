@@ -4432,6 +4432,10 @@ function cargarLlamCO(){
     LLAM_CO=(j&&j.filas)||[]; renderAprobarPais();
   }).catch(function(){});
 }
+function llamadaOkCO(id){
+  var fin=LLAM_CO.filter(function(l){return l.tipo==='conf'&&String(l.ref)===String(id)&&/CONFIRMO|CAMBIO_DATOS|CANCELA/.test(l.resultado);}).slice(-1)[0];
+  return !!fin&&fin.resultado!=='CANCELA';
+}
 function estadoLlamadaCO(x,o,pre){
   var st='font-size:11.5px;font-weight:700;margin-top:3px';
   var ll=LLAM_CO.filter(function(l){return String(l.ref)===String(x.id);});
@@ -4484,7 +4488,7 @@ function renderAprobarPais(){
             '<td>'+esc(o.dir)+'<div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.zona)+(o.region&&o.region!=='—'?', '+esc(o.region):'')+'</div></td>'+
             '<td>'+esc(o.cant)+'</td><td>'+fmtCOP(o.totalNum)+' COP</td><td>'+(esPagoPend(o)
               ?'<span style="font-size:12px;color:#b45309;font-weight:700">Esperando el pago</span><div style="font-size:11px;color:var(--ink-3)">se aprueba cuando Wompi lo marque pagado</div>'
-              :celdaAprob(k,'',x.id,falta,'',false,false,o.creadoMs))+'</td></tr>';
+              :celdaAprob(k,'',x.id,falta,'',false,false,llamadaOkCO(x.id)?0:o.creadoMs))+'</td></tr>';
         }).join('')+'</tbody></table>'
         :'<div class="vacio" style="padding:22px">Sin ventas de Colombia por aprobar.</div>')+'</div>';
     return;
