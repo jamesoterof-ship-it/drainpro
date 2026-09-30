@@ -4497,12 +4497,16 @@ function renderAprobarPais(){
           return '<tr><td><b>'+esc(o.cli)+'</b>'+huellaBadge(o.tel)+'<div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.fecha)+' · +'+esc(o.tel)+'</div>'+alertaHuellaCO(o.tel)+'</td>'+
             '<td>'+esc(x.canal)+'</td><td>'+esc(o.prod)+
             (pre?'<div style="margin-top:4px;display:inline-block;border-radius:6px;padding:2px 7px;font-size:11.5px;font-weight:700;background:'+(esPagoPend(o)?'#fff3e2;color:#b45309">💳 Pago anticipado · esperando Wompi':'#e3f6ea;color:#15803d">💳 Pago anticipado · pagado')+'</div>':'')+
-            (/abono pendiente/i.test(o.estado||'')?'<div style="font-size:11.5px;color:#c62828;font-weight:700">🔴 Cliente riesgoso: llamar antes de aprobar</div>':'')+estadoLlamadaCO(x,o,pre)+
+            /* 30-09 James: anticipo de $20.000 a los riesgosos (se descuenta del total) */
+            (/ANTICIPO PAGADO/.test(o.nota||'')?'<div style="font-size:11.5px;color:#15803d;font-weight:800;margin-top:3px">💳 Anticipo $20.000 PAGADO · en Dropi cobrar al recibir '+fmtCOP(Math.max(0,(o.totalNum||0)-20000))+'</div>'
+              :/abono pendiente/i.test(o.estado||'')?'<div style="font-size:11.5px;color:#c62828;font-weight:800;margin-top:3px">🔴 Cliente riesgoso · '+(/anticipo_link/.test(o.nota||'')?'💳 anticipo $20.000 enviado, esperando pago':'llamar antes de aprobar')+'</div>':'')+estadoLlamadaCO(x,o,pre)+
             (/grad:[^·]*POR DEFINIR/i.test(o.nota||'')?'<div style="font-size:11.5px;color:#c62828;font-weight:800;margin-top:3px">⚠️ Graduación por definir · escribirle por WhatsApp</div>'
               :/grad:/i.test(o.nota||'')?'<div style="font-size:11px;color:var(--ink-3)">'+esc((String(o.nota).match(/grad:[^·]*/i)||[''])[0])+'</div>':'')+'</td>'+
             '<td>'+esc(o.dir)+'<div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.zona)+(o.region&&o.region!=='—'?', '+esc(o.region):'')+'</div></td>'+
             '<td>'+esc(o.cant)+'</td><td>'+fmtCOP(o.totalNum)+' COP</td><td>'+(esPagoPend(o)
               ?'<span style="font-size:12px;color:#b45309;font-weight:700">Esperando el pago</span><div style="font-size:11px;color:var(--ink-3)">se aprueba cuando Wompi lo marque pagado</div>'
+              :(/abono pendiente/i.test(o.estado||'')&&/anticipo_link/.test(o.nota||''))
+              ?'<span style="font-size:12px;color:#b45309;font-weight:700">Esperando el anticipo</span><div style="font-size:11px;color:var(--ink-3)">se aprueba cuando Wompi confirme los $20.000</div>'
               :celdaAprob(k,'',x.id,falta,'',false,false,llamadaOkCO(x.id)?0:o.creadoMs))+'</td></tr>';
         }).join('')+'</tbody></table>'
         :'<div class="vacio" style="padding:22px">Sin ventas de Colombia por aprobar.</div>')+'</div>';

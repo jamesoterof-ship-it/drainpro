@@ -342,7 +342,9 @@ function vLlamar() {
       '<td><a class="btn b-blue" style="padding:10px 14px;font-size:15px" href="tel:+57' + n + '">📞 Llamar ' + n + '</a></td>' +   /* el toque abre la llamada y, al subir a la fila, también la ficha */
       '<td>' + esc(v.producto) + ' x' + esc(v.cantidad) + '<div class="muted">' + cop(v.total) + ' · ' + (v.pre ? 'anticipado' : 'contra entrega') + '</div></td>' +
       '<td><span class="chip ' + (v.nueva ? 'c-gray' : v.pideMod ? 'c-amber' : 'c-green') + '">' + esc(v.nueva ? 'Esperando que confirme por WhatsApp' : v.origen) + '</span>' +
-        (/grad:[^·]*POR DEFINIR/i.test(v.nota) ? '<br><span class="chip c-red">⚠️ No sabe su graduación · escribirle</span>' : '') + '</td>' +
+        (/grad:[^·]*POR DEFINIR/i.test(v.nota) ? '<br><span class="chip c-red">⚠️ No sabe su graduación · escribirle</span>' : '') +
+        (/ANTICIPO PAGADO/.test(v.nota) ? '<br><span class="chip c-green">💳 Anticipo $20.000 pagado</span>'
+          : /ABONO PENDIENTE/i.test(v.estado || '') ? '<br><span class="chip c-red">💳 Debe anticipo $20.000 · recordarle el link</span>' : '') + '</td>' +
       '<td class="hide-m">' + (v.intentos ? '<span class="chip c-amber">' + v.intentos + ' sin contestar</span>' : '—') + '</td></tr>'; }).join('') +
     '</tbody></table></div>';
   h += '<h3 class="sec">✅ Ya confirmaron · llamar primero (' + L.length + ')</h3>' + (L.length ? tabla(L) : '<div class="card"><div class="empty"><b>Ninguno por ahora</b></div></div>');
@@ -505,6 +507,8 @@ function verVenta(id) {
   $('mb').innerHTML = llamarBtns(v.telefono) +
     f('Estado', '<span class="chip ' + e[1] + '">' + esc(e[0]) + '</span>' + (v.origen ? ' <span class="chip c-green">' + esc(v.origen) + '</span>' : '')) +
     f('Huella Dropi', textoHuella(v.telefono)) +
+    (/anticipo_link/.test(v.nota) ? f('Anticipo $20.000', /ANTICIPO PAGADO/.test(v.nota) ? '<b style="color:var(--green)">✅ Pagado</b> · al recibir paga ' + cop(Math.max(0, v.total - 20000))
+      : '<b style="color:var(--red)">Sin pagar</b> · link: <a href="https://checkout.wompi.co/l/' + esc((String(v.nota).match(/anticipo_link: ([^ ·]+)/) || [,''])[1]) + '" target="_blank" rel="noopener">checkout.wompi.co/l/' + esc((String(v.nota).match(/anticipo_link: ([^ ·]+)/) || [,''])[1]) + '</a>') : '') +
     f('Fecha', esc(fechaTxt(v.ms)) + ' · ' + esc(v.canal)) +
     f('Producto', esc(v.producto) + ' · x' + esc(v.cantidad)) +
     f('Valor', '<b>' + cop(v.total) + ' COP</b> · ' + (v.pre ? 'pago anticipado' + (v.prePend ? ' (sin pagar)' : ' (pagado)') : 'contra entrega')) +
@@ -588,7 +592,7 @@ setInterval(() => { if (PIN && !$('ov').classList.contains('on')) cargar(); }, 1
    1) si se publica una versión nueva de esta página, se recarga sola
    2) cuando entra una venta nueva o un cliente confirma: suena, vibra, notificación
       y el título de la pestaña muestra cuántos hay por llamar */
-const VERSION = '2026-09-30-f';
+const VERSION = '2026-09-30-g';
 setInterval(async () => {
   try {
     const t = await (await fetch('index.html?ping=' + Date.now(), { cache: 'no-store' })).text();
