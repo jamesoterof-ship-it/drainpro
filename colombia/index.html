@@ -256,7 +256,9 @@ function armar(d) {
     return Object.assign({}, v, { id, total: Number(v.total) || 0, canal: chat ? 'WhatsApp (James)' : 'Página', pre, prePend,
       confWa, pideMod, chat, final, intentos, etapa, origen, llamadas: cf, wa,
       confMs: (confWa && confWa.ms) || (pideMod && pideMod.ms) || (chat || (pre && !prePend) ? v.ms : 0),
-      porLlamar: !!origen && !final && !v.rechazado && !v.dropi_id && !prePend && Date.now() - (v.ms || 0) < 5 * 864e5 });
+      porLlamar: !!origen && !final && !v.rechazado && !v.dropi_id && !prePend && Date.now() - (v.ms || 0) < 5 * 864e5,
+      /* 30-09 James: la venta nueva aparece AL INSTANTE para llamar, aunque todavía no confirme por WhatsApp */
+      nueva: !origen && !final && !v.rechazado && !v.dropi_id && !prePend && Date.now() - (v.ms || 0) < 5 * 864e5 });
   });
   const dropi = (d.dropi || []).map(x => {
     const id = String(x.id), et = etapaDropi(x.estado);
@@ -291,7 +293,7 @@ async function cargar() {
 /* ---------- navegación ---------- */
 function pintar() {
   if (!DATA) return;
-  const nLlamar = DATA.ventas.filter(v => v.porLlamar).length;
+  const nLlamar = DATA.ventas.filter(v => v.porLlamar || v.nueva).length;
   const nRep = DATA.dropi.filter(x => x.etapa === 'reparto' && !x.final).length;
   const nNov = DATA.dropi.filter(x => x.etapa === 'novedad' && !x.final).length;
   const items = [['llamar', '📞 Por llamar', nLlamar], ['reparto', '🚚 En reparto', nRep], ['novedad', '⚠️ Novedad', nNov], ['ventas', '📊 Ventas y totales', null]];
@@ -304,17 +306,22 @@ function pintar() {
 
 /* ---------- POR LLAMAR (confirmación) ---------- */
 function vLlamar() {
-  const L = DATA.ventas.filter(v => v.porLlamar).sort((a, b) => (a.confMs || a.ms) - (b.confMs || b.ms));
-  let h = '<div class="aviso">Aquí aparecen <b>al instante</b> los clientes que confirmaron su pedido (botón de WhatsApp, chat de James o pago con Wompi) y los que pidieron cambiar datos. Llámalos y marca el resultado: <b>James lo ve enseguida en su panel</b>.</div>';
-  if (!L.length) { $('vista').innerHTML = h + '<div class="card"><div class="empty"><b>No hay clientes por llamar</b><p>Cuando un cliente confirme, aparece aquí solo. La página se actualiza cada 30 segundos.</p></div></div>'; return; }
-  h += '<div class="card"><table class="resp"><thead><tr><th>Esperando</th><th>Cliente</th><th>Pedido</th><th>Por qué llamar</th><th>Intentos</th></tr></thead><tbody>' +
-    L.map(v => '<tr class="cl" data-venta="' + v.id + '">' +
+  const orden = (a, b) => (a.confMs || a.ms) - (b.confMs || b.ms);
+  const L = DATA.ventas.filter(v => v.porLlamar).sort(orden);
+  const N = DATA.ventas.filter(v => v.nueva).sort(orden);
+  let h = '<div class="aviso">Toda venta nueva aparece aquí <b>al instante</b>, con el teléfono para llamar. Arriba, los que <b>ya confirmaron</b> (botón de WhatsApp, chat de James o pago con Wompi); abajo, los que <b>todavía no contestan</b> la plantilla. Llama y marca el resultado: <b>James lo ve enseguida en su panel</b>.</div>';
+  if (!L.length && !N.length) { $('vista').innerHTML = h + '<div class="card"><div class="empty"><b>No hay clientes por llamar</b><p>Cuando entre una venta, aparece aquí sola. La página se actualiza cada 30 segundos.</p></div></div>'; return; }
+  const tabla = arr => '<div class="card"><table class="resp"><thead><tr><th>Esperando</th><th>Cliente</th><th>Llamar</th><th>Pedido</th><th>Estado</th><th>Intentos</th></tr></thead><tbody>' +
+    arr.map(v => { const n = tel10(v.telefono); return '<tr class="cl" data-venta="' + v.id + '">' +
       '<td><b>' + hace(v.confMs || v.ms) + '</b><div class="muted">' + esc(fechaTxt(v.confMs || v.ms)) + '</div></td>' +
-      '<td><b>' + esc(v.nombre) + '</b><div class="muted">+57 ' + esc(tel10(v.telefono)) + ' · ' + esc(v.comuna || '') + '</div></td>' +
+      '<td><b>' + esc(v.nombre) + '</b><div class="muted">' + esc([v.comuna, v.region].filter(Boolean).join(', ')) + '</div></td>' +
+      '<td><a class="btn b-blue" style="padding:7px 10px" href="tel:+57' + n + '" onclick="event.stopPropagation()">📞 ' + n + '</a></td>' +
       '<td>' + esc(v.producto) + ' x' + esc(v.cantidad) + '<div class="muted">' + cop(v.total) + ' · ' + (v.pre ? 'anticipado' : 'contra entrega') + '</div></td>' +
-      '<td><span class="chip ' + (v.pideMod ? 'c-amber' : 'c-green') + '">' + esc(v.origen) + '</span></td>' +
-      '<td class="hide-m">' + (v.intentos ? '<span class="chip c-amber">' + v.intentos + ' sin contestar</span>' : '—') + '</td></tr>').join('') +
+      '<td><span class="chip ' + (v.nueva ? 'c-gray' : v.pideMod ? 'c-amber' : 'c-green') + '">' + esc(v.nueva ? 'Esperando que confirme por WhatsApp' : v.origen) + '</span></td>' +
+      '<td class="hide-m">' + (v.intentos ? '<span class="chip c-amber">' + v.intentos + ' sin contestar</span>' : '—') + '</td></tr>'; }).join('') +
     '</tbody></table></div>';
+  h += '<h3 class="sec">✅ Ya confirmaron · llamar primero (' + L.length + ')</h3>' + (L.length ? tabla(L) : '<div class="card"><div class="empty"><b>Ninguno por ahora</b></div></div>');
+  h += '<h3 class="sec">🆕 Ventas nuevas · todavía no confirman (' + N.length + ')</h3>' + (N.length ? tabla(N) : '<div class="card"><div class="empty"><b>Ninguna por ahora</b></div></div>');
   $('vista').innerHTML = h;
 }
 
