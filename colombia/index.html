@@ -315,7 +315,7 @@ function vLlamar() {
     arr.map(v => { const n = tel10(v.telefono); return '<tr class="cl" data-venta="' + v.id + '">' +
       '<td><b>' + hace(v.confMs || v.ms) + '</b><div class="muted">' + esc(fechaTxt(v.confMs || v.ms)) + '</div></td>' +
       '<td><b>' + esc(v.nombre) + '</b><div class="muted">' + esc([v.comuna, v.region].filter(Boolean).join(', ')) + '</div></td>' +
-      '<td><a class="btn b-blue" style="padding:7px 10px" href="tel:+57' + n + '" onclick="event.stopPropagation()">📞 ' + n + '</a></td>' +
+      '<td><a class="btn b-blue" style="padding:10px 14px;font-size:15px" href="tel:+57' + n + '">📞 Llamar ' + n + '</a></td>' +   /* el toque abre la llamada y, al subir a la fila, también la ficha */
       '<td>' + esc(v.producto) + ' x' + esc(v.cantidad) + '<div class="muted">' + cop(v.total) + ' · ' + (v.pre ? 'anticipado' : 'contra entrega') + '</div></td>' +
       '<td><span class="chip ' + (v.nueva ? 'c-gray' : v.pideMod ? 'c-amber' : 'c-green') + '">' + esc(v.nueva ? 'Esperando que confirme por WhatsApp' : v.origen) + '</span></td>' +
       '<td class="hide-m">' + (v.intentos ? '<span class="chip c-amber">' + v.intentos + ' sin contestar</span>' : '—') + '</td></tr>'; }).join('') +
@@ -561,7 +561,7 @@ setInterval(() => { if (PIN && !$('ov').classList.contains('on')) cargar(); }, 1
    1) si se publica una versión nueva de esta página, se recarga sola
    2) cuando entra una venta nueva o un cliente confirma: suena, vibra, notificación
       y el título de la pestaña muestra cuántos hay por llamar */
-const VERSION = '2026-09-30-b';
+const VERSION = '2026-09-30-c';
 setInterval(async () => {
   try {
     const t = await (await fetch('index.html?ping=' + Date.now(), { cache: 'no-store' })).text();
