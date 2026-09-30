@@ -4440,21 +4440,25 @@ function estadoLlamadaCO(x,o,pre){
   var st='font-size:11.5px;font-weight:700;margin-top:3px';
   var ll=LLAM_CO.filter(function(l){return String(l.ref)===String(x.id);});
   var conf=ll.filter(function(l){return l.tipo==='conf';});
-  var fin=conf.filter(function(l){return /CONFIRMO|CAMBIO_DATOS|CANCELA/.test(l.resultado);}).slice(-1)[0];
   var hora=function(l){ try{ return new Date(Number(l.ms)).toLocaleString('es-CO',{timeZone:'America/Bogota',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}); }catch(e){ return ''; } };
-  var nota=function(l){ return l.nota?'<div style="font-size:11px;color:var(--ink-2);font-weight:500">“'+esc(l.nota)+'”</div>':''; };
-  if(fin&&fin.resultado==='CANCELA') return '<div style="'+st+';color:#c62828">📞❌ Canceló por llamada · '+esc(fin.quien)+' '+hora(fin)+'</div>'+nota(fin);
-  if(fin) return '<div style="'+st+';color:#15803d">📞✅ Llamada hecha: '+(fin.resultado==='CAMBIO_DATOS'?'confirmó con cambios':'confirmó')+' · '+esc(fin.quien)+' '+hora(fin)+'</div>'+nota(fin);
+  var nota=function(l){ return l&&l.nota?'<div style="font-size:11px;color:var(--ink-2);font-weight:500">“'+esc(l.nota)+'”</div>':''; };
+  /* MENSAJE */
   var wa=ll.filter(function(l){return l.tipo==='wa';}).slice(-1)[0];
-  var confWa=(wa&&wa.resultado==='CONFIRMO_WA')||/CONFIRMADO/.test(o.nota||'');
-  var pideMod=(wa&&wa.resultado==='PIDE_MODIFICAR')||/PIDE MODIFICAR/.test(o.nota||'');
+  var msj;
+  if((wa&&wa.resultado==='CONFIRMO_WA')||/CONFIRMADO/.test(o.nota||'')) msj='<span style="color:#15803d">✅ confirmó'+(wa?' '+hora(wa):'')+'</span>';
+  else if((wa&&wa.resultado==='PIDE_MODIFICAR')||/PIDE MODIFICAR/.test(o.nota||'')) msj='<span style="color:#b45309">✏️ pidió modificar'+(wa?' '+hora(wa):'')+'</span>';
+  else if(x.canal!=='Página') msj='<span style="color:#15803d">✅ compró en el chat de James</span>';
+  else if(pre&&!/pago\s*pendiente/i.test(o.estado||'')) msj='<span style="color:#15803d">✅ pagó con Wompi</span>';
+  else msj='<span style="color:var(--ink-3)">⏳ sin respuesta</span>';
+  /* LLAMADA */
+  var fin=conf.filter(function(l){return /CONFIRMO|CAMBIO_DATOS|CANCELA/.test(l.resultado);}).slice(-1)[0];
   var nc=conf.filter(function(l){return l.resultado==='NO_CONTESTA';});
-  var intentos=nc.length?'<div style="'+st+';color:#b45309">📵 No contesta ('+nc.length+(nc.length>1?' intentos':' intento')+') · '+esc(nc[nc.length-1].quien)+' '+hora(nc[nc.length-1])+'</div>'+nota(nc[nc.length-1]):'';
-  if(confWa) return '<div style="'+st+';color:#15803d">✅ Confirmó por WhatsApp</div><div style="'+st+';color:#b45309">📞 Falta la llamada</div>'+intentos;
-  if(pideMod) return '<div style="'+st+';color:#b45309">✏️ Pidió modificar datos · 📞 falta la llamada</div>'+intentos;
-  if(x.canal!=='Página') return '<div style="'+st+';color:#15803d">✅ Compró en el chat de James</div><div style="'+st+';color:#b45309">📞 Falta la llamada</div>'+intentos;
-  if(pre) return intentos;
-  return '<div style="font-size:11.5px;color:var(--ink-3);margin-top:3px">Esperando que confirme por WhatsApp</div>'+intentos;
+  var lla, extra='';
+  if(fin&&fin.resultado==='CANCELA'){ lla='<span style="color:#c62828">❌ canceló · '+esc(fin.quien)+' '+hora(fin)+'</span>'; extra=nota(fin); }
+  else if(fin){ lla='<span style="color:#15803d">✅ llamó y '+(fin.resultado==='CAMBIO_DATOS'?'confirmó con cambios':'confirmó')+' · '+esc(fin.quien)+' '+hora(fin)+'</span>'; extra=nota(fin); }
+  else if(nc.length){ var u=nc[nc.length-1]; lla='<span style="color:#b45309">📵 llamó, no contesta ('+nc.length+(nc.length>1?' intentos':' intento')+') · '+esc(u.quien)+' '+hora(u)+'</span>'; extra=nota(u); }
+  else lla='<span style="color:#c62828">⏳ no ha llamado</span>';
+  return '<div style="'+st+'">💬 Mensaje: '+msj+'</div><div style="'+st+'">📞 Llamada: '+lla+'</div>'+extra;
 }
 function renderAprobarPais(){
   var ch=document.getElementById('aprobChile'), ot=document.getElementById('aprobOtro'); if(!ch||!ot) return;
