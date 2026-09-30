@@ -4422,6 +4422,36 @@ function pildoraMontaje(o,k){
   if(/pago:\s*pre/i.test(o.nota)&&esAprobado(k)&&!o.montado) return '<div style="'+st+'background:#fff3e2;color:#b45309">✋ Aprobado · crear A MANO en Dropi PRO (pago anticipado)</div>';
   return '';
 }
+/* 30-09: llamadas del equipo de Colombia (página drainpro/colombia). En cuanto el cliente
+   confirma por WhatsApp sale aquí "falta la llamada"; cuando el equipo llama, se pone verde
+   (o rojo si canceló). James decide si aprueba con o sin la llamada. */
+var LLAM_CO=[], _llamCOts=0;
+function cargarLlamCO(){
+  if(Date.now()-_llamCOts<10000) return; _llamCOts=Date.now();
+  fetch(BASE+'/co-llamadas?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(j){
+    LLAM_CO=(j&&j.filas)||[]; renderAprobarPais();
+  }).catch(function(){});
+}
+function estadoLlamadaCO(x,o,pre){
+  var st='font-size:11.5px;font-weight:700;margin-top:3px';
+  var ll=LLAM_CO.filter(function(l){return String(l.ref)===String(x.id);});
+  var conf=ll.filter(function(l){return l.tipo==='conf';});
+  var fin=conf.filter(function(l){return /CONFIRMO|CAMBIO_DATOS|CANCELA/.test(l.resultado);}).slice(-1)[0];
+  var hora=function(l){ try{ return new Date(Number(l.ms)).toLocaleString('es-CO',{timeZone:'America/Bogota',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}); }catch(e){ return ''; } };
+  var nota=function(l){ return l.nota?'<div style="font-size:11px;color:var(--ink-2);font-weight:500">“'+esc(l.nota)+'”</div>':''; };
+  if(fin&&fin.resultado==='CANCELA') return '<div style="'+st+';color:#c62828">📞❌ Canceló por llamada · '+esc(fin.quien)+' '+hora(fin)+'</div>'+nota(fin);
+  if(fin) return '<div style="'+st+';color:#15803d">📞✅ Llamada hecha: '+(fin.resultado==='CAMBIO_DATOS'?'confirmó con cambios':'confirmó')+' · '+esc(fin.quien)+' '+hora(fin)+'</div>'+nota(fin);
+  var wa=ll.filter(function(l){return l.tipo==='wa';}).slice(-1)[0];
+  var confWa=(wa&&wa.resultado==='CONFIRMO_WA')||/CONFIRMADO/.test(o.nota||'');
+  var pideMod=(wa&&wa.resultado==='PIDE_MODIFICAR')||/PIDE MODIFICAR/.test(o.nota||'');
+  var nc=conf.filter(function(l){return l.resultado==='NO_CONTESTA';});
+  var intentos=nc.length?'<div style="'+st+';color:#b45309">📵 No contesta ('+nc.length+(nc.length>1?' intentos':' intento')+') · '+esc(nc[nc.length-1].quien)+' '+hora(nc[nc.length-1])+'</div>'+nota(nc[nc.length-1]):'';
+  if(confWa) return '<div style="'+st+';color:#15803d">✅ Confirmó por WhatsApp</div><div style="'+st+';color:#b45309">📞 Falta la llamada</div>'+intentos;
+  if(pideMod) return '<div style="'+st+';color:#b45309">✏️ Pidió modificar datos · 📞 falta la llamada</div>'+intentos;
+  if(x.canal!=='Página') return '<div style="'+st+';color:#15803d">✅ Compró en el chat de James</div><div style="'+st+';color:#b45309">📞 Falta la llamada</div>'+intentos;
+  if(pre) return intentos;
+  return '<div style="font-size:11.5px;color:var(--ink-3);margin-top:3px">Esperando que confirme por WhatsApp</div>'+intentos;
+}
 function renderAprobarPais(){
   var ch=document.getElementById('aprobChile'), ot=document.getElementById('aprobOtro'); if(!ch||!ot) return;
   document.querySelectorAll('#paisAprob .minitab').forEach(function(b){ b.classList.toggle('act',b.dataset.p===fPaisAprob); });
@@ -4433,6 +4463,7 @@ function renderAprobarPais(){
   if(fPaisAprob==='CL'){ ch.hidden=false; ot.hidden=true; return; }
   ch.hidden=true; ot.hidden=false;
   if(fPaisAprob==='CO'){
+    cargarLlamCO();
     /* 30-09: página (jayegroupshop.com) + WhatsApp de James. Llave "co:<id>": ningún
        montador la toma, Colombia se crea A MANO en Dropi Colombia. */
     var listaCO=ventasCO.filter(function(o){return !o.montado;}).map(function(o){return {o:o,canal:'Página',id:o.id,zona:o.zona};})
@@ -4448,7 +4479,7 @@ function renderAprobarPais(){
           return '<tr><td><b>'+esc(o.cli)+'</b><div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.fecha)+' · +'+esc(o.tel)+'</div></td>'+
             '<td>'+esc(x.canal)+'</td><td>'+esc(o.prod)+
             (pre?'<div style="margin-top:4px;display:inline-block;border-radius:6px;padding:2px 7px;font-size:11.5px;font-weight:700;background:'+(esPagoPend(o)?'#fff3e2;color:#b45309">💳 Pago anticipado · esperando Wompi':'#e3f6ea;color:#15803d">💳 Pago anticipado · pagado')+'</div>':'')+
-            (/abono pendiente/i.test(o.estado||'')?'<div style="font-size:11.5px;color:#c62828;font-weight:700">🔴 Cliente riesgoso: llamar antes de aprobar</div>':'')+(!pre&&x.canal==='Página'?(/CONFIRMADO/.test(o.nota||'')?'<div style="font-size:11.5px;color:#15803d;font-weight:700">✅ Confirmó por WhatsApp</div>':/PIDE MODIFICAR/.test(o.nota||'')?'<div style="font-size:11.5px;color:#b45309;font-weight:700">✏️ Pidió modificar datos: revisar el chat</div>':'<div style="font-size:11.5px;color:var(--ink-3)">Esperando que confirme por WhatsApp</div>'):'')+
+            (/abono pendiente/i.test(o.estado||'')?'<div style="font-size:11.5px;color:#c62828;font-weight:700">🔴 Cliente riesgoso: llamar antes de aprobar</div>':'')+estadoLlamadaCO(x,o,pre)+
             (/grad:/i.test(o.nota||'')?'<div style="font-size:11px;color:var(--ink-3)">'+esc((String(o.nota).match(/grad:[^·]*/i)||[''])[0])+'</div>':'')+'</td>'+
             '<td>'+esc(o.dir)+'<div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.zona)+(o.region&&o.region!=='—'?', '+esc(o.region):'')+'</div></td>'+
             '<td>'+esc(o.cant)+'</td><td>'+fmtCOP(o.totalNum)+' COP</td><td>'+(esPagoPend(o)

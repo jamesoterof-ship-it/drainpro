@@ -3,14 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Ventas Colombia · Jaye Group</title>
+<title>Equipo Colombia · Jaye Group</title>
 <link rel="icon" type="image/png" sizes="192x192" href="../panel/icon-192.png">
 <link rel="apple-touch-icon" href="../panel/icon-180.png">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#000000">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Ventas CO">
+<meta name="apple-mobile-web-app-title" content="Equipo CO">
+<meta name="robots" content="noindex, nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -45,7 +46,6 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);-webki
 button{font-family:inherit;cursor:pointer}
 .wrap{max-width:1180px;margin:0 auto;padding:0 16px 48px}
 
-/* barra superior */
 .top{position:sticky;top:0;z-index:20;background:#000;color:#fff}
 .top .wrap{display:flex;align-items:center;gap:12px;padding-top:12px;padding-bottom:12px}
 .logo{font-weight:800;letter-spacing:.14em;font-size:15px;white-space:nowrap}
@@ -55,124 +55,130 @@ button{font-family:inherit;cursor:pointer}
 .flag-co{display:inline-block;width:20px;height:14px;border-radius:2px;background:linear-gradient(#fcd116 0 50%,#003893 50% 75%,#ce1126 75%)}
 .sp{flex:1}
 .upd{font-size:12px;color:#9aa3b2;white-space:nowrap}
+.quien{font-size:12.5px;color:#d8a52e;font-weight:700;white-space:nowrap}
 .ib{background:#1b1b1b;border:1px solid #333;color:#fff;border-radius:10px;height:34px;min-width:34px;padding:0 10px;font-size:13px}
 .ib:hover{background:#262626}
 
-/* periodo y filtros */
-.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:18px 0 14px}
-.seg{display:inline-flex;background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:3px;box-shadow:var(--shadow)}
-.seg button{border:0;background:transparent;color:var(--ink-2);font-size:13px;font-weight:600;padding:7px 12px;border-radius:8px}
+.nav{display:flex;gap:6px;overflow-x:auto;margin:18px 0 14px;scrollbar-width:none}
+.nav::-webkit-scrollbar{display:none}
+.nav button{border:1px solid var(--border);background:var(--surface);color:var(--ink-2);border-radius:12px;padding:9px 14px;font-size:13.5px;font-weight:700;white-space:nowrap;box-shadow:var(--shadow)}
+.nav button .n{display:inline-block;min-width:22px;padding:1px 7px;margin-left:7px;border-radius:999px;background:var(--border-2);color:var(--ink-2);font-size:12px}
+.nav button .n.hot{background:var(--red);color:#fff}
+.nav button.act{background:var(--ink);border-color:var(--ink);color:var(--surface)}
+:root[data-theme="dark"] .nav button.act{background:var(--brand);border-color:var(--brand);color:#fff}
+
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 14px}
+.seg{display:inline-flex;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:3px;box-shadow:var(--shadow)}
+.seg button{border:0;background:transparent;color:var(--ink-2);font-size:13px;font-weight:600;padding:7px 11px;border-radius:8px}
 .seg button.act{background:var(--ink);color:var(--surface)}
 :root[data-theme="dark"] .seg button.act{background:var(--brand);color:#fff}
-select,input[type=search]{font-family:inherit;font-size:13px;color:var(--ink);background:var(--surface);border:1px solid var(--border);border-radius:10px;height:36px;padding:0 10px;box-shadow:var(--shadow)}
+select,input[type=search],input[type=date],input[type=password],textarea{font-family:inherit;font-size:13px;color:var(--ink);background:var(--surface);border:1px solid var(--border);border-radius:10px;height:36px;padding:0 10px;box-shadow:var(--shadow)}
 input[type=search]{min-width:200px;flex:1;max-width:320px}
+textarea{height:auto;min-height:70px;padding:9px 10px;width:100%;resize:vertical}
 
-/* tarjetas de resumen */
-.kpis{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;margin-bottom:18px}
+.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:16px}
 .kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;box-shadow:var(--shadow);min-width:0}
 .kpi .l{font-size:12px;color:var(--ink-2);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .kpi .v{font-size:22px;font-weight:800;margin-top:6px;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .kpi .s{font-size:11.5px;color:var(--ink-3);margin-top:3px}
-.kpi.money .v{font-size:19px}
-.v.green{color:var(--green)} .v.red{color:var(--red)} .v.blue{color:var(--blue)}
+.v.green{color:var(--green)} .v.red{color:var(--red)} .v.blue{color:var(--blue)} .v.amber{color:var(--amber)}
 
-/* pestañas de estado */
-.tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px;scrollbar-width:none}
-.tabs::-webkit-scrollbar{display:none}
-.tab{border:1px solid var(--border);background:var(--surface);color:var(--ink-2);border-radius:999px;padding:7px 13px;font-size:13px;font-weight:600;white-space:nowrap;box-shadow:var(--shadow)}
-.tab .n{display:inline-block;min-width:20px;padding:1px 6px;margin-left:6px;border-radius:999px;background:var(--border-2);color:var(--ink-2);font-size:11.5px}
-.tab.act{background:var(--brand);border-color:var(--brand);color:#fff}
-.tab.act .n{background:rgba(255,255,255,.22);color:#fff}
-
-/* tabla */
-.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
+h3.sec{font-size:14px;margin:18px 0 8px;color:var(--ink-2);text-transform:uppercase;letter-spacing:.05em}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden;margin-bottom:14px}
+.aviso{background:var(--brand-tint);color:var(--brand);border-radius:12px;padding:10px 14px;font-size:13px;margin-bottom:12px;line-height:1.45}
 table{width:100%;border-collapse:collapse;font-size:13px}
 th{text-align:left;font-size:11.5px;font-weight:700;color:var(--ink-3);text-transform:uppercase;letter-spacing:.04em;padding:11px 12px;border-bottom:1px solid var(--border);background:var(--surface-2);white-space:nowrap}
 td{padding:11px 12px;border-bottom:1px solid var(--border-2);vertical-align:top}
-tbody tr{cursor:pointer}
-tbody tr:hover{background:var(--surface-2)}
+tbody tr.cl{cursor:pointer}
+tbody tr.cl:hover{background:var(--surface-2)}
 tbody tr:last-child td{border-bottom:0}
+tfoot td{font-weight:800;background:var(--surface-2)}
 .muted{color:var(--ink-3);font-size:12px}
-td:first-child{white-space:nowrap}
 .num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
-.chip{display:inline-block;font-size:11.5px;font-weight:700;padding:3px 8px;border-radius:999px;white-space:nowrap}
+.chip{display:inline-block;font-size:11.5px;font-weight:700;padding:3px 8px;border-radius:999px;white-space:nowrap;margin:1px 0}
 .c-gray{background:var(--border-2);color:var(--ink-2)}
 .c-blue{background:var(--blue-tint);color:var(--blue)}
 .c-green{background:var(--green-tint);color:var(--green)}
 .c-red{background:var(--red-tint);color:var(--red)}
 .c-amber{background:var(--amber-tint);color:var(--amber)}
+.btn{border:0;border-radius:10px;padding:9px 12px;font-size:13px;font-weight:700}
+.b-green{background:var(--green);color:#fff}
+.b-red{background:var(--red);color:#fff}
+.b-amber{background:var(--amber);color:#fff}
+.b-gray{background:var(--border-2);color:var(--ink)}
+.b-blue{background:var(--brand);color:#fff}
+.b-wa{background:#25D366;color:#fff}
+a.btn{text-decoration:none;display:inline-block}
+.acc{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
 
-/* vacío / error */
-.empty{padding:48px 20px;text-align:center;color:var(--ink-2)}
+.empty{padding:40px 20px;text-align:center;color:var(--ink-2)}
 .empty > b{display:block;color:var(--ink);font-size:16px;margin-bottom:6px}
 .empty p{max-width:520px;margin:0 auto;font-size:13.5px;line-height:1.5}
-.err{background:var(--red-tint);color:var(--red);border-radius:12px;padding:10px 14px;font-size:13px;margin-bottom:12px;display:none}
+.err{background:var(--red-tint);color:var(--red);border-radius:12px;padding:10px 14px;font-size:13px;margin:12px 0;display:none}
 
-/* ventana de detalle */
 .ov{position:fixed;inset:0;background:rgba(10,14,24,.45);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
 .ov.on{display:flex}
-.modal{background:var(--surface);border-radius:16px;box-shadow:var(--shadow-lg);width:100%;max-width:520px;max-height:88vh;overflow:auto}
-.mh{display:flex;align-items:center;gap:10px;padding:16px 18px;border-bottom:1px solid var(--border)}
+.modal{background:var(--surface);border-radius:16px;box-shadow:var(--shadow-lg);width:100%;max-width:560px;max-height:90vh;overflow:auto}
+.mh{display:flex;align-items:center;gap:10px;padding:16px 18px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface)}
 .mh b{flex:1;font-size:16px}
 .mx{border:0;background:var(--border-2);color:var(--ink);width:32px;height:32px;border-radius:9px;font-size:16px}
-.mb{padding:6px 18px 16px}
-.fila{display:flex;gap:12px;padding:9px 0;border-bottom:1px solid var(--border-2);font-size:13.5px}
-.fila:last-child{border-bottom:0}
-.fila .k{width:140px;flex-shrink:0;color:var(--ink-2)}
+.mb{padding:6px 18px 18px}
+.fila{display:flex;gap:12px;padding:8px 0;border-bottom:1px solid var(--border-2);font-size:13.5px}
+.fila .k{width:130px;flex-shrink:0;color:var(--ink-2)}
 .fila .val{flex:1;word-break:break-word}
+.hist{margin-top:12px;border-left:3px solid var(--border);padding-left:12px}
+.hist div{font-size:12.5px;padding:5px 0;border-bottom:1px dashed var(--border-2)}
 
-/* celular: la tabla pasa a tarjetas */
-@media (max-width:900px){
-  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .kpi.money{grid-column:span 2}
-}
+.login{position:fixed;inset:0;background:#000;display:none;align-items:center;justify-content:center;z-index:60;padding:16px}
+.login.on{display:flex}
+.login .box{background:#111;border:1px solid #2a2a2a;border-radius:18px;padding:28px 24px;width:100%;max-width:340px;text-align:center;color:#fff}
+.login input{width:100%;height:48px;font-size:22px;letter-spacing:.4em;text-align:center;margin:18px 0 12px;background:#1b1b1b;color:#fff;border-color:#333}
+.login .btn{width:100%;padding:13px}
+.login .e{color:#f0696e;font-size:13px;min-height:18px}
+
+@media (max-width:900px){ .kpis{grid-template-columns:repeat(2,minmax(0,1fr))} }
 @media (max-width:720px){
   .upd{display:none}
   .ttl .t2{display:none}
-  thead{display:none}
-  table,tbody,tr,td{display:block;width:100%}
-  tbody tr{padding:12px 14px;border-bottom:1px solid var(--border-2)}
-  td{border:0;padding:2px 0}
-  td.hide-m{display:none}
-  td.num{text-align:left}
-  .card{border-radius:12px}
+  table.resp thead{display:none}
+  table.resp,table.resp tbody,table.resp tr,table.resp td{display:block;width:100%}
+  table.resp tbody tr{padding:12px 14px;border-bottom:1px solid var(--border-2)}
+  table.resp td{border:0;padding:2px 0}
+  table.resp td.hide-m{display:none}
+  table.resp td.num{text-align:left}
   input[type=search]{max-width:none;min-width:0;flex:1 1 100%}
-  select{flex:1 1 auto}
 }
 </style>
 </head>
 <body>
+<div class="login" id="login">
+  <div class="box">
+    <div class="logo" style="font-size:17px">JAYE <span class="g">GROUP</span></div>
+    <div style="margin-top:8px;color:#9aa3b2;font-size:13px"><span class="flag-co"></span> Equipo Colombia</div>
+    <input type="password" id="pin" inputmode="numeric" maxlength="8" autocomplete="off" placeholder="PIN">
+    <div class="e" id="pinErr"></div>
+    <button class="btn b-blue" id="btnPin">Entrar</button>
+  </div>
+</div>
+
 <div class="top">
   <div class="wrap">
     <div class="logo">JAYE <span class="g">GROUP</span></div>
     <div class="sep"></div>
-    <div class="ttl"><span class="flag-co"></span>Ventas Colombia<span class="t2 muted" style="color:#9aa3b2;font-weight:500">· solo lectura</span></div>
+    <div class="ttl"><span class="flag-co"></span>Equipo Colombia</div>
     <div class="sp"></div>
-    <div class="upd" id="upd">Cargando…</div>
+    <div class="quien" id="quien"></div>
+    <div class="upd" id="upd"></div>
     <button class="ib" id="btnRef" title="Actualizar">↻</button>
     <button class="ib" id="btnTema" title="Modo claro / oscuro">◐</button>
+    <button class="ib" id="btnSalir" title="Salir">Salir</button>
   </div>
 </div>
 
 <div class="wrap">
-  <div class="bar">
-    <div class="seg" id="segPer">
-      <button data-p="hoy">Hoy</button>
-      <button data-p="7d">7 días</button>
-      <button data-p="mes" class="act">Este mes</button>
-      <button data-p="todo">Todo</button>
-    </div>
-    <select id="selProd"><option value="">Todos los productos</option></select>
-    <input type="search" id="q" placeholder="Buscar cliente, teléfono, ciudad o guía">
-  </div>
-
+  <div class="nav" id="nav"></div>
   <div class="err" id="err"></div>
-
-  <div class="kpis" id="kpis"></div>
-
-  <div class="tabs" id="tabs"></div>
-
-  <div class="card" id="lista"></div>
+  <div id="vista"></div>
 </div>
 
 <div class="ov" id="ov">
@@ -184,260 +190,365 @@ td:first-child{white-space:nowrap}
 
 <script>
 /* ============================================================
-   VENTAS COLOMBIA — página aparte del panel, SOLO LECTURA.
-   Lee los mismos datos del panel (n8n → Postgres) y se queda
-   solo con lo de Colombia:
-   - pedidos de la tienda: /leer-pedidos-landing, páginas que empiezan con "co-"
-   - ventas por WhatsApp:  /ventas, bot de Colombia (James / Colombia / CO)
-   - estado de entrega:    /leer-pedidos-dropi, cruzado por nº de orden Dropi
-   Aquí NO se aprueba nada: la aprobación (que manda a Dropi) sigue en el panel.
+   EQUIPO COLOMBIA (30-09) — página de trabajo de las dos personas:
+   · Operador: llama a los clientes que confirmaron (o piden cambios), a los
+     que están en reparto y a los que tienen novedad, y deja el resultado.
+   · Auditor: ve todo lo del operador, tiempos y resultados, y deja observaciones.
+   Todo lo que marcan sale al instante en la aprobación del panel de James.
+   Aquí NO se aprueba ni se monta nada en Dropi: eso lo decide James.
+   Datos: n8n /co-operacion (pide PIN) · guardar: /co-llamada
    ============================================================ */
 const BASE = 'https://n8n-production-8a42.up.railway.app/webhook';
-const URL_LANDING = BASE + '/leer-pedidos-landing';
-const URL_VENTAS  = BASE + '/ventas';
-const URL_DROPI   = BASE + '/leer-pedidos-dropi';
-const PREFIJO_CO  = 'co-';                              // páginas de la tienda de Colombia
-const BOT_CO      = /colombia|james|(^|[^a-z])co([^a-z]|$)/i;  // bot de WhatsApp de Colombia
 const TZ = 'America/Bogota';
+let PIN = '', YO = null, DATA = null, vista = 'llamar', periodo = 'mes', desde = '', hasta = '', qBuscar = '', audQuien = '';
 
-/* Solo para que yo pruebe el dibujo con datos reales: ?probar=chile trata
-   las páginas de Chile como si fueran de Colombia. No cambia nada en ningún lado. */
-const PROBAR = new URLSearchParams(location.search).get('probar') === 'chile';
-
-let PEDIDOS = [], periodo = 'mes', pestana = 'todos';
-
-/* ---------- utilidades ---------- */
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const cop = n => '$' + Math.round(n || 0).toLocaleString('es-CO');
-const numero = v => { const d = String(v == null ? '' : v).replace(/[^0-9]/g, ''); return d ? Number(d) : 0; };
-function fechaTxt(ms) {
-  if (!ms) return '—';
-  return new Intl.DateTimeFormat('es-CO', { timeZone: TZ, day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(ms));
-}
-function diaBogota(ms) {
-  return new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(ms));
-}
-function ordenDropi(txt) { const m = String(txt || '').match(/#\s*(\d{5,})/); return m ? m[1] : ''; }
+const tel10 = t => String(t || '').replace(/\D/g, '').slice(-10);
+function fechaTxt(ms) { return ms ? new Intl.DateTimeFormat('es-CO', { timeZone: TZ, day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(ms)) : '—'; }
+function dia(ms) { return new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(ms)); }
+function diaTxt(d) { const [y, m, dd] = d.split('-'); return dd + '/' + m + '/' + y; }
+const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+function mesTxt(m) { const [y, mm] = m.split('-'); return MESES[+mm - 1] + ' ' + y; }
+function hace(ms) { const m = Math.round((Date.now() - ms) / 60000); return m < 60 ? m + ' min' : m < 1440 ? Math.round(m / 60) + ' h' : Math.round(m / 1440) + ' d'; }
 
-/* ---------- estado del pedido ---------- */
-function clasificar(p, dropi) {
-  if (p.ordenDropi) {
-    const d = dropi[p.ordenDropi];
-    if (!d) return { cat: 'camino', txt: 'En Dropi #' + p.ordenDropi, cls: 'c-blue' };
-    const e = String(d.estado || '').toUpperCase();
-    if (e === 'ENTREGADO') return { cat: 'entregado', txt: 'Entregado', cls: 'c-green' };
-    if (/DEVOLU|REHUSA|REHUZA|CANCELAD/.test(e)) return { cat: 'devuelto', txt: d.estado, cls: 'c-red' };
-    if (/NOVEDAD/.test(e) && !/SOLUCIONADA/.test(e)) return { cat: 'devuelto', txt: d.estado, cls: 'c-amber' };
-    return { cat: 'camino', txt: d.estado || 'En Dropi', cls: 'c-blue' };
-  }
-  if (p.confirmado) return { cat: 'confirmado', txt: 'Confirmado · sin montar', cls: 'c-green' };
-  return { cat: 'porconfirmar', txt: p.abonoPendiente ? 'Espera pago anticipado' : 'Por confirmar', cls: 'c-amber' };
+/* ---------- resultados posibles ---------- */
+const RES = {
+  conf: [['CONFIRMO','✅ Confirmó','b-green'],['NO_CONTESTA','📵 No contesta','b-amber'],['CAMBIO_DATOS','✏️ Cambió datos','b-blue'],['CANCELA','❌ Cancela','b-red']],
+  reparto: [['RECIBE','✅ Avisado, recibe','b-green'],['NO_CONTESTA','📵 No contesta','b-amber'],['REPROGRAMA','📅 Reprograma','b-blue'],['CANCELA','❌ No lo recibe','b-red']],
+  novedad: [['SOLUCIONADA','✅ Solucionada','b-green'],['NO_CONTESTA','📵 No contesta','b-amber'],['REPROGRAMA','📅 Reprograma','b-blue'],['CANCELA','❌ No lo quiere','b-red']]
+};
+const FINAL = { conf: ['CONFIRMO','CAMBIO_DATOS','CANCELA'], reparto: ['RECIBE','REPROGRAMA','CANCELA'], novedad: ['SOLUCIONADA','REPROGRAMA','CANCELA'] };
+const TXT_RES = { CONFIRMO:'Confirmó', NO_CONTESTA:'No contesta', CAMBIO_DATOS:'Cambió datos', CANCELA:'Cancela', RECIBE:'Avisado, recibe',
+  REPROGRAMA:'Reprograma', SOLUCIONADA:'Solucionada', CONFIRMO_WA:'Confirmó por WhatsApp', PIDE_MODIFICAR:'Pidió modificar (WhatsApp)',
+  OBSERVACION:'Observación', OK:'Revisado, bien', REVISAR:'Revisar', NOTA:'Nota' };
+const COLOR_RES = r => /CONFIRMO|RECIBE|SOLUCIONADA|OK/.test(r) ? 'c-green' : /CANCELA|REVISAR/.test(r) ? 'c-red' : /NO_CONTESTA|PIDE/.test(r) ? 'c-amber' : 'c-blue';
+
+/* ---------- etapa de Dropi ---------- */
+function etapaDropi(e) {
+  e = String(e || '').toUpperCase();
+  if (/ENTREGAD/.test(e)) return 'entregado';
+  if (/DEVOLU|RECHAZ|REHUS/.test(e)) return 'devuelto';
+  if (/CANCEL/.test(e)) return 'cancelado';
+  if (/NOVEDAD|INTENTO/.test(e)) return 'novedad';
+  if (/REPARTO|DISTRIBUCION/.test(e)) return 'reparto';
+  return 'camino';
 }
-function formaPago(estado, nota) {
-  const t = (String(estado || '') + ' ' + String(nota || '')).toUpperCase();
-  if (/PAGAD/.test(t) && /ANTICIP|ABONO|WOMPI|TARJETA/.test(t)) return 'Anticipado · pagado';
-  if (/ABONO|ANTICIP|WOMPI|TARJETA/.test(t)) return 'Anticipado · pendiente';
-  return 'Contra entrega';
+const TXT_ETAPA = { entregado: ['Entregado','c-green'], devuelto: ['Devuelto','c-red'], cancelado: ['Cancelado','c-red'], novedad: ['Novedad','c-amber'], reparto: ['En reparto','c-blue'], camino: ['En camino','c-blue'] };
+
+/* ---------- armar los datos ---------- */
+function armar(d) {
+  const L = d.llamadas || [];
+  const porRef = {};
+  L.forEach(l => { const k = l.tipo + ':' + l.ref; (porRef[k] = porRef[k] || []).push(l); });
+  const ventas = (d.ventas || []).map(v => {
+    const id = String(v.id);
+    const wa = porRef['wa:' + id] || [], cf = porRef['conf:' + id] || [];
+    const pre = /pago:\s*pre/i.test(v.nota), prePend = /PAGO PENDIENTE/i.test(v.estado || '');
+    const confWa = wa.find(x => x.resultado === 'CONFIRMO_WA') || (/CONFIRMADO/.test(v.nota) ? { ms: 0 } : null);
+    const pideMod = wa.find(x => x.resultado === 'PIDE_MODIFICAR') || (/PIDE MODIFICAR/.test(v.nota) ? { ms: 0 } : null);
+    const chat = /james/i.test(v.bot || '');
+    const final = cf.filter(x => FINAL.conf.includes(x.resultado)).slice(-1)[0] || null;
+    const intentos = cf.filter(x => x.resultado === 'NO_CONTESTA').length;
+    const etapa = v.dropi_id ? etapaDropi(v.dropi_estado) : '';
+    const origen = confWa ? 'Confirmó por WhatsApp' : pideMod ? 'Pidió modificar datos' : chat ? 'Compró en el chat de James' : (pre && !prePend) ? 'Pagó con Wompi' : '';
+    return Object.assign({}, v, { id, total: Number(v.total) || 0, canal: chat ? 'WhatsApp (James)' : 'Página', pre, prePend,
+      confWa, pideMod, chat, final, intentos, etapa, origen, llamadas: cf, wa,
+      confMs: (confWa && confWa.ms) || (pideMod && pideMod.ms) || (chat || (pre && !prePend) ? v.ms : 0),
+      porLlamar: !!origen && !final && !v.rechazado && !v.dropi_id && !prePend && Date.now() - (v.ms || 0) < 5 * 864e5 });
+  });
+  const dropi = (d.dropi || []).map(x => {
+    const id = String(x.id), et = etapaDropi(x.estado);
+    const tipo = et === 'novedad' ? 'novedad' : 'reparto';
+    const ll = porRef[tipo + ':' + id] || [];
+    const final = ll.filter(l => FINAL[tipo].includes(l.resultado)).slice(-1)[0] || null;
+    return Object.assign({}, x, { id, etapa: et, tipo, llamadas: ll, final, intentos: ll.filter(l => l.resultado === 'NO_CONTESTA').length,
+      venta: ventas.find(v => String(v.dropi_id) === id) || null });
+  });
+  return { ventas, dropi, llamadas: L };
 }
 
-/* ---------- carga de datos ---------- */
-async function traer(url) {
-  const r = await fetch(url, { cache: 'no-store' });
-  if (!r.ok) throw new Error(url.split('/').pop() + ' respondió ' + r.status);
-  return r.json();
-}
+/* ---------- carga ---------- */
 async function cargar() {
+  if (!PIN) return;
   $('upd').textContent = 'Actualizando…';
   try {
-    const [land, ventas, dropiArr] = await Promise.all([traer(URL_LANDING), traer(URL_VENTAS), traer(URL_DROPI)]);
-    const dropi = {};
-    (Array.isArray(dropiArr) ? dropiArr : []).forEach(d => { if (d && d.id != null) dropi[String(d.id)] = d; });
-
-    const lista = [];
-    const pedidos = (land && land.pedidos) || [];
-    pedidos.forEach(r => {
-      const pag = String(r.pagina || '');
-      const esCO = pag.toLowerCase().startsWith(PREFIJO_CO) || (PROBAR && pag.startsWith('tienda-'));
-      if (!esCO) return;
-      const est = String(r.estado || '');
-      lista.push({
-        canal: 'Tienda', pagina: pag, id: 'web-' + r.id,
-        ms: Number(r.creado_ms) || Date.parse(r.fecha) || 0,
-        nombre: r.nombre, telefono: r.telefono, producto: r.producto,
-        cantidad: Number(r.cantidad) || 1, total: numero(r.total),
-        direccion: r.direccion, ciudad: r.comuna, depto: r.region,
-        estadoTxt: est, nota: r.nota,
-        confirmado: String(r.confirmado || '').toUpperCase() === 'SI',
-        abonoPendiente: /ABONO PENDIENTE/i.test(est),
-        ordenDropi: ordenDropi(est),
-        pago: formaPago(est, r.nota)
-      });
-    });
-    (Array.isArray(ventas) ? ventas : []).forEach(r => {
-      if (!BOT_CO.test(String(r.BOT || ''))) return;
-      const est = String(r.ESTADO || '');
-      lista.push({
-        canal: 'WhatsApp', pagina: r.BOT, id: 'wa-' + r.row_number,
-        ms: Number(r.CREADO_MS) || 0,
-        nombre: r.NOMBRE, telefono: r.TELEFONO, producto: r.PRODUCTO,
-        cantidad: Number(r.CANTIDAD) || 1, total: numero(r.PRECIO),
-        direccion: r.DIRECCION, ciudad: r.COMUNA, depto: r.REGION,
-        estadoTxt: est, nota: r.NOTA,
-        confirmado: true,          // la venta por WhatsApp nace confirmada en el chat
-        abonoPendiente: false,
-        ordenDropi: ordenDropi(est),
-        pago: formaPago(est, r.NOTA)
-      });
-    });
-    lista.forEach(p => {
-      p.st = clasificar(p, dropi);
-      const d = p.ordenDropi ? dropi[p.ordenDropi] : null;
-      p.guia = d ? (d.guia || '') : '';
-      p.transportadora = d ? (d.transportadora || '') : '';
-      /* Recaudado = total de la venta (en Colombia ya es COP). No se usa d.recaudo:
-         en la tabla de Dropi viene convertido de moneda y no cuadra con el precio. */
-      p.recaudo = p.total;
-      p.entregadoMs = d && d.entregado_en ? Date.parse(d.entregado_en) : 0;
-      p.motivoDev = d ? (d.motivo_devolucion || '') : '';
-    });
-    lista.sort((a, b) => b.ms - a.ms);
-    PEDIDOS = lista;
-    llenarProductos();
-    pintar();
+    const r = await fetch(BASE + '/co-operacion?pin=' + encodeURIComponent(PIN) + '&t=' + Date.now(), { cache: 'no-store' });
+    const j = await r.json();
+    if (!j.ok) { salir(j.error || 'PIN incorrecto'); return; }
+    YO = j.yo; DATA = armar(j);
+    $('quien').textContent = YO.nombre + ' · ' + YO.rol;
     $('err').style.display = 'none';
     $('upd').textContent = 'Actualizado ' + new Intl.DateTimeFormat('es-CO', { timeZone: TZ, hour: '2-digit', minute: '2-digit' }).format(new Date());
+    pintar();
   } catch (e) {
-    $('err').textContent = 'No se pudieron traer los datos (' + e.message + '). Se reintenta solo en 1 minuto.';
-    $('err').style.display = 'block';
-    $('upd').textContent = 'Sin conexión';
+    $('err').textContent = 'No se pudieron traer los datos (' + e.message + '). Se reintenta solo.';
+    $('err').style.display = 'block'; $('upd').textContent = 'Sin conexión';
   }
 }
 
-/* ---------- filtros ---------- */
-function enPeriodo(ms) {
-  if (periodo === 'todo') return true;
-  if (!ms) return false;
-  const hoy = diaBogota(Date.now()), dia = diaBogota(ms);
-  if (periodo === 'hoy') return dia === hoy;
-  if (periodo === 'mes') return dia.slice(0, 7) === hoy.slice(0, 7);
-  return Date.now() - ms <= 7 * 864e5;
-}
-function filtrados() {
-  const prod = $('selProd').value, q = $('q').value.trim().toLowerCase();
-  return PEDIDOS.filter(p => enPeriodo(p.ms)
-    && (!prod || p.producto === prod)
-    && (!q || [p.nombre, p.telefono, p.ciudad, p.depto, p.guia].join(' ').toLowerCase().includes(q)));
-}
-function llenarProductos() {
-  const sel = $('selProd'), actual = sel.value;
-  const prods = [...new Set(PEDIDOS.map(p => p.producto).filter(Boolean))].sort();
-  sel.innerHTML = '<option value="">Todos los productos</option>' + prods.map(p => '<option' + (p === actual ? ' selected' : '') + '>' + esc(p) + '</option>').join('');
-}
-
-/* ---------- dibujo ---------- */
-const TABS = [
-  ['todos', 'Todos'], ['porconfirmar', 'Por confirmar'], ['confirmado', 'Confirmados'],
-  ['camino', 'En camino (Dropi)'], ['entregado', 'Entregados'], ['devuelto', 'Devueltos / novedad']
-];
+/* ---------- navegación ---------- */
 function pintar() {
-  const base = filtrados();
-  const cuenta = c => base.filter(p => p.st.cat === c).length;
-  const ent = cuenta('entregado'), dev = cuenta('devuelto');
-  const confirmados = base.filter(p => p.st.cat !== 'porconfirmar').length;
-  const enDropi = base.filter(p => p.ordenDropi).length;
-  const recaudado = base.filter(p => p.st.cat === 'entregado').reduce((s, p) => s + p.recaudo, 0);
-  const pct = ent + dev ? Math.round(ent * 100 / (ent + dev)) + '%' : '—';
-  $('kpis').innerHTML =
-    kpi('Pedidos', base.length, '', 'todas las ventas') +
-    kpi('Confirmados', confirmados, '', 'confirmados por el cliente') +
-    kpi('En Dropi', enDropi, 'blue', 'montados') +
-    kpi('Entregados', ent, 'green', '') +
-    kpi('Devueltos', dev, 'red', 'incluye novedades') +
-    kpi('% entrega', pct, '', 'de los ya cerrados') +
-    '<div class="kpi money"><div class="l">Recaudado</div><div class="v green">' + cop(recaudado) + '</div><div class="s">COP · solo entregados</div></div>';
-
-  $('tabs').innerHTML = TABS.map(([k, t]) =>
-    '<button class="tab' + (k === pestana ? ' act' : '') + '" data-t="' + k + '">' + t +
-    '<span class="n">' + (k === 'todos' ? base.length : cuenta(k)) + '</span></button>').join('');
-
-  const filas = pestana === 'todos' ? base : base.filter(p => p.st.cat === pestana);
-  if (!PEDIDOS.length) {
-    $('lista').innerHTML = '<div class="empty"><b>Todavía no hay ventas de Colombia</b><p>Esta página se llena sola apenas entre el primer pedido de la tienda de Colombia (páginas <b>co-…</b>) o del WhatsApp de Colombia. Se actualiza cada minuto.</p></div>';
-    return;
-  }
-  if (!filas.length) {
-    $('lista').innerHTML = '<div class="empty"><b>Nada en esta vista</b><p>No hay pedidos con este estado en el periodo y filtros elegidos.</p></div>';
-    return;
-  }
-  $('lista').innerHTML = '<table><thead><tr>' +
-    '<th>Fecha</th><th>Cliente</th><th>Ciudad</th><th>Producto</th><th class="num">Total</th><th>Pago</th><th>Estado</th><th>Guía</th>' +
-    '</tr></thead><tbody>' + filas.map(p => {
-      const i = PEDIDOS.indexOf(p);
-      return '<tr data-i="' + i + '">' +
-        '<td><div>' + esc(fechaTxt(p.ms)) + '</div><div class="muted">' + esc(p.canal) + '</div></td>' +
-        '<td><div style="font-weight:600">' + esc(p.nombre || '—') + '</div><div class="muted">' + esc(p.telefono || '') + '</div></td>' +
-        '<td class="hide-m"><div>' + esc(p.ciudad || '—') + '</div><div class="muted">' + esc(p.depto || '') + '</div></td>' +
-        '<td><div>' + esc(p.producto || '—') + '</div><div class="muted">x' + p.cantidad + '</div></td>' +
-        '<td class="num" style="font-weight:700">' + cop(p.total) + '</td>' +
-        '<td><span class="chip ' + (p.pago === 'Contra entrega' ? 'c-gray' : p.pago.endsWith('pagado') ? 'c-green' : 'c-amber') + '">' + esc(p.pago) + '</span></td>' +
-        '<td><span class="chip ' + p.st.cls + '">' + esc(p.st.txt) + '</span></td>' +
-        '<td class="hide-m"><div>' + esc(p.guia || '—') + '</div><div class="muted">' + esc(p.transportadora || '') + '</div></td>' +
-        '</tr>';
-    }).join('') + '</tbody></table>';
+  if (!DATA) return;
+  const nLlamar = DATA.ventas.filter(v => v.porLlamar).length;
+  const nRep = DATA.dropi.filter(x => x.etapa === 'reparto' && !x.final).length;
+  const nNov = DATA.dropi.filter(x => x.etapa === 'novedad' && !x.final).length;
+  const items = [['llamar', '📞 Por llamar', nLlamar], ['reparto', '🚚 En reparto', nRep], ['novedad', '⚠️ Novedad', nNov], ['ventas', '📊 Ventas y totales', null]];
+  if (YO && YO.rol === 'auditor') items.push(['auditoria', '🔎 Auditoría', null]);
+  if (!items.some(i => i[0] === vista)) vista = 'llamar';
+  $('nav').innerHTML = items.map(([k, t, n]) => '<button data-v="' + k + '" class="' + (k === vista ? 'act' : '') + '">' + t +
+    (n != null ? '<span class="n' + (n ? ' hot' : '') + '">' + n + '</span>' : '') + '</button>').join('');
+  ({ llamar: vLlamar, reparto: () => vDropi('reparto'), novedad: () => vDropi('novedad'), ventas: vVentas, auditoria: vAuditoria })[vista]();
 }
-function kpi(l, v, color, s) {
-  return '<div class="kpi"><div class="l">' + l + '</div><div class="v ' + color + '">' + v + '</div><div class="s">' + (s || '&nbsp;') + '</div></div>';
+
+/* ---------- POR LLAMAR (confirmación) ---------- */
+function vLlamar() {
+  const L = DATA.ventas.filter(v => v.porLlamar).sort((a, b) => (a.confMs || a.ms) - (b.confMs || b.ms));
+  let h = '<div class="aviso">Aquí aparecen <b>al instante</b> los clientes que confirmaron su pedido (botón de WhatsApp, chat de James o pago con Wompi) y los que pidieron cambiar datos. Llámalos y marca el resultado: <b>James lo ve enseguida en su panel</b>.</div>';
+  if (!L.length) { $('vista').innerHTML = h + '<div class="card"><div class="empty"><b>No hay clientes por llamar</b><p>Cuando un cliente confirme, aparece aquí solo. La página se actualiza cada 30 segundos.</p></div></div>'; return; }
+  h += '<div class="card"><table class="resp"><thead><tr><th>Esperando</th><th>Cliente</th><th>Pedido</th><th>Por qué llamar</th><th>Intentos</th></tr></thead><tbody>' +
+    L.map(v => '<tr class="cl" data-venta="' + v.id + '">' +
+      '<td><b>' + hace(v.confMs || v.ms) + '</b><div class="muted">' + esc(fechaTxt(v.confMs || v.ms)) + '</div></td>' +
+      '<td><b>' + esc(v.nombre) + '</b><div class="muted">+57 ' + esc(tel10(v.telefono)) + ' · ' + esc(v.comuna || '') + '</div></td>' +
+      '<td>' + esc(v.producto) + ' x' + esc(v.cantidad) + '<div class="muted">' + cop(v.total) + ' · ' + (v.pre ? 'anticipado' : 'contra entrega') + '</div></td>' +
+      '<td><span class="chip ' + (v.pideMod ? 'c-amber' : 'c-green') + '">' + esc(v.origen) + '</span></td>' +
+      '<td class="hide-m">' + (v.intentos ? '<span class="chip c-amber">' + v.intentos + ' sin contestar</span>' : '—') + '</td></tr>').join('') +
+    '</tbody></table></div>';
+  $('vista').innerHTML = h;
 }
-function verPedido(i) {
-  const p = PEDIDOS[i]; if (!p) return;
-  const f = (k, v) => '<div class="fila"><div class="k">' + k + '</div><div class="val">' + (v || '—') + '</div></div>';
-  $('mt').textContent = p.nombre || 'Pedido';
-  $('mb').innerHTML =
-    f('Fecha', esc(fechaTxt(p.ms))) +
-    f('Canal', esc(p.canal + (p.pagina ? ' · ' + p.pagina : ''))) +
-    f('Teléfono', esc(p.telefono)) +
-    f('Dirección', esc(p.direccion)) +
-    f('Ciudad', esc(p.ciudad)) +
-    f('Departamento', esc(p.depto)) +
-    f('Producto', esc(p.producto) + ' · x' + p.cantidad) +
-    f('Total', '<b>' + cop(p.total) + ' COP</b>') +
-    f('Forma de pago', esc(p.pago)) +
-    f('Estado', '<span class="chip ' + p.st.cls + '">' + esc(p.st.txt) + '</span>') +
-    f('Orden Dropi', p.ordenDropi ? '#' + esc(p.ordenDropi) : '') +
-    f('Guía', esc([p.guia, p.transportadora].filter(Boolean).join(' · '))) +
-    (p.entregadoMs ? f('Entregado', esc(fechaTxt(p.entregadoMs))) : '') +
-    (p.motivoDev ? f('Motivo devolución', esc(p.motivoDev)) : '') +
-    (p.nota ? f('Nota', esc(p.nota)) : '');
+
+/* ---------- REPARTO / NOVEDAD ---------- */
+function vDropi(tipo) {
+  const L = DATA.dropi.filter(x => x.etapa === tipo && !x.final);
+  const hechos = DATA.dropi.filter(x => x.etapa === tipo && x.final);
+  let h = '<div class="aviso">' + (tipo === 'reparto'
+    ? 'Guías que entraron <b>en reparto</b> en Dropi Colombia. Llama al cliente para que esté en casa y tenga listo el pago.'
+    : 'Guías con <b>novedad</b> en Dropi Colombia. Llama al cliente y deja qué se acordó.') + '</div>';
+  const tabla = (arr, vacio) => arr.length ? '<div class="card"><table class="resp"><thead><tr><th>Guía</th><th>Cliente</th><th>Pedido</th><th>Estado</th><th>Llamada</th></tr></thead><tbody>' +
+    arr.map(x => '<tr class="cl" data-dropi="' + x.id + '">' +
+      '<td><b>' + esc(x.guia || '—') + '</b><div class="muted">' + esc(x.transportadora || '') + ' · #' + x.id + '</div></td>' +
+      '<td><b>' + esc(x.nombre) + '</b><div class="muted">+57 ' + esc(tel10(x.telefono)) + ' · ' + esc(x.ciudad || '') + '</div></td>' +
+      '<td>' + esc(x.producto) + ' x' + esc(x.cantidad) + '<div class="muted">' + cop(x.recaudo) + '</div></td>' +
+      '<td><span class="chip ' + TXT_ETAPA[x.etapa][1] + '">' + esc(x.estado) + '</span></td>' +
+      '<td>' + (x.final ? '<span class="chip ' + COLOR_RES(x.final.resultado) + '">' + esc(TXT_RES[x.final.resultado] || x.final.resultado) + '</span><div class="muted">' + esc(x.final.quien) + ' · ' + esc(fechaTxt(x.final.ms)) + '</div>'
+        : x.intentos ? '<span class="chip c-amber">' + x.intentos + ' sin contestar</span>' : '<span class="chip c-red">Falta llamar</span>') + '</td></tr>').join('') +
+    '</tbody></table></div>' : '<div class="card"><div class="empty"><b>' + vacio + '</b></div></div>';
+  h += tabla(L, tipo === 'reparto' ? 'No hay guías en reparto por llamar' : 'No hay novedades por llamar');
+  if (hechos.length) h += '<h3 class="sec">Ya llamados</h3>' + tabla(hechos, '');
+  $('vista').innerHTML = h;
+}
+
+/* ---------- VENTAS Y TOTALES ---------- */
+function enPeriodo(ms) {
+  if (!ms) return false;
+  const d = dia(ms), hoy = dia(Date.now());
+  if (periodo === 'todo') return true;
+  if (periodo === 'hoy') return d === hoy;
+  if (periodo === 'ayer') return d === dia(Date.now() - 864e5);
+  if (periodo === '7d') return d >= dia(Date.now() - 6 * 864e5);
+  if (periodo === 'mes') return d.slice(0, 7) === hoy.slice(0, 7);
+  if (periodo === 'mesant') { const x = new Date(); x.setDate(1); x.setMonth(x.getMonth() - 1); return d.slice(0, 7) === dia(x.getTime()).slice(0, 7); }
+  if (periodo === 'rango') return (!desde || d >= desde) && (!hasta || d <= hasta);
+  return true;
+}
+function estadoVenta(v) {
+  if (v.etapa) return TXT_ETAPA[v.etapa];
+  if (v.rechazado) return ['Rechazada', 'c-red'];
+  if (v.prePend) return ['Esperando pago Wompi', 'c-amber'];
+  if (v.aprobado) return ['Aprobada · sin montar', 'c-blue'];
+  if (v.final) return [v.final.resultado === 'CANCELA' ? 'Canceló por llamada' : 'Llamada hecha', v.final.resultado === 'CANCELA' ? 'c-red' : 'c-green'];
+  if (v.porLlamar) return ['Por llamar', 'c-amber'];
+  return ['Esperando confirmación', 'c-gray'];
+}
+function totales(arr) {
+  const t = { n: arr.length, valor: 0, confWa: 0, llamOk: 0, aprob: 0, dropi: 0, ent: 0, dev: 0, recaudo: 0 };
+  arr.forEach(v => {
+    t.valor += v.total;
+    if (v.confWa || v.chat || (v.pre && !v.prePend)) t.confWa++;
+    if (v.final && v.final.resultado !== 'CANCELA') t.llamOk++;
+    if (v.aprobado) t.aprob++;
+    if (v.dropi_id) t.dropi++;
+    if (v.etapa === 'entregado') { t.ent++; t.recaudo += v.total; }
+    if (v.etapa === 'devuelto') t.dev++;
+  });
+  return t;
+}
+function vVentas() {
+  const arr = DATA.ventas.filter(v => enPeriodo(v.ms) && (!qBuscar || [v.nombre, v.telefono, v.comuna, v.region, v.guia, v.producto].join(' ').toLowerCase().includes(qBuscar)));
+  const t = totales(arr), pct = t.ent + t.dev ? Math.round(t.ent * 100 / (t.ent + t.dev)) + '%' : '—';
+  const P = [['hoy','Hoy'],['ayer','Ayer'],['7d','7 días'],['mes','Este mes'],['mesant','Mes pasado'],['todo','Todo'],['rango','Fechas…']];
+  let h = '<div class="bar"><div class="seg" id="segPer">' + P.map(([k, x]) => '<button data-p="' + k + '" class="' + (k === periodo ? 'act' : '') + '">' + x + '</button>').join('') + '</div>' +
+    (periodo === 'rango' ? '<input type="date" id="fDesde" value="' + desde + '"> <input type="date" id="fHasta" value="' + hasta + '">' : '') +
+    '<input type="search" id="q" placeholder="Buscar cliente, teléfono, ciudad o guía" value="' + esc(qBuscar) + '"></div>';
+  h += '<div class="kpis">' +
+    kpi('Ventas', t.n, '', 'en el periodo') + kpi('Valor vendido', cop(t.valor), 'blue', 'COP') +
+    kpi('Confirmadas', t.confWa, 'green', 'WhatsApp, chat o Wompi') + kpi('Confirmadas por llamada', t.llamOk, 'green', '') +
+    kpi('Aprobadas', t.aprob, '', 'por James') + kpi('En Dropi', t.dropi, 'blue', 'montadas') +
+    kpi('Entregadas', t.ent, 'green', '') + kpi('Devoluciones', t.dev, 'red', '') +
+    kpi('% entrega', pct, '', 'de las cerradas') + kpi('Recaudado', cop(t.recaudo), 'green', 'solo entregadas') + '</div>';
+  /* totales por día y por mes */
+  const agrupar = f => { const m = {}; arr.forEach(v => { const k = f(v); (m[k] = m[k] || []).push(v); }); return Object.keys(m).sort().reverse().map(k => [k, totales(m[k])]); };
+  const tablaTot = (filas, fmt) => '<div class="card"><table><thead><tr><th>' + (fmt === diaTxt ? 'Día' : 'Mes') + '</th><th class="num">Ventas</th><th class="num">Valor</th><th class="num hide-m">Confirm.</th><th class="num hide-m">Llamada OK</th><th class="num">Entreg.</th><th class="num">Devol.</th></tr></thead><tbody>' +
+    filas.map(([k, x]) => '<tr><td>' + esc(fmt(k)) + '</td><td class="num">' + x.n + '</td><td class="num">' + cop(x.valor) + '</td><td class="num hide-m">' + x.confWa + '</td><td class="num hide-m">' + x.llamOk + '</td><td class="num">' + x.ent + '</td><td class="num">' + x.dev + '</td></tr>').join('') +
+    '</tbody><tfoot><tr><td>Total</td><td class="num">' + t.n + '</td><td class="num">' + cop(t.valor) + '</td><td class="num hide-m">' + t.confWa + '</td><td class="num hide-m">' + t.llamOk + '</td><td class="num">' + t.ent + '</td><td class="num">' + t.dev + '</td></tr></tfoot></table></div>';
+  if (arr.length) {
+    h += '<h3 class="sec">Por día</h3>' + tablaTot(agrupar(v => dia(v.ms)), diaTxt);
+    h += '<h3 class="sec">Por mes</h3>' + tablaTot(agrupar(v => dia(v.ms).slice(0, 7)), mesTxt);
+  }
+  h += '<h3 class="sec">Todas las ventas (' + arr.length + ')</h3>';
+  h += arr.length ? '<div class="card"><table class="resp"><thead><tr><th>Fecha</th><th>Cliente</th><th>Producto</th><th class="num">Valor</th><th>Pago</th><th>Estado</th><th>Guía</th></tr></thead><tbody>' +
+    arr.map(v => { const e = estadoVenta(v); return '<tr class="cl" data-venta="' + v.id + '">' +
+      '<td>' + esc(fechaTxt(v.ms)) + '<div class="muted">' + esc(v.canal) + '</div></td>' +
+      '<td><b>' + esc(v.nombre) + '</b><div class="muted">+57 ' + esc(tel10(v.telefono)) + ' · ' + esc(v.comuna || '') + '</div></td>' +
+      '<td>' + esc(v.producto) + '<div class="muted">x' + esc(v.cantidad) + '</div></td>' +
+      '<td class="num"><b>' + cop(v.total) + '</b></td>' +
+      '<td><span class="chip ' + (v.pre ? (v.prePend ? 'c-amber' : 'c-green') : 'c-gray') + '">' + (v.pre ? (v.prePend ? 'Anticipado · pendiente' : 'Anticipado · pagado') : 'Contra entrega') + '</span></td>' +
+      '<td><span class="chip ' + e[1] + '">' + esc(e[0]) + '</span></td>' +
+      '<td class="hide-m">' + esc(v.guia || '—') + '<div class="muted">' + esc(v.transportadora || '') + '</div></td></tr>'; }).join('') +
+    '</tbody></table></div>' : '<div class="card"><div class="empty"><b>Sin ventas en este periodo</b></div></div>';
+  $('vista').innerHTML = h;
+  $('segPer').onclick = e => { const b = e.target.closest('button'); if (!b) return; periodo = b.dataset.p; pintar(); };
+  $('q').oninput = e => { qBuscar = e.target.value.trim().toLowerCase(); clearTimeout(window._qt); window._qt = setTimeout(() => { pintar(); const q = $('q'); q.focus(); q.setSelectionRange(q.value.length, q.value.length); }, 350); };
+  if ($('fDesde')) { $('fDesde').onchange = e => { desde = e.target.value; pintar(); }; $('fHasta').onchange = e => { hasta = e.target.value; pintar(); }; }
+}
+function kpi(l, v, color, s) { return '<div class="kpi"><div class="l">' + l + '</div><div class="v ' + color + '">' + v + '</div><div class="s">' + (s || '&nbsp;') + '</div></div>'; }
+
+/* ---------- AUDITORÍA ---------- */
+function vAuditoria() {
+  const L = DATA.llamadas.filter(l => l.rol !== 'cliente' && enPeriodo(l.ms) && (!audQuien || l.quien === audQuien));
+  const personas = [...new Set(DATA.llamadas.filter(l => l.rol !== 'cliente').map(l => l.quien))];
+  const llam = L.filter(l => ['conf','reparto','novedad'].includes(l.tipo));
+  /* tiempo desde que el cliente confirmó hasta la primera llamada */
+  const tiempos = [];
+  DATA.ventas.forEach(v => { if (!v.confMs || !v.llamadas.length) return; const p = v.llamadas[0]; if (enPeriodo(p.ms)) tiempos.push((p.ms - v.confMs) / 60000); });
+  const prom = tiempos.length ? Math.round(tiempos.reduce((a, b) => a + b, 0) / tiempos.length) + ' min' : '—';
+  const vencidas = DATA.ventas.filter(v => v.porLlamar && !v.llamadas.length && Date.now() - (v.confMs || v.ms) > 30 * 60000);
+  const confDev = DATA.ventas.filter(v => v.final && v.final.resultado !== 'CANCELA' && v.etapa === 'devuelto' && enPeriodo(v.ms));
+  const P = [['hoy','Hoy'],['ayer','Ayer'],['7d','7 días'],['mes','Este mes'],['mesant','Mes pasado'],['todo','Todo']];
+  let h = '<div class="bar"><div class="seg" id="segPer">' + P.map(([k, x]) => '<button data-p="' + k + '" class="' + (k === periodo ? 'act' : '') + '">' + x + '</button>').join('') + '</div>' +
+    '<select id="selQuien"><option value="">Todas las personas</option>' + personas.map(p => '<option' + (p === audQuien ? ' selected' : '') + '>' + esc(p) + '</option>').join('') + '</select></div>';
+  h += '<div class="kpis">' + kpi('Llamadas hechas', llam.length, 'blue', 'en el periodo') +
+    kpi('Confirmó / recibe', llam.filter(l => /CONFIRMO|RECIBE|SOLUCIONADA|CAMBIO/.test(l.resultado)).length, 'green', '') +
+    kpi('No contesta', llam.filter(l => l.resultado === 'NO_CONTESTA').length, 'amber', '') +
+    kpi('Tiempo promedio', prom, '', 'de confirmar a la 1ª llamada') +
+    kpi('Sin llamar +30 min', vencidas.length, vencidas.length ? 'red' : '', 'confirmados esperando ahora') + '</div>';
+  if (vencidas.length) h += '<h3 class="sec">Confirmados sin llamar hace más de 30 min</h3><div class="card"><table class="resp"><tbody>' +
+    vencidas.map(v => '<tr class="cl" data-venta="' + v.id + '"><td><b>' + esc(v.nombre) + '</b><div class="muted">confirmó hace ' + hace(v.confMs || v.ms) + '</div></td><td>' + esc(v.producto) + ' · ' + cop(v.total) + '</td></tr>').join('') + '</tbody></table></div>';
+  if (confDev.length) h += '<h3 class="sec">Confirmados por llamada que se devolvieron</h3><div class="card"><table class="resp"><tbody>' +
+    confDev.map(v => '<tr class="cl" data-venta="' + v.id + '"><td><b>' + esc(v.nombre) + '</b><div class="muted">' + esc(v.final.quien) + ' · ' + esc(fechaTxt(v.final.ms)) + '</div></td><td>' + esc(v.final.nota || '') + '</td></tr>').join('') + '</tbody></table></div>';
+  h += '<h3 class="sec">Registro de todo lo que se marcó (' + L.length + ')</h3>';
+  const refNombre = l => { if (l.tipo === 'reparto' || l.tipo === 'novedad') { const x = DATA.dropi.find(y => y.id === String(l.ref)); return x ? x.nombre : '#' + l.ref; } const v = DATA.ventas.find(y => y.id === String(l.ref)); return v ? v.nombre : '#' + l.ref; };
+  h += L.length ? '<div class="card"><table class="resp"><thead><tr><th>Fecha</th><th>Quién</th><th>Cliente</th><th>Tipo</th><th>Resultado</th><th>Nota</th></tr></thead><tbody>' +
+    L.slice().reverse().map(l => '<tr class="cl" data-' + (l.tipo === 'reparto' || l.tipo === 'novedad' ? 'dropi' : 'venta') + '="' + esc(l.ref) + '">' +
+      '<td>' + esc(fechaTxt(l.ms)) + '</td><td><b>' + esc(l.quien) + '</b></td><td>' + esc(refNombre(l)) + '</td>' +
+      '<td>' + ({ conf: 'Confirmación', reparto: 'Reparto', novedad: 'Novedad', auditoria: 'Auditoría', nota: 'Nota' }[l.tipo] || l.tipo) + '</td>' +
+      '<td><span class="chip ' + COLOR_RES(l.resultado) + '">' + esc(TXT_RES[l.resultado] || l.resultado) + '</span></td>' +
+      '<td>' + esc(l.nota || '') + '</td></tr>').join('') + '</tbody></table></div>' : '<div class="card"><div class="empty"><b>Todavía no hay llamadas en este periodo</b></div></div>';
+  $('vista').innerHTML = h;
+  $('segPer').onclick = e => { const b = e.target.closest('button'); if (!b) return; periodo = b.dataset.p; pintar(); };
+  $('selQuien').onchange = e => { audQuien = e.target.value; pintar(); };
+}
+
+/* ---------- ficha y botones ---------- */
+function historial(arr) {
+  if (!arr.length) return '<div class="muted" style="margin-top:10px">Sin llamadas todavía.</div>';
+  return '<div class="hist">' + arr.map(l => '<div><span class="chip ' + COLOR_RES(l.resultado) + '">' + esc(TXT_RES[l.resultado] || l.resultado) + '</span> <b>' + esc(l.quien) + '</b> · ' + esc(fechaTxt(l.ms)) + (l.nota ? '<br>' + esc(l.nota) : '') + '</div>').join('') + '</div>';
+}
+/* refNota: dónde quedan la nota y la observación del auditor (venta = id, guía = "d"+id) */
+function botones(tipo, ref, refNota) {
+  refNota = refNota || ref;
+  let h = '<textarea id="nota" placeholder="Nota (qué dijo el cliente, qué cambió, a qué hora volver a llamar…)"></textarea><div class="acc">';
+  if (YO.rol === 'auditor') h += '<button class="btn b-green" data-g="auditoria|OK|' + refNota + '">👍 Revisado, bien</button><button class="btn b-red" data-g="auditoria|REVISAR|' + refNota + '">⚠️ Revisar</button>';
+  if (tipo) h += RES[tipo].map(([k, t, c]) => '<button class="btn ' + c + '" data-g="' + tipo + '|' + k + '|' + ref + '">' + t + '</button>').join('');
+  h += '<button class="btn b-gray" data-g="nota|NOTA|' + refNota + '">📝 Solo guardar nota</button></div><div class="muted" id="gMsg" style="margin-top:8px"></div>';
+  return h;
+}
+const f = (k, v) => '<div class="fila"><div class="k">' + k + '</div><div class="val">' + (v || '—') + '</div></div>';
+function llamarBtns(t) { const n = tel10(t); return '<div class="acc"><a class="btn b-blue" href="tel:+57' + n + '">📞 Llamar +57 ' + n + '</a><a class="btn b-wa" target="_blank" rel="noopener" href="https://wa.me/57' + n + '">WhatsApp</a></div>'; }
+function verVenta(id) {
+  const v = DATA.ventas.find(x => x.id === String(id)); if (!v) return;
+  const e = estadoVenta(v);
+  $('mt').textContent = v.nombre || 'Pedido';
+  $('mb').innerHTML = llamarBtns(v.telefono) +
+    f('Estado', '<span class="chip ' + e[1] + '">' + esc(e[0]) + '</span>' + (v.origen ? ' <span class="chip c-green">' + esc(v.origen) + '</span>' : '')) +
+    f('Fecha', esc(fechaTxt(v.ms)) + ' · ' + esc(v.canal)) +
+    f('Producto', esc(v.producto) + ' · x' + esc(v.cantidad)) +
+    f('Valor', '<b>' + cop(v.total) + ' COP</b> · ' + (v.pre ? 'pago anticipado' + (v.prePend ? ' (sin pagar)' : ' (pagado)') : 'contra entrega')) +
+    f('Graduación', esc((String(v.nota).match(/grad:\s*([^·]*)/i) || [,''])[1])) +
+    f('Dirección', esc(v.direccion)) + f('Ciudad', esc([v.comuna, v.region].filter(Boolean).join(', '))) +
+    (v.guia ? f('Guía', esc(v.guia + ' · ' + (v.transportadora || '') + ' · ' + (v.dropi_estado || ''))) : '') +
+    '<h3 class="sec">Llamadas y notas</h3>' + historial(v.llamadas.concat(DATA.llamadas.filter(l => (l.tipo === 'auditoria' || l.tipo === 'nota') && l.ref === v.id)).concat(v.wa).sort((a, b) => a.ms - b.ms)) +
+    '<h3 class="sec">Registrar</h3>' + botones(v.dropi_id ? '' : 'conf', v.id);
   $('ov').classList.add('on');
+}
+function verDropi(id) {
+  const x = DATA.dropi.find(y => y.id === String(id)); if (!x) return;
+  $('mt').textContent = x.nombre || 'Guía';
+  $('mb').innerHTML = llamarBtns(x.telefono) +
+    f('Estado Dropi', '<span class="chip ' + TXT_ETAPA[x.etapa][1] + '">' + esc(x.estado) + '</span>') +
+    f('Guía', esc((x.guia || '—') + ' · ' + (x.transportadora || ''))) +
+    f('Producto', esc(x.producto) + ' · x' + esc(x.cantidad)) + f('A cobrar', '<b>' + cop(x.recaudo) + '</b>') +
+    f('Dirección', esc(x.direccion)) + f('Ciudad', esc([x.ciudad, x.region].filter(Boolean).join(', '))) +
+    '<h3 class="sec">Llamadas y notas</h3>' + historial(x.llamadas.concat(DATA.llamadas.filter(l => (l.tipo === 'auditoria' || l.tipo === 'nota') && l.ref === 'd' + x.id)).sort((a, b) => a.ms - b.ms)) +
+    '<h3 class="sec">Registrar</h3>' + botones(x.tipo, x.id, 'd' + x.id);
+  $('ov').classList.add('on');
+}
+async function guardar(tipo, resultado, ref) {
+  const nota = ($('nota') && $('nota').value.trim()) || '';
+  if (tipo === 'nota' && !nota) { $('gMsg').textContent = 'Escribe la nota primero.'; return; }
+  if (resultado === 'CANCELA' && !nota) { $('gMsg').textContent = 'Escribe en la nota por qué cancela.'; return; }
+  document.querySelectorAll('[data-g]').forEach(b => b.disabled = true);
+  $('gMsg').textContent = 'Guardando…';
+  try {
+    const r = await fetch(BASE + '/co-llamada', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin: PIN, tipo, ref, resultado, nota }) });
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error || 'no se guardó');
+    $('ov').classList.remove('on');
+    await cargar();
+  } catch (e) {
+    $('gMsg').textContent = 'No se guardó: ' + e.message + '. Inténtalo otra vez.';
+    document.querySelectorAll('[data-g]').forEach(b => b.disabled = false);
+  }
 }
 
 /* ---------- eventos ---------- */
-$('segPer').addEventListener('click', e => {
-  const b = e.target.closest('button'); if (!b) return;
-  periodo = b.dataset.p;
-  [...$('segPer').children].forEach(x => x.classList.toggle('act', x === b));
-  pintar();
-});
-$('tabs').addEventListener('click', e => { const b = e.target.closest('.tab'); if (!b) return; pestana = b.dataset.t; pintar(); });
-$('selProd').addEventListener('change', pintar);
-$('q').addEventListener('input', pintar);
-$('lista').addEventListener('click', e => { const tr = e.target.closest('tr[data-i]'); if (tr) verPedido(Number(tr.dataset.i)); });
+$('nav').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; vista = b.dataset.v; pintar(); });
+$('vista').addEventListener('click', e => { const tr = e.target.closest('tr.cl'); if (!tr) return; if (tr.dataset.venta) verVenta(tr.dataset.venta); else if (tr.dataset.dropi) verDropi(tr.dataset.dropi); });
+$('mb').addEventListener('click', e => { const b = e.target.closest('[data-g]'); if (!b) return; const [t, r, ref] = b.dataset.g.split('|'); guardar(t, r, ref); });
 $('mx').addEventListener('click', () => $('ov').classList.remove('on'));
 $('ov').addEventListener('click', e => { if (e.target === $('ov')) $('ov').classList.remove('on'); });
 $('btnRef').addEventListener('click', cargar);
 
-/* tema claro/oscuro: el mismo que el panel */
+function salir(msg) { PIN = ''; DATA = null; try { localStorage.removeItem('co_equipo_pin'); } catch (e) {} $('pinErr').textContent = msg || ''; $('login').classList.add('on'); $('pin').value = ''; $('pin').focus(); }
+$('btnSalir').addEventListener('click', () => salir(''));
+async function entrar() {
+  const p = $('pin').value.trim(); if (!p) return;
+  $('pinErr').textContent = 'Revisando…';
+  PIN = p;
+  try {
+    const r = await fetch(BASE + '/co-operacion?pin=' + encodeURIComponent(p) + '&t=' + Date.now(), { cache: 'no-store' });
+    const j = await r.json();
+    if (!j.ok) { PIN = ''; $('pinErr').textContent = 'PIN incorrecto'; return; }
+    try { localStorage.setItem('co_equipo_pin', p); } catch (e) {}
+    $('login').classList.remove('on'); $('pinErr').textContent = '';
+    YO = j.yo; DATA = armar(j); $('quien').textContent = YO.nombre + ' · ' + YO.rol; pintar();
+  } catch (e) { PIN = ''; $('pinErr').textContent = 'Sin conexión, inténtalo otra vez'; }
+}
+$('btnPin').addEventListener('click', entrar);
+$('pin').addEventListener('keydown', e => { if (e.key === 'Enter') entrar(); });
+
 function ponerTema(t) { document.documentElement.setAttribute('data-theme', t); try { localStorage.setItem('jaye_tema', t); } catch (e) {} }
 $('btnTema').addEventListener('click', () => ponerTema(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'));
 (function () {
   let t = null; try { t = localStorage.getItem('jaye_tema'); } catch (e) {}
   if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   document.documentElement.setAttribute('data-theme', t);
+  try { PIN = localStorage.getItem('co_equipo_pin') || ''; } catch (e) {}
+  if (PIN) cargar(); else $('login').classList.add('on');
 })();
-
-cargar();
-setInterval(cargar, 60000);
+setInterval(() => { if (PIN && !$('ov').classList.contains('on')) cargar(); }, 30000);
 </script>
 </body>
 </html>
