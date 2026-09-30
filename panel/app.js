@@ -744,7 +744,7 @@ function pedidosPais(){
   var P=visPaisSel(); if(P==='CL') return pedidosWeb;
   if(P==='CO') return ventasCO.map(function(o){
     return {cli:o.cli,tel:o.tel,fecha:o.fecha,color:'#A16207',prod:o.prod,comuna:o.zona,region:o.region,
-      cant:o.cant,total:fmtCOP(o.totalNum)+' COP',conf:!/pago\s*pendiente/i.test(o.estado),abono:/abono pendiente/i.test(o.estado),dropi:o.montado,dir:o.dir,
+      cant:o.cant,total:fmtCOP(o.totalNum)+' COP',conf:/CONFIRMADO/.test(o.nota)||(/pago:\s*pre/i.test(o.nota)&&!/pago\s*pendiente/i.test(o.estado)),abono:/abono pendiente/i.test(o.estado),dropi:o.montado,dir:o.dir,
       llave:'co:'+o.id,orden:o.orden,creadoMs:o.creadoMs,cop:true,pagina:pagCO(o)};
   });
   return ventasES.filter(function(o){return /p[aá]gina/i.test(o.bot);}).map(function(o){
@@ -4446,7 +4446,7 @@ function renderAprobarPais(){
           return '<tr><td><b>'+esc(o.cli)+'</b><div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.fecha)+' · +'+esc(o.tel)+'</div></td>'+
             '<td>'+esc(x.canal)+'</td><td>'+esc(o.prod)+
             (pre?'<div style="margin-top:4px;display:inline-block;border-radius:6px;padding:2px 7px;font-size:11.5px;font-weight:700;background:'+(esPagoPend(o)?'#fff3e2;color:#b45309">💳 Pago anticipado · esperando Wompi':'#e3f6ea;color:#15803d">💳 Pago anticipado · pagado')+'</div>':'')+
-            (/abono pendiente/i.test(o.estado||'')?'<div style="font-size:11.5px;color:#c62828;font-weight:700">🔴 Cliente riesgoso: llamar antes de aprobar</div>':'')+
+            (/abono pendiente/i.test(o.estado||'')?'<div style="font-size:11.5px;color:#c62828;font-weight:700">🔴 Cliente riesgoso: llamar antes de aprobar</div>':'')+(!pre&&x.canal==='Página'?(/CONFIRMADO/.test(o.nota||'')?'<div style="font-size:11.5px;color:#15803d;font-weight:700">✅ Confirmó por WhatsApp</div>':/PIDE MODIFICAR/.test(o.nota||'')?'<div style="font-size:11.5px;color:#b45309;font-weight:700">✏️ Pidió modificar datos: revisar el chat</div>':'<div style="font-size:11.5px;color:var(--ink-3)">Esperando que confirme por WhatsApp</div>'):'')+
             (/grad:/i.test(o.nota||'')?'<div style="font-size:11px;color:var(--ink-3)">'+esc((String(o.nota).match(/grad:[^·]*/i)||[''])[0])+'</div>':'')+'</td>'+
             '<td>'+esc(o.dir)+'<div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.zona)+(o.region&&o.region!=='—'?', '+esc(o.region):'')+'</div></td>'+
             '<td>'+esc(o.cant)+'</td><td>'+fmtCOP(o.totalNum)+' COP</td><td>'+(esPagoPend(o)
