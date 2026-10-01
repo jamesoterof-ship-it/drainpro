@@ -4463,6 +4463,7 @@ function pildoraMontajeCO(o){
   if(/^ERROR DROPI/i.test(e)) return '<div style="'+st+'background:#fde8e8;color:#b91c1c">⚠️ No se creó en Dropi: '+esc(e.replace(/^ERROR DROPI:s*/i,'').slice(0,160))+'</div>';
   return '';
 }
+function verAprobCO(i){ window._ventasF=window._aprobCO||[]; verVenta(i); }
 function confirmadoCO(id,o){
   var wa=LLAM_CO.some(function(l){return l.tipo==='wa'&&String(l.ref)===String(id)&&l.resultado==='CONFIRMO_WA';})||/CONFIRMADO/.test((o&&o.nota)||'');
   return wa||llamadaOkCO(id);
@@ -4515,15 +4516,20 @@ function renderAprobarPais(){
       /* 30-09 James: a aprobación SOLO llega lo que el cliente ya confirmó: por mensaje (botón Confirmar)
          o por llamada (el equipo marcó Confirmó / Cambió datos). Lo demás queda registrado pero no se muestra. */
       .filter(function(x){return x.id&&(x.canal!=='Página'||confirmadoCO(x.id,x.o));})   /* la venta del chat de James ya la confirmó el cliente en el chat */.sort(function(a,b){return (b.o.creadoMs||0)-(a.o.creadoMs||0);});
+    window._aprobCO=listaCO.map(function(x){ var o=x.o, web=x.canal==='Página';
+      return {esWeb:web, rid:x.id, cli:o.cli, tel:o.tel, prod:o.prod, cant:o.cant, precioNum:o.totalNum, precio:fmtCOP(o.totalNum)+' COP',
+        dir:o.dir, zona:o.zona, region:o.region, nota:o.nota||'', desde:'', revision:'', nivel:'', fecha:o.fecha, hora:'', orden:o.creadoMs||0,
+        conf:true, abono:/abono pendiente/i.test(o.estado||''), montado:/montad|#\d/i.test(o.estado||''), ordenDropi:(String(o.estado||'').match(/#(\d+)/)||[])[1]||'',
+        estado:o.estado||'', bot:'James', loc:'CO', red:'', llave:'co:'+x.id, creadoMs:o.creadoMs }; });
     var sinConfCO=ventasCO.filter(function(o){return !o.montado&&!confirmadoCO(o.id,o);}).length
 ;
     ot.innerHTML='<div class="panel"><div class="tbl-head"><h2>Colombia · por aprobar</h2>'+
-      '<span style="font-size:12px;color:#8a93a0">Aprobar aquí NO crea nada en Dropi: Colombia se monta a mano en Dropi Colombia. El pago anticipado se aprueba cuando Wompi lo marca pagado.</span></div>'+
+      '<span style="font-size:12px;color:#8a93a0">Solo salen las ventas que el cliente ya confirmó (mensaje, llamada o chat de James). Lo que apruebes se crea solo en Dropi Colombia en máximo 5 minutos.</span></div>'+
       (listaCO.length?'<table><thead><tr><th>Cliente</th><th>Canal</th><th>Producto</th><th>Dirección</th><th>Cant.</th><th>Total</th><th>Aprobación</th></tr></thead><tbody>'+
-        listaCO.map(function(x){
+        listaCO.map(function(x,ix){
           var o=x.o, k='co:'+x.id, falta=!nombreSirve(o.cli)?'nom':(!dirSirve(o.dir)?true:false);
           var pre=/pago:\s*pre/i.test(o.nota||'');
-          return '<tr><td><b>'+esc(o.cli)+'</b>'+huellaBadge(o.tel)+'<div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.fecha)+' · +'+esc(o.tel)+'</div>'+alertaHuellaCO(o.tel)+'</td>'+
+          return '<tr style="cursor:pointer" onclick="verAprobCO('+ix+')"><td><b>'+esc(o.cli)+'</b>'+huellaBadge(o.tel)+'<div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.fecha)+' · +'+esc(o.tel)+'</div>'+alertaHuellaCO(o.tel)+'</td>'+
             '<td>'+esc(x.canal)+'</td><td>'+esc(o.prod)+
             (pre?'<div style="margin-top:4px;display:inline-block;border-radius:6px;padding:2px 7px;font-size:11.5px;font-weight:700;background:'+(esPagoPend(o)?'#fff3e2;color:#b45309">💳 Pago anticipado · esperando Wompi':'#e3f6ea;color:#15803d">💳 Pago anticipado · pagado')+'</div>':'')+
             /* 30-09 James: anticipo de $20.000 a los riesgosos (se descuenta del total) */
@@ -4532,7 +4538,7 @@ function renderAprobarPais(){
             (/grad:[^·]*POR DEFINIR/i.test(o.nota||'')?'<div style="font-size:11.5px;color:#c62828;font-weight:800;margin-top:3px">⚠️ Graduación por definir · escribirle por WhatsApp</div>'
               :/grad:/i.test(o.nota||'')?'<div style="font-size:11px;color:var(--ink-3)">'+esc((String(o.nota).match(/grad:[^·]*/i)||[''])[0])+'</div>':'')+'</td>'+
             '<td>'+esc(o.dir)+'<div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.zona)+(o.region&&o.region!=='—'?', '+esc(o.region):'')+'</div></td>'+
-            '<td>'+esc(o.cant)+'</td><td>'+fmtCOP(o.totalNum)+' COP</td><td>'+(esPagoPend(o)
+            '<td>'+esc(o.cant)+'</td><td>'+fmtCOP(o.totalNum)+' COP</td><td onclick="event.stopPropagation()">'+(esPagoPend(o)
               ?'<span style="font-size:12px;color:#b45309;font-weight:700">Esperando el pago</span><div style="font-size:11px;color:var(--ink-3)">se aprueba cuando Wompi lo marque pagado</div>'
               :(/abono pendiente/i.test(o.estado||'')&&/anticipo_link/.test(o.nota||''))
               ?'<span style="font-size:12px;color:#b45309;font-weight:700">Esperando el anticipo</span><div style="font-size:11px;color:var(--ink-3)">se aprueba cuando Wompi confirme los $20.000</div>'
