@@ -452,6 +452,9 @@ async function cargarVentas(){
            panel se mira desde Bogota (UTC-5) y las ventas van en hora de Chile. */
         creadoMs:Number(r.CREADO_MS)||0,
         bot:esR?'Ramon':esJ?'James':esRedes?'Redes':'Carlos',red:red,loc:esR?'PY':esJ?'CO':'CL',estado:r.ESTADO||'—',
+        /* 30-09: las de James (Colombia) se aprueban con SU llave "co:<id>". Con la de Chile ("wa:...") el
+           montador de Chile podía tomarlas y crearlas en Dropi Chile. */
+        llave:esJ?'co:'+(r.row_number||''):undefined,
         conf:!/abono pendiente/i.test(String(r.ESTADO||'')),abono:/abono pendiente/i.test(String(r.ESTADO||'')),/* abono pendiente = NO confirmada hasta que pague el anticipo */
         montado:/montad/i.test(String(r.ESTADO||'')),
         ordenDropi:(String(r.ESTADO||'').match(/#(\d+)/)||[])[1]||'',
