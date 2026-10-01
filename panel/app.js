@@ -723,6 +723,7 @@ function chipsPedidosWeb(){
 }
 function renderPedidosWeb(){
   if(visPaisSel()==='CO') cargarLlamCO();
+  var _thL=document.getElementById('thLlamadaCO'); if(_thL) _thL.style.display=visPaisSel()==='CO'?'':'none';
   const tb=document.getElementById('tbodyPedidos'); if(!tb) return;
   chipsPedidosWeb();
   const q=(document.getElementById('pbuscar')?.value||'').toLowerCase();
@@ -737,8 +738,8 @@ function renderPedidosWeb(){
       <td>${esc(o.comuna)}</td>
       <td>${o.cant}</td>
       <td class="money">${o.total}</td>
-      <td>${o.cop?estadoLlamadaCO({id:String(o.llave).replace('co:',''),canal:o.chat?'WhatsApp':'Página'},{nota:o.nota,estado:o.estado},/pago:\s*pre/i.test(o.nota||'')):(o.abono?'<span class="st st-rec"><i></i>Abono pendiente</span>':(o.conf?'<span class="st st-ok"><i></i>Confirmado</span>':'<span class="st st-rec"><i></i>Pendiente</span>'))}</td>
-      <td class="cell-aprob" onclick="event.stopPropagation()">${o.cop?(o.dropi?'<span class="st st-ok"><i></i>Montado</span>':esAprobado(o.llave)?'<span class="st st-rec"><i></i>Aprobado ⏳</span>':confirmadoCO(String(o.llave).replace('co:',''),o)||o.chat?'<span style="font-size:12px;color:#15803d;font-weight:700">Lista para aprobar</span><div style="font-size:11px;color:var(--ink-3)">en la pestaña Aprobación</div>':'<span style="font-size:12px;color:var(--ink-3)">Esperando confirmación</span>'):celdaAprob(o.llave||keyPag(o), o.dropi?'<span class="st st-ok"><i></i>Montado</span>':'','',false,'',false,false,o.creadoMs)}</td>
+      <td>${o.abono?'<span class="st st-rec"><i></i>Abono pendiente</span>':((o.cop?(confirmadoCO(String(o.llave).replace('co:',''),o)||o.chat):o.conf)?'<span class="st st-ok"><i></i>Confirmado</span>':'<span class="st st-rec"><i></i>Pendiente</span>')}</td>${o.cop?'<td>'+chipLlamadaCO(String(o.llave).replace('co:',''))+'</td>':''}
+      <td class="cell-aprob" onclick="event.stopPropagation()">${o.cop?(o.dropi?'<span class="st st-ok"><i></i>Montado</span>':(confirmadoCO(String(o.llave).replace('co:',''),o)||o.chat)?celdaAprob(o.llave,'',String(o.llave).replace('co:',''),false,'',false,false,llamadaOkCO(String(o.llave).replace('co:',''))?0:o.creadoMs):esAprobado(o.llave)?'<span class="st st-rec"><i></i>Aprobado ⏳</span>':confirmadoCO(String(o.llave).replace('co:',''),o)||o.chat?'<span style="font-size:12px;color:#15803d;font-weight:700">Lista para aprobar</span><div style="font-size:11px;color:var(--ink-3)">en la pestaña Aprobación</div>':'<span style="font-size:12px;color:var(--ink-3)">Esperando confirmación</span>'):celdaAprob(o.llave||keyPag(o), o.dropi?'<span class="st st-ok"><i></i>Montado</span>':'','',false,'',false,false,o.creadoMs)}</td>
       <td><svg class="ico-sm chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></td>
     </tr>`).join('');
   window._pedidosF=arr;
@@ -4446,6 +4447,16 @@ function alertaHuellaCO(tel){
   var d=String(tel||'').replace(/\D/g,''); var h=(window.huellaMap||{})['co'+d.slice(-10)];
   if(!h||!/Riesgosa|Crítica/.test(h.risk_label||'')) return '';
   return '<div style="font-size:11.5px;color:#b71c1c;font-weight:800;margin-top:3px">🔴 Huella '+esc(h.risk_label)+' en Dropi: '+(+h.dropi_dev||0)+' devoluciones de '+(+h.dropi_total||0)+' pedidos · hablar con el cliente antes de montar</div>';
+}
+function chipLlamadaCO(id){
+  var conf=LLAM_CO.filter(function(l){return l.tipo==='conf'&&String(l.ref)===String(id);});
+  var fin=conf.filter(function(l){return /CONFIRMO|CAMBIO_DATOS|CANCELA/.test(l.resultado);}).slice(-1)[0];
+  var nc=conf.filter(function(l){return l.resultado==='NO_CONTESTA';}).length;
+  var t=function(l){ try{ return new Date(Number(l.ms)).toLocaleTimeString('es-CO',{timeZone:'America/Bogota',hour:'2-digit',minute:'2-digit'}); }catch(e){ return ''; } };
+  if(fin&&fin.resultado==='CANCELA') return '<span class="st st-ab" title="'+esc(fin.nota||'')+'"><i></i>Canceló</span><small style="display:block;color:var(--ink-3)">'+esc(fin.quien)+' '+t(fin)+'</small>';
+  if(fin) return '<span class="st st-ok" title="'+esc(fin.nota||'')+'"><i></i>Llamó · confirmó</span><small style="display:block;color:var(--ink-3)">'+esc(fin.quien)+' '+t(fin)+'</small>';
+  if(nc) return '<span class="st st-rec"><i></i>No contesta ('+nc+')</span>';
+  return '<span class="st" style="background:#eef1f6;color:#5b6573"><i style="background:#98a1b0"></i>Sin llamar</span>';
 }
 function confirmadoCO(id,o){
   var wa=LLAM_CO.some(function(l){return l.tipo==='wa'&&String(l.ref)===String(id)&&l.resultado==='CONFIRMO_WA';})||/CONFIRMADO/.test((o&&o.nota)||'');
