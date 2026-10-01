@@ -751,12 +751,7 @@ function pedidosPais(){
     return {cli:o.cli,tel:o.tel,fecha:o.fecha,color:'#A16207',prod:o.prod,comuna:o.zona,region:o.region,
       cant:o.cant,total:fmtCOP(o.totalNum)+' COP',conf:/CONFIRMADO/.test(o.nota)||(/pago:\s*pre/i.test(o.nota)&&!/pago\s*pendiente/i.test(o.estado)),abono:/abono pendiente/i.test(o.estado),dropi:o.montado,dir:o.dir,
       llave:'co:'+o.id,orden:o.orden,creadoMs:o.creadoMs,cop:true,pagina:pagCO(o),nota:o.nota,estado:o.estado};
-  }).concat((ordenes||[]).filter(function(o){return o.loc==='CO';}).map(function(o){
-    /* 30-09 James: en Pedidos salen TODAS las ventas de Colombia, también las del chat de James */
-    return {cli:o.cli,tel:o.tel,fecha:o.fecha,color:'#25D366',prod:o.prod+' · WhatsApp (James)',comuna:o.zona,region:o.region,
-      cant:o.cant,total:fmtCOP(o.precioNum)+' COP',conf:true,abono:/abono pendiente/i.test(o.estado),dropi:o.montado,dir:o.dir,
-      llave:'co:'+o.rid,orden:o.orden,creadoMs:o.creadoMs,cop:true,chat:true,pagina:'co-whatsapp',nota:o.nota,estado:o.estado};
-  })).sort(function(a,b){return (b.creadoMs||b.orden||0)-(a.creadoMs||a.orden||0);});
+  });
   return ventasES.filter(function(o){return /p[aá]gina/i.test(o.bot);}).map(function(o){
     return {cli:o.cli,tel:o.tel,fecha:o.fecha,color:o.sub==='PT'?'#006600':'#aa151b',prod:o.prod+' · '+o.sub,comuna:o.zona,region:o.region,
       cant:o.cant,total:fmtEUR(o.totalNum),conf:!/pago\s*pendiente|falta/i.test(o.estado),abono:false,dropi:o.montado,dir:o.dir,
