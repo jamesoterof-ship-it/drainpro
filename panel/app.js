@@ -706,6 +706,8 @@ function renderPaises(){
   const g={CL:{n:0,t:0},CO:{n:0,t:0},PY:{n:0,t:0},ES:{n:0,t:0}};
   if(fCanal!=='web') ordenes.filter(o=>enRango(o.orden)).forEach(o=>{g[o.loc].n++;g[o.loc].t+=o.precioNum;});
   if(fCanal!=='wa') pedidosWeb.filter(o=>enRango(o.orden)).forEach(o=>{g.CL.n++;g.CL.t+=o.totalNum;});
+  /* 01-10: las de la pagina de Colombia (ventasCO) tampoco entraban en "Ventas por pais" */
+  if(fCanal!=='wa') (typeof ventasCO!=='undefined'?ventasCO:[]).filter(o=>enRango(o.orden)).forEach(o=>{g.CO.n++;g.CO.t+=o.totalNum;});
   (typeof ventasES!=='undefined'?ventasES:[]).filter(o=>enRango(o.orden)).forEach(o=>{g.ES.n++;g.ES.t+=o.totalNum;});
   const tot=g.CL.n+g.CO.n+g.ES.n||1;
   const fila=(loc,nom,color,fmt)=>{const p=Math.round(g[loc].n/tot*100);
@@ -4157,6 +4159,9 @@ function totalesPais(){
   ordenes.filter(function(o){return enRango(o.orden);}).forEach(function(o){
     if(o.loc==='CL'){T.cl.n++;T.cl.t+=o.precioNum;} else if(o.loc==='CO'){T.co.n++;T.co.t+=o.precioNum;} });
   pedidosWeb.filter(function(o){return enRango(o.orden);}).forEach(function(o){T.cl.n++;T.cl.t+=o.totalNum;});
+  /* 01-10 James: "no me muestra el total de las ventas de Colombia". Las de la PAGINA de Colombia
+     viven en ventasCO (no en ordenes) y aca no se sumaban: la tarjeta decia 0 con ventas del dia. */
+  ventasCO.filter(function(o){return enRango(o.orden);}).forEach(function(o){T.co.n++;T.co.t+=o.totalNum;});
   ventasES.filter(function(o){return enRango(o.orden);}).forEach(function(o){T.es.n++;T.es.t+=o.totalNum;T.es[o.sub]++;});
   return T;
 }
