@@ -1819,7 +1819,7 @@ function renderAprobar(){
       <td>${esc(x.comuna||'—')}</td>
       <td>${x.cant}</td>
       <td class="money">${x.total}</td>
-      <td class="cell-aprob" onclick="event.stopPropagation()">${celdaAprob(x.k, x.st==='montado'?'<span class="st st-ok"><i></i>Montado</span>':'', x.rid||'', x.faltaDir, x.vuelve, enRevisionInsp(x.nivel, x.creadoMs), !!x.dud, x.creadoMs, (x.canal==='Página' && x.nivel==='VERDE' && !x.abono && x.st==='pendiente' && !x.prog) ? String((x.raw&&x.raw.fila)||'').replace(/^wa/,'') : '')}</td>
+      <td class="cell-aprob" onclick="event.stopPropagation()">${celdaAprob(x.k, x.st==='montado'?'<span class="st st-ok"><i></i>Montado</span>':'', x.rid||'', x.faltaDir, x.vuelve, enRevisionInsp(x.nivel, x.creadoMs), !!x.dud, x.creadoMs, (x.nivel==='VERDE' && !x.abono && x.st==='pendiente' && !x.prog) ? (x.canal==='Página' ? String((x.raw&&x.raw.fila)||'').replace(/^wa/,'') : (x.canal==='WhatsApp' ? String(x.rid||'') : '')) : '')}</td>
       <td onclick="event.stopPropagation()"><a class="qr" style="text-decoration:none;cursor:pointer" onclick="crmAbrir('${x.tel}')">WhatsApp</a></td>
     </tr>`).join('');
 }
