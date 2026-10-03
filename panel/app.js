@@ -321,43 +321,61 @@ function fechaOrden(f,h){
   }
   return d.getTime();
 }
-/* 02-10 (James): la pestaña de ESPAÑA cuenta el día con la hora de MADRID (00:00 a 24:00 de
-   España). Chile, Colombia y el Resumen siguen con la hora del computador, como siempre.
-   Las ventas de España guardan el instante exacto (CREADO_MS), así que basta con mover el corte. */
-const ZONA_ES='Europe/Madrid';
-function zonaPanel(){ return (typeof fPais!=='undefined'&&fPais==='ES')?ZONA_ES:null; }
+/* 02-10 (James): CADA PAÍS CUENTA SU DÍA CON SU HORA. España = Madrid, Chile = Santiago,
+   Colombia = Bogotá. En el Resumen general cada venta cae en el día de SU país, y las
+   gráficas mezcladas van con el día de Chile (donde está casi toda la venta).
+   Antes todo se cortaba a la medianoche del computador (Bogotá) y, como las ventas de Chile
+   se leían con su hora escrita, el "hoy" de Chile seguía juntando el día anterior hasta
+   las 2 de la mañana de allá. Las ventas guardan el instante exacto (CREADO_MS). */
+const ZONA_ES='Europe/Madrid', ZONA_CL='America/Santiago', ZONA_CO='America/Bogota';
+function zonaPanel(){ var p=(typeof fPais!=='undefined')?fPais:'todos'; return p==='ES'?ZONA_ES:p==='CO'?ZONA_CO:ZONA_CL; }
+/* el país de una venta, para el Resumen general (en una pestaña de país manda la del país) */
+function zonaVenta(o){
+  if(typeof fPais!=='undefined'&&fPais!=='todos') return zonaPanel();
+  if(o&&o.sub) return ZONA_ES;                 /* España / Portugal */
+  if(o&&o.loc==='CO') return ZONA_CO;
+  return ZONA_CL;
+}
+/* una fecha escrita en hora de Chile ("02-10-2026, 10:34 p. m.") -> instante real */
+function fechaChile(f,h){
+  const t=fechaOrden(f,h); if(!t) return 0; const d=new Date(t);
+  return _paredZona(d.getFullYear(),d.getMonth()+1,d.getDate(),d.getHours(),d.getMinutes(),ZONA_CL);
+}
 function _ymdZona(ts,z){ return new Intl.DateTimeFormat('en-CA',{timeZone:z,year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(ts)); }
 /* instante de las 00:00 del día y-m-d en la zona z (Date.UTC acomoda d<1 o d>31) */
-function _medianocheZona(y,m,d,z){
-  const g=Date.UTC(y,m-1,d);
+/* instante de la hora h:mi del día y-m-d en la zona z (Date.UTC acomoda d<1 o d>31) */
+function _paredZona(y,m,d,h,mi,z){
+  const g=Date.UTC(y,m-1,d,h||0,mi||0);
   const p={}; new Intl.DateTimeFormat('en-US',{timeZone:z,hourCycle:'h23',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})
     .formatToParts(new Date(g)).forEach(x=>{p[x.type]=x.value;});
   return g-(Date.UTC(+p.year,+p.month-1,+p.day,+p.hour,+p.minute)-g);
 }
-/* clave del día de un instante: en España la fecha de Madrid, en lo demás la del computador */
-function claveDia(ts){ const z=zonaPanel(); return z?_ymdZona(ts,z):new Date(ts).toDateString(); }
-function diaSemCorto(ts){ const z=zonaPanel(); return new Date(ts).toLocaleDateString('es-CL',z?{weekday:'short',timeZone:z}:{weekday:'short'}); }
-function diaNumero(ts){ const z=zonaPanel(); return z?String(+_ymdZona(ts,z).slice(8)):String(new Date(ts).getDate()); }
-function inicioDia(off){
-  const z=zonaPanel();
-  if(z){ const p=_ymdZona(Date.now(),z).split('-'); return _medianocheZona(+p[0],+p[1],+p[2]-off,z); }
-  const d=new Date();d.setHours(0,0,0,0);return d.getTime()-off*864e5;
+function _medianocheZona(y,m,d,z){ return _paredZona(y,m,d,0,0,z); }
+/* clave del día de un instante, con la fecha del país de la pestaña */
+function claveDia(ts){ return _ymdZona(ts,zonaPanel()); }
+function diaSemCorto(ts){ return new Date(ts).toLocaleDateString('es-CL',{weekday:'short',timeZone:zonaPanel()}); }
+function diaNumero(ts){ return String(+_ymdZona(ts,zonaPanel()).slice(8)); }
+function inicioDia(off,zona){
+  const z=zona||zonaPanel(), p=_ymdZona(Date.now(),z).split('-');
+  return _medianocheZona(+p[0],+p[1],+p[2]-off,z);
 }
-function enRangoDe(ts,rg){
+function enRangoDe(ts,rg,zona){
   if(!ts) return false;
-  /* rango de fechas en España: los días elegidos van de 00:00 a 24:00 de Madrid */
-  if(rg.tipo==='fechas'&&rg.desde&&rg.hasta&&zonaPanel()){
-    const a=new Date(rg.desde), b=new Date(rg.hasta), z=zonaPanel();
+  const z=zona||zonaPanel();
+  /* rango de fechas: los días elegidos van de 00:00 a 24:00 del país */
+  if(rg.tipo==='fechas'&&rg.desde&&rg.hasta){
+    const a=new Date(rg.desde), b=new Date(rg.hasta);
     return ts>=_medianocheZona(a.getFullYear(),a.getMonth()+1,a.getDate(),z)&&ts<_medianocheZona(b.getFullYear(),b.getMonth()+1,b.getDate()+1,z);
   }
-  if(rg.tipo==='hoy')  return ts>=inicioDia(0);
-  if(rg.tipo==='ayer') return ts>=inicioDia(1)&&ts<inicioDia(0);
-  if(rg.tipo==='7d')   return ts>=inicioDia(6);
-  if(rg.tipo==='30d')  return ts>=inicioDia(29);
-  if(rg.tipo==='fechas'&&rg.desde&&rg.hasta) return ts>=rg.desde&&ts<rg.hasta+864e5;
+  if(rg.tipo==='hoy')  return ts>=inicioDia(0,z);
+  if(rg.tipo==='ayer') return ts>=inicioDia(1,z)&&ts<inicioDia(0,z);
+  if(rg.tipo==='7d')   return ts>=inicioDia(6,z);
+  if(rg.tipo==='30d')  return ts>=inicioDia(29,z);
   return true;
 }
 const enRango=ts=>enRangoDe(ts,R);
+/* una venta en el rango, con el día de SU país (sirve igual en el Resumen general) */
+const enRangoO=o=>enRangoDe(o.orden,R,zonaVenta(o));
 const TXT_RANGO={hoy:'hoy',ayer:'ayer','7d':'últimos 7 días','30d':'últimos 30 días',fechas:'rango elegido'};
 const rangoTxt=()=>TXT_RANGO[R.tipo]||'hoy';
 
@@ -484,7 +502,9 @@ async function cargarVentas(){
         conf:!/abono pendiente/i.test(String(r.ESTADO||'')),abono:/abono pendiente/i.test(String(r.ESTADO||'')),/* abono pendiente = NO confirmada hasta que pague el anticipo */
         montado:/montad/i.test(String(r.ESTADO||'')),
         ordenDropi:(String(r.ESTADO||'').match(/#(\d+)/)||[])[1]||'',
-        fecha:r.FECHA||'',hora:r.HORA||'',orden:fechaOrden(r.FECHA,r.HORA)};
+        /* 02-10: el instante REAL (CREADO_MS). La fecha escrita va en hora de Chile y, leída
+           en Bogotá, corría la venta 2 horas y la dejaba en el día equivocado */
+        fecha:r.FECHA||'',hora:r.HORA||'',orden:Number(r.CREADO_MS)||fechaChile(r.FECHA,r.HORA)};
       if(_pos>=0){ ords[_pos]=_fila; }
       else { _vistas[_dupK]=ords.length; ords.push(_fila); }
     });
@@ -520,7 +540,7 @@ const mapPedido=r=>({fecha:r.fecha||'',cli:r.nombre||'—',tel:soloNum((r.indica
     prod:r.producto,prodCorto:nombreCortoProd(r.producto),color:r.color||'#c9a227',pagina:r.pagina,dir:r.direccion||'—',ref:r.referencia||'',comuna:r.comuna||'—',
     region:r.region||'—',correo:r.correo||'',cant:numero(r.cantidad)||1,totalNum:numero(r.total),
     total:fmtCLP(numero(r.total)),conf:String(r.confirmado||'').toUpperCase()==='SI',
-    dropi:String(r.dropi||'').toUpperCase()==='ENVIADO',fila:r.fila,orden:fechaOrden(r.fecha,''),
+    dropi:String(r.dropi||'').toUpperCase()==='ENVIADO',fila:r.fila,orden:Number(r.creado_ms)||fechaChile(r.fecha,''),   /* 02-10: instante real, no la hora de Chile leída en Bogotá */
     /* el estado tal cual viene ("Nueva", "ABONO PENDIENTE", "MONTADA DROPI #7820845"):
        de aqui salen el numero de Dropi y el abono pendiente en la vista de Camila */
     estado:String(r.estado||''),
@@ -577,7 +597,7 @@ async function cargarPaginas(){
   abandonadosWeb=abs.map(r=>({fecha:r.fecha||'',cli:r.nombre||'—',tel:soloNum((r.indicativo||'')+(r.telefono||'')),
     prod:r.producto,color:r.color,estado:String(r.estado||'').toUpperCase(),comuna:r.comuna||'—',
     dir:r.direccion||'',ref:r.referencia||'',region:r.region||'',correo:r.correo||'',
-    cant:numero(r.cantidad)||1,total:fmtCLP(numero(r.total)),totRaw:r.total,contactado:!!r.contactado,contactadoFecha:fechaCorta(r.contactado),orden:fechaOrden(r.fecha,'')}))
+    cant:numero(r.cantidad)||1,total:fmtCLP(numero(r.total)),totRaw:r.total,contactado:!!r.contactado,contactadoFecha:fechaCorta(r.contactado),orden:fechaChile(r.fecha,'')}))
     .filter(o=>o.estado!=='COMPLETADO')               // (6) solo NO completados
     .sort((a,b)=>b.orden-a.orden);
   visitasWeb=vis;
@@ -589,10 +609,10 @@ function renderResumen(){
   const el=id=>document.getElementById(id);
   /* 28-09: el MISMO tablero sirve a cada país (pestañas de arriba). _ordP/_webP
      dan las ventas del país elegido y fmtMonP las pone en su moneda. */
-  const enR  =_ordP().filter(o=>enRango(o.orden));
+  const enR  =_ordP().filter(enRangoO);
   const waR  =enR.filter(o=>o.bot!=='Redes');       // WhatsApp puro
   const redR =enR.filter(o=>o.bot==='Redes');       // Facebook e Instagram
-  const webR=_webP().filter(o=>enRango(o.orden));
+  const webR=_webP().filter(enRangoO);
   const usaWA = fCanal==='todos'||fCanal==='wa', usaWeb = fCanal==='todos'||fCanal==='web';
   const usaRed = fCanal==='todos'||fCanal==='redes';
   const lbl=rangoTxt();
@@ -651,7 +671,7 @@ function renderActividad(){
 }
 function renderTopProd(){
   const cont=document.getElementById('topProductos'); if(!cont) return;
-  const waR=_ordP().filter(o=>enRango(o.orden)), webR=_webP().filter(o=>enRango(o.orden));
+  const waR=_ordP().filter(enRangoO), webR=_webP().filter(enRangoO);
   /* Se agrupa por el nombre CORTO, no por el crudo: "Foco Solar Tipo Cámara" y
      "Foco Solar Tipo Camara" son el mismo producto y salian como dos filas.
      Se cuentan VENTAS: una venta es una venta, lleve 1 producto o 20. */
@@ -722,7 +742,7 @@ function renderPaises(){
   /* en la pestaña de España el panel reparte entre España y Portugal */
   if(fPais==='ES'){
     const e={ES:{n:0,t:0},PT:{n:0,t:0}};
-    ventasES.filter(o=>enRango(o.orden)).forEach(o=>{e[o.sub].n++;e[o.sub].t+=o.totalNum;});
+    ventasES.filter(enRangoO).forEach(o=>{e[o.sub].n++;e[o.sub].t+=o.totalNum;});
     const tt=e.ES.n+e.PT.n||1;
     cont.innerHTML=[['ES','España','#aa151b'],['PT','Portugal','#006600']].map(([k,nom,col])=>{const p=Math.round(e[k].n/tt*100);
       return `<div class="pais"><span class="flag flag-${k.toLowerCase()}"></span>${nom}<div class="track"><i style="width:${p}%;background:${col}"></i></div><b>${e[k].n} · ${fmtEUR(e[k].t)}</b><span class="pct">${p}%</span></div>`;}).join('');
@@ -731,11 +751,11 @@ function renderPaises(){
   }
   /* 28-09: Paraguay fuera (James), España y Portugal dentro (en euros) */
   const g={CL:{n:0,t:0},CO:{n:0,t:0},PY:{n:0,t:0},ES:{n:0,t:0}};
-  if(fCanal!=='web') ordenes.filter(o=>enRango(o.orden)).forEach(o=>{g[o.loc].n++;g[o.loc].t+=o.precioNum;});
-  if(fCanal!=='wa') pedidosWeb.filter(o=>enRango(o.orden)).forEach(o=>{g.CL.n++;g.CL.t+=o.totalNum;});
+  if(fCanal!=='web') ordenes.filter(enRangoO).forEach(o=>{g[o.loc].n++;g[o.loc].t+=o.precioNum;});
+  if(fCanal!=='wa') pedidosWeb.filter(enRangoO).forEach(o=>{g.CL.n++;g.CL.t+=o.totalNum;});
   /* 01-10: las de la pagina de Colombia (ventasCO) tampoco entraban en "Ventas por pais" */
-  if(fCanal!=='wa') (typeof ventasCO!=='undefined'?ventasCO:[]).filter(o=>enRango(o.orden)).forEach(o=>{g.CO.n++;g.CO.t+=o.totalNum;});
-  (typeof ventasES!=='undefined'?ventasES:[]).filter(o=>enRango(o.orden)).forEach(o=>{g.ES.n++;g.ES.t+=o.totalNum;});
+  if(fCanal!=='wa') (typeof ventasCO!=='undefined'?ventasCO:[]).filter(enRangoO).forEach(o=>{g.CO.n++;g.CO.t+=o.totalNum;});
+  (typeof ventasES!=='undefined'?ventasES:[]).filter(enRangoO).forEach(o=>{g.ES.n++;g.ES.t+=o.totalNum;});
   const tot=g.CL.n+g.CO.n+g.ES.n||1;
   const fila=(loc,nom,color,fmt)=>{const p=Math.round(g[loc].n/tot*100);
     return `<div class="pais"><span class="flag ${FLAG[loc]}"></span>${nom}<div class="track"><i style="width:${p}%;background:${color}"></i></div><b>${g[loc].n} · ${fmt(g[loc].t)}</b><span class="pct">${p}%</span></div>`;};
@@ -1545,7 +1565,7 @@ function renderBots(){
     const pausadas=cs.filter(c=>c.estado==='pausada').length;
     const ventasHoy=b==='Logistica'
       ? (function(){const s={};cs.forEach(c=>s[soloNum(c.tel)]=1);return hoyV.filter(o=>s[soloNum(o.tel)]).length;})()
-      : (b==='Carmen'?ventasCarmen().filter(o=>o.orden>=inicioDia(0)).length:hoyV.filter(o=>o.bot===b).length);
+      : (b==='Carmen'?ventasCarmen().filter(o=>o.orden>=inicioDia(0,ZONA_ES)).length:hoyV.filter(o=>o.bot===b).length);
     const loc=BOTLOC[b];
     return `<div class="botmini">
       <span class="bav" style="background:${BOTCOLOR[b]};width:26px;height:26px;font-size:12px;line-height:26px">${b[0]}</span>
@@ -4184,13 +4204,13 @@ function tasaTxt(){
 /* lo vendido en el rango elegido (Hoy / Ayer / 7 días...), por país */
 function totalesPais(){
   var T={cl:{n:0,t:0},es:{n:0,t:0,ES:0,PT:0},co:{n:0,t:0}};
-  ordenes.filter(function(o){return enRango(o.orden);}).forEach(function(o){
+  ordenes.filter(enRangoO).forEach(function(o){
     if(o.loc==='CL'){T.cl.n++;T.cl.t+=o.precioNum;} else if(o.loc==='CO'){T.co.n++;T.co.t+=o.precioNum;} });
-  pedidosWeb.filter(function(o){return enRango(o.orden);}).forEach(function(o){T.cl.n++;T.cl.t+=o.totalNum;});
+  pedidosWeb.filter(enRangoO).forEach(function(o){T.cl.n++;T.cl.t+=o.totalNum;});
   /* 01-10 James: "no me muestra el total de las ventas de Colombia". Las de la PAGINA de Colombia
      viven en ventasCO (no en ordenes) y aca no se sumaban: la tarjeta decia 0 con ventas del dia. */
-  ventasCO.filter(function(o){return enRango(o.orden);}).forEach(function(o){T.co.n++;T.co.t+=o.totalNum;});
-  ventasES.filter(function(o){return enRango(o.orden);}).forEach(function(o){T.es.n++;T.es.t+=o.totalNum;T.es[o.sub]++;});
+  ventasCO.filter(enRangoO).forEach(function(o){T.co.n++;T.co.t+=o.totalNum;});
+  ventasES.filter(enRangoO).forEach(function(o){T.es.n++;T.es.t+=o.totalNum;T.es[o.sub]++;});
   return T;
 }
 function kpiHtml(lbl,val,meta){
@@ -4399,14 +4419,17 @@ document.querySelectorAll('.nav-i[data-view="ganancia"]').forEach(function(n){ n
    Madrid, vuelve a pintar el resumen para que "hoy" cambie de día sin recargar */
 /* la fecha de la cabecera: en la pestaña de España, la de Madrid */
 function fechaCabecera(){ var f=document.getElementById('fechaHead'); if(!f) return;
-  f.textContent=new Date().toLocaleDateString('es-CL',fPais==='ES'?{weekday:'long',day:'numeric',month:'long',timeZone:ZONA_ES}:{weekday:'long',day:'numeric',month:'long'})+(fPais==='ES'?' (España)':''); }
+  /* cada pestaña con la fecha de su país; el Resumen general, la del computador */
+  var p=(typeof fPais!=='undefined')?fPais:'todos', nom={ES:' (España)',CL:' (Chile)',CO:' (Colombia)'}[p]||'';
+  f.textContent=new Date().toLocaleDateString('es-CL',nom?{weekday:'long',day:'numeric',month:'long',timeZone:zonaPanel()}:{weekday:'long',day:'numeric',month:'long'})+nom; }
 function horaES(){ return new Date().toLocaleTimeString('es-ES',{timeZone:ZONA_ES,hour:'2-digit',minute:'2-digit'})+' · '+new Date().toLocaleDateString('es-ES',{timeZone:ZONA_ES,weekday:'long',day:'numeric',month:'short'}); }
-var _diaES=_ymdZona(Date.now(),ZONA_ES);
+/* al pasar la medianoche de CUALQUIER país se vuelve a pintar: el "hoy" de ese país cambia */
+var _diasPais=[ZONA_ES,ZONA_CL,ZONA_CO].map(function(z){return _ymdZona(Date.now(),z);}).join('|');
 setInterval(function(){
   var r=document.getElementById('relojES'); if(r) r.textContent=horaES();
   fechaCabecera();
-  var hoy=_ymdZona(Date.now(),ZONA_ES);
-  if(hoy!==_diaES){ _diaES=hoy; if(fPais==='ES'){ try{ renderResumen(); }catch(e){} } }
+  var hoy=[ZONA_ES,ZONA_CL,ZONA_CO].map(function(z){return _ymdZona(Date.now(),z);}).join('|');
+  if(hoy!==_diasPais){ _diasPais=hoy; try{ renderResumen(); }catch(e){} }
 },20000);
 function renderPaisTab(){
   fechaCabecera();
