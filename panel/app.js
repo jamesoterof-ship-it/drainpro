@@ -4423,10 +4423,12 @@ function fechaCabecera(){ var f=document.getElementById('fechaHead'); if(!f) ret
   var p=(typeof fPais!=='undefined')?fPais:'todos', nom={ES:' (España)',CL:' (Chile)',CO:' (Colombia)'}[p]||'';
   f.textContent=new Date().toLocaleDateString('es-CL',nom?{weekday:'long',day:'numeric',month:'long',timeZone:zonaPanel()}:{weekday:'long',day:'numeric',month:'long'})+nom; }
 function horaES(){ return new Date().toLocaleTimeString('es-ES',{timeZone:ZONA_ES,hour:'2-digit',minute:'2-digit'})+' · '+new Date().toLocaleDateString('es-ES',{timeZone:ZONA_ES,weekday:'long',day:'numeric',month:'short'}); }
+function horaCL(){ return new Date().toLocaleTimeString('es-CL',{timeZone:ZONA_CL,hour:'2-digit',minute:'2-digit'})+' · '+new Date().toLocaleDateString('es-CL',{timeZone:ZONA_CL,weekday:'long',day:'numeric',month:'short'}); }
 /* al pasar la medianoche de CUALQUIER país se vuelve a pintar: el "hoy" de ese país cambia */
 var _diasPais=[ZONA_ES,ZONA_CL,ZONA_CO].map(function(z){return _ymdZona(Date.now(),z);}).join('|');
 setInterval(function(){
   var r=document.getElementById('relojES'); if(r) r.textContent=horaES();
+  var rc=document.getElementById('relojCL'); if(rc) rc.textContent=horaCL();
   fechaCabecera();
   var hoy=[ZONA_ES,ZONA_CL,ZONA_CO].map(function(z){return _ymdZona(Date.now(),z);}).join('|');
   if(hoy!==_diasPais){ _diasPais=hoy; try{ renderResumen(); }catch(e){} }
@@ -4436,7 +4438,10 @@ function renderPaisTab(){
   var box=document.getElementById('resPais'), chi=document.getElementById('resChile'); if(!box||!chi) return;
   document.querySelectorAll('#segPais .minitab').forEach(function(b){ b.classList.toggle('act',b.dataset.p===fPais); });
   chi.hidden=false;
-  if(fPais==='CL'){ box.hidden=true; return; }
+  /* 02-10 (James): "ponme la hora de Chile, así como hiciste con España" */
+  if(fPais==='CL'){ box.hidden=false;
+    box.innerHTML='<div class="rp-aviso"><b>🕐 Hora de Chile: <span id="relojCL">'+horaCL()+'</span></b> · aquí el día va de 00:00 a 24:00 de Chile (ventas y gráficas).</div>';
+    return; }
   box.hidden=false;
   var T=totalesPais(), lbl=rangoTxt();
   var cop=function(v,t){ return TASAS? '≈ '+fmtCOP(v*t)+' COP' : 'sin tasa del día'; };
