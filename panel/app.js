@@ -274,6 +274,12 @@ const fmtCLP=n=>'$'+Math.round(n).toLocaleString('es-CL');
 const fmtCOP=n=>'$'+Math.round(n).toLocaleString('es-CO');
 const fmtGS=n=>'Gs '+Math.round(n).toLocaleString('es-PY');
 const numero=v=>{const n=parseFloat(String(v??'').replace(/[^\d.,-]/g,'').replace(/\./g,'').replace(',','.'));return isNaN(n)?0:n;};
+/* 03-10 James: si el cliente YA PAGO el anticipo (estado "ABONO PAGADO"), lo que se le cobra al
+   recibir es el precio MENOS 4.700 fijos. Es la misma cuenta que hace el montador en Dropi. */
+const ANTICIPO_CLP=4700;
+const anticipoPagado=o=>/abono pagado/i.test(String((o&&o.estado)||''));
+const cobroCLP=(o,txt)=>{ if(!anticipoPagado(o)) return txt; const n=numero(txt); return n>ANTICIPO_CLP?fmtCLP(n-ANTICIPO_CLP):txt; };
+const filaAnticipo=(o,txt)=>anticipoPagado(o)?'<div class="dl"><span class="k">Anticipo</span><span class="v" style="color:#1b7f3b;font-weight:800">PAGADO · se descuentan $4.700 del precio '+esc(String(txt))+'</span></div>':'';
 const FLAG={CL:'flag-cl',CO:'flag-co',PY:'flag-py',ES:'flag-es'};
 /* El bot del numero chileno se mostraba como 'Carlos' y el de logistica tambien:
    no habia forma de saber cual estabas mirando, y una regla que faltaba en uno se
@@ -829,7 +835,8 @@ function verPedido(i){
     (o.ref?fila('Referencia',o.ref):'')+fila('Comuna',o.comuna)+fila('Región',o.region)+
     (o.abono?'<div class="dl"><span class="k">Confirmación del cliente</span><span class="v" style="color:#c62828;font-weight:800">🔴 ABONO PENDIENTE — no aprobar hasta ver el comprobante</span></div>':fila('Confirmación del cliente',o.conf?'CONFIRMADO':'Pendiente'))+fila('Dropi',o.dropi?'ENVIADO':'Pendiente')+fila('Fecha',o.fecha)+
     ((o.eur||o.cop)?'':o.dropi?'<div style="margin-top:12px;font-size:12px;color:var(--ink-3)">Este pedido ya está montado en Dropi. Para cambiar la dirección se edita directo en Dropi.</div>':'<button onclick="editarPedido()" style="width:100%;margin-top:12px;padding:11px;border:1px solid var(--grid);border-radius:10px;background:var(--card);color:var(--ink);font-weight:600;cursor:pointer">✏️ Editar pedido / estado</button>');
-  document.getElementById('mTotal').textContent=(o.eur||o.cop)?o.total:o.total+' CLP';
+  if(!(o.eur||o.cop)) document.getElementById('mBody').innerHTML+=filaAnticipo(o,o.total);
+  document.getElementById('mTotal').textContent=(o.eur||o.cop)?o.total:cobroCLP(o,o.total)+' CLP';
   window._pedEdit=o; window._pedEditIdx=i; window._pedEditOrigen='pedidos';
   window._ventaAbierta={cli:o.cli,dir:o.dir+(o.ref?' - '+o.ref:''),region:o.region,tel:o.tel,prod:o.prod,cant:o.cant,precio:o.total};
   document.getElementById('ov').classList.add('open');
@@ -1138,7 +1145,7 @@ function renderVentasBot(){
     const web=pedidosWeb.map(p=>({esWeb:true, rid:'', cli:p.cli, tel:p.tel, prod:p.prod, cant:p.cant,
       precioNum:p.totalNum, precio:p.total, dir:p.dir, zona:p.comuna, region:p.region,
       nota:'', desde:'', revision:'', nivel:'', fecha:p.fecha, hora:'', orden:p.orden||0,
-      conf:p.conf, abono:/abono/i.test(String(p.estado||'')), montado:p.dropi,
+      conf:p.conf, abono:/abono pendiente/i.test(String(p.estado||'')), montado:p.dropi,  /* 03-10: "ABONO PAGADO" ya no cuenta como pendiente */
       ordenDropi:(String(p.estado||'').match(/#(\d+)/)||[])[1]||'', estado:p.estado||'',
       bot:'Carlos', loc:'CL', red:'', pagina:p.pagina, fila:p.fila, color:p.color}));
     arr=arr.concat(web).sort((a,b)=>(b.orden||0)-(a.orden||0));
@@ -1549,8 +1556,8 @@ function verVenta(i){
     fila('Dirección',o.dir)+fila('Comuna / Ciudad',o.zona)+fila('Región / Depto.',o.region)+
     filaRotulo(o.nota)+
     (o.abono?'<div class="dl"><span class="k">Confirmación del cliente</span><span class="v" style="color:#c62828;font-weight:800">🔴 ABONO PENDIENTE — no aprobar hasta ver el comprobante</span></div>':fila('Confirmación del cliente',o.conf?'CONFIRMADO':'Pendiente'))+filaDropi(o)+
-    fila('Fecha',o.fecha+' '+(o.hora||''));
-  document.getElementById('mTotal').textContent=o.precio;
+    fila('Fecha',o.fecha+' '+(o.hora||''))+filaAnticipo(o,o.precio);
+  document.getElementById('mTotal').textContent=cobroCLP(o,o.precio);
   window._ventaAbierta=o;
   document.getElementById('ov').classList.add('open');
 }
@@ -1803,14 +1810,14 @@ function renderAprobar(){
   const sieteDias=Date.now()-7*864e5;
   const items=[];
   (pedidosWeb||[]).forEach(o=>{ if(!o.conf) return; const k=keyPag(o);
-    items.push({k,raw:o,canal:'Página',cli:o.cli,tel:o.tel,fecha:o.fecha,prod:o.prod,color:o.color,comuna:o.comuna,cant:o.cant,total:o.total,orden:o.orden,revision:o.revision||'',nivel:o.nivel||'',creadoMs:o.creadoMs||0,abono:!!(o.abono||/abono pendiente/i.test(String(o.estado||''))),
+    items.push({k,raw:o,canal:'Página',cli:o.cli,tel:o.tel,fecha:o.fecha,prod:o.prod,color:o.color,comuna:o.comuna,cant:o.cant,total:cobroCLP(o,o.total),orden:o.orden,revision:o.revision||'',nivel:o.nivel||'',creadoMs:o.creadoMs||0,abono:!!(o.abono||/abono pendiente/i.test(String(o.estado||''))),
       st:o.dropi?'montado':(esAprobado(k)?'aprobado':(esRechazado(k)?'rechazado':'pendiente'))});
   });
   (ordenes||[]).forEach(o=>{ if(o.loc!=='CL') return; if(o.orden < (o.montado?dosDias:sieteDias)) return; const k=keyWa(o);
     /* rid = id de la fila. SIN esto el borrado se hacia por telefono+fecha y dos
        ventas del mismo cliente el mismo dia se borraban LAS DOS (paso el 3-09 con
        Maria Grandon). El servidor ya tiene el candado; solo hay que mandarle el id. */
-    items.push({k,raw:o,rid:o.rid||'',canal:o.bot==='Redes'?redNombre(o.red):'WhatsApp',  /* James 15-09: las de redes decian WhatsApp */cli:o.cli,tel:o.tel,fecha:o.fecha,prod:o.prod,color:'#0e8074',comuna:o.zona,cant:o.cant,total:o.precio,orden:o.orden,abono:!!o.abono,nota:o.nota||'',desde:o.desde||'',faltaDir:(/falta (direccion|numero)/i.test(String(o.estado||'')) && !dirSirve(o.dir)) ? true : (!nombreSirve(o.cli) ? 'nom' : false),
+    items.push({k,raw:o,rid:o.rid||'',canal:o.bot==='Redes'?redNombre(o.red):'WhatsApp',  /* James 15-09: las de redes decian WhatsApp */cli:o.cli,tel:o.tel,fecha:o.fecha,prod:o.prod,color:'#0e8074',comuna:o.zona,cant:o.cant,total:cobroCLP(o,o.precio),orden:o.orden,abono:!!o.abono,nota:o.nota||'',desde:o.desde||'',faltaDir:(/falta (direccion|numero)/i.test(String(o.estado||'')) && !dirSirve(o.dir)) ? true : (!nombreSirve(o.cli) ? 'nom' : false),
       revision:o.revision||'',nivel:o.nivel||'',creadoMs:o.creadoMs||0,
       st:o.montado?'montado':(esAprobado(k)?'aprobado':(esRechazado(k)?'rechazado':'pendiente'))});
   });
@@ -1893,8 +1900,8 @@ function verAprob(i){
       fila('Canal','Página · '+o.prod)+fila('Producto',o.prod)+fila('Cantidad',o.cant+' unidades')+
       fila('Teléfono','+'+o.tel)+(o.correo?fila('Correo',o.correo):'')+fila('Dirección',o.dir)+
       (o.ref?fila('Referencia',o.ref):'')+fila('Comuna',o.comuna)+fila('Región',o.region)+
-      (o.abono?'<div class="dl"><span class="k">Confirmación del cliente</span><span class="v" style="color:#c62828;font-weight:800">🔴 ABONO PENDIENTE — no aprobar hasta ver el comprobante</span></div>':fila('Confirmación del cliente',o.conf?'CONFIRMADO':'Pendiente'))+fila('Dropi',o.dropi?'ENVIADO':'Pendiente')+fila('Fecha',o.fecha);
-    document.getElementById('mTotal').textContent=o.total+' CLP';
+      (o.abono?'<div class="dl"><span class="k">Confirmación del cliente</span><span class="v" style="color:#c62828;font-weight:800">🔴 ABONO PENDIENTE — no aprobar hasta ver el comprobante</span></div>':fila('Confirmación del cliente',o.conf?'CONFIRMADO':'Pendiente'))+fila('Dropi',o.dropi?'ENVIADO':'Pendiente')+fila('Fecha',o.fecha)+filaAnticipo(o,o.total);
+    document.getElementById('mTotal').textContent=cobroCLP(o,o.total)+' CLP';
     /* Los pedidos de pagina tambien se editan desde aca. Antes solo se podia
        desde la pestaña Pedidos, asi que uno que llegaba con la direccion mala
        -"Casa", el de Ana Rojas el 07-09- no se podia corregir donde se aprueba.
@@ -1905,7 +1912,7 @@ function verAprob(i){
       document.getElementById('mBody').innerHTML+=
         '<div style="margin-top:10px"><button class="b-copy" onclick="editarPedido()">✎ Editar datos</button></div>';
     }
-    window._ventaAbierta={cli:o.cli,dir:o.dir+(o.ref?' - '+o.ref:''),region:o.region,tel:o.tel,prod:o.prod,cant:o.cant,precio:o.total};
+    window._ventaAbierta={cli:o.cli,dir:o.dir+(o.ref?' - '+o.ref:''),region:o.region,tel:o.tel,prod:o.prod,cant:o.cant,precio:cobroCLP(o,o.total)};
   }else{
     document.getElementById('mBody').innerHTML=zrHtml+
       bloqueRev(o)+bloqueNota(o.nota)+bloqueEspera(o.nota,o.montado)+bloqueSinUbicar(o.dir,o.montado,o.nota,enRevisionInsp(o.nivel,o.creadoMs))+
@@ -1914,9 +1921,9 @@ function verAprob(i){
       fila('Dirección',o.dir)+fila('Comuna / Ciudad',o.zona)+fila('Región / Depto.',o.region)+
       filaRotulo(o.nota)+
       (o.abono?'<div class="dl"><span class="k">Confirmación del cliente</span><span class="v" style="color:#c62828;font-weight:800">🔴 ABONO PENDIENTE — no aprobar hasta ver el comprobante</span></div>':fila('Confirmación del cliente',o.conf?'CONFIRMADO':'Pendiente'))+filaDropi(o)+
-      fila('Fecha',o.fecha+' '+(o.hora||''))+
+      fila('Fecha',o.fecha+' '+(o.hora||''))+filaAnticipo(o,o.precio)+
       (o.rid&&!o.montado?'<div style="margin-top:10px"><button class="b-copy" onclick="editarAprob('+i+')">✎ Editar datos</button></div>':'');
-    document.getElementById('mTotal').textContent=o.precio;
+    document.getElementById('mTotal').textContent=cobroCLP(o,o.precio);
     window._ventaAbierta=o;
   }
   document.getElementById('ov').classList.add('open');
