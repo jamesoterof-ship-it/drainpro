@@ -30,14 +30,18 @@
   var DIAS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
   function corto(s) { var p = String(s).split('-'); return p[2] + ' ' + MES[+p[1] - 1]; }
   function diaSem(s) { var p = String(s).split('-'); return DIAS[new Date(+p[0], +p[1] - 1, +p[2]).getDay()]; }
-  var HOY = (function () {
-    var d = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Bogota' }));
+  /* 02-10 (James): en la pestaña de España el "hoy" es el de Madrid; en las demás, Bogotá.
+     Se recalcula en cada pintada: el país se cambia sin recargar la página. */
+  function hoyGan() {
+    var d = new Date(new Date().toLocaleString('en-US', { timeZone: paisGan() === 'ES' ? 'Europe/Madrid' : 'America/Bogota' }));
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-  })();
+  }
+  var HOY = hoyGan();
 
   /* Que dias se muestran segun el selector: los ultimos N, un dia suelto o
      un rango entre dos fechas. Los datos vienen del mas nuevo al mas viejo. */
   function seleccion() {
+    HOY = hoyGan();
     if (rangoGan === 'hoy') return dias.filter(function (x) { return x.dia === HOY; });
     if (rangoGan === 'ayer') {
       var p = HOY.split('-');

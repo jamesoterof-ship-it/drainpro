@@ -321,9 +321,35 @@ function fechaOrden(f,h){
   }
   return d.getTime();
 }
-function inicioDia(off){const d=new Date();d.setHours(0,0,0,0);return d.getTime()-off*864e5;}
+/* 02-10 (James): la pestaña de ESPAÑA cuenta el día con la hora de MADRID (00:00 a 24:00 de
+   España). Chile, Colombia y el Resumen siguen con la hora del computador, como siempre.
+   Las ventas de España guardan el instante exacto (CREADO_MS), así que basta con mover el corte. */
+const ZONA_ES='Europe/Madrid';
+function zonaPanel(){ return (typeof fPais!=='undefined'&&fPais==='ES')?ZONA_ES:null; }
+function _ymdZona(ts,z){ return new Intl.DateTimeFormat('en-CA',{timeZone:z,year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(ts)); }
+/* instante de las 00:00 del día y-m-d en la zona z (Date.UTC acomoda d<1 o d>31) */
+function _medianocheZona(y,m,d,z){
+  const g=Date.UTC(y,m-1,d);
+  const p={}; new Intl.DateTimeFormat('en-US',{timeZone:z,hourCycle:'h23',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})
+    .formatToParts(new Date(g)).forEach(x=>{p[x.type]=x.value;});
+  return g-(Date.UTC(+p.year,+p.month-1,+p.day,+p.hour,+p.minute)-g);
+}
+/* clave del día de un instante: en España la fecha de Madrid, en lo demás la del computador */
+function claveDia(ts){ const z=zonaPanel(); return z?_ymdZona(ts,z):new Date(ts).toDateString(); }
+function diaSemCorto(ts){ const z=zonaPanel(); return new Date(ts).toLocaleDateString('es-CL',z?{weekday:'short',timeZone:z}:{weekday:'short'}); }
+function diaNumero(ts){ const z=zonaPanel(); return z?String(+_ymdZona(ts,z).slice(8)):String(new Date(ts).getDate()); }
+function inicioDia(off){
+  const z=zonaPanel();
+  if(z){ const p=_ymdZona(Date.now(),z).split('-'); return _medianocheZona(+p[0],+p[1],+p[2]-off,z); }
+  const d=new Date();d.setHours(0,0,0,0);return d.getTime()-off*864e5;
+}
 function enRangoDe(ts,rg){
   if(!ts) return false;
+  /* rango de fechas en España: los días elegidos van de 00:00 a 24:00 de Madrid */
+  if(rg.tipo==='fechas'&&rg.desde&&rg.hasta&&zonaPanel()){
+    const a=new Date(rg.desde), b=new Date(rg.hasta), z=zonaPanel();
+    return ts>=_medianocheZona(a.getFullYear(),a.getMonth()+1,a.getDate(),z)&&ts<_medianocheZona(b.getFullYear(),b.getMonth()+1,b.getDate()+1,z);
+  }
   if(rg.tipo==='hoy')  return ts>=inicioDia(0);
   if(rg.tipo==='ayer') return ts>=inicioDia(1)&&ts<inicioDia(0);
   if(rg.tipo==='7d')   return ts>=inicioDia(6);
@@ -653,11 +679,12 @@ function renderChart(){
   const nD = R.tipo==='30d' ? 30 : (R.tipo==='fechas'&&R.desde&&R.hasta ? Math.min(31,Math.round((R.hasta-R.desde)/864e5)+1) : 7);
   const base = R.tipo==='fechas'&&R.desde ? R.desde : inicioDia(nD-1);
   const dias=[];
-  for(let i=0;i<nD;i++){const d=new Date(base+i*864e5);dias.push({key:d.toDateString(),lbl:nD>10?String(d.getDate()):(d.toDateString()===new Date().toDateString()?'Hoy':d.toLocaleDateString('es-CL',{weekday:'short'})),wa:0,web:0,red:0});}
+  /* +12 h: el mediodía de cada día, para que el cambio de hora nunca lo corra de fecha */
+  for(let i=0;i<nD;i++){const t=base+i*864e5+432e5,k=claveDia(t);dias.push({key:k,lbl:nD>10?diaNumero(t):(k===claveDia(Date.now())?'Hoy':diaSemCorto(t)),wa:0,web:0,red:0});}
   /* las de redes vienen dentro de `ordenes` marcadas bot==='Redes' (mismo criterio
      que usan la lista de actividad y el contador del menu) */
-  _ordP().forEach(o=>{if(!o.orden)return;const d=dias.find(x=>x.key===new Date(o.orden).toDateString());if(!d)return;if(o.bot==='Redes')d.red++;else d.wa++;});
-  _webP().forEach(o=>{if(!o.orden)return;const d=dias.find(x=>x.key===new Date(o.orden).toDateString());if(d)d.web++;});
+  _ordP().forEach(o=>{if(!o.orden)return;const d=dias.find(x=>x.key===claveDia(o.orden));if(!d)return;if(o.bot==='Redes')d.red++;else d.wa++;});
+  _webP().forEach(o=>{if(!o.orden)return;const d=dias.find(x=>x.key===claveDia(o.orden));if(d)d.web++;});
   /* el filtro de canal decide QUE series se dibujan; el total es la suma de las
      que se ven, para que el numero de arriba siempre cuadre con las barras */
   const vis = fCanal==='todos' ? CH_SERIES : CH_SERIES.filter(s=>s.k===(fCanal==='web'?'web':fCanal==='redes'?'red':'wa'));
@@ -950,9 +977,10 @@ function renderVisitas(){
   // gráfico por día (visitas/formulario/pedidos)
   const nD = Rvis.tipo==='30d'?30:(Rvis.tipo==='hoy'||Rvis.tipo==='ayer'?7:7);
   const dias=[];
-  for(let i=nD-1;i>=0;i--){const d=new Date(inicioDia(i));dias.push({key:d.toDateString(),lbl:i===0?'Hoy':d.toLocaleDateString('es-CL',{weekday:'short'}),v:0,f:0,p:0});}
-  visitasWeb.filter(v=>paisDePagVis(v.pagina)===visPaisSel()&&(fPagV==='todas'||npV(v.pagina)===npV(fPagV))).forEach(v=>{const t=fechaOrden(v.fecha,'');if(!t)return;const d=dias.find(x=>x.key===new Date(t).toDateString());if(d){d.v+=numero(v.visitas);d.f+=numero(v.formulario);}});
-  pedsVis().filter(o=>fPagV==='todas'||npV(paginaVis(o))===npV(fPagV)).forEach(o=>{const d=dias.find(x=>x.key===new Date(o.orden).toDateString());if(d)d.p++;});
+  for(let i=nD-1;i>=0;i--){const t=inicioDia(i)+432e5;dias.push({key:claveDia(t),lbl:i===0?'Hoy':diaSemCorto(t),v:0,f:0,p:0});}
+  /* las visitas vienen por FECHA (sin hora): se toman a mediodía para no correrlas de día */
+  visitasWeb.filter(v=>paisDePagVis(v.pagina)===visPaisSel()&&(fPagV==='todas'||npV(v.pagina)===npV(fPagV))).forEach(v=>{const t=fechaOrden(v.fecha,'');if(!t)return;const d=dias.find(x=>x.key===claveDia(t+432e5));if(d){d.v+=numero(v.visitas);d.f+=numero(v.formulario);}});
+  pedsVis().filter(o=>fPagV==='todas'||npV(paginaVis(o))===npV(fPagV)).forEach(o=>{const d=dias.find(x=>x.key===claveDia(o.orden));if(d)d.p++;});
   const max=Math.max(4,...dias.map(d=>d.v));
   const W=620,m=40,slot=(W-m-10)/nD,bw=Math.min(11,slot*0.24);
   let bars='',labels='';
@@ -2963,7 +2991,7 @@ cargarConvos(); cargarVentas(); cargarPaginas(); cargarHuellas(); sincronizarApr
 setInterval(()=>{cargarConvos();cargarVentas();cargarPaginas();},60000);
 setInterval(sincronizarAprob,30000);   // las aprobaciones se leen del servidor, no del navegador
 setInterval(cargarHuellas,300000);
-document.getElementById('fechaHead').textContent=new Date().toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'});
+fechaCabecera();
 
 /* ====================== ASESOR IA (botón flotante + chat) ====================== */
 const URL_AGENTE=BASE+'/agente-finanzas';
@@ -4367,7 +4395,21 @@ window.diasGananciaPais=function(P,cb){
 };
 document.querySelectorAll('.nav-i[data-view="ganancia"]').forEach(function(n){ n.addEventListener('click',function(){ setTimeout(renderGananciaPais,80); }); });
 
+/* reloj de la pestaña de España: se mueve solo cada 20 s y, al pasar la medianoche de
+   Madrid, vuelve a pintar el resumen para que "hoy" cambie de día sin recargar */
+/* la fecha de la cabecera: en la pestaña de España, la de Madrid */
+function fechaCabecera(){ var f=document.getElementById('fechaHead'); if(!f) return;
+  f.textContent=new Date().toLocaleDateString('es-CL',fPais==='ES'?{weekday:'long',day:'numeric',month:'long',timeZone:ZONA_ES}:{weekday:'long',day:'numeric',month:'long'})+(fPais==='ES'?' (España)':''); }
+function horaES(){ return new Date().toLocaleTimeString('es-ES',{timeZone:ZONA_ES,hour:'2-digit',minute:'2-digit'})+' · '+new Date().toLocaleDateString('es-ES',{timeZone:ZONA_ES,weekday:'long',day:'numeric',month:'short'}); }
+var _diaES=_ymdZona(Date.now(),ZONA_ES);
+setInterval(function(){
+  var r=document.getElementById('relojES'); if(r) r.textContent=horaES();
+  fechaCabecera();
+  var hoy=_ymdZona(Date.now(),ZONA_ES);
+  if(hoy!==_diaES){ _diaES=hoy; if(fPais==='ES'){ try{ renderResumen(); }catch(e){} } }
+},20000);
 function renderPaisTab(){
+  fechaCabecera();
   var box=document.getElementById('resPais'), chi=document.getElementById('resChile'); if(!box||!chi) return;
   document.querySelectorAll('#segPais .minitab').forEach(function(b){ b.classList.toggle('act',b.dataset.p===fPais); });
   chi.hidden=false;
@@ -4397,7 +4439,8 @@ function renderPaisTab(){
 
   if(fPais==='ES'){
     var pend=ventasES.filter(function(o){return !o.montado&&!esAprobado('es:'+o.id)&&!esRechazado('es:'+o.id);}).length;
-    box.innerHTML='<div class="rp-aviso"><span class="flag flag-es"></span> <b>España y Portugal</b> · montos en euros ('+esc(TASAS?'1 € = '+TASAS.eur.toLocaleString('es-CO',{maximumFractionDigits:2})+' COP':'sin tasa del día')+'). '+
+    box.innerHTML='<div class="rp-aviso" style="margin-bottom:8px"><b>🕐 Hora de España: <span id="relojES">'+horaES()+'</span></b> · aquí el día va de 00:00 a 24:00 de España (ventas, gráficas, ganancia y el gasto de Meta).</div>'+
+      '<div class="rp-aviso"><span class="flag flag-es"></span> <b>España y Portugal</b> · montos en euros ('+esc(TASAS?'1 € = '+TASAS.eur.toLocaleString('es-CO',{maximumFractionDigits:2})+' COP':'sin tasa del día')+'). '+
       'Por aprobar: <b>'+pend+'</b> · <a href="#" onclick="verAprobarPais(\'ES\');return false">ir a aprobar →</a> · '+
       'Lo que apruebes contra reembolso se crea solo en Dropi PRO; el pago anticipado, por ahora, a mano.</div>';
     return;
