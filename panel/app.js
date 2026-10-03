@@ -341,23 +341,32 @@ function fechaChile(f,h){
   const t=fechaOrden(f,h); if(!t) return 0; const d=new Date(t);
   return _paredZona(d.getFullYear(),d.getMonth()+1,d.getDate(),d.getHours(),d.getMinutes(),ZONA_CL);
 }
-function _ymdZona(ts,z){ return new Intl.DateTimeFormat('en-CA',{timeZone:z,year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(ts)); }
+function _ymdZona(ts,z){ return _fDia(z).format(new Date(ts)); }
 /* instante de las 00:00 del día y-m-d en la zona z (Date.UTC acomoda d<1 o d>31) */
 /* instante de la hora h:mi del día y-m-d en la zona z (Date.UTC acomoda d<1 o d>31) */
+/* RÁPIDO (James 02-10: "quedó muy pesada"): crear un Intl.DateTimeFormat cuesta mucho y se
+   hacía por cada venta (miles por pintada). Ahora hay UNO por zona y los cortes del día se
+   guardan 30 s. Pasó de ~1,5 s a pocos ms por pintada. */
+const _fmtDia={}, _fmtPartes={}, _memoPared={};
+function _fDia(z){ return _fmtDia[z]||(_fmtDia[z]=new Intl.DateTimeFormat('en-CA',{timeZone:z,year:'numeric',month:'2-digit',day:'2-digit'})); }
+function _fPartes(z){ return _fmtPartes[z]||(_fmtPartes[z]=new Intl.DateTimeFormat('en-US',{timeZone:z,hourCycle:'h23',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})); }
 function _paredZona(y,m,d,h,mi,z){
+  const k=y+'|'+m+'|'+d+'|'+(h||0)+'|'+(mi||0)+'|'+z; if(_memoPared[k]!==undefined) return _memoPared[k];
   const g=Date.UTC(y,m-1,d,h||0,mi||0);
-  const p={}; new Intl.DateTimeFormat('en-US',{timeZone:z,hourCycle:'h23',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})
-    .formatToParts(new Date(g)).forEach(x=>{p[x.type]=x.value;});
-  return g-(Date.UTC(+p.year,+p.month-1,+p.day,+p.hour,+p.minute)-g);
+  const p={}; _fPartes(z).formatToParts(new Date(g)).forEach(x=>{p[x.type]=x.value;});
+  return (_memoPared[k]=g-(Date.UTC(+p.year,+p.month-1,+p.day,+p.hour,+p.minute)-g));
 }
 function _medianocheZona(y,m,d,z){ return _paredZona(y,m,d,0,0,z); }
 /* clave del día de un instante, con la fecha del país de la pestaña */
 function claveDia(ts){ return _ymdZona(ts,zonaPanel()); }
 function diaSemCorto(ts){ return new Date(ts).toLocaleDateString('es-CL',{weekday:'short',timeZone:zonaPanel()}); }
 function diaNumero(ts){ return String(+_ymdZona(ts,zonaPanel()).slice(8)); }
+const _memoIni={};
 function inicioDia(off,zona){
-  const z=zona||zonaPanel(), p=_ymdZona(Date.now(),z).split('-');
-  return _medianocheZona(+p[0],+p[1],+p[2]-off,z);
+  const z=zona||zonaPanel(), k=z+'|'+off, c=_memoIni[k], ahora=Date.now();
+  if(c&&ahora-c.t<30000) return c.v;
+  const p=_ymdZona(ahora,z).split('-'), v=_medianocheZona(+p[0],+p[1],+p[2]-off,z);
+  _memoIni[k]={t:ahora,v:v}; return v;
 }
 function enRangoDe(ts,rg,zona){
   if(!ts) return false;
