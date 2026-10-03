@@ -1544,7 +1544,7 @@ function verVenta(i){
   document.getElementById('mTitulo').textContent=o.cli;
   document.getElementById('mBody').innerHTML=
     bloqueNota(o.nota)+bloqueEspera(o.nota,o.montado)+bloqueSinUbicar(o.dir,o.montado,o.nota)+
-    fila('Canal',o.esWeb?'Página · '+o.prod:'WhatsApp · '+BOTNOM[o.bot])+fila('País',{CL:'Chile',CO:'Colombia',PY:'Paraguay'}[o.loc])+
+    fila('Canal',o.esWeb?'Página · '+o.prod:'WhatsApp · '+BOTNOM[o.bot])+fila('País',{CL:'Chile',CO:'Colombia',PY:'Paraguay',ES:'España',PT:'Portugal'}[o.loc])+
     fila('Producto',o.prod)+fila('Cantidad',o.cant+' unidades')+fila('Teléfono','+'+o.tel)+
     fila('Dirección',o.dir)+fila('Comuna / Ciudad',o.zona)+fila('Región / Depto.',o.region)+
     filaRotulo(o.nota)+
@@ -1909,7 +1909,7 @@ function verAprob(i){
   }else{
     document.getElementById('mBody').innerHTML=zrHtml+
       bloqueRev(o)+bloqueNota(o.nota)+bloqueEspera(o.nota,o.montado)+bloqueSinUbicar(o.dir,o.montado,o.nota,enRevisionInsp(o.nivel,o.creadoMs))+
-      fila('Canal',(o.bot==='Redes'?'Redes · '+redNombre(o.red)+' · ':'WhatsApp · ')+(BOTNOM[o.bot]||''))+fila('País',{CL:'Chile',CO:'Colombia',PY:'Paraguay'}[o.loc]||'—')+
+      fila('Canal',(o.bot==='Redes'?'Redes · '+redNombre(o.red)+' · ':'WhatsApp · ')+(BOTNOM[o.bot]||''))+fila('País',{CL:'Chile',CO:'Colombia',PY:'Paraguay',ES:'España',PT:'Portugal'}[o.loc]||'—')+
       fila('Producto',o.prod)+fila('Cantidad',o.cant+' unidades')+fila('Teléfono','+'+o.tel)+
       fila('Dirección',o.dir)+fila('Comuna / Ciudad',o.zona)+fila('Región / Depto.',o.region)+
       filaRotulo(o.nota)+
@@ -4549,6 +4549,7 @@ function pildoraMontajeCO(o){
   return '';
 }
 function verAprobCO(i){ window._ventasF=window._aprobCO||[]; verVenta(i); }
+function verAprobES(i){ window._ventasF=window._aprobES||[]; verVenta(i); }
 function confirmadoCO(id,o){
   var wa=LLAM_CO.some(function(l){return l.tipo==='wa'&&String(l.ref)===String(id)&&l.resultado==='CONFIRMO_WA';})||/CONFIRMADO/.test((o&&o.nota)||'');
   return wa||llamadaOkCO(id);
@@ -4634,18 +4635,25 @@ function renderAprobarPais(){
     return;
   }
   var lista=ventasES.filter(function(o){return !o.montado;});
+  /* 03-10 (James: "le doy clic y no me aparece la información de la venta, tiene que ser igual en
+     todo el panel"): tocar la fila abre la MISMA ficha de venta que Chile y Colombia */
+  window._aprobES=lista.map(function(o){ var web=/p[aá]gina/i.test(o.bot||'');
+    return {esWeb:web, rid:o.id, cli:o.cli, tel:o.tel, prod:o.prod, cant:o.cant, precioNum:o.totalNum, precio:fmtEUR(o.totalNum),
+      dir:o.dir, zona:o.zona, region:o.region, nota:o.nota||'', desde:'', revision:'', nivel:'', fecha:o.fecha, hora:'', orden:o.creadoMs||o.orden||0,
+      conf:true, abono:/abono pendiente/i.test(o.estado||''), montado:o.montado, ordenDropi:(String(o.estado||'').match(/#(\d+)/)||[])[1]||'',
+      estado:o.estado||'', bot:web?'Página':'Carmen', loc:o.sub==='PT'?'PT':'ES', red:'', llave:'es:'+o.id, creadoMs:o.creadoMs, eur:true }; });
   ot.innerHTML='<div class="panel"><div class="tbl-head"><h2>España y Portugal · por aprobar</h2>'+
     '<span style="font-size:12px;color:#8a93a0">Van a Dropi PRO, nunca a Dropi Chile. Lo que apruebes contra reembolso se crea solo en Dropi PRO (cada 5 min). El pago anticipado, por ahora, se crea a mano.</span></div>'+
     (lista.length?'<table><thead><tr><th>Cliente</th><th>País</th><th>Producto</th><th>Dirección</th><th>Cant.</th><th>Total</th><th>Aprobación</th></tr></thead><tbody>'+
-      lista.map(function(o){
+      lista.map(function(o,ix){
         var k='es:'+o.id, falta=!nombreSirve(o.cli)?'nom':(!dirSirve(o.dir)?true:false);
-        return '<tr><td><b>'+esc(o.cli)+'</b><div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.fecha)+' · +'+esc(o.tel)+'</div></td>'+
+        return '<tr style="cursor:pointer" onclick="verAprobES('+ix+')"><td><b>'+esc(o.cli)+'</b><div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.fecha)+' · +'+esc(o.tel)+'</div></td>'+
           '<td><span class="flag flag-'+o.sub.toLowerCase()+'"></span> '+o.sub+'</td><td>'+esc(o.prod)+
           /* pago anticipado: Carmen manda el botón de PayPal y lee el comprobante; la página todavía no cobra */
           (/pago:\s*pre/i.test(o.nota)?pildoraPago(o):'')+pildoraMontaje(o,k)+
           (/canal:\s*whatsapp/i.test(o.nota)?'<div style="font-size:11px;color:var(--ink-3)">por WhatsApp (Carmen)</div>':'')+'</td>'+
           '<td>'+esc(o.dir)+'<div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.zona)+(o.region&&o.region!=='—'?', '+esc(o.region):'')+'</div></td>'+
-          '<td>'+esc(o.cant)+'</td><td>'+fmtEUR(o.totalNum)+'</td><td>'+(esPagoPend(o)
+          '<td>'+esc(o.cant)+'</td><td>'+fmtEUR(o.totalNum)+'</td><td onclick="event.stopPropagation()">'+(esPagoPend(o)
             ?'<span style="font-size:12px;color:#b45309;font-weight:700">Esperando el pago</span><div style="font-size:11px;color:var(--ink-3)">se aprueba cuando llegue el comprobante</div>'
             :celdaAprob(k,'',o.id,falta,'',false,false,o.creadoMs))+'</td></tr>';
       }).join('')+'</tbody></table>'
