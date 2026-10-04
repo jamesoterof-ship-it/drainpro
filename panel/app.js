@@ -4517,6 +4517,8 @@ function verAprobarPais(p){ fPaisAprob=p; if(typeof mostrarVista==='function') m
 function esPagoPend(o){ return /pago\s*pendiente/i.test(o.estado||''); }
 function pildoraPago(o){
   var st='margin-top:4px;display:inline-block;border-radius:6px;padding:2px 7px;font-size:11.5px;font-weight:700;';
+  /* 04-10: botón de PayPal integrado: el servidor ya comprobó cobro, pedido e importe con PayPal */
+  if(/PAGADO paypal /.test(o.nota)) return '<div style="'+st+'background:#e3f6ea;color:#15803d">💳 PAGADO con PayPal · verificado por el sistema · crear a mano en Dropi PRO SIN cobro</div>';
   if(/PAGADO/.test(o.nota)) return '<div style="'+st+'background:#e3f6ea;color:#15803d">💳 Pagado · comprobante recibido, verificar en PayPal</div>';
   if(esPagoPend(o)) return '<div style="'+st+'background:#fff3e2;color:#b45309">💳 Pago anticipado · botón enviado, falta comprobante</div>';
   return '<div style="'+st+'background:#fff3e2;color:#b45309">💳 Pago anticipado · enviar enlace de pago</div>';
@@ -4584,10 +4586,12 @@ function confirmadoES(o){
   var f=CONF_ES&&CONF_ES[String(o.id)]; return !!(f&&f.estado==='CONFIRMO');
 }
 function estadoConfES(o){
-  var f=CONF_ES&&CONF_ES[String(o.id)]; if(!f) return 'sin datos';
+  var f=CONF_ES&&CONF_ES[String(o.id)];
   var h=function(ms){ return ms?new Date(ms).toLocaleTimeString('es-ES',{timeZone:'Europe/Madrid',hour:'2-digit',minute:'2-digit'}):''; };
-  var t={SIN_RESPUESTA:'sin respuesta',MODIFICAR:'pidió modificar',RESPONDIO:'respondió otra cosa',SIN_PLANTILLA:'sin plantilla enviada'}[f.estado]||f.estado;
-  return 'plantilla '+(h(f.conf_ms)||'—')+' · '+(f.rec_ms?'recordatorio '+h(f.rec_ms):'recordatorio a la hora')+' · '+t+(f.ultimo?' («'+String(f.ultimo).slice(0,40)+'»)':'');
+  /* 04-10 (James: "¿dónde está el de Julia?"): decirlo claro. Desde el 04-10 la plantilla sale a cualquier hora */
+  if(!f||f.estado==='SIN_PLANTILLA') return 'la plantilla de confirmación le sale en unos minutos';
+  var t={SIN_RESPUESTA:'no ha contestado',MODIFICAR:'pidió modificar datos',RESPONDIO:'respondió otra cosa'}[f.estado]||f.estado;
+  return 'plantilla enviada '+h(f.conf_ms)+(f.rec_ms?' · recordatorio '+h(f.rec_ms):' · si no contesta, recordatorio a la hora')+' · '+t+(f.ultimo?' («'+String(f.ultimo).slice(0,40)+'»)':'');
 }
 function confirmadoCO(id,o){
   var wa=LLAM_CO.some(function(l){return l.tipo==='wa'&&String(l.ref)===String(id)&&l.resultado==='CONFIRMO_WA';})||/CONFIRMADO/.test((o&&o.nota)||'');
@@ -4690,7 +4694,8 @@ function renderAprobarPais(){
       lista.map(function(o,ix){
         var k='es:'+o.id, falta=!nombreSirve(o.cli)?'nom':(!dirSirve(o.dir)?true:false);
         return '<tr style="cursor:pointer" onclick="verAprobES('+ix+')"><td><b>'+esc(o.cli)+'</b><div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.fecha)+' · +'+esc(o.tel)+'</div>'+
-          (esWebES(o)?(confirmadoES(o)?'<div style="font-size:11.5px;color:#15803d;font-weight:700;margin-top:2px">✅ Confirmó</div>':'<div style="font-size:11.5px;color:#c62828;font-weight:700;margin-top:2px">⏳ Sin confirmar · '+esc(estadoConfES(o))+'</div>'):'')+'</td>'+
+          /* 04-10: el anticipado no "confirma": espera el pago (lo dice la píldora de pago) */
+          (esWebES(o)&&!/pago:\s*pre/i.test(o.nota||'')?(confirmadoES(o)?'<div style="font-size:11.5px;color:#15803d;font-weight:700;margin-top:2px">✅ Confirmó</div>':'<div style="font-size:11.5px;color:#c62828;font-weight:700;margin-top:2px">⏳ Sin confirmar · '+esc(estadoConfES(o))+'</div>'):'')+'</td>'+
           '<td><span class="flag flag-'+o.sub.toLowerCase()+'"></span> '+o.sub+'</td><td>'+esc(o.prod)+
           /* pago anticipado: Carmen manda el botón de PayPal y lee el comprobante; la página todavía no cobra */
           (/pago:\s*pre/i.test(o.nota)?pildoraPago(o):'')+pildoraMontaje(o,k)+
@@ -4701,10 +4706,14 @@ function renderAprobarPais(){
             :celdaAprob(k,'',o.id,falta,'',false,false,o.creadoMs))+'</td></tr>';
       }).join('')+'</tbody></table>'
       :'<div class="vacio" style="padding:22px">'+(CONF_ES?'Sin pedidos de España ni Portugal confirmados por aprobar.':'Cargando las confirmaciones de los clientes…')+'</div>')+
-    (sinConfES.length?'<div style="padding:10px 16px;font-size:12px;color:var(--ink-3);border-top:1px solid var(--grid)">'+
-      '<b>'+sinConfES.length+(sinConfES.length>1?' pedidos esperan':' pedido espera')+' que el cliente confirme</b> (no salen aquí hasta que confirme): '+
-      sinConfES.map(function(o){ return esc(String(o.cli||'').split(' ').slice(0,2).join(' '))+' — '+esc(estadoConfES(o)); }).join(' · ')+
-      ' · <a href="#" onclick="window._verSinConfES=!window._verSinConfES;renderAprobarPais();return false;" style="color:var(--ink-2);font-weight:700">'+(window._verSinConfES?'ocultarlos':'mostrarlos igual')+'</a></div>':'')+'</div>';
+    /* 04-10 (James: "no aparece Julia, ¿dónde están?"): la línea gris no se veía. Ahora un bloque claro, uno por renglón */
+    (sinConfES.length?'<div style="margin:12px 16px 16px;padding:12px 14px;border:1px solid #f5c26b;background:#fff8ec;border-radius:10px">'+
+      '<div style="font-size:14px;font-weight:800;color:#92400e;margin-bottom:6px">⏳ Esperando que el cliente confirme ('+sinConfES.length+')</div>'+
+      '<div style="font-size:12px;color:#92400e;margin-bottom:8px">Pasan arriba solos cuando el cliente toque Confirmar en WhatsApp.</div>'+
+      sinConfES.map(function(o){ return '<div style="font-size:13px;padding:5px 0;border-top:1px dashed #f5c26b"><b>'+esc(o.cli)+'</b> · '+esc(o.prod)+' · '+fmtEUR(o.totalNum)+
+        ' · <span style="color:var(--ink-3)">compró '+new Date(o.creadoMs||0).toLocaleTimeString('es-ES',{timeZone:'Europe/Madrid',hour:'2-digit',minute:'2-digit'})+' (España)</span>'+
+        '<div style="font-size:12px;color:#b45309">'+esc(estadoConfES(o))+'</div></div>'; }).join('')+
+      '<a href="#" onclick="window._verSinConfES=!window._verSinConfES;renderAprobarPais();return false;" style="display:inline-block;margin-top:8px;font-size:12.5px;color:#92400e;font-weight:800">'+(window._verSinConfES?'Ocultarlos de la tabla':'Mostrarlos en la tabla para aprobar igual')+'</a></div>':'')+'</div>';
 }
 
 (function(){
