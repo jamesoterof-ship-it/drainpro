@@ -543,6 +543,11 @@ async function cargarVentas(){
    24-09: paso exactamente eso con la GUIRNALDA SOLAR. Sus dos primeras ventas
    salieron en el panel contadas como "Foco Solar", que ese dia no vendio nada.
    Por eso `guirnalda|ampolleta` va ANTES que `foco|solar`. */
+/* 04-10 James: en la ficha del pedido del DESENGRASANTE se ven los regalos que van en la misma orden de Dropi
+   (el montador agrega 1 pasta para ollas 150429 + 1 esponja 99877 por cada pack de 2 espumas). Los packs salen del precio. */
+const regalosDG=o=>{ if(!/desengras|espuma antigras/i.test(String((o&&o.prod)||''))) return ''; const t=numero((o&&(o.total||o.precio))||0);
+  const p=({24500:1,34500:2,44500:3})[t]||0; if(!p) return 'Pasta para ollas + esponja anti óxido (revisar: el precio no está en la escalera)';
+  return p+' pasta'+(p>1?'s':'')+' para ollas + '+p+' esponja'+(p>1?'s':'')+' anti óxido · van en la misma orden de Dropi'; };
 const nombreCortoProd=s=>{var t=String(s||'');return /zapat/i.test(t)?'Zapatero Colgador':/pesta|masc/i.test(t)?'Máscara Pestañas':/antena/i.test(t)?'Antena TV':/aumento|tr90/i.test(t)?'Gafas TR90':/lente|gafa/i.test(t)?'Lentes One Power':/carga|bater/i.test(t)?'Cargador 12V':/clorofila/i.test(t)?'Clorofila 60 ml':/guirnalda|ampolleta/i.test(t)?'Guirnalda Solar':/foco|solar/i.test(t)?'Foco Solar':/ducha|cabezal/i.test(t)?'Cabezal de Ducha':/shilajit/i.test(t)?'Shilajit Ultra':/lymphoria/i.test(t)?'Lymphoria 60 ml':/drainpro|drenaje/i.test(t)?'DRAINPRO':/organiz/i.test(t)?'Organizador Ropa':/almohada|cervical/i.test(t)?'Almohada Cervical':/kinoki|parche/i.test(t)?'Parches Kinoki':/cepillo|parrilla/i.test(t)?'Cepillo Parrilla':t.split('+')[0].trim();};
 /* El nombre que se ve en VISITAS. Antes salia el nombre crudo entero
    ("Mascara de Pestañas Flamenco Mega Volume"), que desbordaba la tarjeta y
@@ -834,7 +839,7 @@ function verPedido(i){
   const fila=(k,v)=>`<div class="dl"><span class="k">${k}</span><span class="v">${esc(v)}</span></div>`;
   document.getElementById('mTitulo').textContent=o.cli;
   document.getElementById('mBody').innerHTML=
-    fila('Canal','Página · '+o.prod)+fila('Producto',o.prod)+fila('Cantidad',o.cant+' unidades')+
+    fila('Canal','Página · '+o.prod)+fila('Producto',o.prod)+fila('Cantidad',o.cant+' unidades')+(regalosDG(o)?fila('Regalos',regalosDG(o)):'')+
     fila('Teléfono','+'+o.tel)+(o.correo?fila('Correo',o.correo):'')+fila('Dirección',o.dir)+
     (o.ref?fila('Referencia',o.ref):'')+fila('Comuna',o.comuna)+fila('Región',o.region)+
     (o.abono?'<div class="dl"><span class="k">Confirmación del cliente</span><span class="v" style="color:#c62828;font-weight:800">🔴 ABONO PENDIENTE — no aprobar hasta ver el comprobante</span></div>':fila('Confirmación del cliente',o.conf?'CONFIRMADO':'Pendiente'))+fila('Dropi',o.dropi?'ENVIADO':'Pendiente')+fila('Fecha',o.fecha)+
@@ -933,7 +938,7 @@ function verAbandonado(i){
   const fila=(k,v)=>`<div class="dl"><span class="k">${k}</span><span class="v">${esc(v)}</span></div>`;
   document.getElementById('mTitulo').textContent=o.cli;
   document.getElementById('mBody').innerHTML=
-    fila('Canal','Página · pedido abandonado')+fila('Producto',o.prod)+fila('Cantidad',o.cant+' unidades')+
+    fila('Canal','Página · pedido abandonado')+fila('Producto',o.prod)+fila('Cantidad',o.cant+' unidades')+(regalosDG(o)?fila('Regalos',regalosDG(o)):'')+
     fila('Teléfono','+'+o.tel)+(o.correo?fila('Correo',o.correo):'')+
     fila('Dirección',o.dir||'— (no la alcanzó a completar)')+
     (o.ref?fila('Referencia',o.ref):'')+fila('Comuna',o.comuna)+
@@ -1556,7 +1561,7 @@ function verVenta(i){
   document.getElementById('mBody').innerHTML=
     bloqueNota(o.nota)+bloqueEspera(o.nota,o.montado)+bloqueSinUbicar(o.dir,o.montado,o.nota)+
     fila('Canal',o.esWeb?'Página · '+o.prod:'WhatsApp · '+BOTNOM[o.bot])+fila('País',{CL:'Chile',CO:'Colombia',PY:'Paraguay',ES:'España',PT:'Portugal'}[o.loc])+
-    fila('Producto',o.prod)+fila('Cantidad',o.cant+' unidades')+fila('Teléfono','+'+o.tel)+
+    fila('Producto',o.prod)+fila('Cantidad',o.cant+' unidades')+(regalosDG(o)?fila('Regalos',regalosDG(o)):'')+fila('Teléfono','+'+o.tel)+
     fila('Dirección',o.dir)+fila('Comuna / Ciudad',o.zona)+fila('Región / Depto.',o.region)+
     filaRotulo(o.nota)+
     (o.abono?'<div class="dl"><span class="k">Confirmación del cliente</span><span class="v" style="color:#c62828;font-weight:800">🔴 ABONO PENDIENTE — no aprobar hasta ver el comprobante</span></div>':fila('Confirmación del cliente',o.conf?'CONFIRMADO':'Pendiente'))+filaDropi(o)+
@@ -1901,7 +1906,7 @@ function verAprob(i){
   const zrHtml=(x.zr&&x.zr.length)?'<div style="background:#fdecea;border-left:4px solid #b71c1c;padding:10px 12px;border-radius:8px;margin-bottom:10px"><div style="color:#b71c1c;font-weight:800;font-size:12.5px;margin-bottom:4px">ZONA ROJA · revisar el historial del cliente antes de aprobar</div><div style="color:#7f1d1d;font-weight:600;line-height:1.4;white-space:normal">'+esc(x.zr.join(' · '))+'</div></div>':'';
   if(x.canal==='Página'){
     document.getElementById('mBody').innerHTML=zrHtml+bloqueRev(o)+bloqueNota(o.nota||'')+
-      fila('Canal','Página · '+o.prod)+fila('Producto',o.prod)+fila('Cantidad',o.cant+' unidades')+
+      fila('Canal','Página · '+o.prod)+fila('Producto',o.prod)+fila('Cantidad',o.cant+' unidades')+(regalosDG(o)?fila('Regalos',regalosDG(o)):'')+
       fila('Teléfono','+'+o.tel)+(o.correo?fila('Correo',o.correo):'')+fila('Dirección',o.dir)+
       (o.ref?fila('Referencia',o.ref):'')+fila('Comuna',o.comuna)+fila('Región',o.region)+
       (o.abono?'<div class="dl"><span class="k">Confirmación del cliente</span><span class="v" style="color:#c62828;font-weight:800">🔴 ABONO PENDIENTE — no aprobar hasta ver el comprobante</span></div>':fila('Confirmación del cliente',o.conf?'CONFIRMADO':'Pendiente'))+fila('Dropi',o.dropi?'ENVIADO':'Pendiente')+fila('Fecha',o.fecha)+filaAnticipo(o,o.total);
@@ -1921,7 +1926,7 @@ function verAprob(i){
     document.getElementById('mBody').innerHTML=zrHtml+
       bloqueRev(o)+bloqueNota(o.nota)+bloqueEspera(o.nota,o.montado)+bloqueSinUbicar(o.dir,o.montado,o.nota,enRevisionInsp(o.nivel,o.creadoMs))+
       fila('Canal',(o.bot==='Redes'?'Redes · '+redNombre(o.red)+' · ':'WhatsApp · ')+(BOTNOM[o.bot]||''))+fila('País',{CL:'Chile',CO:'Colombia',PY:'Paraguay',ES:'España',PT:'Portugal'}[o.loc]||'—')+
-      fila('Producto',o.prod)+fila('Cantidad',o.cant+' unidades')+fila('Teléfono','+'+o.tel)+
+      fila('Producto',o.prod)+fila('Cantidad',o.cant+' unidades')+(regalosDG(o)?fila('Regalos',regalosDG(o)):'')+fila('Teléfono','+'+o.tel)+
       fila('Dirección',o.dir)+fila('Comuna / Ciudad',o.zona)+fila('Región / Depto.',o.region)+
       filaRotulo(o.nota)+
       (o.abono?'<div class="dl"><span class="k">Confirmación del cliente</span><span class="v" style="color:#c62828;font-weight:800">🔴 ABONO PENDIENTE — no aprobar hasta ver el comprobante</span></div>':fila('Confirmación del cliente',o.conf?'CONFIRMADO':'Pendiente'))+filaDropi(o)+
