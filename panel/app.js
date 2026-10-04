@@ -475,7 +475,11 @@ async function cargarVentas(){
       const red=!esRedes?'':bot.includes('instagram')||/\big\b/.test(bot)?'ig'
         :bot.includes('facebook')||/\bfb\b/.test(bot)?'fb'
         :bot.includes('com')?'com':'';
-      const precio=numero(r.PRECIO);
+      /* 04-10: Camila registró un pedido mezclado (máscara + máscara + Lymphoria) y los precios quedaron PEGADOS
+         ("23500349002950088000"). Ese número se sumaba en "Ventas hoy" ($23.500.349.002.951…) y rompía la tarjeta en
+         el celular. Un precio de más de 5 millones no es una venta real: se muestra como INVÁLIDO y no suma. */
+      const _precioRaw=numero(r.PRECIO), _precioMalo=_precioRaw>5000000;
+      const precio=_precioMalo?0:_precioRaw;
       /* Dos candados antes de contarla como venta:
          1. las ELIMINADAS no existen para el panel ni para los contadores
          2. el mismo telefono + el mismo precio + el mismo dia es UNA venta.
@@ -499,7 +503,7 @@ async function cargarVentas(){
         _pos=_vistas[_dupK];
       }
       const _fila={rid:r.row_number||'',cli:r.NOMBRE||'—',tel:soloNum(r.TELEFONO),prod:r.PRODUCTO||'—',cant:numero(r.CANTIDAD)||1,
-        precioNum:precio,precio:esR?fmtGS(precio):esJ?fmtCOP(precio)+' COP':fmtCLP(precio),
+        precioNum:precio,precio:_precioMalo?'PRECIO INVÁLIDO':esR?fmtGS(precio):esJ?fmtCOP(precio)+' COP':fmtCLP(precio),
         dir:r.DIRECCION||'—',zona:r.COMUNA||r.CIUDAD||'—',region:r.REGION||r.DEPARTAMENTO||'—',
         nota:String(r.NOTA||'').trim(),   /* lo que pidio el cliente: fecha de entrega u otra instruccion */
         desde:String(r.DESPACHAR_DESDE||'').slice(0,10),  /* fecha que pidio el cliente para recibir */
