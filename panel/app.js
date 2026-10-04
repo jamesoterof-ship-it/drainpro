@@ -4557,6 +4557,29 @@ function pildoraMontajeCO(o){
 }
 function verAprobCO(i){ window._ventasF=window._aprobCO||[]; verVenta(i); }
 function verAprobES(i){ window._ventasF=window._aprobES||[]; verVenta(i); }
+/* 04-10 James: "acá solo me debe aparecer el pedido que el cliente ya confirmó". Igual que Colombia:
+   las ventas de la PÁGINA de España salen en Aprobación solo cuando el cliente confirmó (botón Confirmar /
+   Sí, envíalo, o un "sí / correcto / ok" escrito). Las de Carmen y Sofía ya se confirmaron en el chat.
+   El estado lo da el webhook /es-confirmaciones (flujo 0SAMfDhncgAbZxG2). */
+var CONF_ES=null, _confESts=0;
+function cargarConfES(){
+  if(Date.now()-_confESts<10000) return; _confESts=Date.now();
+  fetch(BASE+'/es-confirmaciones?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(j){
+    var m={}; ((j&&j.filas)||[]).forEach(function(f){ m[String(f.id)]=f; }); CONF_ES=m; renderAprobarPais();
+  }).catch(function(){});
+}
+function esWebES(o){ return /p[aá]gina/i.test(o.bot||''); }
+function confirmadoES(o){
+  if(!esWebES(o)) return true;                       /* Carmen / Sofía: confirmado en el chat */
+  if(/pago:\s*pre/i.test(o.nota||'')) return true;   /* pago anticipado: lo confirma el pago */
+  var f=CONF_ES&&CONF_ES[String(o.id)]; return !!(f&&f.estado==='CONFIRMO');
+}
+function estadoConfES(o){
+  var f=CONF_ES&&CONF_ES[String(o.id)]; if(!f) return 'sin datos';
+  var h=function(ms){ return ms?new Date(ms).toLocaleTimeString('es-ES',{timeZone:'Europe/Madrid',hour:'2-digit',minute:'2-digit'}):''; };
+  var t={SIN_RESPUESTA:'sin respuesta',MODIFICAR:'pidió modificar',RESPONDIO:'respondió otra cosa',SIN_PLANTILLA:'sin plantilla enviada'}[f.estado]||f.estado;
+  return 'plantilla '+(h(f.conf_ms)||'—')+' · '+(f.rec_ms?'recordatorio '+h(f.rec_ms):'recordatorio a la hora')+' · '+t+(f.ultimo?' («'+String(f.ultimo).slice(0,40)+'»)':'');
+}
 function confirmadoCO(id,o){
   var wa=LLAM_CO.some(function(l){return l.tipo==='wa'&&String(l.ref)===String(id)&&l.resultado==='CONFIRMO_WA';})||/CONFIRMADO/.test((o&&o.nota)||'');
   return wa||llamadaOkCO(id);
@@ -4593,7 +4616,8 @@ function renderAprobarPais(){
   var ch=document.getElementById('aprobChile'), ot=document.getElementById('aprobOtro'); if(!ch||!ot) return;
   document.querySelectorAll('#paisAprob .minitab').forEach(function(b){ b.classList.toggle('act',b.dataset.p===fPaisAprob); });
   /* PAGO PENDIENTE (anticipado sin comprobante todavía) no cuenta ni se puede aprobar */
-  var pend=ventasES.filter(function(o){return !o.montado&&!esPagoPend(o)&&!esAprobado('es:'+o.id)&&!esRechazado('es:'+o.id);});
+  cargarConfES();
+  var pend=ventasES.filter(function(o){return !o.montado&&!esPagoPend(o)&&!esAprobado('es:'+o.id)&&!esRechazado('es:'+o.id)&&confirmadoES(o);});
   var nb=document.getElementById('numAprobES'); if(nb){ nb.textContent=pend.length; nb.style.display=pend.length?'':'none'; }
   var pnES=document.getElementById('pnNumES'); if(pnES) pnES.textContent=pend.length||'';
   var bES=document.getElementById('badgeAprobarES'); if(bES){ bES.textContent=pend.length; bES.style.display=(pend.length&&fPais==='ES')?'':'none'; }
@@ -4641,7 +4665,9 @@ function renderAprobarPais(){
       (sinConfCO?'<div style="padding:10px 16px;font-size:12px;color:var(--ink-3);border-top:1px solid var(--grid)">'+sinConfCO+(sinConfCO>1?' ventas esperan':' venta espera')+' que el cliente confirme por mensaje o por llamada. Están en Pedidos y en la página del equipo.</div>':'')+'</div>';
     return;
   }
-  var lista=ventasES.filter(function(o){return !o.montado;});
+  var todasES=ventasES.filter(function(o){return !o.montado;});
+  var sinConfES=todasES.filter(function(o){return !confirmadoES(o);});
+  var lista=window._verSinConfES?todasES:todasES.filter(confirmadoES);
   /* 03-10 (James: "le doy clic y no me aparece la información de la venta, tiene que ser igual en
      todo el panel"): tocar la fila abre la MISMA ficha de venta que Chile y Colombia */
   window._aprobES=lista.map(function(o){ var web=/p[aá]gina/i.test(o.bot||'');
@@ -4654,7 +4680,8 @@ function renderAprobarPais(){
     (lista.length?'<table><thead><tr><th>Cliente</th><th>País</th><th>Producto</th><th>Dirección</th><th>Cant.</th><th>Total</th><th>Aprobación</th></tr></thead><tbody>'+
       lista.map(function(o,ix){
         var k='es:'+o.id, falta=!nombreSirve(o.cli)?'nom':(!dirSirve(o.dir)?true:false);
-        return '<tr style="cursor:pointer" onclick="verAprobES('+ix+')"><td><b>'+esc(o.cli)+'</b><div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.fecha)+' · +'+esc(o.tel)+'</div></td>'+
+        return '<tr style="cursor:pointer" onclick="verAprobES('+ix+')"><td><b>'+esc(o.cli)+'</b><div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.fecha)+' · +'+esc(o.tel)+'</div>'+
+          (esWebES(o)?(confirmadoES(o)?'<div style="font-size:11.5px;color:#15803d;font-weight:700;margin-top:2px">✅ Confirmó</div>':'<div style="font-size:11.5px;color:#c62828;font-weight:700;margin-top:2px">⏳ Sin confirmar · '+esc(estadoConfES(o))+'</div>'):'')+'</td>'+
           '<td><span class="flag flag-'+o.sub.toLowerCase()+'"></span> '+o.sub+'</td><td>'+esc(o.prod)+
           /* pago anticipado: Carmen manda el botón de PayPal y lee el comprobante; la página todavía no cobra */
           (/pago:\s*pre/i.test(o.nota)?pildoraPago(o):'')+pildoraMontaje(o,k)+
@@ -4664,7 +4691,11 @@ function renderAprobarPais(){
             ?'<span style="font-size:12px;color:#b45309;font-weight:700">Esperando el pago</span><div style="font-size:11px;color:var(--ink-3)">se aprueba cuando llegue el comprobante</div>'
             :celdaAprob(k,'',o.id,falta,'',false,false,o.creadoMs))+'</td></tr>';
       }).join('')+'</tbody></table>'
-      :'<div class="vacio" style="padding:22px">Sin pedidos de España ni Portugal por aprobar.</div>')+'</div>';
+      :'<div class="vacio" style="padding:22px">'+(CONF_ES?'Sin pedidos de España ni Portugal confirmados por aprobar.':'Cargando las confirmaciones de los clientes…')+'</div>')+
+    (sinConfES.length?'<div style="padding:10px 16px;font-size:12px;color:var(--ink-3);border-top:1px solid var(--grid)">'+
+      '<b>'+sinConfES.length+(sinConfES.length>1?' pedidos esperan':' pedido espera')+' que el cliente confirme</b> (no salen aquí hasta que confirme): '+
+      sinConfES.map(function(o){ return esc(String(o.cli||'').split(' ').slice(0,2).join(' '))+' — '+esc(estadoConfES(o)); }).join(' · ')+
+      ' · <a href="#" onclick="window._verSinConfES=!window._verSinConfES;renderAprobarPais();return false;" style="color:var(--ink-2);font-weight:700">'+(window._verSinConfES?'ocultarlos':'mostrarlos igual')+'</a></div>':'')+'</div>';
 }
 
 (function(){
