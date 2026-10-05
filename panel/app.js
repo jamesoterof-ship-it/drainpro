@@ -1922,7 +1922,7 @@ function renderAprobar(){
       <td>${esc(x.comuna||'—')}</td>
       <td>${x.cant}</td>
       <td class="money">${x.total}</td>
-      <td class="cell-aprob" onclick="event.stopPropagation()">${x.st==='esperapago'?'<span style="font-size:12px;color:#b45309;font-weight:700">Esperando el pago</span><div style="font-size:11px;color:var(--ink-3)">se aprueba cuando PayPal lo confirme</div>':celdaAprob(x.k, x.st==='montado'?'<span class="st st-ok"><i></i>Montado</span>':'', x.rid||'', x.faltaDir, x.vuelve, enRevisionInsp(x.nivel, x.creadoMs), !!x.dud, x.creadoMs, (x.nivel==='VERDE' && !x.abono && x.st==='pendiente' && !x.prog) ? (x.canal==='Página' ? String((x.raw&&x.raw.fila)||'').replace(/^wa/,'') : (x.canal==='WhatsApp' ? String(x.rid||'') : '')) : '')}</td>
+      <td class="cell-aprob" onclick="event.stopPropagation()">${x.st==='esperapago'?'<span style="font-size:12px;color:#b45309;font-weight:700">Esperando el pago</span><div style="font-size:11px;color:var(--ink-3)">se aprueba cuando PayPal lo confirme</div>':celdaAprob(x.k, x.st==='montado'?'<span class="st st-ok"><i></i>Montado</span>':'', x.rid||'', x.faltaDir, x.vuelve, enRevisionInsp(x.nivel, x.creadoMs), !!x.dud, (/PAGADO paypal/.test(String(x.pago||''))?0:x.creadoMs) /* 05-10 James: lo ya pagado con PayPal no espera la hora */, (x.nivel==='VERDE' && !x.abono && x.st==='pendiente' && !x.prog) ? (x.canal==='Página' ? String((x.raw&&x.raw.fila)||'').replace(/^wa/,'') : (x.canal==='WhatsApp' ? String(x.rid||'') : '')) : '')}</td>
       <td onclick="event.stopPropagation()"><a class="qr" style="text-decoration:none;cursor:pointer" onclick="crmAbrir('${x.tel}')">WhatsApp</a></td>
     </tr>`).join('');
 }
