@@ -1837,12 +1837,16 @@ function renderAprobar(){
       st:_espPago?'esperapago':(o.dropi?'montado':(esAprobado(k)?'aprobado':(esRechazado(k)?'rechazado':'pendiente')))});
   });
   (ordenes||[]).forEach(o=>{ if(o.loc!=='CL') return; if(o.orden < (o.montado?dosDias:sieteDias)) return; const k=keyWa(o);
+    /* 05-10 pago anticipado por WhatsApp (link personal): la marca interna "pago: pre · -10 % · precio normal · pp:" no es NOTA del
+       cliente; va en la pildora de pago. Y el que todavia no paga sale "Esperando el pago" (no se aprueba). */
+    var _preW=/^pago:\s*pre/i.test(String(o.nota||'')), _espW=/pago\s*pendiente/i.test(String(o.estado||''));
+    var _notaW=_preW?String(o.nota||'').split(' · ').filter(function(x){ return !/^(pago:\s*pre|[−-]10 %|precio normal|pp:|PAGADO paypal)/i.test(x.trim()); }).join(' · '):(o.nota||'');
     /* rid = id de la fila. SIN esto el borrado se hacia por telefono+fecha y dos
        ventas del mismo cliente el mismo dia se borraban LAS DOS (paso el 3-09 con
        Maria Grandon). El servidor ya tiene el candado; solo hay que mandarle el id. */
-    items.push({k,raw:o,rid:o.rid||'',canal:o.bot==='Redes'?redNombre(o.red):'WhatsApp',  /* James 15-09: las de redes decian WhatsApp */cli:o.cli,tel:o.tel,fecha:o.fecha,prod:o.prod,color:'#0e8074',comuna:o.zona,cant:o.cant,total:cobroCLP(o,o.precio),orden:o.orden,abono:!!o.abono,nota:o.nota||'',desde:o.desde||'',faltaDir:(/falta (direccion|numero)/i.test(String(o.estado||'')) && !dirSirve(o.dir)) ? true : (!nombreSirve(o.cli) ? 'nom' : false),
+    items.push({k,raw:o,rid:o.rid||'',canal:o.bot==='Redes'?redNombre(o.red):'WhatsApp',  /* James 15-09: las de redes decian WhatsApp */cli:o.cli,tel:o.tel,fecha:o.fecha,prod:o.prod,color:'#0e8074',comuna:o.zona,cant:o.cant,total:cobroCLP(o,o.precio),orden:o.orden,abono:!!o.abono,nota:_notaW,pago:String(o.nota||''),desde:o.desde||'',faltaDir:(/falta (direccion|numero)/i.test(String(o.estado||'')) && !dirSirve(o.dir)) ? true : (!nombreSirve(o.cli) ? 'nom' : false),
       revision:o.revision||'',nivel:o.nivel||'',creadoMs:o.creadoMs||0,
-      st:o.montado?'montado':(esAprobado(k)?'aprobado':(esRechazado(k)?'rechazado':'pendiente'))});
+      st:_espW?'esperapago':(o.montado?'montado':(esAprobado(k)?'aprobado':(esRechazado(k)?'rechazado':'pendiente')))});
   });
   /* PROGRAMADAS: el cliente pidió una fecha. Salen de Pendientes para que no se
      despachen antes de tiempo (pasó con Sonia Ruth: pidió el 20 de octubre y salió
