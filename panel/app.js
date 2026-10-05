@@ -588,8 +588,12 @@ async function cargarPaginas(){
   // VISITAS: desde Postgres (NO Google). Cualquier página que reporte aparece sola.
   const COLORVIS={shilajit:'#0e8074',drainpro:'#3060ea',nad:'#b8860b'};
   const COLORROT=['#6cc24a','#9b59b6','#e67e22','#16a085','#c0392b','#2980b9'];
+  /* 05-10: las visitas se piden cada 5 min, no cada minuto. Cada llamada deja una ejecución colgada en n8n y el vigía las
+     cierra como "error"; con el panel abierto en varios equipos se juntaban decenas y llenaban la cola. */
   try{
-    const vr=await fetch(URL_LEERVIS); const vj=await vr.json();
+    const _ahora=Date.now(); let vj;
+    if(window._visCache && _ahora-window._visCache.t<300000){ vj=window._visCache.j; }
+    else { const vr=await fetch(URL_LEERVIS); vj=await vr.json(); window._visCache={t:_ahora,j:vj}; }
     const rows=Array.isArray(vj)?vj:(vj.visitas||vj.data||[]);
     let ci=0; const ck={};
     rows.forEach(r=>{ const slug=r.pagina||'otro'; let col=COLORVIS[slug]; if(!col){ if(!ck[slug])ck[slug]=COLORROT[(ci++)%COLORROT.length]; col=ck[slug]; }
