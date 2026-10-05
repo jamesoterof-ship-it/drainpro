@@ -1551,6 +1551,12 @@ function bloqueEspera(nota,montado){
 }
 /* fila destacada con lo que sale impreso en la guia — asi no se aprueba a ciegas */
 function filaRotulo(nota){
+  /* 05-10: pago anticipado. Las marcas internas (pago: pre, pp:, PAGADO paypal) NO van a la guía: el montador manda solo este texto */
+  const _n=String(nota||'');
+  if(_n.indexOf('PAGADO paypal')>=0) return '<div class="dl" style="align-items:flex-start;background:#e7f6ef;border-radius:9px;padding:7px 9px;margin:2px 0">'
+    +'<span class="k" style="color:#05603a;font-weight:800">Va impreso en la guía</span>'
+    +'<span class="v" style="white-space:normal;line-height:1.35;color:#05603a;font-weight:800">PEDIDO YA PAGADO - NO COBRAR AL CLIENTE</span></div>';
+  if(_n.indexOf('pago: pre')===0) return '<div class="dl"><span class="k">Va impreso en la guía</span><span class="v" style="color:var(--ink-3)">— esperando el pago —</span></div>';
   const t=notaRotulo(nota);
   const vacio=!t;
   return '<div class="dl" style="align-items:flex-start;'+(vacio?'':'background:#fff8e1;border-radius:9px;padding:7px 9px;margin:2px 0')+'">'
