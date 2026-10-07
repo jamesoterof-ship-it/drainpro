@@ -275,11 +275,11 @@ const fmtCOP=n=>'$'+Math.round(n).toLocaleString('es-CO');
 const fmtGS=n=>'Gs '+Math.round(n).toLocaleString('es-PY');
 const numero=v=>{const n=parseFloat(String(v??'').replace(/[^\d.,-]/g,'').replace(/\./g,'').replace(',','.'));return isNaN(n)?0:n;};
 /* 03-10 James: si el cliente YA PAGO el anticipo (estado "ABONO PAGADO"), lo que se le cobra al
-   recibir es el precio MENOS 4.700 fijos. Es la misma cuenta que hace el montador en Dropi. */
-const ANTICIPO_CLP=4700;
+   recibir es el precio MENOS 5.000 fijos (06-10 James: un solo número, antes 4.700). Es la misma cuenta que hace el montador en Dropi. */
+const ANTICIPO_CLP=5000;
 const anticipoPagado=o=>/abono pagado/i.test(String((o&&o.estado)||''));
 const cobroCLP=(o,txt)=>{ if(!anticipoPagado(o)) return txt; const n=numero(txt); return n>ANTICIPO_CLP?fmtCLP(n-ANTICIPO_CLP):txt; };
-const filaAnticipo=(o,txt)=>anticipoPagado(o)?'<div class="dl"><span class="k">Anticipo</span><span class="v" style="color:#1b7f3b;font-weight:800">PAGADO · se descuentan $4.700 del precio '+esc(String(txt))+'</span></div>':'';
+const filaAnticipo=(o,txt)=>anticipoPagado(o)?'<div class="dl"><span class="k">Anticipo</span><span class="v" style="color:#1b7f3b;font-weight:800">PAGADO · se descuentan $5.000 del precio '+esc(String(txt))+'</span></div>':'';
 const FLAG={CL:'flag-cl',CO:'flag-co',PY:'flag-py',ES:'flag-es'};
 /* El bot del numero chileno se mostraba como 'Carlos' y el de logistica tambien:
    no habia forma de saber cual estabas mirando, y una regla que faltaba en uno se
@@ -1795,7 +1795,7 @@ function bloqueRevYa(o,n,r){
     +'<div style="color:'+r.txt+';font-weight:600;line-height:1.4;white-space:normal">'+esc(o.revision||'')+'</div></div>';
 }
 /* Que cuenta como DUDOSA: el revisor la marco ROJO (no aprobar), le falta el
-   anticipo de $4.700, la nota dice que hay que escribirle al cliente, o le falta
+   anticipo de $5.000, la nota dice que hay que escribirle al cliente, o le falta
    la direccion o el nombre. Todo lo demas pendiente es de verdad aprobable. */
 /* ZONA ROJA (James 16-09): donde mas se devuelve. La venta NO se bloquea: se va a
    Dudosas con su aviso rojo y James revisa a mano el historial del cliente antes de
