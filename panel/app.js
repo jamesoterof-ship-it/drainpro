@@ -4715,9 +4715,24 @@ function renderAprobarPais(){
       (sinConfCO?'<div style="padding:10px 16px;font-size:12px;color:var(--ink-3);border-top:1px solid var(--grid)">'+sinConfCO+(sinConfCO>1?' ventas esperan':' venta espera')+' que el cliente confirme por mensaje o por llamada. Están en Pedidos y en la página del equipo.</div>':'')+'</div>';
     return;
   }
+  /* 07-10 James: "que sea igual que Chile": pestañas Pendientes · Esperando confirmación · Esperando pago · Dudosas · Todas,
+     y el botón ⚠ Dudosa / ↩ Pendiente para moverlas a mano (misma lista jaye_dud que Chile, con llave es:<id>). */
   var todasES=ventasES.filter(function(o){return !o.montado;});
-  var sinConfES=todasES.filter(function(o){return !confirmadoES(o);});
-  var lista=window._verSinConfES?todasES:todasES.filter(confirmadoES);
+  var _dES=dudSet(), dudES=function(o){ return _dES.has('es:'+o.id); };
+  var grES={
+    pend:todasES.filter(function(o){return !esPagoPend(o)&&confirmadoES(o)&&!dudES(o);}),
+    conf:todasES.filter(function(o){return !esPagoPend(o)&&!confirmadoES(o)&&!dudES(o);}),
+    pago:todasES.filter(function(o){return esPagoPend(o);}),
+    dud:todasES.filter(function(o){return !esPagoPend(o)&&dudES(o);}),
+    todas:todasES };
+  var fES=window._fAprobES||'pend'; if(!grES[fES]) fES='pend';
+  var lista=grES[fES];
+  var tabES=function(id,txt,col){ var n=grES[id].length;
+    return '<button class="minitab'+(fES===id?' act':'')+'" onclick="window._fAprobES=\''+id+'\';renderAprobarPais()">'+txt+
+      (col&&n?' <span style="background:'+col+';color:#fff;border-radius:999px;font-size:10.5px;font-weight:800;padding:0 6px;margin-left:4px">'+n+'</span>':'')+'</button>'; };
+  var tabsES='<div class="minitabs" style="margin-top:8px">'+tabES('pend','Pendientes','#15803d')+tabES('conf','Esperando confirmación','#d97706')+
+    tabES('pago','Esperando pago','#b45309')+tabES('dud','Dudosas','#c62828')+tabES('todas','Todas','')+'</div>';
+  var vacioES={pend:'Nada por aprobar. 🎉',conf:'Nadie esperando confirmar.',pago:'Nadie esperando pagar.',dud:'Ninguna venta dudosa.',todas:'Sin ventas pendientes.'}[fES];
   /* 03-10 (James: "le doy clic y no me aparece la información de la venta, tiene que ser igual en
      todo el panel"): tocar la fila abre la MISMA ficha de venta que Chile y Colombia */
   window._aprobES=lista.map(function(o){ var web=/p[aá]gina/i.test(o.bot||'');
@@ -4726,7 +4741,7 @@ function renderAprobarPais(){
       conf:true, abono:/abono pendiente/i.test(o.estado||''), montado:o.montado, ordenDropi:(String(o.estado||'').match(/#(\d+)/)||[])[1]||'',
       estado:o.estado||'', bot:web?'Página':'Carmen', loc:o.sub==='PT'?'PT':'ES', red:'', llave:'es:'+o.id, creadoMs:o.creadoMs, eur:true }; });
   ot.innerHTML='<div class="panel"><div class="tbl-head"><h2>España y Portugal · por aprobar</h2>'+
-    '<span style="font-size:12px;color:#8a93a0">Van a Dropi PRO, nunca a Dropi Chile. Lo que apruebes contra reembolso se crea solo en Dropi PRO (cada 5 min). El pago anticipado, por ahora, se crea a mano.</span></div>'+
+    '<span style="font-size:12px;color:#8a93a0">Van a Dropi PRO, nunca a Dropi Chile. Lo que apruebes contra reembolso se crea solo en Dropi PRO (cada 5 min). El pago anticipado, por ahora, se crea a mano.</span>'+tabsES+'</div>'+
     (lista.length?'<table><thead><tr><th>Cliente</th><th>País</th><th>Producto</th><th>Dirección</th><th>Cant.</th><th>Total</th><th>Aprobación</th></tr></thead><tbody>'+
       lista.map(function(o,ix){
         var k='es:'+o.id, falta=!nombreSirve(o.cli)?'nom':(!dirSirve(o.dir)?true:false);
@@ -4740,17 +4755,9 @@ function renderAprobarPais(){
           '<td>'+esc(o.dir)+'<div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.zona)+(o.region&&o.region!=='—'?', '+esc(o.region):'')+'</div></td>'+
           '<td>'+esc(o.cant)+'</td><td>'+fmtEUR(o.totalNum)+'</td><td onclick="event.stopPropagation()">'+(esPagoPend(o)
             ?'<span style="font-size:12px;color:#b45309;font-weight:700">Esperando el pago</span><div style="font-size:11px;color:var(--ink-3)">se aprueba cuando llegue el comprobante</div>'
-            :celdaAprob(k,'',o.id,falta,'',false,false,o.creadoMs))+'</td></tr>';
+            :celdaAprob(k,'',o.id,falta,'',false,dudES(o),o.creadoMs))+'</td></tr>';
       }).join('')+'</tbody></table>'
-      :'<div class="vacio" style="padding:22px">'+(CONF_ES?'Sin pedidos de España ni Portugal confirmados por aprobar.':'Cargando las confirmaciones de los clientes…')+'</div>')+
-    /* 04-10 (James: "no aparece Julia, ¿dónde están?"): la línea gris no se veía. Ahora un bloque claro, uno por renglón */
-    (sinConfES.length?'<div style="margin:12px 16px 16px;padding:12px 14px;border:1px solid #f5c26b;background:#fff8ec;border-radius:10px">'+
-      '<div style="font-size:14px;font-weight:800;color:#92400e;margin-bottom:6px">⏳ Esperando que el cliente confirme ('+sinConfES.length+')</div>'+
-      '<div style="font-size:12px;color:#92400e;margin-bottom:8px">Pasan arriba solos cuando el cliente toque Confirmar en WhatsApp.</div>'+
-      sinConfES.map(function(o){ return '<div style="font-size:13px;padding:5px 0;border-top:1px dashed #f5c26b"><b>'+esc(o.cli)+'</b> · '+esc(o.prod)+' · '+fmtEUR(o.totalNum)+
-        ' · <span style="color:var(--ink-3)">compró '+new Date(o.creadoMs||0).toLocaleTimeString('es-ES',{timeZone:'Europe/Madrid',hour:'2-digit',minute:'2-digit'})+' (España)</span>'+
-        '<div style="font-size:12px;color:#b45309">'+esc(estadoConfES(o))+'</div></div>'; }).join('')+
-      '<a href="#" onclick="window._verSinConfES=!window._verSinConfES;renderAprobarPais();return false;" style="display:inline-block;margin-top:8px;font-size:12.5px;color:#92400e;font-weight:800">'+(window._verSinConfES?'Ocultarlos de la tabla':'Mostrarlos en la tabla para aprobar igual')+'</a></div>':'')+'</div>';
+      :'<div class="vacio" style="padding:22px">'+(CONF_ES?vacioES:'Cargando las confirmaciones de los clientes…')+'</div>')+'</div>';
 }
 
 (function(){
