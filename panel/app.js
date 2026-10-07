@@ -1895,6 +1895,11 @@ function renderAprobar(){
   const nDud=items.filter(x=>x.dud).length;
   const bd=document.getElementById('numDud');
   if(bd){ bd.style.display=nDud?'':'none'; bd.textContent=nDud; }
+  /* 06-10 James: los de PAGO ANTICIPADO con descuento que todavia no pagan van a su propia pestaña "Esperando pago"
+     (NO los anticipos por mala huella: esos son ABONO y siguen en Pendientes/Dudosas). */
+  const nPago=items.filter(x=>x.st==='esperapago').length;
+  const bpg=document.getElementById('numPago');
+  if(bpg){ bpg.style.display=nPago?'':'none'; bpg.textContent=nPago; }
   const nPend=items.filter(x=>x.st==='pendiente' && !x.prog && !x.dud).length;
   const bg=document.getElementById('badgeAprobar');
   if(bg){ bg.style.display=(nPend&&fPais!=='ES'&&fPais!=='CO')?'':'none'; bg.textContent=nPend; }
@@ -1906,14 +1911,15 @@ function renderAprobar(){
      venta de la manana no se hundiera. James lo pidio al reves el 07-09: al abrir
      el panel quiere ver primero lo que acaba de entrar. */
   let arr=items.sort((a,b)=>b.orden-a.orden);
-  if(fAprob==='pend')  arr=arr.filter(x=>(x.st==='pendiente'||x.st==='esperapago') && !x.prog && !x.dud);
+  if(fAprob==='pend')  arr=arr.filter(x=>x.st==='pendiente' && !x.prog && !x.dud);
+  if(fAprob==='pago')  arr=arr.filter(x=>x.st==='esperapago');
   if(fAprob==='dud')   arr=arr.filter(x=>x.dud);
   if(fAprob==='prog'){ arr=arr.filter(x=>x.prog).sort((a,b)=>Date.parse(a.desde)-Date.parse(b.desde)); }
   /* 20-09: totales por canal de lo que muestra la pestaña, y despues se filtra por el canal elegido */
   pintarCanalAprob(arr);
   if(fCanalAprob!=='todos') arr=arr.filter(x=>canalGrupo(x)===fCanalAprob);
   window._aprobF=arr;
-  if(!arr.length){ tb.innerHTML='<tr><td colspan="8" class="vacio">'+(fAprob==='pend'?'Nada por aprobar. 🎉':(fAprob==='prog'?'Ninguna venta con fecha pedida por el cliente.':(fAprob==='dud'?'Ninguna venta dudosa.':'Sin ventas recientes.')))+'</td></tr>'; return; }
+  if(!arr.length){ tb.innerHTML='<tr><td colspan="8" class="vacio">'+(fAprob==='pend'?'Nada por aprobar. 🎉':(fAprob==='prog'?'Ninguna venta con fecha pedida por el cliente.':(fAprob==='dud'?'Ninguna venta dudosa.':(fAprob==='pago'?'Nadie esperando pagar con tarjeta.':'Sin ventas recientes.'))))+'</td></tr>'; return; }
   tb.innerHTML=arr.slice(0,100).map((x,i)=>`
     <tr onclick="verAprob(${i})"${x.abono?' style="background:#fdecea"':(REV[x.nivel]&&REV[x.nivel].fila?' style="background:'+REV[x.nivel].fila+'"':'')}>
       <td class="cli">${esc(x.cli)}${huellaBadge(x.tel)}${chipRev(x)}${pillPagoCL(x)}${x.abono?'<span style="display:inline-block;margin-left:6px;background:#c62828;color:#fff;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;vertical-align:middle">ANTICIPO SIN PAGAR</span>':''}${(x.zr&&x.zr.length)?'<span title="'+esc(x.zr.join(' · '))+'" style="display:inline-block;margin-left:6px;background:#b71c1c;color:#fff;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;vertical-align:middle">ZONA ROJA</span>':''}${x.prog?'<span style="display:inline-block;margin-left:6px;background:#d97706;color:#fff;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;vertical-align:middle">📅 '+esc(x.desde)+' · en '+x.diasFalta+' días</span>':''}${x.nota?'<span style="display:inline-block;margin-left:6px;background:#e8a800;color:#3d2c00;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;vertical-align:middle">NOTA</span>':''}<small>${esc(x.fecha)} · +${x.tel}</small>${x.nota?'<small style="display:block;color:#8a6100;font-weight:700;white-space:normal;line-height:1.3;margin-top:2px">'+esc(x.nota)+'</small>':''}${(x.zr&&x.zr.length)?'<small style="display:block;color:#b71c1c;font-weight:700;white-space:normal;line-height:1.3;margin-top:2px">Zona roja · '+esc(x.zr.join(' · '))+' · revisar historial antes de aprobar</small>':''}${motivoRev(x)}</td>

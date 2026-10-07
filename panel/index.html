@@ -896,6 +896,7 @@ body:not([data-pais="CL"]) :is(#badgeCancelar,#badgeNovedades,#badgeListanegra,#
           <div class="minitabs" id="segAprob">
             <button class="minitab act" data-a="pend">Pendientes</button>
             <button class="minitab" data-a="prog">Programadas <span id="numProg" style="display:none;background:#d97706;color:#fff;border-radius:999px;font-size:10.5px;font-weight:800;padding:0 6px;margin-left:4px"></span></button>
+            <button class="minitab" data-a="pago" title="Eligieron pagar con tarjeta (−10 %) y todavía no pagan. No incluye los anticipos por mala huella.">Esperando pago <span id="numPago" style="display:none;background:#b45309;color:#fff;border-radius:999px;font-size:10.5px;font-weight:800;padding:0 6px;margin-left:4px"></span></button>
             <button class="minitab" data-a="dud">Dudosas <span id="numDud" style="display:none;background:#c62828;color:#fff;border-radius:999px;font-size:10.5px;font-weight:800;padding:0 6px;margin-left:4px"></span></button>
             <button class="minitab" data-a="todas">Todas</button>
           </div>
@@ -1571,7 +1572,7 @@ body:not([data-pais="CL"]) :is(#badgeCancelar,#badgeNovedades,#badgeListanegra,#
      apagado. Para devolverlo: recuperar este bloque del commit anterior y activar el flujo. -->
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
-<script src="app.js?v=230"></script>
+<script src="app.js?v=231"></script>
 <script src="ganancia.js?v=127"></script>
 </body>
 </html>
