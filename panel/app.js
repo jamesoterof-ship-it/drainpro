@@ -542,13 +542,16 @@ async function cargarVentas(){
    de esta cadena es el que manda: el primero que calza se lleva el nombre.
    24-09: paso exactamente eso con la GUIRNALDA SOLAR. Sus dos primeras ventas
    salieron en el panel contadas como "Foco Solar", que ese dia no vendio nada.
-   Por eso `guirnalda|ampolleta` va ANTES que `foco|solar`. */
+   Por eso `guirnalda|ampolleta` va ANTES que `foco|solar`.
+   07-10: la CÁMARA AMPOLLETA WiFi (Dropi 171647) salía contada como "Guirnalda Solar" por la palabra
+   "ampolleta". Por eso `cámara ampolleta` va ANTES que `guirnalda|ampolleta` (y NO solo `cámara`: el foco se llama
+   "Foco Solar Tipo Cámara"). */
 /* 04-10 James: en la ficha del pedido del DESENGRASANTE se ven los regalos que van en la misma orden de Dropi
    (el montador agrega 1 pasta para ollas 150429 + 1 esponja 99877 por cada pack de 2 espumas). Los packs salen del precio. */
 const regalosDG=o=>{ if(!/desengras|espuma antigras/i.test(String((o&&o.prod)||''))) return ''; const t=numero((o&&(o.total||o.precio))||0);
   const p=({24500:1,34500:2,44500:3})[t]||0; if(!p) return 'Pasta para ollas + esponja anti óxido (revisar: el precio no está en la escalera)';
   return p+' pasta'+(p>1?'s':'')+' para ollas + '+p+' esponja'+(p>1?'s':'')+' anti óxido · van en la misma orden de Dropi'; };
-const nombreCortoProd=s=>{var t=String(s||'');return /zapat/i.test(t)?'Zapatero Colgador':/pesta|masc/i.test(t)?'Máscara Pestañas':/antena/i.test(t)?'Antena TV':/aumento|tr90/i.test(t)?'Gafas TR90':/lente|gafa/i.test(t)?'Lentes One Power':/carga|bater/i.test(t)?'Cargador 12V':/clorofila/i.test(t)?'Clorofila 60 ml':/guirnalda|ampolleta/i.test(t)?'Guirnalda Solar':/foco|solar/i.test(t)?'Foco Solar':/ducha|cabezal/i.test(t)?'Cabezal de Ducha':/shilajit/i.test(t)?'Shilajit Ultra':/lymphoria/i.test(t)?'Lymphoria 60 ml':/drainpro|drenaje/i.test(t)?'DRAINPRO':/organiz/i.test(t)?'Organizador Ropa':/almohada|cervical/i.test(t)?'Almohada Cervical':/kinoki|parche/i.test(t)?'Parches Kinoki':/cepillo|parrilla/i.test(t)?'Cepillo Parrilla':t.split('+')[0].trim();};
+const nombreCortoProd=s=>{var t=String(s||'');return /zapat/i.test(t)?'Zapatero Colgador':/pesta|masc/i.test(t)?'Máscara Pestañas':/antena/i.test(t)?'Antena TV':/aumento|tr90/i.test(t)?'Gafas TR90':/lente|gafa/i.test(t)?'Lentes One Power':/carga|bater/i.test(t)?'Cargador 12V':/clorofila/i.test(t)?'Clorofila 60 ml':/c[aá]mara.{0,3}ampolleta/i.test(t)?'Cámara Ampolleta':/guirnalda|ampolleta/i.test(t)?'Guirnalda Solar':/foco|solar/i.test(t)?'Foco Solar':/ducha|cabezal/i.test(t)?'Cabezal de Ducha':/shilajit/i.test(t)?'Shilajit Ultra':/lymphoria/i.test(t)?'Lymphoria 60 ml':/drainpro|drenaje/i.test(t)?'DRAINPRO':/organiz/i.test(t)?'Organizador Ropa':/almohada|cervical/i.test(t)?'Almohada Cervical':/kinoki|parche/i.test(t)?'Parches Kinoki':/cepillo|parrilla/i.test(t)?'Cepillo Parrilla':t.split('+')[0].trim();};
 /* El nombre que se ve en VISITAS. Antes salia el nombre crudo entero
    ("Mascara de Pestañas Flamenco Mega Volume"), que desbordaba la tarjeta y
    se comia la columna de al lado. Ahora se acorta, y a las paginas de la
