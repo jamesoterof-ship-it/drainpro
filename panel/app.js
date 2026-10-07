@@ -807,6 +807,7 @@ function chipsPedidosWeb(){
 }
 function renderPedidosWeb(){
   if(visPaisSel()==='CO') cargarLlamCO();
+  if(visPaisSel()==='ES') cargarConfES();
   var _thL=document.getElementById('thLlamadaCO'); if(_thL) _thL.style.display=visPaisSel()==='CO'?'':'none';
   const tb=document.getElementById('tbodyPedidos'); if(!tb) return;
   chipsPedidosWeb();
@@ -823,7 +824,7 @@ function renderPedidosWeb(){
       <td>${o.cant}</td>
       <td class="money">${o.total}</td>
       <td>${o.abono?'<span class="st st-rec"><i></i>Abono pendiente</span>':((o.cop?(confirmadoCO(String(o.llave).replace('co:',''),o)||o.chat):o.conf)?'<span class="st st-ok"><i></i>Confirmado</span>':'<span class="st st-rec"><i></i>Pendiente</span>')}</td>${o.cop?'<td>'+chipLlamadaCO(String(o.llave).replace('co:',''))+'</td>':''}
-      <td class="cell-aprob" onclick="event.stopPropagation()">${o.cop?(o.dropi?'<span class="st st-ok"><i></i>Montado</span>':(confirmadoCO(String(o.llave).replace('co:',''),o)||o.chat)?celdaAprob(o.llave,'',String(o.llave).replace('co:',''),false,'',false,false,llamadaOkCO(String(o.llave).replace('co:',''))?0:o.creadoMs):esAprobado(o.llave)?'<span class="st st-rec"><i></i>Aprobado ⏳</span>':confirmadoCO(String(o.llave).replace('co:',''),o)||o.chat?'<span style="font-size:12px;color:#15803d;font-weight:700">Lista para aprobar</span><div style="font-size:11px;color:var(--ink-3)">en la pestaña Aprobación</div>':'<span style="font-size:12px;color:var(--ink-3)">Esperando confirmación</span>'):celdaAprob(o.llave||keyPag(o), o.dropi?'<span class="st st-ok"><i></i>Montado</span>':'','',false,'',false,false,o.creadoMs)}</td>
+      <td class="cell-aprob" onclick="event.stopPropagation()">${o.cop?(o.dropi?'<span class="st st-ok"><i></i>Montado</span>':(confirmadoCO(String(o.llave).replace('co:',''),o)||o.chat)?celdaAprob(o.llave,'',String(o.llave).replace('co:',''),false,'',false,false,llamadaOkCO(String(o.llave).replace('co:',''))?0:o.creadoMs):esAprobado(o.llave)?'<span class="st st-rec"><i></i>Aprobado ⏳</span>':confirmadoCO(String(o.llave).replace('co:',''),o)||o.chat?'<span style="font-size:12px;color:#15803d;font-weight:700">Lista para aprobar</span><div style="font-size:11px;color:var(--ink-3)">en la pestaña Aprobación</div>':'<span style="font-size:12px;color:var(--ink-3)">Esperando confirmación</span>'):(o.eur&&!o.conf&&!o.dropi&&!esAprobado(o.llave))?'<span style="font-size:12px;color:var(--ink-3)">Esperando confirmación</span>':celdaAprob(o.llave||keyPag(o), o.dropi?'<span class="st st-ok"><i></i>Montado</span>':'','',false,'',false,false,o.creadoMs)}</td>
       <td><svg class="ico-sm chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></td>
     </tr>`).join('');
   window._pedidosF=arr;
@@ -838,7 +839,9 @@ function pedidosPais(){
   });
   return ventasES.filter(function(o){return /p[aá]gina/i.test(o.bot);}).map(function(o){
     return {cli:o.cli,tel:o.tel,fecha:o.fecha,color:o.sub==='PT'?'#006600':'#aa151b',prod:o.prod+' · '+o.sub,comuna:o.zona,region:o.region,
-      cant:o.cant,total:fmtEUR(o.totalNum),conf:!/pago\s*pendiente|falta/i.test(o.estado),abono:false,dropi:o.montado,dir:o.dir,
+      /* 07-10 James: "en España todas aparecen confirmadas sin que el cliente haya confirmado". La columna sale de la
+         confirmación REAL (/es-confirmaciones, la misma de Aprobación), no del estado de la venta. */
+      cant:o.cant,total:fmtEUR(o.totalNum),conf:(o.montado||confirmadoES(o))&&!/pago\s*pendiente|falta/i.test(o.estado),abono:false,dropi:o.montado,dir:o.dir,
       llave:'es:'+o.id,orden:o.orden,creadoMs:o.creadoMs,eur:true,pagina:pagVisES(o)};
   });
 }
@@ -4610,7 +4613,7 @@ var CONF_ES=null, _confESts=0;
 function cargarConfES(){
   if(Date.now()-_confESts<10000) return; _confESts=Date.now();
   fetch(BASE+'/es-confirmaciones?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(j){
-    var m={}; ((j&&j.filas)||[]).forEach(function(f){ m[String(f.id)]=f; }); CONF_ES=m; renderAprobarPais();
+    var m={}; ((j&&j.filas)||[]).forEach(function(f){ m[String(f.id)]=f; }); CONF_ES=m; renderAprobarPais(); if(visPaisSel()==='ES') renderPedidosWeb();
   }).catch(function(){});
 }
 function esWebES(o){ return /p[aá]gina/i.test(o.bot||''); }
