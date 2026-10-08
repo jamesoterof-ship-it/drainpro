@@ -4632,6 +4632,8 @@ function estadoConfES(o){
   var h=function(ms){ return ms?new Date(ms).toLocaleTimeString('es-ES',{timeZone:'Europe/Madrid',hour:'2-digit',minute:'2-digit'}):''; };
   /* 04-10 (James: "¿dónde está el de Julia?"): decirlo claro. Desde el 04-10 la plantilla sale a cualquier hora */
   if(!f||f.estado==='SIN_PLANTILLA') return 'la plantilla de confirmación le sale en unos minutos';
+  /* 08-10 (venta 4749): el del número dijo "no encargué nada / número equivocado" → no se aprueba */
+  if(f.estado==='NO_ES_SUYO') return '⚠️ DICE QUE NO ENCARGÓ NADA o que el número está equivocado'+(f.ultimo?' («'+String(f.ultimo).slice(0,40)+'»)':'')+' · revisar antes de aprobar';
   var t={SIN_RESPUESTA:'no ha contestado',MODIFICAR:'pidió modificar datos',RESPONDIO:'respondió otra cosa'}[f.estado]||f.estado;
   return 'plantilla enviada '+h(f.conf_ms)+(f.rec_ms?' · recordatorio '+h(f.rec_ms):' · si no contesta, recordatorio a la hora')+' · '+t+(f.ultimo?' («'+String(f.ultimo).slice(0,40)+'»)':'');
 }
