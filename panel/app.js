@@ -4750,7 +4750,9 @@ function renderAprobarPais(){
         var k='es:'+o.id, falta=!nombreSirve(o.cli)?'nom':(!dirSirve(o.dir)?true:false);
         return '<tr style="cursor:pointer" onclick="verAprobES('+ix+')"><td><b>'+esc(o.cli)+'</b><div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.fecha)+' · +'+esc(o.tel)+'</div>'+
           /* 04-10: el anticipado no "confirma": espera el pago (lo dice la píldora de pago) */
-          (esWebES(o)&&!/pago:\s*pre/i.test(o.nota||'')?(confirmadoES(o)?'<div style="font-size:11.5px;color:#15803d;font-weight:700;margin-top:2px">✅ Confirmó</div>':'<div style="font-size:11.5px;color:#c62828;font-weight:700;margin-top:2px">⏳ Sin confirmar · '+esc(estadoConfES(o))+'</div>'):'')+'</td>'+
+          (esWebES(o)&&!/pago:\s*pre/i.test(o.nota||'')?(confirmadoES(o)?'<div style="font-size:11.5px;color:#15803d;font-weight:700;margin-top:2px">✅ Confirmó</div>':'<div style="font-size:11.5px;color:#c62828;font-weight:700;margin-top:2px">⏳ Sin confirmar · '+esc(estadoConfES(o))+'</div>')
+            /* 08-10 James ("y pones así que confirmó también"): la venta de Carmen el cliente la confirmó dentro del chat antes de registrarse */
+            :(!esWebES(o)&&!/pago:\s*pre/i.test(o.nota||'')?'<div style="font-size:11.5px;color:#15803d;font-weight:700;margin-top:2px">✅ Confirmó en el chat</div>':''))+'</td>'+
           '<td><span class="flag flag-'+o.sub.toLowerCase()+'"></span> '+o.sub+'</td><td>'+esc(o.prod)+
           /* pago anticipado: Carmen manda el botón de PayPal y lee el comprobante; la página todavía no cobra */
           (/pago:\s*pre/i.test(o.nota)?pildoraPago(o):'')+pildoraMontaje(o,k)+
