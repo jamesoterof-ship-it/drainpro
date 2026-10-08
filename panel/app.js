@@ -1817,6 +1817,8 @@ const SUCURSAL_RE=/oficina starken|sucursal|punto blue|agencia starken|retiro en
 function normComuna(s){ return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase().replace(/\s+/g,' ').trim(); }
 function zonaRoja(x){
   const o=(x&&x.raw)||{}; const m=[];
+  /* 08-10 James "quitale el rojo": la venta ya revisada a mano (direccion ubicada, referencia agregada) no se vuelve a marcar */
+  if(String(o.revision||x.revision||'').indexOf('REVISADA A MANO')===0) return m;
   const c=normComuna(x.comuna||o.comuna||o.zona);
   if(ZONA_ROJA_COMUNAS[c]) m.push('Comuna '+c+': '+ZONA_ROJA_COMUNAS[c]+'% de devolución');
   const d=String(o.dir||'');
