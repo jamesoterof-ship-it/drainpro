@@ -1920,7 +1920,8 @@ function renderAprobar(){
   if(bpg){ bpg.style.display=nPago?'':'none'; bpg.textContent=nPago; }
   /* 10-10 James: "que esas ventas trabadas me aparezcan en el panel en una pestaña". TRABADA = ya la aprobaste y a los 80 min de
      registrada todavía no está en Dropi (el montador sube en 15-20 min). Se dice el motivo para que no se pierda en silencio. */
-  items.forEach(x=>{ x.trab = x.st==='aprobado' && !x.prog && x.creadoMs && (Date.now()-x.creadoMs) > 80*60000; });
+  items.forEach(x=>{ x.trab = x.st==='aprobado' && !x.prog && x.creadoMs && (Date.now()-x.creadoMs) > 80*60000
+    && !/CANCELAD|RECHAZADA POR|ELIMINAD/i.test(String((x.raw&&x.raw.estado)||'')); });   /* las canceladas a propósito no son trabadas */
   const nTrab=items.filter(x=>x.trab).length;
   const btr=document.getElementById('numTrab');
   if(btr){ btr.style.display=nTrab?'':'none'; btr.textContent=nTrab; }
