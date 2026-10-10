@@ -240,6 +240,16 @@ function soltarYa(k,id){
     })
     .catch(function(){ if(typeof toast==='function') toast('⚠ No se pudo soltar: sin conexión. Intenta otra vez.'); });
 }
+/* 10-10: por qué una venta APROBADA no sale a Dropi (pestaña Trabadas) */
+function motivoTrab(x){
+  var n=String(x.nivel||'').toUpperCase(), m;
+  if(x.abono) m='Esperando el anticipo de $5.000: sale cuando lo pague';
+  else if(n==='ROJO') m='El revisor la tiene en ROJO: revisa el motivo y avisa a Claude si igual debe salir';
+  else if(n==='AMARILLO') m='El revisor la tiene en AMARILLO: falta corregir algo antes de montarla';
+  else if(!n) m='Sin revisar todavía por el revisor';
+  else m='Aprobada y en verde, pero no sale: avisa a Claude';
+  return '<div style="font-size:11.5px;font-weight:800;color:#b71c1c;margin-bottom:4px;max-width:260px;white-space:normal">⛔ TRABADA · '+m+'</div>';
+}
 function celdaAprob(k,montadoHtml,rid,faltaDir,prog,enRevision,dud,creadoMs,soltarId){
   if(montadoHtml) return montadoHtml;
   if(esAprobado(k)) return '<span class="st st-rec"><i></i>Aprobado ⏳</span>';
@@ -1908,6 +1918,12 @@ function renderAprobar(){
   const nPago=items.filter(x=>x.st==='esperapago').length;
   const bpg=document.getElementById('numPago');
   if(bpg){ bpg.style.display=nPago?'':'none'; bpg.textContent=nPago; }
+  /* 10-10 James: "que esas ventas trabadas me aparezcan en el panel en una pestaña". TRABADA = ya la aprobaste y a los 80 min de
+     registrada todavía no está en Dropi (el montador sube en 15-20 min). Se dice el motivo para que no se pierda en silencio. */
+  items.forEach(x=>{ x.trab = x.st==='aprobado' && !x.prog && x.creadoMs && (Date.now()-x.creadoMs) > 80*60000; });
+  const nTrab=items.filter(x=>x.trab).length;
+  const btr=document.getElementById('numTrab');
+  if(btr){ btr.style.display=nTrab?'':'none'; btr.textContent=nTrab; }
   const nPend=items.filter(x=>x.st==='pendiente' && !x.prog && !x.dud).length;
   const bg=document.getElementById('badgeAprobar');
   if(bg){ bg.style.display=(nPend&&fPais!=='ES'&&fPais!=='CO')?'':'none'; bg.textContent=nPend; }
@@ -1922,12 +1938,13 @@ function renderAprobar(){
   if(fAprob==='pend')  arr=arr.filter(x=>x.st==='pendiente' && !x.prog && !x.dud);
   if(fAprob==='pago')  arr=arr.filter(x=>x.st==='esperapago');
   if(fAprob==='dud')   arr=arr.filter(x=>x.dud);
+  if(fAprob==='trab')  arr=arr.filter(x=>x.trab);
   if(fAprob==='prog'){ arr=arr.filter(x=>x.prog).sort((a,b)=>Date.parse(a.desde)-Date.parse(b.desde)); }
   /* 20-09: totales por canal de lo que muestra la pestaña, y despues se filtra por el canal elegido */
   pintarCanalAprob(arr);
   if(fCanalAprob!=='todos') arr=arr.filter(x=>canalGrupo(x)===fCanalAprob);
   window._aprobF=arr;
-  if(!arr.length){ tb.innerHTML='<tr><td colspan="8" class="vacio">'+(fAprob==='pend'?'Nada por aprobar. 🎉':(fAprob==='prog'?'Ninguna venta con fecha pedida por el cliente.':(fAprob==='dud'?'Ninguna venta dudosa.':(fAprob==='pago'?'Nadie esperando pagar con tarjeta.':'Sin ventas recientes.'))))+'</td></tr>'; return; }
+  if(!arr.length){ tb.innerHTML='<tr><td colspan="8" class="vacio">'+(fAprob==='pend'?'Nada por aprobar. 🎉':(fAprob==='prog'?'Ninguna venta con fecha pedida por el cliente.':(fAprob==='dud'?'Ninguna venta dudosa.':(fAprob==='pago'?'Nadie esperando pagar con tarjeta.':(fAprob==='trab'?'Ninguna venta aprobada trabada. Todo lo aprobado ya salió a Dropi.':'Sin ventas recientes.')))))+'</td></tr>'; return; }
   tb.innerHTML=arr.slice(0,100).map((x,i)=>`
     <tr onclick="verAprob(${i})"${x.abono?' style="background:#fdecea"':(REV[x.nivel]&&REV[x.nivel].fila?' style="background:'+REV[x.nivel].fila+'"':'')}>
       <td class="cli">${esc(x.cli)}${huellaBadge(x.tel)}${chipRev(x)}${pillPagoCL(x)}${x.abono?'<span style="display:inline-block;margin-left:6px;background:#c62828;color:#fff;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;vertical-align:middle">ANTICIPO SIN PAGAR</span>':''}${(x.zr&&x.zr.length)?'<span title="'+esc(x.zr.join(' · '))+'" style="display:inline-block;margin-left:6px;background:#b71c1c;color:#fff;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;vertical-align:middle">ZONA ROJA</span>':''}${x.prog?'<span style="display:inline-block;margin-left:6px;background:#d97706;color:#fff;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;vertical-align:middle">📅 '+esc(x.desde)+' · en '+x.diasFalta+' días</span>':''}${x.nota?'<span style="display:inline-block;margin-left:6px;background:#e8a800;color:#3d2c00;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;vertical-align:middle">NOTA</span>':''}<small>${esc(x.fecha)} · +${x.tel}</small>${x.nota?'<small style="display:block;color:#8a6100;font-weight:700;white-space:normal;line-height:1.3;margin-top:2px">'+esc(x.nota)+'</small>':''}${(x.zr&&x.zr.length)?'<small style="display:block;color:#b71c1c;font-weight:700;white-space:normal;line-height:1.3;margin-top:2px">Zona roja · '+esc(x.zr.join(' · '))+' · revisar historial antes de aprobar</small>':''}${motivoRev(x)}</td>
@@ -1936,7 +1953,7 @@ function renderAprobar(){
       <td>${esc(x.comuna||'—')}</td>
       <td>${x.cant}</td>
       <td class="money">${x.total}</td>
-      <td class="cell-aprob" onclick="event.stopPropagation()">${x.st==='esperapago'?'<span style="font-size:12px;color:#b45309;font-weight:700">Esperando el pago</span><div style="font-size:11px;color:var(--ink-3)">se aprueba cuando PayPal lo confirme</div>':celdaAprob(x.k, x.st==='montado'?'<span class="st st-ok"><i></i>Montado</span>':'', x.rid||'', x.faltaDir, x.vuelve, enRevisionInsp(x.nivel, x.creadoMs), !!x.dud, (/PAGADO paypal/.test(String(x.pago||''))?0:x.creadoMs) /* 05-10 James: lo ya pagado con PayPal no espera la hora */, (x.nivel==='VERDE' && !x.abono && x.st==='pendiente' && !x.prog) ? (x.canal==='Página' ? String((x.raw&&x.raw.fila)||'').replace(/^wa/,'') : (x.canal==='WhatsApp' ? String(x.rid||'') : '')) : '')}</td>
+      <td class="cell-aprob" onclick="event.stopPropagation()">${x.trab?motivoTrab(x):''}${x.st==='esperapago'?'<span style="font-size:12px;color:#b45309;font-weight:700">Esperando el pago</span><div style="font-size:11px;color:var(--ink-3)">se aprueba cuando PayPal lo confirme</div>':celdaAprob(x.k, x.st==='montado'?'<span class="st st-ok"><i></i>Montado</span>':'', x.rid||'', x.faltaDir, x.vuelve, enRevisionInsp(x.nivel, x.creadoMs), !!x.dud, (/PAGADO paypal/.test(String(x.pago||''))?0:x.creadoMs) /* 05-10 James: lo ya pagado con PayPal no espera la hora */, (x.nivel==='VERDE' && !x.abono && x.st==='pendiente' && !x.prog) ? (x.canal==='Página' ? String((x.raw&&x.raw.fila)||'').replace(/^wa/,'') : (x.canal==='WhatsApp' ? String(x.rid||'') : '')) : '')}</td>
       <td onclick="event.stopPropagation()"><a class="qr" style="text-decoration:none;cursor:pointer" onclick="crmAbrir('${x.tel}')">WhatsApp</a></td>
     </tr>`).join('');
 }
