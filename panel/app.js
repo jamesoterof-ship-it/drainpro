@@ -1921,7 +1921,9 @@ function renderAprobar(){
   /* 10-10 James: "que esas ventas trabadas me aparezcan en el panel en una pestaña". TRABADA = ya la aprobaste y a los 80 min de
      registrada todavía no está en Dropi (el montador sube en 15-20 min). Se dice el motivo para que no se pierda en silencio. */
   items.forEach(x=>{ x.trab = x.st==='aprobado' && !x.prog && x.creadoMs && (Date.now()-x.creadoMs) > 80*60000
-    && !/CANCELAD|RECHAZADA POR|ELIMINAD/i.test(String((x.raw&&x.raw.estado)||'')); });   /* las canceladas a propósito no son trabadas */
+    && !/CANCELAD|RECHAZADA POR|ELIMINAD/i.test(String((x.raw&&x.raw.estado)||''))   /* las canceladas a propósito no son trabadas */
+    /* 10-10: las de PÁGINA programadas no traen 'desde'; el revisor escribe "sale el AAAA-MM-DD". Con fecha futura NO es trabada (Gabriela Osorio) */
+    && !((function(){ var m=/sale el (\d{4}-\d{2}-\d{2})/.exec(String(x.revision||'')); return m && Date.parse(m[1]+'T23:59:59-03:00') > Date.now(); })()); });
   const nTrab=items.filter(x=>x.trab).length;
   const btr=document.getElementById('numTrab');
   if(btr){ btr.style.display=nTrab?'':'none'; btr.textContent=nTrab; }
