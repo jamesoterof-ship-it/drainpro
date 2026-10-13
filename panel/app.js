@@ -3095,9 +3095,12 @@ cargarConvos(); cargarVentas(); cargarPaginas(); cargarHuellas(); sincronizarApr
 /* 22-09: de 15 s a 60 s. Cada vuelta llama a 5 flujos de n8n y n8n guarda cada
    respuesta completa (Control Ventas WA sola pesa 629 KB por llamada, ~1 GB al dia).
    Eso era el grueso del gasto de Railway. Aprobado por James el 22-09. */
-setInterval(()=>{cargarConvos();cargarVentas();cargarPaginas();},60000);
-setInterval(sincronizarAprob,30000);   // las aprobaciones se leen del servidor, no del navegador
-setInterval(cargarHuellas,300000);
+/* 10-10: si la pestaña está oculta (James tiene el panel abierto en otra pestaña o minimizado) no se refresca nada:
+   cada vuelta son ~2,4 MB y 5 llamadas a n8n que nadie está mirando. Al volver a la pestaña se refresca enseguida. */
+setInterval(()=>{ if(document.hidden) return; cargarConvos();cargarVentas();cargarPaginas(); },60000);
+setInterval(()=>{ if(document.hidden) return; sincronizarAprob(); },30000);   // las aprobaciones se leen del servidor, no del navegador
+setInterval(()=>{ if(document.hidden) return; cargarHuellas(); },300000);
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden){ cargarConvos();cargarVentas();cargarPaginas();sincronizarAprob(); } });
 fechaCabecera();
 
 /* ====================== ASESOR IA (botón flotante + chat) ====================== */
@@ -4251,6 +4254,8 @@ function filaES(r){
   return {id:String(r.row_number||''),sub:pt?'PT':'ES',cli:r.NOMBRE||'—',tel:soloNum(r.TELEFONO),prod:r.PRODUCTO||'—',
     cant:numero(r.CANTIDAD)||1,totalNum:numEUR(r.PRECIO),dir:r.DIRECCION||'—',zona:r.COMUNA||'—',region:r.REGION||'—',
     estado:est||'—',nota:String(r.NOTA||''),creadoMs:cms,montado:/montad|dropi\s*pro\s*#/i.test(est),
+    /* 13-10: veredicto del Inspector de pedidos España (mismo revisor que Chile, flujo propio) */
+    revision:String(r.REVISION||'').trim(), nivel:String(r.REVISION_NIVEL||'').trim().toUpperCase(),
     fecha:r.FECHA||'',orden:cms||fechaOrden(r.FECHA,''),bot:String(r.BOT||'')};
 }
 
@@ -4764,7 +4769,7 @@ function renderAprobarPais(){
      todo el panel"): tocar la fila abre la MISMA ficha de venta que Chile y Colombia */
   window._aprobES=lista.map(function(o){ var web=/p[aá]gina/i.test(o.bot||'');
     return {esWeb:web, rid:o.id, cli:o.cli, tel:o.tel, prod:o.prod, cant:o.cant, precioNum:o.totalNum, precio:fmtEUR(o.totalNum),
-      dir:o.dir, zona:o.zona, region:o.region, nota:o.nota||'', desde:'', revision:'', nivel:'', fecha:o.fecha, hora:'', orden:o.creadoMs||o.orden||0,
+      dir:o.dir, zona:o.zona, region:o.region, nota:o.nota||'', desde:'', revision:o.revision||'', nivel:o.nivel||'', fecha:o.fecha, hora:'', orden:o.creadoMs||o.orden||0,
       conf:true, abono:/abono pendiente/i.test(o.estado||''), montado:o.montado, ordenDropi:(String(o.estado||'').match(/#(\d+)/)||[])[1]||'',
       estado:o.estado||'', bot:web?'Página':'Carmen', loc:o.sub==='PT'?'PT':'ES', red:'', llave:'es:'+o.id, creadoMs:o.creadoMs, eur:true }; });
   ot.innerHTML='<div class="panel"><div class="tbl-head"><h2>España y Portugal · por aprobar</h2>'+
@@ -4772,7 +4777,9 @@ function renderAprobarPais(){
     (lista.length?'<table><thead><tr><th>Cliente</th><th>País</th><th>Producto</th><th>Dirección</th><th>Cant.</th><th>Total</th><th>Aprobación</th></tr></thead><tbody>'+
       lista.map(function(o,ix){
         var k='es:'+o.id, falta=!nombreSirve(o.cli)?'nom':(!dirSirve(o.dir)?true:false);
-        return '<tr style="cursor:pointer" onclick="verAprobES('+ix+')"><td><b>'+esc(o.cli)+'</b><div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.fecha)+' · +'+esc(o.tel)+'</div>'+
+        /* 13-10 (James: "el inspector igual que Chile"): la fila se pinta con el color del revisor y lleva el chip y el motivo */
+        var _rv=REV[o.nivel]&&REV[o.nivel].fila?';background:'+REV[o.nivel].fila:'';
+        return '<tr style="cursor:pointer'+_rv+'" onclick="verAprobES('+ix+')"><td><b>'+esc(o.cli)+'</b>'+chipRev(o)+'<div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.fecha)+' · +'+esc(o.tel)+'</div>'+motivoRev(o)+
           /* 04-10: el anticipado no "confirma": espera el pago (lo dice la píldora de pago) */
           (esWebES(o)&&!/pago:\s*pre/i.test(o.nota||'')?(confirmadoES(o)?'<div style="font-size:11.5px;color:#15803d;font-weight:700;margin-top:2px">✅ Confirmó</div>':'<div style="font-size:11.5px;color:#c62828;font-weight:700;margin-top:2px">⏳ Sin confirmar · '+esc(estadoConfES(o))+'</div>')
             /* 08-10 James ("y pones así que confirmó también"): la venta de Carmen el cliente la confirmó dentro del chat antes de registrarse */
