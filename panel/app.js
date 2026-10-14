@@ -587,26 +587,38 @@ const mapPedido=r=>({fecha:r.fecha||'',cli:r.nombre||'—',tel:soloNum((r.indica
 async function cargarPaginas(){
   const conectadas=PAGINAS.filter(p=>p.url);
   let peds=[], abs=[], vis=[], pedsArch=[], visArch=[];
+  /* 14-10 (James: "las de página demoran una eternidad"): las 4 llamadas de página se pedían EN FILA, una después de otra
+     (pedidos web → landing → abandonados → visitas, 5 a 10 s cada una en n8n = ~26 s). Ahora se disparan las 4 AL MISMO TIEMPO
+     y se espera a que lleguen todas: el total pasa a ser el de la más lenta (~10 s). Mismo tratamiento de los datos que antes. */
+  const _ahoraVis=Date.now();
+  const _usaCacheVis=!!(window._visCache && _ahoraVis-window._visCache.t<300000);
+  const [pj,lj,aj,vjNuevo]=await Promise.all([
+    fetch(URL_PEDWEB).then(r=>r.json()).catch(()=>null),
+    fetch(URL_PEDLANDING).then(r=>r.json()).catch(()=>null),
+    fetch(URL_ABANDONADOS).then(r=>r.json()).catch(()=>null),
+    _usaCacheVis?Promise.resolve(null):fetch(URL_LEERVIS).then(r=>r.json()).catch(()=>null)
+  ]);
   // PEDIDOS DE PAGINA: desde Postgres (confiable, no Google)
-  try{ const pr=await fetch(URL_PEDWEB); const pj=await pr.json(); (pj.pedidos||[]).forEach(r=>peds.push(r)); }catch(e){}
+  try{ ((pj&&pj.pedidos)||[]).forEach(r=>peds.push(r)); }catch(e){}
   // pedidos de las landings nuevas: mismo canal PAGINA, nunca se mezclan con WhatsApp
   /* Los pedidos de pagina venian marcados `confirmado:'SI'` a la fuerza, asi
      que salian en "Aprobacion de ventas" aunque el cliente no hubiera
      contestado nunca. La regla es: primero confirma el cliente, despues
      aparecen para aprobar. Ahora se respeta lo que dice el endpoint, que
      marca SI solo cuando el cliente toco Confirmar (Modificar no cuenta). */
-  try{ const lr=await fetch(URL_PEDLANDING); const lj=await lr.json(); (lj.pedidos||[]).forEach(r=>peds.push(Object.assign({},r,{confirmado:String(r.confirmado||'NO').toUpperCase()==='SI'?'SI':'NO',fila:'wa'+r.id,dropi:/montada/i.test(String(r.estado||''))?'ENVIADO':''}))); }catch(e){}
+  try{ ((lj&&lj.pedidos)||[]).forEach(r=>peds.push(Object.assign({},r,{confirmado:String(r.confirmado||'NO').toUpperCase()==='SI'?'SI':'NO',fila:'wa'+r.id,dropi:/montada/i.test(String(r.estado||''))?'ENVIADO':''}))); }catch(e){}
   // ABANDONADOS: desde Postgres (no Google)
-  try{ const ar=await fetch(URL_ABANDONADOS); const aj=await ar.json(); (aj.abandonados||[]).forEach(r=>{ const pg=PAGINAS.find(x=>x.id===r.pagina); abs.push(Object.assign({color:pg?pg.color:'#3060ea'},r)); }); }catch(e){}
+  try{ ((aj&&aj.abandonados)||[]).forEach(r=>{ const pg=PAGINAS.find(x=>x.id===r.pagina); abs.push(Object.assign({color:pg?pg.color:'#3060ea'},r)); }); }catch(e){}
   // VISITAS: desde Postgres (NO Google). Cualquier página que reporte aparece sola.
   const COLORVIS={shilajit:'#0e8074',drainpro:'#3060ea',nad:'#b8860b'};
   const COLORROT=['#6cc24a','#9b59b6','#e67e22','#16a085','#c0392b','#2980b9'];
   /* 05-10: las visitas se piden cada 5 min, no cada minuto. Cada llamada deja una ejecución colgada en n8n y el vigía las
      cierra como "error"; con el panel abierto en varios equipos se juntaban decenas y llenaban la cola. */
   try{
-    const _ahora=Date.now(); let vj;
-    if(window._visCache && _ahora-window._visCache.t<300000){ vj=window._visCache.j; }
-    else { const vr=await fetch(URL_LEERVIS); vj=await vr.json(); window._visCache={t:_ahora,j:vj}; }
+    let vj;
+    if(_usaCacheVis){ vj=window._visCache.j; }
+    else { vj=vjNuevo; if(vj) window._visCache={t:_ahoraVis,j:vj}; }
+    if(!vj) throw new Error('sin visitas');
     const rows=Array.isArray(vj)?vj:(vj.visitas||vj.data||[]);
     let ci=0; const ck={};
     rows.forEach(r=>{ const slug=r.pagina||'otro'; let col=COLORVIS[slug]; if(!col){ if(!ck[slug])ck[slug]=COLORROT[(ci++)%COLORROT.length]; col=ck[slug]; }
@@ -3091,6 +3103,13 @@ document.addEventListener('change',function(e){ if(e.target&&(e.target.id==='fin
 document.addEventListener('input',function(e){ if(e.target&&e.target.id==='finBuscar'){ window._finBuscar=e.target.value; _renderFinTabla(window._finPedidos); } });
 setInterval(function(){ var f=document.getElementById('view-finanzas'),d=document.getElementById('view-dropi'); if((f&&f.classList.contains('act'))||(d&&d.classList.contains('act'))) cargarFinanzas(); }, 180000);
 
+/* 14-10 (James: "el panel de Chile demora una eternidad"): medido en local, al abrir el panel la MISMA tanda de 6 webhooks salía
+   5 veces seguidas (la carga inicial + cada "visibilitychange" del navegador + la recarga de la lista de pedidos). La primera tanda
+   respondía en 3,8 s; las repetidas se apilaban en n8n hasta 31 s. Dos candados:
+     1. Carga única: si una carga de convos/ventas/páginas/huellas ya está en curso, la llamada nueva se cuelga de esa (no dispara otra).
+     2. Al volver a la pestaña, solo se recarga si la última carga terminó hace más de 15 s. */
+function _cargaUnica(fn){ var enCurso=null; return function(){ if(enCurso) return enCurso; enCurso=Promise.resolve().then(fn).catch(function(){}).then(function(){ enCurso=null; window._ultimaCarga=Date.now(); }); return enCurso; }; }
+cargarConvos=_cargaUnica(cargarConvos); cargarVentas=_cargaUnica(cargarVentas); cargarPaginas=_cargaUnica(cargarPaginas); cargarHuellas=_cargaUnica(cargarHuellas);
 cargarConvos(); cargarVentas(); cargarPaginas(); cargarHuellas(); sincronizarAprob();
 /* 22-09: de 15 s a 60 s. Cada vuelta llama a 5 flujos de n8n y n8n guarda cada
    respuesta completa (Control Ventas WA sola pesa 629 KB por llamada, ~1 GB al dia).
@@ -3100,7 +3119,7 @@ cargarConvos(); cargarVentas(); cargarPaginas(); cargarHuellas(); sincronizarApr
 setInterval(()=>{ if(document.hidden) return; cargarConvos();cargarVentas();cargarPaginas(); },60000);
 setInterval(()=>{ if(document.hidden) return; sincronizarAprob(); },30000);   // las aprobaciones se leen del servidor, no del navegador
 setInterval(()=>{ if(document.hidden) return; cargarHuellas(); },300000);
-document.addEventListener('visibilitychange',()=>{ if(!document.hidden){ cargarConvos();cargarVentas();cargarPaginas();sincronizarAprob(); } });
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden){ if(Date.now()-(window._ultimaCarga||0)<15000) return; cargarConvos();cargarVentas();cargarPaginas();sincronizarAprob(); } });
 fechaCabecera();
 
 /* ====================== ASESOR IA (botón flotante + chat) ====================== */
