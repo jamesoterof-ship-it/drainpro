@@ -4577,7 +4577,9 @@ function renderPaisTab(){
   }
 
   if(fPais==='ES'){
-    var pend=ventasES.filter(function(o){return !o.montado&&!esAprobado('es:'+o.id)&&!esRechazado('es:'+o.id);}).length;
+    /* 15-10: el "Por aprobar" del resumen cuenta lo mismo que la pestaña Pendientes (sin dudosas, sin esperando pago ni confirmación) */
+    var _dudR=dudSet();
+    var pend=ventasES.filter(function(o){return !o.montado&&!esPagoPend(o)&&!esAprobado('es:'+o.id)&&!esRechazado('es:'+o.id)&&confirmadoES(o)&&!_dudR.has('es:'+o.id);}).length;
     box.innerHTML='<div class="rp-aviso" style="margin-bottom:8px"><b>🕐 Hora de España: <span id="relojES">'+horaES()+'</span></b> · aquí el día va de 00:00 a 24:00 de España (ventas, gráficas, ganancia y el gasto de Meta).</div>'+
       '<div class="rp-aviso"><span class="flag flag-es"></span> <b>España y Portugal</b> · montos en euros ('+esc(TASAS?'1 € = '+TASAS.eur.toLocaleString('es-CO',{maximumFractionDigits:2})+' COP':'sin tasa del día')+'). '+
       'Por aprobar: <b>'+pend+'</b> · <a href="#" onclick="verAprobarPais(\'ES\');return false">ir a aprobar →</a> · '+
@@ -4718,7 +4720,9 @@ function renderAprobarPais(){
   document.querySelectorAll('#paisAprob .minitab').forEach(function(b){ b.classList.toggle('act',b.dataset.p===fPaisAprob); });
   /* PAGO PENDIENTE (anticipado sin comprobante todavía) no cuenta ni se puede aprobar */
   cargarConfES();
-  var pend=ventasES.filter(function(o){return !o.montado&&!esPagoPend(o)&&!esAprobado('es:'+o.id)&&!esRechazado('es:'+o.id)&&confirmadoES(o);});
+  /* 15-10 James: "si ya la pasé a Dudosa no debe contar como por aprobar, como en Chile": el número cuenta lo mismo que la pestaña Pendientes */
+  var _dudC=dudSet();
+  var pend=ventasES.filter(function(o){return !o.montado&&!esPagoPend(o)&&!esAprobado('es:'+o.id)&&!esRechazado('es:'+o.id)&&confirmadoES(o)&&!_dudC.has('es:'+o.id);});
   var nb=document.getElementById('numAprobES'); if(nb){ nb.textContent=pend.length; nb.style.display=pend.length?'':'none'; }
   var pnES=document.getElementById('pnNumES'); if(pnES) pnES.textContent=pend.length||'';
   var bES=document.getElementById('badgeAprobarES'); if(bES){ bES.textContent=pend.length; bES.style.display=(pend.length&&fPais==='ES')?'':'none'; }
