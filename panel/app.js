@@ -736,7 +736,8 @@ function renderTopProd(){
   const sumar=o=>{const k=nombreCortoProd(o.prod)||'—';prod[k]=(prod[k]||0)+1;};
   if(fCanal!=='web') waR.forEach(sumar);
   if(fCanal!=='wa') webR.forEach(sumar);
-  const top=Object.entries(prod).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  /* 15-10 James ("quitaste la del shampoo"): antes se cortaba en 6 y, con empates, el 7.º desaparecía. Ahora salen todos. */
+  const top=Object.entries(prod).sort((a,b)=>b[1]-a[1]);
   const sub=document.getElementById('topProdSub'); if(sub) sub.textContent=rangoTxt()+' · ventas';
   if(!top.length){cont.innerHTML='<div class="vacio">Sin ventas en el periodo.</div>';return;}
   const max=top[0][1]||1;
