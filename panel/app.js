@@ -736,7 +736,8 @@ function renderTopProd(){
   const sumar=o=>{const k=nombreCortoProd(o.prod)||'—';prod[k]=(prod[k]||0)+1;};
   if(fCanal!=='web') waR.forEach(sumar);
   if(fCanal!=='wa') webR.forEach(sumar);
-  /* 15-10 James ("quitaste la del shampoo"): antes se cortaba en 6 y, con empates, el 7.º desaparecía. Ahora salen todos. */
+  /* 15-10 James ("quitaste la del shampoo" / "que no sea top, que muestre las ventas de todo"): antes se cortaba en 6 y, con
+     empates, el 7.º desaparecía. Ahora es "Ventas por producto" y salen todos los que vendieron en el rango. */
   const top=Object.entries(prod).sort((a,b)=>b[1]-a[1]);
   const sub=document.getElementById('topProdSub'); if(sub) sub.textContent=rangoTxt()+' · ventas';
   if(!top.length){cont.innerHTML='<div class="vacio">Sin ventas en el periodo.</div>';return;}
