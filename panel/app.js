@@ -4804,7 +4804,10 @@ function renderAprobarPais(){
         var k='es:'+o.id, falta=!nombreSirve(o.cli)?'nom':(!dirSirve(o.dir)?true:false);
         /* 13-10 (James: "el inspector igual que Chile"): la fila se pinta con el color del revisor y lleva el chip y el motivo */
         var _rv=REV[o.nivel]&&REV[o.nivel].fila?';background:'+REV[o.nivel].fila:'';
-        return '<tr style="cursor:pointer'+_rv+'" onclick="verAprobES('+ix+')"><td><b>'+esc(o.cli)+'</b>'+chipRev(o)+'<div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.fecha)+' · +'+esc(o.tel)+'</div>'+motivoRev(o)+
+        /* 18-10 James ("apenas aparezca el pago me debe aparecer enseguida para aprobar, no esperar"): la venta ya PAGADA y
+           verificada por PayPal no espera la hora: el cliente ya pagó, no hay cambio de idea que esperar */
+        var _pagado=/PAGADO paypal /.test(o.nota||''), _ms=_pagado?0:o.creadoMs;
+        return '<tr style="cursor:pointer'+_rv+'" onclick="verAprobES('+ix+')"><td><b>'+esc(o.cli)+'</b>'+chipRev(_pagado?Object.assign({},o,{creadoMs:0}):o)+'<div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.fecha)+' · +'+esc(o.tel)+'</div>'+motivoRev(o)+
           /* 04-10: el anticipado no "confirma": espera el pago (lo dice la píldora de pago) */
           (esWebES(o)&&!/pago:\s*pre/i.test(o.nota||'')?(confirmadoES(o)?'<div style="font-size:11.5px;color:#15803d;font-weight:700;margin-top:2px">✅ Confirmó</div>':'<div style="font-size:11.5px;color:#c62828;font-weight:700;margin-top:2px">⏳ Sin confirmar · '+esc(estadoConfES(o))+'</div>')
             /* 08-10 James ("y pones así que confirmó también"): la venta de Carmen el cliente la confirmó dentro del chat antes de registrarse */
@@ -4816,7 +4819,7 @@ function renderAprobarPais(){
           '<td>'+esc(o.dir)+'<div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.zona)+(o.region&&o.region!=='—'?', '+esc(o.region):'')+'</div></td>'+
           '<td>'+esc(o.cant)+'</td><td>'+fmtEUR(o.totalNum)+'</td><td onclick="event.stopPropagation()">'+(esPagoPend(o)
             ?'<span style="font-size:12px;color:#b45309;font-weight:700">Esperando el pago</span><div style="font-size:11px;color:var(--ink-3)">se aprueba cuando llegue el comprobante</div>'
-            :celdaAprob(k,'',o.id,falta,'',false,dudES(o),o.creadoMs))+'</td></tr>';
+            :celdaAprob(k,'',o.id,falta,'',false,dudES(o),_ms))+'</td></tr>';
       }).join('')+'</tbody></table>'
       :'<div class="vacio" style="padding:22px">'+(CONF_ES?vacioES:'Cargando las confirmaciones de los clientes…')+'</div>')+'</div>';
 }
