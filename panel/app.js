@@ -4608,7 +4608,7 @@ function esPagoPend(o){ return /pago\s*pendiente/i.test(o.estado||''); }
 function pildoraPago(o){
   var st='margin-top:4px;display:inline-block;border-radius:6px;padding:2px 7px;font-size:11.5px;font-weight:700;';
   /* 04-10: botón de PayPal integrado: el servidor ya comprobó cobro, pedido e importe con PayPal */
-  if(/PAGADO paypal /.test(o.nota)) return '<div style="'+st+'background:#e3f6ea;color:#15803d">💳 PAGADO con PayPal · verificado por el sistema · crear a mano en Dropi PRO SIN cobro</div>';
+  if(/PAGADO paypal /.test(o.nota)) return '<div style="'+st+'background:#e3f6ea;color:#15803d">💳 PAGADO con PayPal · verificado por el sistema · al aprobar se crea solo en Dropi PRO SIN cobro</div>';
   if(/PAGADO/.test(o.nota)) return '<div style="'+st+'background:#e3f6ea;color:#15803d">💳 Pagado · comprobante recibido, verificar en PayPal</div>';
   if(esPagoPend(o)) return '<div style="'+st+'background:#fff3e2;color:#b45309">💳 Pago anticipado · botón enviado, falta comprobante</div>';
   return '<div style="'+st+'background:#fff3e2;color:#b45309">💳 Pago anticipado · enviar enlace de pago</div>';
@@ -4798,7 +4798,7 @@ function renderAprobarPais(){
       conf:true, abono:/abono pendiente/i.test(o.estado||''), montado:o.montado, ordenDropi:(String(o.estado||'').match(/#(\d+)/)||[])[1]||'',
       estado:o.estado||'', bot:web?'Página':'Carmen', loc:o.sub==='PT'?'PT':'ES', red:'', llave:'es:'+o.id, creadoMs:o.creadoMs, eur:true }; });
   ot.innerHTML='<div class="panel"><div class="tbl-head"><h2>España y Portugal · por aprobar</h2>'+
-    '<span style="font-size:12px;color:#8a93a0">Van a Dropi PRO, nunca a Dropi Chile. Lo que apruebes contra reembolso se crea solo en Dropi PRO (cada 5 min). El pago anticipado, por ahora, se crea a mano.</span>'+tabsES+'</div>'+
+    '<span style="font-size:12px;color:#8a93a0">Van a Dropi PRO, nunca a Dropi Chile. Lo que apruebes se crea solo en Dropi PRO (cada 5 min): contra reembolso con cobro, y el pago anticipado ya pagado SIN cobro.</span>'+tabsES+'</div>'+
     (lista.length?'<table><thead><tr><th>Cliente</th><th>País</th><th>Producto</th><th>Dirección</th><th>Cant.</th><th>Total</th><th>Aprobación</th></tr></thead><tbody>'+
       lista.map(function(o,ix){
         var k='es:'+o.id, falta=!nombreSirve(o.cli)?'nom':(!dirSirve(o.dir)?true:false);
