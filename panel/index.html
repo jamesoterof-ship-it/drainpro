@@ -163,6 +163,7 @@ nav{padding:0 12px;display:flex;flex-direction:column;gap:2px}
 .flag-py{background:linear-gradient(180deg,#d52b1e 0 33%,#fff 33% 66%,#0038a8 66% 100%)}
 .flag-es{background:linear-gradient(180deg,#aa151b 0 25%,#f1bf00 25% 75%,#aa151b 75% 100%)}
 .flag-pt{background:linear-gradient(90deg,#006600 0 40%,#ff0000 40% 100%)}
+.flag-ro{background:linear-gradient(90deg,#002B7F 0 33.3%,#FCD116 33.3% 66.6%,#CE1126 66.6% 100%)}
 /* pestañas por país (28-09) */
 .paistabs{flex-wrap:wrap;margin:0 0 12px}
 .paistabs .minitab{font-size:13.5px;padding:8px 16px}
@@ -543,6 +544,7 @@ tbody tr:hover .chev{color:var(--brand)}
 .paisnav button.act{background:var(--ink);color:#fff;border-color:var(--ink)}
 .paisnav .pn-num{margin-left:auto;background:#e1283c;color:#fff;border-radius:999px;font-size:10.5px;padding:0 6px}
 .paisnav .pn-num:empty{display:none}
+.paisnav .pn-grupo{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);padding:8px 2px 2px}
 #segPais[hidden],#paisAprob[hidden]{display:none!important}
 body:not([data-pais="CL"]) :is(#badgeCancelar,#badgeNovedades,#badgeListanegra,#badgeEntregas,#convBadge,#redesBadge){display:none!important}
 </style>
@@ -561,10 +563,14 @@ body:not([data-pais="CL"]) :is(#badgeCancelar,#badgeNovedades,#badgeListanegra,#
          panel: el menú muestra solo lo de ese país (su aprobación, su ganancia, sus chats). -->
     <div class="paisnav" id="paisNav">
       <button data-p="todos">Resumen · todo en COP</button>
+      <!-- 21-10 James: países de Latinoamérica y de Europa por aparte -->
+      <div class="pn-grupo">Latinoamérica</div>
       <button data-p="CL"><span class="flag flag-cl"></span>Chile <b class="pn-num" id="pnNumCL"></b></button>
+      <button data-p="CO"><span class="flag flag-co"></span>Colombia</button>
+      <div class="pn-grupo">Europa</div>
       <button data-p="ES"><span class="flag flag-es"></span>España <b class="pn-num" id="pnNumES"></b></button>
       <button data-p="PT"><span class="flag flag-pt"></span>Portugal <b class="pn-num" id="pnNumPT"></b></button>
-      <button data-p="CO"><span class="flag flag-co"></span>Colombia</button>
+      <button data-p="RO"><span class="flag flag-ro"></span>Rumanía <b class="pn-num" id="pnNumRO"></b></button>
     </div>
 
     <nav style="padding-top:4px">
@@ -576,6 +582,7 @@ body:not([data-pais="CL"]) :is(#badgeCancelar,#badgeNovedades,#badgeListanegra,#
         <svg class="ico" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
         Aprobación de ventas
         <span id="badgeAprobarES" style="display:none;margin-left:auto;background:#3056c9;color:#fff;border-radius:999px;font-size:11px;font-weight:800;padding:1px 8px"></span>
+        <span id="badgeAprobarRO" style="display:none;margin-left:auto;background:#3056c9;color:#fff;border-radius:999px;font-size:11px;font-weight:800;padding:1px 8px"></span>
         <span id="badgeAprobar" style="display:none;margin-left:auto;background:#e1283c;color:#fff;border-radius:999px;font-size:11px;font-weight:800;padding:1px 8px"></span>
       </div>
       <div class="nav-i" data-view="cancelar">
@@ -644,6 +651,7 @@ body:not([data-pais="CL"]) :is(#badgeCancelar,#badgeNovedades,#badgeListanegra,#
       <div class="nav-i sub" data-view="conv" data-bot="Logistica"><span class="subdot" style="background:#d97706"></span>Laura · Logística</div>
       <div class="nav-i sub" data-view="conv" data-bot="Carmen"><span class="subdot" style="background:#aa151b"></span>Carmen · España</div>
       <div class="nav-i sub" data-view="conv" data-bot="Carmen" data-pt="1"><span class="subdot" style="background:#006600"></span>Carmen · Portugal</div>
+      <div class="nav-i sub" data-view="conv" data-bot="CarmenRO"><span class="subdot" style="background:#002B7F"></span>Carmen · Rumanía</div>
       <div class="nav-i sub" data-view="conv" data-bot="James"><span class="subdot" style="background:#3060ea"></span>James · Colombia</div>
     </nav>
 
@@ -723,6 +731,7 @@ body:not([data-pais="CL"]) :is(#badgeCancelar,#badgeNovedades,#badgeListanegra,#
         <button class="minitab" data-p="ES"><span class="flag flag-es"></span>España</button>
         <button class="minitab" data-p="PT"><span class="flag flag-pt"></span>Portugal</button>
         <button class="minitab" data-p="CO"><span class="flag flag-co"></span>Colombia</button>
+        <button class="minitab" data-p="RO"><span class="flag flag-ro"></span>Rumanía</button>
       </div>
       <div class="filters">
         <div class="seg" id="segCanal">
@@ -892,6 +901,7 @@ body:not([data-pais="CL"]) :is(#badgeCancelar,#badgeNovedades,#badgeListanegra,#
         <button class="minitab" data-p="ES"><span class="flag flag-es"></span>España <span id="numAprobES" style="display:none;background:#3056c9;color:#fff;border-radius:999px;font-size:10.5px;font-weight:800;padding:0 6px;margin-left:4px"></span></button>
         <button class="minitab" data-p="PT"><span class="flag flag-pt"></span>Portugal <span id="numAprobPT" style="display:none;background:#3056c9;color:#fff;border-radius:999px;font-size:10.5px;font-weight:800;padding:0 6px;margin-left:4px"></span></button>
         <button class="minitab" data-p="CO"><span class="flag flag-co"></span>Colombia</button>
+        <button class="minitab" data-p="RO"><span class="flag flag-ro"></span>Rumanía <span id="numAprobRO" style="display:none;background:#3056c9;color:#fff;border-radius:999px;font-size:10.5px;font-weight:800;padding:0 6px;margin-left:4px"></span></button>
       </div>
       <div id="aprobOtro" hidden></div>
       <div class="panel" id="aprobChile">
@@ -1577,8 +1587,8 @@ body:not([data-pais="CL"]) :is(#badgeCancelar,#badgeNovedades,#badgeListanegra,#
      apagado. Para devolverlo: recuperar este bloque del commit anterior y activar el flujo. -->
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
-<script src="app.js?v=251"></script>
-<script src="ganancia.js?v=128"></script>
+<script src="app.js?v=252"></script>
+<script src="ganancia.js?v=129"></script>
 </body>
 </html>
 
