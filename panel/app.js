@@ -4536,8 +4536,8 @@ window.diasGananciaPais=function(P,cb){
         x.entra+=((Number(v.precio)||0)-cant*cu-env)*t; }
       else if(/devol|rechaz/i.test(v.dropi||'')){ var y=dia(k); y.devoluciones++; y.devol+=(C.devolucion_eur||0)*t; }
     });
-    /* la pauta que trae la caja es la de la cuenta de España: va en España. Portugal todavía no tiene campañas */
-    if(P==='ES') (CAJA_ES.pauta||[]).forEach(function(p){ dia(p.dia).meta+=Number(p.cop)||0; });
+    /* 20-10: la caja separa la pauta: las campañas con PORTUGAL en el nombre van en pauta_pt (día de Lisboa) */
+    ((P==='PT'?CAJA_ES.pauta_pt:CAJA_ES.pauta)||[]).forEach(function(p){ dia(p.dia).meta+=Number(p.cop)||0; });
     cb(Object.keys(por).map(function(k){ var x=por[k]; x.entra=Math.round(x.entra); x.devol=Math.round(x.devol); x.queda=x.entra-x.devol-x.meta; return x; })
       .sort(function(a,b){ return a.dia<b.dia?1:-1; }));
   };
