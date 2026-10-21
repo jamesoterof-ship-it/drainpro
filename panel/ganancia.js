@@ -22,7 +22,7 @@
      sirve a cada país. Chile descuenta bots y tu sueldo; España y Colombia no (el sueldo
      ya se descuenta una sola vez, en Chile). */
   var MODO = { pais: 'CL', sueldo: SUELDO_MES, bots: BOTS_DIA, botsTxt: 'Camila, Carlos y 3 más', dropi: 'Dropi' };
-  function paisGan() { return (window.fPais === 'ES' || window.fPais === 'CO') ? window.fPais : 'CL'; }
+  function paisGan() { return (window.fPais === 'ES' || window.fPais === 'PT' || window.fPais === 'CO') ? window.fPais : 'CL'; }
 
   var pes = function (n) { return '$' + Math.round(Number(n) || 0).toLocaleString('es-CO'); };
   var num = function (n) { return Math.round(Number(n) || 0); };
@@ -33,7 +33,8 @@
   /* 02-10 (James): en la pestaña de España el "hoy" es el de Madrid; en las demás, Bogotá.
      Se recalcula en cada pintada: el país se cambia sin recargar la página. */
   function hoyGan() {
-    var d = new Date(new Date().toLocaleString('en-US', { timeZone: paisGan() === 'ES' ? 'Europe/Madrid' : 'America/Bogota' }));
+    /* 20-10: Portugal con la hora de Lisboa */
+    var d = new Date(new Date().toLocaleString('en-US', { timeZone: paisGan() === 'ES' ? 'Europe/Madrid' : paisGan() === 'PT' ? 'Europe/Lisbon' : 'America/Bogota' }));
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   }
   var HOY = hoyGan();
@@ -74,7 +75,7 @@
       if (tbv) tbv.innerHTML = '<tr><td colspan="8" class="vacio">'
         + (esHoy ? 'Todavía no hay entregas registradas hoy. Dropi las va marcando durante el día.'
                  : 'No hay entregas en esa fecha.')
-        + (MODO.pais !== 'CL' ? ' ' + (MODO.pais === 'CO' ? 'Colombia todavía no vende.' : 'España y Portugal todavía no tienen entregas de Dropi PRO.') : '') + '</td></tr>';
+        + (MODO.pais !== 'CL' ? ' ' + (MODO.pais === 'CO' ? 'Colombia todavía no vende.' : (MODO.pais === 'PT' ? 'Portugal' : 'España') + ' todavía no tiene entregas de Dropi PRO.') : '') + '</td></tr>';
       var tfv = document.querySelector('#tablaGan tfoot'); if (tfv) tfv.innerHTML = '';
       var kv = document.getElementById('ganKpis'); if (kv) kv.innerHTML = '';
       var av2 = document.getElementById('ganAvisos'); if (av2) av2.innerHTML = '';
@@ -315,7 +316,7 @@
   window.cargarGanancia = function () {
     var P = paisGan();
     if (P !== 'CL') {
-      MODO = { pais: P, sueldo: 0, bots: 0, botsTxt: 'sin costo asignado aquí', dropi: P === 'ES' ? 'Dropi PRO' : 'Dropi' };
+      MODO = { pais: P, sueldo: 0, bots: 0, botsTxt: 'sin costo asignado aquí', dropi: (P === 'ES' || P === 'PT') ? 'Dropi PRO' : 'Dropi' };
       dias = [];
       if (typeof window.diasGananciaPais === 'function') window.diasGananciaPais(P, function (arr) { if (paisGan() !== P) return; dias = arr; pintarGanancia(); });
       pintarGanancia();

@@ -562,7 +562,8 @@ body:not([data-pais="CL"]) :is(#badgeCancelar,#badgeNovedades,#badgeListanegra,#
     <div class="paisnav" id="paisNav">
       <button data-p="todos">Resumen · todo en COP</button>
       <button data-p="CL"><span class="flag flag-cl"></span>Chile <b class="pn-num" id="pnNumCL"></b></button>
-      <button data-p="ES"><span class="flag flag-es"></span>España y Portugal <b class="pn-num" id="pnNumES"></b></button>
+      <button data-p="ES"><span class="flag flag-es"></span>España <b class="pn-num" id="pnNumES"></b></button>
+      <button data-p="PT"><span class="flag flag-pt"></span>Portugal <b class="pn-num" id="pnNumPT"></b></button>
       <button data-p="CO"><span class="flag flag-co"></span>Colombia</button>
     </div>
 
@@ -642,6 +643,7 @@ body:not([data-pais="CL"]) :is(#badgeCancelar,#badgeNovedades,#badgeListanegra,#
       <div class="nav-i sub" data-view="conv" data-bot="Carlos"><span class="subdot" style="background:#0e8074"></span>Camila · Chile</div>
       <div class="nav-i sub" data-view="conv" data-bot="Logistica"><span class="subdot" style="background:#d97706"></span>Laura · Logística</div>
       <div class="nav-i sub" data-view="conv" data-bot="Carmen"><span class="subdot" style="background:#aa151b"></span>Carmen · España</div>
+      <div class="nav-i sub" data-view="conv" data-bot="Carmen" data-pt="1"><span class="subdot" style="background:#006600"></span>Carmen · Portugal</div>
       <div class="nav-i sub" data-view="conv" data-bot="James"><span class="subdot" style="background:#3060ea"></span>James · Colombia</div>
     </nav>
 
@@ -718,7 +720,8 @@ body:not([data-pais="CL"]) :is(#badgeCancelar,#badgeNovedades,#badgeListanegra,#
       <div class="minitabs paistabs" id="segPais" hidden>
         <button class="minitab act" data-p="todos">Resumen · todo en COP</button>
         <button class="minitab" data-p="CL"><span class="flag flag-cl"></span>Chile</button>
-        <button class="minitab" data-p="ES"><span class="flag flag-es"></span>España y Portugal</button>
+        <button class="minitab" data-p="ES"><span class="flag flag-es"></span>España</button>
+        <button class="minitab" data-p="PT"><span class="flag flag-pt"></span>Portugal</button>
         <button class="minitab" data-p="CO"><span class="flag flag-co"></span>Colombia</button>
       </div>
       <div class="filters">
@@ -886,7 +889,8 @@ body:not([data-pais="CL"]) :is(#badgeCancelar,#badgeNovedades,#badgeListanegra,#
       <!-- 28-09: cada país aprueba lo SUYO y lo manda a SU Dropi. Chile no ve España ni al revés. -->
       <div class="minitabs paistabs" id="paisAprob" hidden>
         <button class="minitab act" data-p="CL"><span class="flag flag-cl"></span>Chile</button>
-        <button class="minitab" data-p="ES"><span class="flag flag-es"></span>España y Portugal <span id="numAprobES" style="display:none;background:#3056c9;color:#fff;border-radius:999px;font-size:10.5px;font-weight:800;padding:0 6px;margin-left:4px"></span></button>
+        <button class="minitab" data-p="ES"><span class="flag flag-es"></span>España <span id="numAprobES" style="display:none;background:#3056c9;color:#fff;border-radius:999px;font-size:10.5px;font-weight:800;padding:0 6px;margin-left:4px"></span></button>
+        <button class="minitab" data-p="PT"><span class="flag flag-pt"></span>Portugal <span id="numAprobPT" style="display:none;background:#3056c9;color:#fff;border-radius:999px;font-size:10.5px;font-weight:800;padding:0 6px;margin-left:4px"></span></button>
         <button class="minitab" data-p="CO"><span class="flag flag-co"></span>Colombia</button>
       </div>
       <div id="aprobOtro" hidden></div>
@@ -1573,8 +1577,8 @@ body:not([data-pais="CL"]) :is(#badgeCancelar,#badgeNovedades,#badgeListanegra,#
      apagado. Para devolverlo: recuperar este bloque del commit anterior y activar el flujo. -->
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
-<script src="app.js?v=249"></script>
-<script src="ganancia.js?v=127"></script>
+<script src="app.js?v=250"></script>
+<script src="ganancia.js?v=128"></script>
 </body>
 </html>
 

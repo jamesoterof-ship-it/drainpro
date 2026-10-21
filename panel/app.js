@@ -290,7 +290,7 @@ const ANTICIPO_CLP=5000;
 const anticipoPagado=o=>/abono pagado/i.test(String((o&&o.estado)||''));
 const cobroCLP=(o,txt)=>{ if(!anticipoPagado(o)) return txt; const n=numero(txt); return n>ANTICIPO_CLP?fmtCLP(n-ANTICIPO_CLP):txt; };
 const filaAnticipo=(o,txt)=>anticipoPagado(o)?'<div class="dl"><span class="k">Anticipo</span><span class="v" style="color:#1b7f3b;font-weight:800">PAGADO · se descuentan $5.000 del precio '+esc(String(txt))+'</span></div>':'';
-const FLAG={CL:'flag-cl',CO:'flag-co',PY:'flag-py',ES:'flag-es'};
+const FLAG={CL:'flag-cl',CO:'flag-co',PY:'flag-py',ES:'flag-es',PT:'flag-pt'};
 /* El bot del numero chileno se mostraba como 'Carlos' y el de logistica tambien:
    no habia forma de saber cual estabas mirando, y una regla que faltaba en uno se
    buscaba en el otro. La CLAVE interna sigue siendo Carlos (la usan los filtros);
@@ -310,7 +310,8 @@ const redBadge=o=>(o&&o.bot==='Redes')?'<span class="redchip red-'+(o.red||'na')
 const esVistaLog=()=>fBot==='Logistica';
 /* los dos se llaman Carlos: en las tarjetas hay que distinguirlos */
 const nomCorto=b=>b==='Logistica'?'Laura · Log.':BOTNOM[b].split(' ·')[0];
-const convDelBot=b=>b==='Logistica'?convos.filter(c=>c.log):convos.filter(c=>c.bot===b);
+/* 20-10 (James): en la pestaña de España, Carmen muestra solo los chats +34; en la de Portugal, solo los +351 */
+const convDelBot=b=>b==='Logistica'?convos.filter(c=>c.log):convos.filter(c=>c.bot===b&&(b!=='Carmen'||!esEU()||subDeTel(c.tel)===fPais));
 
 let convos=[], ordenes=[], pedidosWeb=[], abandonadosWeb=[], visitasWeb=[], selTel=null;
 let pedidosArchivo=[], visitasArchivo=[];   // meses ya archivados (solo Histórico)
@@ -343,12 +344,13 @@ function fechaOrden(f,h){
    Antes todo se cortaba a la medianoche del computador (Bogotá) y, como las ventas de Chile
    se leían con su hora escrita, el "hoy" de Chile seguía juntando el día anterior hasta
    las 2 de la mañana de allá. Las ventas guardan el instante exacto (CREADO_MS). */
-const ZONA_ES='Europe/Madrid', ZONA_CL='America/Santiago', ZONA_CO='America/Bogota';
-function zonaPanel(){ var p=(typeof fPais!=='undefined')?fPais:'todos'; return p==='ES'?ZONA_ES:p==='CO'?ZONA_CO:ZONA_CL; }
+/* 20-10 (James): Portugal con SU hora (Lisboa, una hora menos que Madrid) */
+const ZONA_ES='Europe/Madrid', ZONA_PT='Europe/Lisbon', ZONA_CL='America/Santiago', ZONA_CO='America/Bogota';
+function zonaPanel(){ var p=(typeof fPais!=='undefined')?fPais:'todos'; return p==='ES'?ZONA_ES:p==='PT'?ZONA_PT:p==='CO'?ZONA_CO:ZONA_CL; }
 /* el país de una venta, para el Resumen general (en una pestaña de país manda la del país) */
 function zonaVenta(o){
   if(typeof fPais!=='undefined'&&fPais!=='todos') return zonaPanel();
-  if(o&&o.sub) return ZONA_ES;                 /* España / Portugal */
+  if(o&&o.sub) return o.sub==='PT'?ZONA_PT:ZONA_ES;   /* España / Portugal */
   if(o&&o.loc==='CO') return ZONA_CO;
   return ZONA_CL;
 }
@@ -538,7 +540,7 @@ async function cargarVentas(){
       else { _vistas[_dupK]=ords.length; ords.push(_fila); }
     });
     ordenes=ords.sort((a,b)=>b.orden-a.orden);   // (3) recientes primero
-    ventasES=_es.sort((a,b)=>b.orden-a.orden);
+    ventasEU=_es.sort((a,b)=>b.orden-a.orden); filtrarEU();
     ventasCO=_co.sort((a,b)=>b.orden-a.orden);
     // contador del canal de redes en el menu
     var _b=document.getElementById('redesBadge');
@@ -673,7 +675,7 @@ function renderResumen(){
   const usaWA = fCanal==='todos'||fCanal==='wa', usaWeb = fCanal==='todos'||fCanal==='web';
   const usaRed = fCanal==='todos'||fCanal==='redes';
   const lbl=rangoTxt();
-  const MON=fPais==='ES'?'EUR':fPais==='CO'?'COP':'CLP';
+  const MON=esEU()?'EUR':fPais==='CO'?'COP':'CLP';
   ['lTot','lWa','lWeb','lMon'].forEach((id,i)=>{ if(el(id)) el(id).textContent=['Ventas totales ('+lbl+')','Ventas por WhatsApp ('+lbl+')','Ventas por página ('+lbl+')','Ventas '+lbl+' · en '+MON][i]; });
   if(el('lRed')) el('lRed').textContent='Ventas por redes ('+lbl+')';
   if(el('kRed')) el('kRed').textContent=usaRed?redR.length:'—';
@@ -700,10 +702,10 @@ function renderResumen(){
     const tLoc=(usaWA?waR.reduce((a,b)=>a+b.precioNum,0):0)
               +(usaRed?redR.reduce((a,b)=>a+b.precioNum,0):0)
               +(usaWeb?webR.reduce((a,b)=>a+b.totalNum,0):0);
-    const tasa=fPais==='ES'?(TASAS&&TASAS.eur):fPais==='CO'?1:(TASAS&&TASAS.clp);
-    const num=fPais==='ES'?fmtEUR(tLoc).replace(' €',''):fPais==='CO'?fmtCOP(tLoc):fmtCLP(tLoc);
+    const tasa=esEU()?(TASAS&&TASAS.eur):fPais==='CO'?1:(TASAS&&TASAS.clp);
+    const num=esEU()?fmtEUR(tLoc).replace(' €',''):fPais==='CO'?fmtCOP(tLoc):fmtCLP(tLoc);
     el('kMonedas').innerHTML=
-      '<div class="mm"><span class="flag '+(fPais==='ES'?'flag-es':fPais==='CO'?'flag-co':'flag-cl')+'"></span>'+num+'<small>'+MON+'</small></div>'+
+      '<div class="mm"><span class="flag '+(FLAG[fPais]||'flag-cl')+'"></span>'+num+'<small>'+MON+'</small></div>'+
       (fPais==='CO'?'':'<div class="mm" style="font-size:13.5px;color:var(--ink-2)">≈ '+(tasa?fmtCOP(tLoc*tasa):'sin tasa')+'<small>COP</small></div>');
   }
   renderChart(); renderPaises(); renderActividad(); renderTopProd();
@@ -798,27 +800,26 @@ function renderChart(){
 }
 function renderPaises(){
   const cont=document.getElementById('paisesReal'); if(!cont) return;
-  /* en la pestaña de España el panel reparte entre España y Portugal */
-  if(fPais==='ES'){
-    const e={ES:{n:0,t:0},PT:{n:0,t:0}};
-    ventasES.filter(enRangoO).forEach(o=>{e[o.sub].n++;e[o.sub].t+=o.totalNum;});
-    const tt=e.ES.n+e.PT.n||1;
-    cont.innerHTML=[['ES','España','#aa151b'],['PT','Portugal','#006600']].map(([k,nom,col])=>{const p=Math.round(e[k].n/tt*100);
-      return `<div class="pais"><span class="flag flag-${k.toLowerCase()}"></span>${nom}<div class="track"><i style="width:${p}%;background:${col}"></i></div><b>${e[k].n} · ${fmtEUR(e[k].t)}</b><span class="pct">${p}%</span></div>`;}).join('');
-    const ps0=document.getElementById('paisesSub'); if(ps0) ps0.textContent=rangoTxt()+' · España y Portugal';
+  /* 20-10 (James): España y Portugal tienen cada uno su pestaña: aquí sale solo el país elegido */
+  if(esEU()){
+    const e={n:0,t:0};
+    ventasES.filter(enRangoO).forEach(o=>{e.n++;e.t+=o.totalNum;});
+    const nom=NOM_EU[fPais], col=fPais==='PT'?'#006600':'#aa151b';
+    cont.innerHTML=`<div class="pais"><span class="flag ${FLAG[fPais]}"></span>${nom}<div class="track"><i style="width:${e.n?100:0}%;background:${col}"></i></div><b>${e.n} · ${fmtEUR(e.t)}</b><span class="pct">${e.n?100:0}%</span></div>`;
+    const ps0=document.getElementById('paisesSub'); if(ps0) ps0.textContent=rangoTxt()+' · '+nom;
     return;
   }
-  /* 28-09: Paraguay fuera (James), España y Portugal dentro (en euros) */
-  const g={CL:{n:0,t:0},CO:{n:0,t:0},PY:{n:0,t:0},ES:{n:0,t:0}};
+  /* 28-09: Paraguay fuera (James), España y Portugal dentro (en euros); 20-10: cada uno en su fila */
+  const g={CL:{n:0,t:0},CO:{n:0,t:0},PY:{n:0,t:0},ES:{n:0,t:0},PT:{n:0,t:0}};
   if(fCanal!=='web') ordenes.filter(enRangoO).forEach(o=>{g[o.loc].n++;g[o.loc].t+=o.precioNum;});
   if(fCanal!=='wa') pedidosWeb.filter(enRangoO).forEach(o=>{g.CL.n++;g.CL.t+=o.totalNum;});
   /* 01-10: las de la pagina de Colombia (ventasCO) tampoco entraban en "Ventas por pais" */
   if(fCanal!=='wa') (typeof ventasCO!=='undefined'?ventasCO:[]).filter(enRangoO).forEach(o=>{g.CO.n++;g.CO.t+=o.totalNum;});
-  (typeof ventasES!=='undefined'?ventasES:[]).filter(enRangoO).forEach(o=>{g.ES.n++;g.ES.t+=o.totalNum;});
-  const tot=g.CL.n+g.CO.n+g.ES.n||1;
+  (typeof ventasES!=='undefined'?ventasES:[]).filter(enRangoO).forEach(o=>{g[o.sub].n++;g[o.sub].t+=o.totalNum;});
+  const tot=g.CL.n+g.CO.n+g.ES.n+g.PT.n||1;
   const fila=(loc,nom,color,fmt)=>{const p=Math.round(g[loc].n/tot*100);
     return `<div class="pais"><span class="flag ${FLAG[loc]}"></span>${nom}<div class="track"><i style="width:${p}%;background:${color}"></i></div><b>${g[loc].n} · ${fmt(g[loc].t)}</b><span class="pct">${p}%</span></div>`;};
-  cont.innerHTML=fila('CL','Chile','#0e8074',fmtCLP)+fila('ES','España y Portugal','#aa151b',fmtEUR)+fila('CO','Colombia','var(--blue)',fmtCOP);
+  cont.innerHTML=fila('CL','Chile','#0e8074',fmtCLP)+fila('ES','España','#aa151b',fmtEUR)+fila('PT','Portugal','#006600',fmtEUR)+fila('CO','Colombia','var(--blue)',fmtCOP);
   const ps=document.getElementById('paisesSub'); if(ps) ps.textContent=rangoTxt()+' · '+(fCanal==='todos'?'todos los canales':fCanal==='wa'?'WhatsApp':'páginas');
 }
 
@@ -834,7 +835,7 @@ function chipsPedidosWeb(){
 }
 function renderPedidosWeb(){
   if(visPaisSel()==='CO') cargarLlamCO();
-  if(visPaisSel()==='ES') cargarConfES();
+  if(esEU(visPaisSel())) cargarConfES();
   var _thL=document.getElementById('thLlamadaCO'); if(_thL) _thL.style.display=visPaisSel()==='CO'?'':'none';
   const tb=document.getElementById('tbodyPedidos'); if(!tb) return;
   chipsPedidosWeb();
@@ -958,7 +959,7 @@ function renderAbandonadosWeb(){
   if(!PAGINAS.some(p=>p.url)){tb.innerHTML='<tr><td colspan="7" class="vacio">Esperando conexión de las planillas…</td></tr>';return;}
   /* 28-09: aquí solo Chile; los de España/Colombia salen en su país */
   const abCL=abandonadosWeb.filter(o=>paisDeTel(o.tel)===visPaisSel());
-  if(!abCL.length){tb.innerHTML='<tr><td colspan="7" class="vacio">'+(visPaisSel()==='CL'?'Sin abandonados pendientes. 🎉':'Sin carritos abandonados de '+(visPaisSel()==='ES'?'España y Portugal':'Colombia')+' todavía. A estos clientes no les escribe ningún flujo de Chile.')+'</td></tr>';return;}
+  if(!abCL.length){tb.innerHTML='<tr><td colspan="7" class="vacio">'+(visPaisSel()==='CL'?'Sin abandonados pendientes. 🎉':'Sin carritos abandonados de '+(NOM_EU[visPaisSel()]||'Colombia')+' todavía. A estos clientes no les escribe ningún flujo de Chile.')+'</td></tr>';return;}
   tb.innerHTML=abCL.slice(0,100).map((o,i)=>`
     <tr onclick="verAbandonado(${i})" style="cursor:pointer">
       <td class="cli">${esc(o.cli)}<small>${esc(o.fecha)} · +${o.tel}</small></td>
@@ -993,7 +994,7 @@ let fPagV='todas';
 window.setPagV=function(id){ fPagV=id; renderVisitas(); };
 /* 28-09: la pantalla de visitas es la MISMA para los tres países; solo cambian los datos
    (James: "el diseño es igual, no así simple"). */
-function visPaisSel(){ return fPais==='ES'?'ES':(fPais==='CO'?'CO':'CL'); }
+function visPaisSel(){ return esEU()?fPais:(fPais==='CO'?'CO':'CL'); }
 function pagesVis(){ var P=visPaisSel(), m={}; (visitasWeb||[]).forEach(function(v){ if(!v||!v.pagina||paisDePagVis(v.pagina)!==P) return; var k=npV(v.pagina); if(!m[k]) m[k]={id:k,nombre:nombrePagVis(k,(function(n){ n=n.replace(/ · (España|Portugal)$/,''); return /españa|portugal/i.test(n)?n:n+(/^pt-/.test(k)?' · Portugal':/^es-/.test(k)?' · España':''); })(String(v.producto||''))),color:v.color||'#6cc24a'}; }); var a=Object.keys(m).map(function(k){return m[k];}); return a.length?a:(P==='CL'?PAGINAS.filter(p=>p.url):[]); }
 /* pedidos que cuentan en visitas: Chile = pedidos de página; España = ventas de la página ES/PT */
 function pedsVis(){
@@ -1088,7 +1089,7 @@ function renderVisitas(){
   const vfs=document.getElementById('visFunSub'); if(vfs) vfs.textContent=lbl;
 
   // tarjetas por página
-  if(!conectadas.length){ box.innerHTML='<div class="vacio">'+(visPaisSel()==='CL'?'Conecta las planillas para ver visitas.':(visPaisSel()==='CO'?'Colombia todavía no tiene página: no hay visitas que medir.':'La página de España todavía no tiene visitas.'))+'</div>'; return; }
+  if(!conectadas.length){ box.innerHTML='<div class="vacio">'+(visPaisSel()==='CL'?'Conecta las planillas para ver visitas.':(visPaisSel()==='CO'?'Colombia todavía no tiene página: no hay visitas que medir.':'La página de '+(NOM_EU[visPaisSel()]||'España')+' todavía no tiene visitas.'))+'</div>'; return; }
   box.innerHTML=data.map(p=>{
     const conv=p.vis?(p.peds/p.vis*100):0;
     return `<div class="kpi" style="margin-bottom:14px">
@@ -1155,7 +1156,7 @@ function renderConvList(){
      ningun bot y el cliente de pagina que no habia escrito por WhatsApp no
      aparecia en ninguna lista. 9-sep: James no veia las ventas del Organizador. */
   (pedidosWeb||[]).forEach(function(p){ var t=soloNum(p.tel); if(t && !_seen[t]){ _seen[t]=1; _base.push({tel:t, n:p.cli||t, bot:'Carlos', estado:'activa', ultimo:'📦 Pedido web · '+(p.conf?'confirmado ✅':'esperando confirmación ⏳'), hora:'', fecha:p.fecha||'', orden:p.orden||0}); } });
-  let arr=_base.filter(c=>(esVistaLog()?c.log:c.bot===fBot) && enRangoDe(c.orden,Rconv));
+  let arr=_base.filter(c=>(esVistaLog()?c.log:c.bot===fBot&&(fBot!=='Carmen'||!esEU()||subDeTel(c.tel)===fPais)) && enRangoDe(c.orden,Rconv));
   if(fEst!=='todas') arr=arr.filter(c=>c.estado===fEst);
   if(q) arr=arr.filter(c=>(c.n+' '+c.tel).toLowerCase().includes(q));
   /* Los pedidos de pagina se agregan al FINAL de la lista, y la lista se corta
@@ -1217,7 +1218,7 @@ function ventasCarmen(){
   return ventasES.filter(function(o){return /^carmen/i.test(o.bot);}).map(function(o){ return {rid:o.id,cli:o.cli,tel:o.tel,prod:o.prod,cant:o.cant,
     precioNum:o.totalNum,precio:fmtEUR(o.totalNum),dir:o.dir,zona:o.zona,region:o.region,nota:o.nota,desde:'',revision:'',nivel:'',fecha:o.fecha,hora:'',
     orden:o.orden,conf:!/pago\s*pendiente|falta/i.test(o.estado),abono:false,montado:o.montado,ordenDropi:(String(o.estado).match(/#(\d+)/)||[])[1]||'',
-    estado:o.estado,bot:'Carmen',loc:'ES',red:'',llave:'es:'+o.id,creadoMs:o.creadoMs,eur:true}; });
+    estado:o.estado,bot:'Carmen',loc:o.sub,red:'',llave:'es:'+o.id,creadoMs:o.creadoMs,eur:true}; });
 }
 function verVentaBot(i){window._ventasF=window._ventasBotF;verVenta(i);}
 function setTabConv(t){
@@ -1435,7 +1436,7 @@ function _fVms(f){ const m=String(f||'').match(/(\d{1,2})-(\d{1,2})-(\d{4})/); i
 function renderVentasWA(){
   const tb=document.getElementById('tbodyVentasWA'); if(!tb) return;
   const q=(document.getElementById('vbuscar')?.value||'').toLowerCase();
-  let arr=visPaisSel()==='ES'?ventasCarmen():ordenes.filter(o=>o.loc===visPaisSel());   /* 28-09: solo el país elegido */
+  let arr=esEU(visPaisSel())?ventasCarmen():ordenes.filter(o=>o.loc===visPaisSel());   /* 28-09: solo el país elegido */
   const _d1=(document.getElementById('vDesde')||{}).value, _d2=(document.getElementById('vHasta')||{}).value;
   if(_d1||_d2){
     const desde=_d1?new Date(_d1+'T00:00:00').getTime():0;
@@ -1454,7 +1455,7 @@ function renderVentasWA(){
     const sum={};
     arr.forEach(o=>{ const v=o.eur?o.precioNum:(Number(String(o.precio||'').replace(/\D/g,''))||0); sum[o.loc]=(sum[o.loc]||0)+v; });
     const MON={CL:'CLP',CO:'COP',PY:'PYG'};
-    const partes=Object.keys(sum).map(k=>k==='ES'?fmtEUR(sum[k]):MON[k]+' $'+sum[k].toLocaleString('es-CO'));
+    const partes=Object.keys(sum).map(k=>(k==='ES'||k==='PT')?fmtEUR(sum[k]):MON[k]+' $'+sum[k].toLocaleString('es-CO'));
     el.textContent=arr.length+' venta'+(arr.length===1?'':'s')+(partes.length?' · '+partes.join(' · '):'');
   })();
   if(fPaisV!=='todas') arr=arr.filter(o=>o.loc===fPaisV);
@@ -1629,13 +1630,13 @@ function renderBots(){
   const cont=document.getElementById('botcards'); if(!cont) return;
   const hoyV=ordenes.filter(o=>o.orden>=inicioDia(0));
   /* 28-09: cada país ve solo sus bots (Colombia y Paraguay ya no salen en Chile) */
-  cont.innerHTML=(visPaisSel()==='ES'?['Carmen']:visPaisSel()==='CO'?['James']:['Carlos','Logistica','Redes']).map(b=>{
+  cont.innerHTML=(esEU(visPaisSel())?['Carmen']:visPaisSel()==='CO'?['James']:['Carlos','Logistica','Redes']).map(b=>{
     const cs=convDelBot(b);
     const pausadas=cs.filter(c=>c.estado==='pausada').length;
     const ventasHoy=b==='Logistica'
       ? (function(){const s={};cs.forEach(c=>s[soloNum(c.tel)]=1);return hoyV.filter(o=>s[soloNum(o.tel)]).length;})()
-      : (b==='Carmen'?ventasCarmen().filter(o=>o.orden>=inicioDia(0,ZONA_ES)).length:hoyV.filter(o=>o.bot===b).length);
-    const loc=BOTLOC[b];
+      : (b==='Carmen'?ventasCarmen().filter(o=>o.orden>=inicioDia(0,fPais==='PT'?ZONA_PT:ZONA_ES)).length:hoyV.filter(o=>o.bot===b).length);
+    const loc=b==='Carmen'&&fPais==='PT'?'PT':BOTLOC[b];
     return `<div class="botmini">
       <span class="bav" style="background:${BOTCOLOR[b]};width:26px;height:26px;font-size:12px;line-height:26px">${b[0]}</span>
       <b>${nomCorto(b)}</b><span class="flag ${FLAG[loc]}"></span>
@@ -1651,7 +1652,7 @@ function irConvBot(b){
   document.querySelectorAll('.nav-i[data-bot]').forEach(x=>x.classList.toggle('subact',x.dataset.bot===b));
   document.getElementById('tabVentasLbl').textContent=b==='Logistica'?'Ventas de estos clientes':'Ventas de '+nomCorto(b);
   mostrarVista('conv'); setTabConv('conv'); renderConvList();
-  document.getElementById('vtitle').textContent=BOTNOM[b];
+  document.getElementById('vtitle').textContent=b==='Carmen'&&fPais==='PT'?'Carmen · Portugal':BOTNOM[b];
   document.getElementById('vsub').textContent=b==='Logistica'
     ? 'Solo lo que escribe Laura: confirmaciones, anticipos, novedades y carritos'
     : 'Conversaciones y ventas de este bot';
@@ -1943,7 +1944,7 @@ function renderAprobar(){
   if(btr){ btr.style.display=nTrab?'':'none'; btr.textContent=nTrab; }
   const nPend=items.filter(x=>x.st==='pendiente' && !x.prog && !x.dud).length;
   const bg=document.getElementById('badgeAprobar');
-  if(bg){ bg.style.display=(nPend&&fPais!=='ES'&&fPais!=='CO')?'':'none'; bg.textContent=nPend; }
+  if(bg){ bg.style.display=(nPend&&!esEU()&&fPais!=='CO')?'':'none'; bg.textContent=nPend; }
   var pnCL=document.getElementById('pnNumCL'); if(pnCL) pnCL.textContent=nPend||'';
   agRiesgoCalc(items);
   /* LO MAS NUEVO ARRIBA, lo mas viejo abajo. Sin excepciones y sin separar por
@@ -4253,6 +4254,16 @@ async function crmFicha(id){
    ===================================================================== */
 var ventasES=[], fPais='todos', fPaisAprob='CL', TASAS=null;
 try{ fPais=localStorage.getItem('jaye_pais')||'todos'; }catch(e){}
+/* 20-10 (James): "Portugal aparte, no lo voy a mezclar". ventasEU guarda España y Portugal tal
+   como llegan; ventasES es lo que ve la pestaña elegida: en España solo ES, en Portugal solo PT,
+   y en Chile / Colombia / Resumen las dos (para los totales). Cada venta ya trae su país en o.sub. */
+var ventasEU=[];
+var NOM_EU={ES:'España',PT:'Portugal'};
+function esEU(p){ p=(p===undefined)?fPais:p; return p==='ES'||p==='PT'; }
+function listaEU(p){ return esEU(p)?ventasEU.filter(function(o){return o.sub===p;}):ventasEU; }
+function filtrarEU(){ ventasES=listaEU(fPais); }
+/* el país europeo de un teléfono: +351 es Portugal, lo demás España */
+function subDeTel(t){ return soloNum(t).indexOf('351')===0?'PT':'ES'; }
 
 function esFilaES(r){
   var p=String(r.PAIS||'').toUpperCase();
@@ -4316,14 +4327,15 @@ function tasaTxt(){
 
 /* lo vendido en el rango elegido (Hoy / Ayer / 7 días...), por país */
 function totalesPais(){
-  var T={cl:{n:0,t:0},es:{n:0,t:0,ES:0,PT:0},co:{n:0,t:0}};
+  var T={cl:{n:0,t:0},es:{n:0,t:0,ES:0,PT:0},pt:{n:0,t:0},co:{n:0,t:0}};
   ordenes.filter(enRangoO).forEach(function(o){
     if(o.loc==='CL'){T.cl.n++;T.cl.t+=o.precioNum;} else if(o.loc==='CO'){T.co.n++;T.co.t+=o.precioNum;} });
   pedidosWeb.filter(enRangoO).forEach(function(o){T.cl.n++;T.cl.t+=o.totalNum;});
   /* 01-10 James: "no me muestra el total de las ventas de Colombia". Las de la PAGINA de Colombia
      viven en ventasCO (no en ordenes) y aca no se sumaban: la tarjeta decia 0 con ventas del dia. */
   ventasCO.filter(enRangoO).forEach(function(o){T.co.n++;T.co.t+=o.totalNum;});
-  ventasES.filter(enRangoO).forEach(function(o){T.es.n++;T.es.t+=o.totalNum;T.es[o.sub]++;});
+  /* 20-10: España y Portugal cada uno en lo suyo (T.es solo España, T.pt solo Portugal) */
+  ventasES.filter(enRangoO).forEach(function(o){ var x=o.sub==='PT'?T.pt:T.es; x.n++; x.t+=o.totalNum; T.es[o.sub]++; });
   return T;
 }
 function kpiHtml(lbl,val,meta){
@@ -4333,7 +4345,7 @@ function kpiHtml(lbl,val,meta){
    Resumen: todos los países juntos (sin Paraguay). Chile / Colombia: su WhatsApp,
    redes y páginas. España y Portugal: sus pedidos de página, en euros. */
 function _ordP(){
-  if(fPais==='ES') return [];
+  if(esEU()) return [];
   if(fPais==='todos') return ordenes.filter(function(o){return o.loc==='CL'||o.loc==='CO';});
   var loc=fPais==='CO'?'CO':'CL';
   return ordenes.filter(function(o){return o.loc===loc;});
@@ -4347,7 +4359,7 @@ function _webCO(){
     color:'#A16207',total:fmtCOP(o.totalNum)+' COP',loc:'CO'};});
 }
 function _webP(){
-  if(fPais==='ES') return _webES();
+  if(esEU()) return _webES();
   if(fPais==='CO') return _webCO();
   if(fPais==='todos') return pedidosWeb.concat(_webES(),_webCO());
   return pedidosWeb;
@@ -4361,7 +4373,7 @@ function _val(o,campo){
 }
 function fmtMonP(n){
   if(fPais==='todos') return TASAS? fmtCOP(n)+' COP' : 'sin tasa del día';
-  return fPais==='ES'?fmtEUR(n):fPais==='CO'?fmtCOP(n)+' COP':fmtCLP(n)+' CLP';
+  return esEU()?fmtEUR(n):fPais==='CO'?fmtCOP(n)+' COP':fmtCLP(n)+' CLP';
 }
 
 function irPais(p){ elegirPais(p); }
@@ -4371,16 +4383,16 @@ function irPais(p){ elegirPais(p); }
 /* James 28-09 (2ª vuelta): "todo esto tiene que aparecer también en Colombia y en España y
    Portugal". Todas las secciones están en los tres países; cada una muestra SOLO lo de su
    país, y si un país todavía no tiene datos lo dice, nunca muestra los de Chile. */
-var MENU_PAIS={ radar:'todos,CL,ES,CO', historico:'todos,CL,ES,CO', config:'todos,CL,ES,CO', resumen:'todos,CL,ES,CO' };
+var MENU_PAIS={ radar:'todos,CL,ES,PT,CO', historico:'todos,CL,ES,PT,CO', config:'todos,CL,ES,PT,CO', resumen:'todos,CL,ES,PT,CO' };
 function paisesDe(n){
   if(n.dataset.bot==='James') return 'CO';
-  if(n.dataset.bot==='Carmen') return 'ES';
+  if(n.dataset.bot==='Carmen') return n.dataset.pt?'PT':'ES';   /* 20-10: "Carmen · España" en España, "Carmen · Portugal" en Portugal */
   if(n.dataset.bot==='Carlos'||n.dataset.bot==='Logistica') return 'CL';
-  return MENU_PAIS[n.dataset.view]||'CL,ES,CO';
+  return MENU_PAIS[n.dataset.view]||'CL,ES,PT,CO';
 }
-/* de qué país es un teléfono o una página de visitas */
-function paisDeTel(t){ t=soloNum(t); if(/^34\d{9}$/.test(t)||/^351\d{9}$/.test(t)) return 'ES'; if(/^57\d{10}$/.test(t)) return 'CO'; return 'CL'; }
-function paisDePagVis(s){ s=String(s||''); if(/^co-/.test(s)) return 'CO'; return (/^(es|pt)-/.test(s)||s==='tienda-balsamo'||/^tienda-es-/.test(s))?'ES':'CL'; }
+/* de qué país es un teléfono o una página de visitas (20-10: +351 y las páginas pt- son de Portugal) */
+function paisDeTel(t){ t=soloNum(t); if(/^34\d{9}$/.test(t)) return 'ES'; if(/^351\d{9}$/.test(t)) return 'PT'; if(/^57\d{10}$/.test(t)) return 'CO'; return 'CL'; }
+function paisDePagVis(s){ s=String(s||''); if(/^co-/.test(s)) return 'CO'; if(/^pt-/.test(s)) return 'PT'; return (/^es-/.test(s)||s==='tienda-balsamo'||/^tienda-es-/.test(s))?'ES':'CL'; }
 
 /* Secciones que en España/Portugal y Colombia se pintan aparte: se esconde el contenido de
    Chile de la vista y se muestra una caja propia del país. */
@@ -4395,7 +4407,7 @@ function cajaOtro(v){
 function pintarOtroPais(v){
   Object.keys(VISTAS_OTRO).forEach(function(k){
     var box=cajaOtro(k), view=document.getElementById('view-'+k); if(!box||!view) return;
-    var otro=(fPais==='ES'||fPais==='CO')&&k===v&&fBot==='Redes';
+    var otro=(esEU()||fPais==='CO')&&k===v&&fBot==='Redes';
     [].forEach.call(view.children,function(c){ if(c!==box) c.style.display=otro?'none':''; });
     box.hidden=!otro;
     if(otro) box.innerHTML=htmlOtroPais(k);
@@ -4403,14 +4415,14 @@ function pintarOtroPais(v){
 }
 function vacioPais(txt){ return '<div class="panel"><div class="vacio" style="padding:26px;line-height:1.6">'+txt+'</div></div>'; }
 function htmlOtroPais(v){
-  var ES=fPais==='ES', nom=ES?'España y Portugal':'Colombia';
+  var ES=esEU(), nom=ES?NOM_EU[fPais]:'Colombia';
   if(v==='pedidos'){
     if(!ES) return vacioPais('Colombia todavía no tiene página ni pedidos.');
     var pag=ventasES.filter(function(o){return /p[aá]gina/i.test(o.bot);});
     return tablaVentasPais(pag,true,'Todavía no hay pedidos de la página de España ni de Portugal.');
   }
   if(v==='abandonados'){
-    var ab=abandonadosWeb.filter(function(o){return paisDeTel(o.tel)===(ES?'ES':'CO');});
+    var ab=abandonadosWeb.filter(function(o){return paisDeTel(o.tel)===(ES?fPais:'CO');});
     if(!ab.length) return vacioPais('Sin carritos abandonados de '+nom+' todavía. Se guardan cuando alguien escribe su teléfono en el formulario y se va sin comprar. <b>A estos clientes no les escribe ningún flujo de Chile.</b>');
     return '<div class="panel"><table><thead><tr><th>Cliente</th><th>Producto</th><th>Ciudad</th><th>Cant.</th><th>Total</th></tr></thead><tbody>'+
       ab.slice(0,100).map(function(o){ return '<tr><td class="cli">'+esc(o.cli)+'<small>'+esc(o.fecha)+' · +'+o.tel+'</small></td><td>'+esc(o.prod)+'</td><td>'+esc(o.comuna)+'</td><td>'+o.cant+'</td><td>'+fmtEUR(numEUR(o.totRaw))+'</td></tr>'; }).join('')+
@@ -4419,7 +4431,7 @@ function htmlOtroPais(v){
   if(v==='visitas'){
     if(!ES) return vacioPais('Colombia todavía no tiene página: no hay visitas que medir.');
     var desde=inicioDia(_visEsR===1?0:_visEsR-1), porPag={};
-    visitasWeb.filter(function(x){return paisDePagVis(x.pagina)==='ES'&&fechaOrden(x.fecha,'')>=desde;}).forEach(function(x){
+    visitasWeb.filter(function(x){return paisDePagVis(x.pagina)===fPais&&fechaOrden(x.fecha,'')>=desde;}).forEach(function(x){
       var k=/^pt-/.test(x.pagina)?'PT':'ES', id=x.pagina.replace(/^(es|pt|tienda)-/,'');
       var key=k+'|'+id; if(!porPag[key]) porPag[key]={pais:k,prod:String(x.producto||id).replace(/ · (España|Portugal)$/,''),vis:0,form:0,peds:0};
       porPag[key].vis+=numero(x.visitas); porPag[key].form+=numero(x.formulario); });
@@ -4438,8 +4450,8 @@ function htmlOtroPais(v){
   if(v==='bots'||v==='conv'){
     if(!ES) return vacioPais('Colombia todavía no tiene bot de ventas. Sus chats están en "James · Colombia".');
     var car=ventasES.filter(function(o){return /^carmen/i.test(o.bot);});
-    return (v==='conv'&&fBot==='Redes'?vacioPais('España y Portugal todavía no venden por redes (Facebook e Instagram).'):
-      '<div class="panel" style="padding:12px 16px;margin-bottom:10px"><b>Carmen</b> · WhatsApp de España +34 672 42 37 35 · vende y hace la postventa de España y Portugal.</div>'+
+    return (v==='conv'&&fBot==='Redes'?vacioPais(nom+' todavía no vende por redes (Facebook e Instagram).'):
+      '<div class="panel" style="padding:12px 16px;margin-bottom:10px"><b>Carmen</b> · '+(fPais==='PT'?'Portugal todavía atiende por el WhatsApp de España +34 672 42 37 35, hasta que tenga su número propio.':'WhatsApp de España +34 672 42 37 35.')+'</div>'+
       tablaVentasPais(car,true,'Carmen todavía no ha cerrado ventas.'));
   }
   if(v==='entregas') return vacioPais(ES?'Carmen todavía no manda plantillas: las de España están en revisión en Meta. Cuando las apruebe y empiecen a salir, aquí se ve si llegaron.':'Colombia todavía no manda plantillas.');
@@ -4450,7 +4462,7 @@ function htmlOtroPais(v){
 }
 var _mostrarVistaBase=mostrarVista;
 mostrarVista=function(v){ _mostrarVistaBase(v); pintarOtroPais(v); };
-var NOM_PAIS={todos:'Resumen general',CL:'Resumen de Chile',ES:'Resumen de España y Portugal',CO:'Resumen de Colombia'};
+var NOM_PAIS={todos:'Resumen general',CL:'Resumen de Chile',ES:'Resumen de España',PT:'Resumen de Portugal',CO:'Resumen de Colombia'};
 function aplicarPaisMenu(){
   document.querySelectorAll('#paisNav button').forEach(function(b){ b.classList.toggle('act',b.dataset.p===fPais); });
   document.body.dataset.pais=fPais;   /* los contadores de Chile solo se ven en Chile (CSS) */
@@ -4468,16 +4480,19 @@ function aplicarPaisMenu(){
   /* contadores de aprobación: cada país el suyo */
   var bCL=document.getElementById('badgeAprobar'), bES=document.getElementById('badgeAprobarES');
   if(bCL) bCL.style.display=(fPais==='CL'&&bCL.textContent&&bCL.textContent!=='0')?'':'none';
-  if(bES) bES.style.display=(fPais==='ES'&&bES.textContent&&bES.textContent!=='0')?'':'none';
-  /* las alertas de campañas son de Chile: en España y Colombia no se muestran */
-  var al=document.getElementById('alertasCamp'); if(al) al.style.display=(fPais==='ES'||fPais==='CO')?'none':'';
+  /* 20-10: el contador de España y Portugal lo pinta renderAprobarPais con el número del país elegido */
+  if(bES) bES.style.display=(esEU()&&bES.textContent&&bES.textContent!=='0')?'':'none';
+  /* las alertas de campañas son de Chile: en España, Portugal y Colombia no se muestran */
+  var al=document.getElementById('alertasCamp'); if(al) al.style.display=(esEU()||fPais==='CO')?'none':'';
   if(TITULOS&&TITULOS.ganancia){ if(!TITULOS._ganCL) TITULOS._ganCL=TITULOS.ganancia[1];
-    TITULOS.ganancia[1]=fPais==='ES'?'Lo que liquida Dropi PRO menos devoluciones y la pauta de España · en pesos colombianos'
+    TITULOS.ganancia[1]=fPais==='PT'?'Lo que liquida Dropi PRO menos devoluciones y la pauta de Portugal · en pesos colombianos'
+      :fPais==='ES'?'Lo que liquida Dropi PRO menos devoluciones y la pauta de España · en pesos colombianos'
       :fPais==='CO'?'Colombia · en pesos colombianos':TITULOS._ganCL; }
 }
 function vistaActual(){ var v=document.querySelector('.view.act'); return v?v.id.replace('view-',''):'resumen'; }
 function elegirPais(p){
   fPais=p; try{ localStorage.setItem('jaye_pais',p); }catch(e){}
+  filtrarEU();
   fPaisAprob=(p==='todos')?'CL':p;
   aplicarPaisMenu();
   var v=vistaActual(), n=document.querySelector('.side .nav-i[data-view="'+v+'"]');
@@ -4506,20 +4521,23 @@ function renderGananciaPais(){
   if(typeof cargarGanancia==='function') cargarGanancia();
 }
 window.diasGananciaPais=function(P,cb){
-  if(P!=='ES'){ cb([]); return; }
+  if(!esEU(P)){ cb([]); return; }
   var armar=function(){
     var C=CAJA_ES.costos||{}, t=TASAS&&TASAS.eur, por={};
     if(!t){ cb([]); return; }
     var dia=function(k){ return por[k]||(por[k]={dia:k,entregas:0,entra:0,devol:0,devoluciones:0,meta:0,camila:0,sueldo:0,queda:0}); };
-    (CAJA_ES.ventas||[]).forEach(function(v){
+    /* 20-10: cada pestaña con SUS ventas (la caja trae el país de cada una) */
+    (CAJA_ES.ventas||[]).filter(function(v){ return (String(v.pais||'ES').toUpperCase()==='PT'?'PT':'ES')===P; }).forEach(function(v){
       if(!v.dropi_dia) return; var k=String(v.dropi_dia).slice(0,10);
       if(/entreg/i.test(v.dropi||'')){ var x=dia(k), cant=Number(v.cant)||1;
-        var env=String(v.cp||'').indexOf('07')===0?(C.envio_baleares_eur||0):(C.envio_eur||0);
+        /* Portugal: CTT 24 h 5,39 € + fulfillment 1 € + contra reembolso 1 € = 7,39 € (tarifa que mandó Dropi PRO el 24-09, IVA incluido) */
+        var env=P==='PT'?(C.envio_pt_eur||7.39):String(v.cp||'').indexOf('07')===0?(C.envio_baleares_eur||0):(C.envio_eur||0);
         x.entregas++; var cu=(C.producto_eur_por&&C.producto_eur_por[v.prod])||C.producto_eur||0; /* 29-09: coste de CADA producto (cabezal 4,22 · bálsamo 2,41) */
         x.entra+=((Number(v.precio)||0)-cant*cu-env)*t; }
       else if(/devol|rechaz/i.test(v.dropi||'')){ var y=dia(k); y.devoluciones++; y.devol+=(C.devolucion_eur||0)*t; }
     });
-    (CAJA_ES.pauta||[]).forEach(function(p){ dia(p.dia).meta+=Number(p.cop)||0; });
+    /* la pauta que trae la caja es la de la cuenta de España: va en España. Portugal todavía no tiene campañas */
+    if(P==='ES') (CAJA_ES.pauta||[]).forEach(function(p){ dia(p.dia).meta+=Number(p.cop)||0; });
     cb(Object.keys(por).map(function(k){ var x=por[k]; x.entra=Math.round(x.entra); x.devol=Math.round(x.devol); x.queda=x.entra-x.devol-x.meta; return x; })
       .sort(function(a,b){ return a.dia<b.dia?1:-1; }));
   };
@@ -4533,17 +4551,19 @@ document.querySelectorAll('.nav-i[data-view="ganancia"]').forEach(function(n){ n
 /* la fecha de la cabecera: en la pestaña de España, la de Madrid */
 function fechaCabecera(){ var f=document.getElementById('fechaHead'); if(!f) return;
   /* cada pestaña con la fecha de su país; el Resumen general, la del computador */
-  var p=(typeof fPais!=='undefined')?fPais:'todos', nom={ES:' (España)',CL:' (Chile)',CO:' (Colombia)'}[p]||'';
+  var p=(typeof fPais!=='undefined')?fPais:'todos', nom={ES:' (España)',PT:' (Portugal)',CL:' (Chile)',CO:' (Colombia)'}[p]||'';
   f.textContent=new Date().toLocaleDateString('es-CL',nom?{weekday:'long',day:'numeric',month:'long',timeZone:zonaPanel()}:{weekday:'long',day:'numeric',month:'long'})+nom; }
 function horaES(){ return new Date().toLocaleTimeString('es-ES',{timeZone:ZONA_ES,hour:'2-digit',minute:'2-digit'})+' · '+new Date().toLocaleDateString('es-ES',{timeZone:ZONA_ES,weekday:'long',day:'numeric',month:'short'}); }
+function horaPT(){ return new Date().toLocaleTimeString('es-ES',{timeZone:ZONA_PT,hour:'2-digit',minute:'2-digit'})+' · '+new Date().toLocaleDateString('es-ES',{timeZone:ZONA_PT,weekday:'long',day:'numeric',month:'short'}); }
 function horaCL(){ return new Date().toLocaleTimeString('es-CL',{timeZone:ZONA_CL,hour:'2-digit',minute:'2-digit'})+' · '+new Date().toLocaleDateString('es-CL',{timeZone:ZONA_CL,weekday:'long',day:'numeric',month:'short'}); }
 /* al pasar la medianoche de CUALQUIER país se vuelve a pintar: el "hoy" de ese país cambia */
-var _diasPais=[ZONA_ES,ZONA_CL,ZONA_CO].map(function(z){return _ymdZona(Date.now(),z);}).join('|');
+var _diasPais=[ZONA_ES,ZONA_PT,ZONA_CL,ZONA_CO].map(function(z){return _ymdZona(Date.now(),z);}).join('|');
 setInterval(function(){
   var r=document.getElementById('relojES'); if(r) r.textContent=horaES();
+  var rp=document.getElementById('relojPT'); if(rp) rp.textContent=horaPT();
   var rc=document.getElementById('relojCL'); if(rc) rc.textContent=horaCL();
   fechaCabecera();
-  var hoy=[ZONA_ES,ZONA_CL,ZONA_CO].map(function(z){return _ymdZona(Date.now(),z);}).join('|');
+  var hoy=[ZONA_ES,ZONA_PT,ZONA_CL,ZONA_CO].map(function(z){return _ymdZona(Date.now(),z);}).join('|');
   if(hoy!==_diasPais){ _diasPais=hoy; try{ renderResumen(); }catch(e){} }
 },20000);
 function renderPaisTab(){
@@ -4560,19 +4580,20 @@ function renderPaisTab(){
   var cop=function(v,t){ return TASAS? '≈ '+fmtCOP(v*t)+' COP' : 'sin tasa del día'; };
 
   if(fPais==='todos'){
-    var tot=TASAS? T.cl.t*TASAS.clp+T.es.t*TASAS.eur+T.co.t : null;
+    var tot=TASAS? T.cl.t*TASAS.clp+(T.es.t+T.pt.t)*TASAS.eur+T.co.t : null;
     var card=function(p,flag,nom,n,local,enCop){
       return '<div class="rp-pais" onclick="irPais(\''+p+'\')"><div class="t"><span class="flag '+flag+'"></span>'+nom+'</div>'+
         '<div class="v">'+n+' venta'+(n===1?'':'s')+'</div><div class="c" style="font-size:14px;color:var(--ink-2);font-weight:700">'+local+'</div><div class="c">'+enCop+'</div></div>';
     };
     box.innerHTML='<div class="rp-total"><div style="display:flex;gap:40px;flex-wrap:wrap">'+
-        '<div><div class="lbl">Ventas de '+lbl+' · todos los países</div><div class="big">'+(T.cl.n+T.es.n+T.co.n)+'</div></div>'+
+        '<div><div class="lbl">Ventas de '+lbl+' · todos los países</div><div class="big">'+(T.cl.n+T.es.n+T.pt.n+T.co.n)+'</div></div>'+
         '<div><div class="lbl">Vendido '+lbl+' · en pesos colombianos</div><div class="big">'+(tot===null?'—':fmtCOP(tot)+' COP')+'</div></div>'+
       '</div>'+
       '<div class="tasa">'+esc(tasaTxt())+'</div>'+
       '<div class="rp-paises">'+
         card('CL','flag-cl','Chile',T.cl.n,fmtCLP(T.cl.t)+' CLP',cop(T.cl.t,TASAS&&TASAS.clp))+
-        card('ES','flag-es','España y Portugal',T.es.n,fmtEUR(T.es.t)+(T.es.n?' · ES '+T.es.ES+' · PT '+T.es.PT:''),cop(T.es.t,TASAS&&TASAS.eur))+
+        card('ES','flag-es','España',T.es.n,fmtEUR(T.es.t),cop(T.es.t,TASAS&&TASAS.eur))+
+        card('PT','flag-pt','Portugal',T.pt.n,fmtEUR(T.pt.t),T.pt.n?cop(T.pt.t,TASAS&&TASAS.eur):'todavía sin ventas')+
         card('CO','flag-co','Colombia',T.co.n,fmtCOP(T.co.t)+' COP',T.co.n?'':'todavía sin ventas')+
       '</div></div>';
     return;
@@ -4583,9 +4604,19 @@ function renderPaisTab(){
     var _dudR=dudSet();
     var pend=ventasES.filter(function(o){return !o.montado&&!esPagoPend(o)&&!esAprobado('es:'+o.id)&&!esRechazado('es:'+o.id)&&confirmadoES(o)&&!_dudR.has('es:'+o.id);}).length;
     box.innerHTML='<div class="rp-aviso" style="margin-bottom:8px"><b>🕐 Hora de España: <span id="relojES">'+horaES()+'</span></b> · aquí el día va de 00:00 a 24:00 de España (ventas, gráficas, ganancia y el gasto de Meta).</div>'+
-      '<div class="rp-aviso"><span class="flag flag-es"></span> <b>España y Portugal</b> · montos en euros ('+esc(TASAS?'1 € = '+TASAS.eur.toLocaleString('es-CO',{maximumFractionDigits:2})+' COP':'sin tasa del día')+'). '+
+      '<div class="rp-aviso"><span class="flag flag-es"></span> <b>España</b> · montos en euros ('+esc(TASAS?'1 € = '+TASAS.eur.toLocaleString('es-CO',{maximumFractionDigits:2})+' COP':'sin tasa del día')+'). '+
       'Por aprobar: <b>'+pend+'</b> · <a href="#" onclick="verAprobarPais(\'ES\');return false">ir a aprobar →</a> · '+
       'Lo que apruebes contra reembolso se crea solo en Dropi PRO; el pago anticipado, por ahora, a mano.</div>';
+    return;
+  }
+  /* 20-10 (James): Portugal con su pestaña, igual que España, con la hora de Lisboa */
+  if(fPais==='PT'){
+    var _dudP=dudSet();
+    var pendP=ventasES.filter(function(o){return !o.montado&&!esPagoPend(o)&&!esAprobado('es:'+o.id)&&!esRechazado('es:'+o.id)&&confirmadoES(o)&&!_dudP.has('es:'+o.id);}).length;
+    box.innerHTML='<div class="rp-aviso" style="margin-bottom:8px"><b>🕐 Hora de Portugal: <span id="relojPT">'+horaPT()+'</span></b> · aquí el día va de 00:00 a 24:00 de Portugal (ventas, gráficas, ganancia y el gasto de Meta). Portugal va una hora menos que España.</div>'+
+      '<div class="rp-aviso"><span class="flag flag-pt"></span> <b>Portugal</b> · montos en euros ('+esc(TASAS?'1 € = '+TASAS.eur.toLocaleString('es-CO',{maximumFractionDigits:2})+' COP':'sin tasa del día')+'). '+
+      'Por aprobar: <b>'+pendP+'</b> · <a href="#" onclick="verAprobarPais(\'PT\');return false">ir a aprobar →</a> · '+
+      'Portugal va con su propia cuenta de Dropi PRO (86260), que todavía no está conectada: lo aprobado aquí aún no se crea solo en Dropi.</div>';
     return;
   }
   box.innerHTML='<div class="rp-aviso"><span class="flag flag-co"></span> <b>Colombia</b> · montos en pesos colombianos. '+
@@ -4666,7 +4697,7 @@ var CONF_ES=null, _confESts=0;
 function cargarConfES(){
   if(Date.now()-_confESts<10000) return; _confESts=Date.now();
   fetch(BASE+'/es-confirmaciones?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(j){
-    var m={}; ((j&&j.filas)||[]).forEach(function(f){ m[String(f.id)]=f; }); CONF_ES=m; renderAprobarPais(); if(visPaisSel()==='ES') renderPedidosWeb();
+    var m={}; ((j&&j.filas)||[]).forEach(function(f){ m[String(f.id)]=f; }); CONF_ES=m; renderAprobarPais(); if(esEU(visPaisSel())) renderPedidosWeb();
   }).catch(function(){});
 }
 function esWebES(o){ return /p[aá]gina/i.test(o.bot||''); }
@@ -4724,10 +4755,15 @@ function renderAprobarPais(){
   cargarConfES();
   /* 15-10 James: "si ya la pasé a Dudosa no debe contar como por aprobar, como en Chile": el número cuenta lo mismo que la pestaña Pendientes */
   var _dudC=dudSet();
-  var pend=ventasES.filter(function(o){return !o.montado&&!esPagoPend(o)&&!esAprobado('es:'+o.id)&&!esRechazado('es:'+o.id)&&confirmadoES(o)&&!_dudC.has('es:'+o.id);});
+  /* 20-10: cada país europeo con su contador (España y Portugal ya no se suman) */
+  var pendDe=function(p){ return listaEU(p).filter(function(o){return !o.montado&&!esPagoPend(o)&&!esAprobado('es:'+o.id)&&!esRechazado('es:'+o.id)&&confirmadoES(o)&&!_dudC.has('es:'+o.id);}); };
+  var pend=pendDe('ES'), pendPT=pendDe('PT');
   var nb=document.getElementById('numAprobES'); if(nb){ nb.textContent=pend.length; nb.style.display=pend.length?'':'none'; }
+  var nbP=document.getElementById('numAprobPT'); if(nbP){ nbP.textContent=pendPT.length; nbP.style.display=pendPT.length?'':'none'; }
   var pnES=document.getElementById('pnNumES'); if(pnES) pnES.textContent=pend.length||'';
-  var bES=document.getElementById('badgeAprobarES'); if(bES){ bES.textContent=pend.length; bES.style.display=(pend.length&&fPais==='ES')?'':'none'; }
+  var pnPT=document.getElementById('pnNumPT'); if(pnPT) pnPT.textContent=pendPT.length||'';
+  var nAct=fPais==='PT'?pendPT.length:pend.length;
+  var bES=document.getElementById('badgeAprobarES'); if(bES){ bES.textContent=nAct; bES.style.display=(nAct&&esEU())?'':'none'; }
   if(fPaisAprob==='CL'){ ch.hidden=false; ot.hidden=true; return; }
   ch.hidden=true; ot.hidden=false;
   if(fPaisAprob==='CO'){
@@ -4774,7 +4810,7 @@ function renderAprobarPais(){
   }
   /* 07-10 James: "que sea igual que Chile": pestañas Pendientes · Esperando confirmación · Esperando pago · Dudosas · Todas,
      y el botón ⚠ Dudosa / ↩ Pendiente para moverlas a mano (misma lista jaye_dud que Chile, con llave es:<id>). */
-  var todasES=ventasES.filter(function(o){return !o.montado;});
+  var todasES=listaEU(fPaisAprob).filter(function(o){return !o.montado;});   /* 20-10: solo el país europeo elegido */
   var _dES=dudSet(), dudES=function(o){ return _dES.has('es:'+o.id); };
   var grES={
     pend:todasES.filter(function(o){return !esPagoPend(o)&&confirmadoES(o)&&!dudES(o);}),
@@ -4797,8 +4833,10 @@ function renderAprobarPais(){
       dir:o.dir, zona:o.zona, region:o.region, nota:o.nota||'', desde:'', revision:o.revision||'', nivel:o.nivel||'', fecha:o.fecha, hora:'', orden:o.creadoMs||o.orden||0,
       conf:true, abono:/abono pendiente/i.test(o.estado||''), montado:o.montado, ordenDropi:(String(o.estado||'').match(/#(\d+)/)||[])[1]||'',
       estado:o.estado||'', bot:web?'Página':'Carmen', loc:o.sub==='PT'?'PT':'ES', red:'', llave:'es:'+o.id, creadoMs:o.creadoMs, eur:true }; });
-  ot.innerHTML='<div class="panel"><div class="tbl-head"><h2>España y Portugal · por aprobar</h2>'+
-    '<span style="font-size:12px;color:#8a93a0">Van a Dropi PRO, nunca a Dropi Chile. Lo que apruebes se crea solo en Dropi PRO (cada 5 min): contra reembolso con cobro, y el pago anticipado ya pagado SIN cobro.</span>'+tabsES+'</div>'+
+  ot.innerHTML='<div class="panel"><div class="tbl-head"><h2>'+(NOM_EU[fPaisAprob]||'España')+' · por aprobar</h2>'+
+    (fPaisAprob==='PT'
+      ?'<span style="font-size:12px;color:#8a93a0">Portugal va con su propia cuenta de Dropi PRO (86260), que todavía no está conectada: lo que apruebes aquí queda aprobado pero aún NO se crea solo en Dropi.</span>'
+      :'<span style="font-size:12px;color:#8a93a0">Van a Dropi PRO, nunca a Dropi Chile. Lo que apruebes se crea solo en Dropi PRO (cada 5 min): contra reembolso con cobro, y el pago anticipado ya pagado SIN cobro.</span>')+tabsES+'</div>'+
     (lista.length?'<table><thead><tr><th>Cliente</th><th>País</th><th>Producto</th><th>Dirección</th><th>Cant.</th><th>Total</th><th>Aprobación</th></tr></thead><tbody>'+
       lista.map(function(o,ix){
         var k='es:'+o.id, falta=!nombreSirve(o.cli)?'nom':(!dirSirve(o.dir)?true:false);
