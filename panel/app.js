@@ -1993,6 +1993,7 @@ function renderAprobar(){
   const bg=document.getElementById('badgeAprobar');
   if(bg){ bg.style.display=(nPend&&!esEU()&&fPais!=='CO'&&fPais!=='RO')?'':'none'; bg.textContent=nPend; }
   var pnCL=document.getElementById('pnNumCL'); if(pnCL) pnCL.textContent=nPend||'';
+  window._nPendCL=nPend; var pcl=document.getElementById('pendCL'); if(pcl) pcl.textContent=nPend; /* 21-10: el aviso de Chile en Resumen */
   agRiesgoCalc(items);
   /* LO MAS NUEVO ARRIBA, lo mas viejo abajo. Sin excepciones y sin separar por
      estado: la lista se lee como llegan las ventas.
@@ -4674,7 +4675,11 @@ function renderPaisTab(){
   chi.hidden=false;
   /* 02-10 (James): "ponme la hora de Chile, así como hiciste con España" */
   if(fPais==='CL'){ box.hidden=false;
-    box.innerHTML='<div class="rp-aviso"><b>🕐 Hora de Chile: <span id="relojCL">'+horaCL()+'</span></b> · aquí el día va de 00:00 a 24:00 de Chile (ventas y gráficas).</div>';
+    /* 21-10 (James): "pon esto igual en el panel de Chile": las dos líneas de España (hora + montos, por aprobar e ir a aprobar) */
+    box.innerHTML='<div class="rp-aviso" style="margin-bottom:8px"><b>🕐 Hora de Chile: <span id="relojCL">'+horaCL()+'</span></b> · aquí el día va de 00:00 a 24:00 de Chile (ventas, gráficas, ganancia y el gasto de Meta).</div>'+
+      '<div class="rp-aviso"><span class="flag flag-cl"></span> <b>Chile</b> · montos en pesos chilenos ('+esc(TASAS&&TASAS.clp?'1 peso chileno = '+TASAS.clp.toLocaleString('es-CO',{maximumFractionDigits:2})+' COP · 1.000 CLP = '+Math.round(TASAS.clp*1000).toLocaleString('es-CO')+' COP':'sin tasa del día')+'). '+
+      'Por aprobar: <b id="pendCL">'+(window._nPendCL!=null?window._nPendCL:'…')+'</b> · <a href="#" onclick="mostrarVista(\'aprobar\');return false">ir a aprobar →</a> · '+
+      'Lo que apruebes contra entrega se crea solo en Dropi; el que debe anticipo no se monta hasta que pague.</div>';
     return; }
   box.hidden=false;
   var T=totalesPais(), lbl=rangoTxt();
