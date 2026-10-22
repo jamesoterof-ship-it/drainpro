@@ -4641,8 +4641,10 @@ window.diasGananciaPais=function(P,cb){
     cb(Object.keys(por).map(function(k){ var x=por[k]; x.entra=Math.round(x.entra); x.devol=Math.round(x.devol); x.queda=x.entra-x.devol-x.meta; return x; })
       .sort(function(a,b){ return a.dia<b.dia?1:-1; }));
   };
-  if(CAJA_ES) armar();
-  else fetch(BASE+'/caja-espana',{cache:'no-store'}).then(function(r){return r.json();}).then(function(j){ CAJA_ES=j; armar(); }).catch(function(){ cb([]); });
+  /* 22-10: se pedía UNA vez al abrir el panel y nunca más: con el panel abierto desde la mañana, las entregas de
+     la tarde no aparecían (James: "no estoy viendo nada"). Ahora se vuelve a pedir si la copia tiene más de 2 min. */
+  if(CAJA_ES && Date.now()-(CAJA_ES._pedido||0)<120000) armar();
+  else fetch(BASE+'/caja-espana',{cache:'no-store'}).then(function(r){return r.json();}).then(function(j){ CAJA_ES=j; CAJA_ES._pedido=Date.now(); armar(); }).catch(function(){ if(CAJA_ES) armar(); else cb([]); });
 };
 document.querySelectorAll('.nav-i[data-view="ganancia"]').forEach(function(n){ n.addEventListener('click',function(){ setTimeout(renderGananciaPais,80); }); });
 
