@@ -11,6 +11,9 @@ const URL_RESP=BASE+'/responder';
    respondes sale por el WhatsApp de España y nunca por el de Chile */
 const URL_CONV_CARMEN=BASE+'/carmen-conversaciones', URL_HIST_CARMEN=BASE+'/carmen-historial',
       URL_RESP_CARMEN=BASE+'/carmen-responder', URL_PAUSA_CARMEN=BASE+'/carmen-pausar';
+/* 24-10: Inês (Portugal, +351): los chats viven en las mismas tablas que Carmen (historial y pausa por los mismos
+   webhooks), pero la RESPUESTA del panel sale por el +351 con su propio flujo (seYj4DQTFmxQjT5R) */
+const URL_RESP_INES=BASE+'/ines-responder';
 /* 20-10: Carmen Rumanía (mismo +34, clientes +40). Sus webhooks todavía NO existen en n8n:
    si fallan, el panel muestra vacío y sigue funcionando. */
 const URL_CONV_CARMEN_RO=BASE+'/carmen-ro-conversaciones', URL_HIST_CARMEN_RO=BASE+'/carmen-ro-historial',
@@ -315,7 +318,7 @@ const esVistaLog=()=>fBot==='Logistica';
 /* los dos se llaman Carlos: en las tarjetas hay que distinguirlos */
 const nomCorto=b=>b==='Logistica'?'Laura · Log.':BOTNOM[b].split(' ·')[0];
 /* 20-10 (James): en la pestaña de España, Carmen muestra solo los chats +34; en la de Portugal, solo los +351 */
-const convDelBot=b=>b==='Logistica'?convos.filter(c=>c.log):convos.filter(c=>c.bot===b&&(b!=='Carmen'||!esEU()||subDeTel(c.tel)===fPais));
+const convDelBot=b=>b==='Logistica'?convos.filter(c=>c.log):convos.filter(c=>c.bot===b&&(b!=='Carmen'||!esEU()||(c.sub||subDeTel(c.tel))===fPais));
 
 let convos=[], ordenes=[], pedidosWeb=[], abandonadosWeb=[], visitasWeb=[], selTel=null;
 let pedidosArchivo=[], visitasArchivo=[];   // meses ya archivados (solo Histórico)
@@ -423,6 +426,8 @@ function normConv(r){
   return {n:r.NOMBRE||tel||'Sin nombre',tel,ultimo:r.ULTIMO_MENSAJE||'',hora:r.HORA||'',fecha:r.FECHA||'',
     orden:fechaOrden(r.FECHA,r.HORA),bot:esCR?'CarmenRO':esC?'Carmen':esR?'Ramon':esJ?'James':'Carlos',loc:esCR?'RO':esC?'ES':esR?'PY':esJ?'CO':'CL',
     estado:modo==='agente'?'pausada':'activa',msgs:[],loaded:false,
+    /* 24-10: país GUARDADO del chat de Carmen/Inês (Inês guarda PT aunque el teléfono sea +57 o +34) */
+    sub:esC?(String(r.PAIS||'').toUpperCase()==='PT'||/^351/.test(tel)?'PT':'ES'):'',
     /* marcas que manda la consulta: si Carlos (logística) habló en este chat y su última línea */
     log:(r.LOGISTICA===true||r.LOGISTICA==='true'||r.LOGISTICA==='t'),ultLog:r.ULT_LOG||'',
     /* huella del último mensaje: si cambia, el historial cacheado ya no sirve */
@@ -1194,7 +1199,7 @@ function renderConvList(){
      ningun bot y el cliente de pagina que no habia escrito por WhatsApp no
      aparecia en ninguna lista. 9-sep: James no veia las ventas del Organizador. */
   (pedidosWeb||[]).forEach(function(p){ var t=soloNum(p.tel); if(t && !_seen[t]){ _seen[t]=1; _base.push({tel:t, n:p.cli||t, bot:'Carlos', estado:'activa', ultimo:'📦 Pedido web · '+(p.conf?'confirmado ✅':'esperando confirmación ⏳'), hora:'', fecha:p.fecha||'', orden:p.orden||0}); } });
-  let arr=_base.filter(c=>(esVistaLog()?c.log:c.bot===fBot&&(fBot!=='Carmen'||!esEU()||subDeTel(c.tel)===fPais)) && enRangoDe(c.orden,Rconv));
+  let arr=_base.filter(c=>(esVistaLog()?c.log:c.bot===fBot&&(fBot!=='Carmen'||!esEU()||(c.sub||subDeTel(c.tel))===fPais)) && enRangoDe(c.orden,Rconv));
   if(fEst!=='todas') arr=arr.filter(c=>c.estado===fEst);
   if(q) arr=arr.filter(c=>(c.n+' '+c.tel).toLowerCase().includes(q));
   /* Los pedidos de pagina se agregan al FINAL de la lista, y la lista se corta
@@ -1434,7 +1439,8 @@ async function enviarRespuesta(){
     /* sale por el WhatsApp de España (+34, también para Rumanía); si WhatsApp no lo acepta se avisa y se quita el globo.
        20-10: Carmen Rumanía por SU webhook; nunca por el de Chile */
     try{
-      const r=await fetch(c.bot==='CarmenRO'?URL_RESP_CARMEN_RO:URL_RESP_CARMEN,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({telefono:soloNum(c.tel),mensaje:t})});
+      /* 24-10: un chat +351 es de Portugal: se responde por el número de Portugal (+351, Inês), nunca por el +34 */
+      const r=await fetch(c.bot==='CarmenRO'?URL_RESP_CARMEN_RO:(c.sub||subDeTel(c.tel))==='PT'?URL_RESP_INES:URL_RESP_CARMEN,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({telefono:soloNum(c.tel),mensaje:t})});
       const j=await r.json().catch(()=>({}));
       if(!j||j.ok!==true) throw new Error((j&&j.error)||'No se pudo enviar');
       c.estado='pausada'; pintarChatHead(c); renderConvList(); refrescarChat(c);
@@ -1454,7 +1460,7 @@ const quickReply=txt=>{const i=document.getElementById('chInput');i.value=txt;i.
 function sendImg(input){
   const f=input.files&&input.files[0]; input.value=''; if(!f||!selTel) return;
   const c=convos.find(x=>x.tel===selTel); if(!c) return;
-  if(c.bot==='Carmen'||c.bot==='CarmenRO'){ toast('Las fotos a clientes de '+(c.bot==='CarmenRO'?'Rumanía':'España')+' todavía no se mandan desde el panel','err'); return; }
+  if(c.bot==='Carmen'||c.bot==='CarmenRO'){ toast('Las fotos a clientes de '+(c.bot==='CarmenRO'?'Rumanía':(c.sub||subDeTel(c.tel))==='PT'?'Portugal':'España')+' todavía no se mandan desde el panel','err'); return; }
   const rd=new FileReader();
   rd.onload=()=>{
     const img=new Image();
@@ -4527,6 +4533,7 @@ function htmlOtroPais(v){
       '<div class="panel" style="padding:12px 16px;margin-bottom:10px">'+(fPais==='PT'?'<b>Inês</b> · WhatsApp de Portugal +351 918 470 538 (contesta en portugués, o en español si le escriben en español).':'<b>Carmen</b> · WhatsApp de España +34 672 42 37 35.')+'</div>'+
       tablaVentasPais(car,true,(fPais==='PT'?'Inês':'Carmen')+' todavía no ha cerrado ventas.'));
   }
+  if(v==='entregas'&&fPais==='PT') return vacioPais('Las 13 plantillas de Portugal (+351, en portugués) están aprobadas por Meta. Todavía no ha salido ninguna a un cliente: aquí se verá si llegaron cuando empiecen las ventas de Portugal.');
   if(v==='entregas') return vacioPais(ES?'Carmen todavía no manda plantillas: las de España están en revisión en Meta. Cuando las apruebe y empiecen a salir, aquí se ve si llegaron.':'Colombia todavía no manda plantillas.');
   if(v==='cancelar') return vacioPais('Sin cancelaciones de '+nom+'.');
   if(v==='novedades') return vacioPais(ES?'Sin novedades de Dropi PRO todavía: aparecen cuando un pedido de España tenga un problema de entrega.':'Colombia todavía no tiene pedidos en Dropi.');
