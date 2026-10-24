@@ -5027,10 +5027,20 @@ function renderAprobarPais(){
       dir:o.dir, zona:o.zona, region:o.region, nota:o.nota||'', desde:'', revision:o.revision||'', nivel:o.nivel||'', fecha:o.fecha, hora:'', orden:o.creadoMs||o.orden||0,
       conf:true, abono:/abono pendiente/i.test(o.estado||''), montado:o.montado, ordenDropi:(String(o.estado||'').match(/#(\d+)/)||[])[1]||'',
       estado:o.estado||'', bot:web?'Página':'Carmen', loc:o.sub==='PT'?'PT':'ES', red:'', llave:'es:'+o.id, creadoMs:o.creadoMs, eur:true }; });
+  /* 24-10 James ("si no nos damos cuenta, esos pedidos se quedan ahí y nunca salen… que me avise si no está montado"):
+     aprobadas que quedaron CREADAS en Dropi PRO pero SIN CONFIRMAR (en "Nuevo"). El flujo de reintentos (Gqgi4smbrESNtmoh)
+     las vuelve a confirmar cada 30 min y quita la marca cuando entran; mientras la marca siga, se avisan aquí arriba en rojo. */
+  var trabES=listaEU(fPaisAprob).filter(function(o){ return o.montado && /SIN CONFIRMAR en Dropi PRO/.test(o.nota||''); });
+  var avisoTrabES=trabES.length?'<div style="margin:10px 16px;padding:12px 14px;border-radius:10px;background:#fdecec;border:1px solid #e69a9a;border-left:6px solid #c62828">'
+    +'<div style="font-weight:800;color:#a01818;font-size:13.5px;margin-bottom:6px">⛔ '+trabES.length+(trabES.length>1?' pedidos creados':' pedido creado')+' en Dropi PRO pero SIN CONFIRMAR: no salen hasta que se confirmen</div>'
+    +trabES.map(function(o){ var n=String(o.nota||''), r=(n.match(/reintentos confirmar: (\d+)/)||[])[1];
+        var mot=/timed out|tiempo/i.test(n)?'Dropi PRO no respondió a tiempo':'Dropi PRO no lo confirmó (revisar stock)';
+        return '<div style="font-size:12.5px;color:#5b1111;margin:3px 0">• <b>'+esc(o.cli)+'</b> · '+esc(o.prod)+' · Dropi #'+esc((String(o.estado||'').match(/#(\d+)/)||[])[1]||'?')+' · '+esc(o.fecha)+' · '+mot+(r?' · '+r+' reintento'+(r==='1'?'':'s'):' · se reintenta solo cada 30 min')+'</div>'; }).join('')
+    +'<div style="font-size:11.5px;color:#8c1d1d;margin-top:6px">Si sigue aquí después de 6 reintentos casi siempre es falta de stock o un teléfono que Dropi no acepta: se confirma a mano en Dropi PRO → Pedidos → Nuevos.</div></div>':'';
   ot.innerHTML='<div class="panel"><div class="tbl-head"><h2>'+(NOM_EU[fPaisAprob]||'España')+' · por aprobar</h2>'+
     (fPaisAprob==='PT'
       ?'<span style="font-size:12px;color:#8a93a0">Portugal va con su propia cuenta de Dropi PRO (86260), que todavía no está conectada: lo que apruebes aquí queda aprobado pero aún NO se crea solo en Dropi.</span>'
-      :'<span style="font-size:12px;color:#8a93a0">Van a Dropi PRO, nunca a Dropi Chile. Lo que apruebes se crea solo en Dropi PRO (cada 5 min): contra reembolso con cobro, y el pago anticipado ya pagado SIN cobro.</span>')+tabsES+'</div>'+
+      :'<span style="font-size:12px;color:#8a93a0">Van a Dropi PRO, nunca a Dropi Chile. Lo que apruebes se crea solo en Dropi PRO (cada 5 min): contra reembolso con cobro, y el pago anticipado ya pagado SIN cobro.</span>')+tabsES+'</div>'+avisoTrabES+
     (lista.length?'<table><thead><tr><th>Cliente</th><th>País</th><th>Producto</th><th>Dirección</th><th>Cant.</th><th>Total</th><th>Aprobación</th></tr></thead><tbody>'+
       lista.map(function(o,ix){
         var k='es:'+o.id, falta=!nombreSirve(o.cli)?'nom':(!dirSirve(o.dir)?true:false);
