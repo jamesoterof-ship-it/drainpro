@@ -1253,7 +1253,8 @@ function renderVentasBot(){
   window._ventasBotF=arr;
 }
 function ventasCarmen(){
-  return ventasES.filter(function(o){return /^carmen/i.test(o.bot);}).map(function(o){ return {rid:o.id,cli:o.cli,tel:o.tel,prod:o.prod,cant:o.cant,
+  /* 23-10: Inês (Portugal, +351) registra sus ventas con bot 'Ines': salen junto a las de Carmen, en la pestaña Portugal */
+  return ventasES.filter(function(o){return /^(carmen|in[eê]s)/i.test(o.bot);}).map(function(o){ return {rid:o.id,cli:o.cli,tel:o.tel,prod:o.prod,cant:o.cant,
     precioNum:o.totalNum,precio:fmtEUR(o.totalNum),dir:o.dir,zona:o.zona,region:o.region,nota:o.nota,desde:'',revision:'',nivel:'',fecha:o.fecha,hora:'',
     orden:o.orden,conf:!/pago\s*pendiente|falta/i.test(o.estado),abono:false,montado:o.montado,ordenDropi:(String(o.estado).match(/#(\d+)/)||[])[1]||'',
     estado:o.estado,bot:'Carmen',loc:o.sub,red:'',llave:'es:'+o.id,creadoMs:o.creadoMs,eur:true}; });
@@ -1699,7 +1700,7 @@ function irConvBot(b){
   document.querySelectorAll('.nav-i[data-bot]').forEach(x=>x.classList.toggle('subact',x.dataset.bot===b));
   document.getElementById('tabVentasLbl').textContent=b==='Logistica'?'Ventas de estos clientes':'Ventas de '+nomCorto(b);
   mostrarVista('conv'); setTabConv('conv'); renderConvList();
-  document.getElementById('vtitle').textContent=b==='Carmen'&&fPais==='PT'?'Carmen · Portugal':BOTNOM[b];
+  document.getElementById('vtitle').textContent=b==='Carmen'&&fPais==='PT'?'Inês · Portugal':BOTNOM[b];
   document.getElementById('vsub').textContent=b==='Logistica'
     ? 'Solo lo que escribe Laura: confirmaciones, anticipos, novedades y carritos'
     : 'Conversaciones y ventas de este bot';
