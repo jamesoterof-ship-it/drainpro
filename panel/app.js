@@ -4521,10 +4521,11 @@ function htmlOtroPais(v){
   }
   if(v==='bots'||v==='conv'){
     if(!ES) return vacioPais('Colombia todavía no tiene bot de ventas. Sus chats están en "James · Colombia".');
-    var car=ventasES.filter(function(o){return /^carmen/i.test(o.bot);});
+    var car=ventasES.filter(function(o){return /^(carmen|in[eê]s)/i.test(o.bot);});
+    /* 24-10: Portugal tiene su número y su bot (Inês, +351 918 470 538) */
     return (v==='conv'&&fBot==='Redes'?vacioPais(nom+' todavía no vende por redes (Facebook e Instagram).'):
-      '<div class="panel" style="padding:12px 16px;margin-bottom:10px"><b>Carmen</b> · '+(fPais==='PT'?'Portugal todavía atiende por el WhatsApp de España +34 672 42 37 35, hasta que tenga su número propio.':'WhatsApp de España +34 672 42 37 35.')+'</div>'+
-      tablaVentasPais(car,true,'Carmen todavía no ha cerrado ventas.'));
+      '<div class="panel" style="padding:12px 16px;margin-bottom:10px">'+(fPais==='PT'?'<b>Inês</b> · WhatsApp de Portugal +351 918 470 538 (contesta en portugués, o en español si le escriben en español).':'<b>Carmen</b> · WhatsApp de España +34 672 42 37 35.')+'</div>'+
+      tablaVentasPais(car,true,(fPais==='PT'?'Inês':'Carmen')+' todavía no ha cerrado ventas.'));
   }
   if(v==='entregas') return vacioPais(ES?'Carmen todavía no manda plantillas: las de España están en revisión en Meta. Cuando las apruebe y empiecen a salir, aquí se ve si llegaron.':'Colombia todavía no manda plantillas.');
   if(v==='cancelar') return vacioPais('Sin cancelaciones de '+nom+'.');
