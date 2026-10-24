@@ -1704,7 +1704,7 @@ function renderBots(){
 function irConvBot(b){
   fBot=b; selTel=null;
   document.querySelectorAll('.nav-i[data-bot]').forEach(x=>x.classList.toggle('subact',x.dataset.bot===b));
-  document.getElementById('tabVentasLbl').textContent=b==='Logistica'?'Ventas de estos clientes':'Ventas de '+nomCorto(b);
+  document.getElementById('tabVentasLbl').textContent=b==='Logistica'?'Ventas de estos clientes':'Ventas de '+(b==='Carmen'&&fPais==='PT'?'Inês':nomCorto(b));
   mostrarVista('conv'); setTabConv('conv'); renderConvList();
   document.getElementById('vtitle').textContent=b==='Carmen'&&fPais==='PT'?'Inês · Portugal':BOTNOM[b];
   document.getElementById('vsub').textContent=b==='Logistica'
