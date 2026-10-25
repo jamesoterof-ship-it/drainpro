@@ -4323,8 +4323,8 @@ function subDeTel(t){ return soloNum(t).indexOf('351')===0?'PT':'ES'; }
 function esFilaES(r){
   if(esFilaRO(r)) return false;   /* 20-10: "Carmen RO" empieza por "Carmen" pero es de Rumanía */
   var p=String(r.PAIS||'').toUpperCase();
-  /* 'Carmen' = el bot de WhatsApp de España y Portugal (+34), 28-09 */
-  return p==='ES'||p==='PT'||/p[aá]gina\s+(es|pt)\b|^carmen\b/i.test(String(r.BOT||''));
+  /* 'Carmen' = el bot de WhatsApp de España y Portugal (+34), 28-09 · 25-10: 'Ines' = Portugal (+351). /ventas no trae PAIS: sin esto la venta de Inês caía en Chile */
+  return p==='ES'||p==='PT'||/p[aá]gina\s+(es|pt)\b|^(carmen|in[eê]s)\b/i.test(String(r.BOT||''));
 }
 /* 20-10: RUMANÍA. Ventas con PAIS 'RO', bot "Carmen RO" o "Página RO", en lei (RON).
    Su llave de aprobación es "ro:<id>": ningún montador la reconoce todavía (no hay montador de Rumanía). */
@@ -4348,7 +4348,7 @@ function numEUR(v){
 function fmtEUR(n){ return (Math.round(n*100)/100).toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2})+' €'; }
 function filaES(r){
   /* las de Carmen no dicen el país en el bot: el prefijo +351 del teléfono lo dice */
-  var pt=String(r.PAIS||'').toUpperCase()==='PT'||/p[aá]gina\s+pt\b/i.test(String(r.BOT||''))||soloNum(r.TELEFONO).indexOf('351')===0;
+  var pt=String(r.PAIS||'').toUpperCase()==='PT'||/p[aá]gina\s+pt\b|^in[eê]s\b/i.test(String(r.BOT||''))||soloNum(r.TELEFONO).indexOf('351')===0;
   var est=String(r.ESTADO||''), cms=Number(r.CREADO_MS)||0;
   return {id:String(r.row_number||''),sub:pt?'PT':'ES',cli:r.NOMBRE||'—',tel:soloNum(r.TELEFONO),prod:r.PRODUCTO||'—',
     cant:numero(r.CANTIDAD)||1,totalNum:numEUR(r.PRECIO),dir:r.DIRECCION||'—',zona:r.COMUNA||'—',region:r.REGION||'—',
