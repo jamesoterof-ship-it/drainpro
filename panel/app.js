@@ -1940,7 +1940,12 @@ function renderAprobar(){
     items.push({k,raw:o,canal:'Página',pago:String(o.nota||''),cli:o.cli,tel:o.tel,fecha:o.fecha,prod:o.prod,color:o.color,comuna:o.comuna,cant:o.cant,total:cobroCLP(o,o.total),orden:o.orden,revision:o.revision||'',nivel:o.nivel||'',creadoMs:o.creadoMs||0,abono:!!(o.abono||/abono pendiente/i.test(String(o.estado||''))),
       st:_espPago?'esperapago':(o.dropi?'montado':(esAprobado(k)?'aprobado':(esRechazado(k)?'rechazado':'pendiente')))});
   });
-  (ordenes||[]).forEach(o=>{ if(o.loc!=='CL') return; if(o.orden < (o.montado?dosDias:sieteDias)) return; const k=keyWa(o);
+  /* 27-10 James: 'un cliente paga y se olvida, eso no puede pasar jamás'. Carmela #4140 pagó el anticipo el 11-10 y estuvo 16 días
+     invisible porque lo no montado solo se miraba 7 días atrás. Con PAGO RECIBIDO (anticipo pagado o PayPal verificado) o TRABADA,
+     se mira 45 días atrás. El resto sigue igual (7 días sin montar, 2 días montado). */
+  const cuarentaYCinco=Date.now()-45*864e5;
+  const _pagoRecibido=o=>/abono pagado|trabad/i.test(String(o.estado||'')) || /PAGADO paypal/.test(String(o.nota||''));
+  (ordenes||[]).forEach(o=>{ if(o.loc!=='CL') return; if(o.orden < (o.montado?dosDias:(_pagoRecibido(o)?cuarentaYCinco:sieteDias))) return; const k=keyWa(o);
     /* 05-10 pago anticipado por WhatsApp (link personal): la marca interna "pago: pre · -10 % · precio normal · pp:" no es NOTA del
        cliente; va en la pildora de pago. Y el que todavia no paga sale "Esperando el pago" (no se aprueba). */
     var _preW=/^pago:\s*pre/i.test(String(o.nota||'')), _espW=/pago\s*pendiente/i.test(String(o.estado||''));
