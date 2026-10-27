@@ -14,8 +14,8 @@ const URL_CONV_CARMEN=BASE+'/carmen-conversaciones', URL_HIST_CARMEN=BASE+'/carm
 /* 24-10: Inês (Portugal, +351): los chats viven en las mismas tablas que Carmen (historial y pausa por los mismos
    webhooks), pero la RESPUESTA del panel sale por el +351 con su propio flujo (seYj4DQTFmxQjT5R) */
 const URL_RESP_INES=BASE+'/ines-responder';
-/* 20-10: Carmen Rumanía (mismo +34, clientes +40). Sus webhooks todavía NO existen en n8n:
-   si fallan, el panel muestra vacío y sigue funcionando. */
+/* 20-10: Carmen Rumanía. 27-10: el bot de Rumanía es IOANA (+40 376); estos webhooks ya existen (flujo lXLNAdHgndTw3c4z):
+   chats con pais = 'RO' y la respuesta sale por el +40. Si fallan, el panel muestra vacío y sigue funcionando. */
 const URL_CONV_CARMEN_RO=BASE+'/carmen-ro-conversaciones', URL_HIST_CARMEN_RO=BASE+'/carmen-ro-historial',
       URL_RESP_CARMEN_RO=BASE+'/carmen-ro-responder', URL_PAUSA_CARMEN_RO=BASE+'/carmen-ro-pausar';
 const URL_VENTAS=BASE+'/ventas';
@@ -302,7 +302,7 @@ const FLAG={CL:'flag-cl',CO:'flag-co',PY:'flag-py',ES:'flag-es',PT:'flag-pt',RO:
    no habia forma de saber cual estabas mirando, y una regla que faltaba en uno se
    buscaba en el otro. La CLAVE interna sigue siendo Carlos (la usan los filtros);
    lo que cambia es solo el nombre que se ve. */
-const BOTNOM={Carmen:'Carmen · España',CarmenRO:'Carmen · Rumanía',Carlos:'Camila · Chile',Logistica:'Laura · Logística',James:'James · Colombia',Ramon:'Ramón · Paraguay',Redes:'Camila Redes · Chile'};
+const BOTNOM={Carmen:'Carmen · España',CarmenRO:'Ioana · Rumanía',Carlos:'Camila · Chile',Logistica:'Laura · Logística',James:'James · Colombia',Ramon:'Ramón · Paraguay',Redes:'Camila Redes · Chile'};
 const BOTLOC={Carmen:'ES',CarmenRO:'RO',Carlos:'CL',Logistica:'CL',James:'CO',Ramon:'PY',Redes:'CL'};
 const BOTCOLOR={Carmen:'linear-gradient(135deg,#aa151b,#e0a800)',CarmenRO:'linear-gradient(135deg,#002B7F,#FCD116)',Carlos:'linear-gradient(135deg,#0e8074,#3aa897)',Logistica:'linear-gradient(135deg,#d97706,#f0a94a)',James:'linear-gradient(135deg,#3060ea,#6a92f5)',Ramon:'linear-gradient(135deg,#7c4dd8,#a98aec)',Redes:'linear-gradient(135deg,#d8256b,#f0699b)'};
 /* Konecta marca TODO pedido como canal "whatsapp", asi que el canal de verdad se
@@ -4912,7 +4912,7 @@ function renderAprobarRO(ot){
             :(!esWebES(o)&&!/pago:\s*pre/i.test(o.nota||'')?'<div style="font-size:11.5px;color:#15803d;font-weight:700;margin-top:2px">✅ Confirmó en el chat</div>':''))+'</td>'+
           '<td><span class="flag flag-ro"></span> RO</td><td>'+esc(o.prod)+
           (/pago:\s*pre/i.test(o.nota)?pildoraPago(o):'')+
-          (/canal:\s*whatsapp/i.test(o.nota)?'<div style="font-size:11px;color:var(--ink-3)">por WhatsApp (Carmen Rumanía)</div>':'')+'</td>'+
+          (/canal:\s*whatsapp/i.test(o.nota)?'<div style="font-size:11px;color:var(--ink-3)">por WhatsApp (Ioana Rumanía)</div>':'')+'</td>'+
           '<td>'+esc(o.dir)+'<div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.zona)+(o.region&&o.region!=='—'?', '+esc(o.region):'')+'</div></td>'+
           '<td>'+esc(o.cant)+'</td><td>'+fmtRON(o.totalNum)+'</td><td onclick="event.stopPropagation()">'+(esPagoPend(o)
             ?'<span style="font-size:12px;color:#b45309;font-weight:700">Esperando el pago</span><div style="font-size:11px;color:var(--ink-3)">se aprueba cuando llegue el comprobante</div>'
