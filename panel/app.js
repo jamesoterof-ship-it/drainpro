@@ -674,7 +674,12 @@ async function cargarPaginas(){
   pedidosWeb=pedidosWeb.filter(o=>!/pago\s*pendiente/i.test(o.estado||''));
   pedidosArchivo=pedsArch.map(mapPedido);                 // meses ya archivados (solo para Histórico)
   visitasArchivo=visArch;
-  abandonadosWeb=abs.map(r=>({fecha:r.fecha||'',cli:r.nombre||'—',tel:soloNum((r.indicativo||'')+(r.telefono||'')),
+  /* 27-10 James: carritos de Portugal y España salían en la lista de CHILE. Las páginas de Europa a veces guardan el teléfono
+     YA con el indicativo (351910690885) y aquí se le pegaba otra vez (+351351…): no calzaba con ningún país y caía en Chile.
+     Ahora no se duplica, y el país sale del INDICATIVO guardado (aunque el número venga mal escrito, ej. "6"). */
+  const telAb=(ind,t)=>{ const i=soloNum(ind), n=soloNum(t); return (i && n.indexOf(i)===0 && n.length>i.length+7) ? n : i+n; };
+  const paisInd={'34':'ES','351':'PT','40':'RO','57':'CO','56':'CL'};
+  abandonadosWeb=abs.map(r=>({fecha:r.fecha||'',cli:r.nombre||'—',tel:telAb(r.indicativo,r.telefono),pais:paisInd[soloNum(r.indicativo)]||'',
     prod:r.producto,color:r.color,estado:String(r.estado||'').toUpperCase(),comuna:r.comuna||'—',
     dir:r.direccion||'',ref:r.referencia||'',region:r.region||'',correo:r.correo||'',
     cant:numero(r.cantidad)||1,total:fmtCLP(numero(r.total)),totRaw:r.total,contactado:!!r.contactado,contactadoFecha:fechaCorta(r.contactado),orden:fechaChile(r.fecha,'')}))
@@ -996,7 +1001,7 @@ function renderAbandonadosWeb(){
   const tb=document.getElementById('tbodyAband'); if(!tb) return;
   if(!PAGINAS.some(p=>p.url)){tb.innerHTML='<tr><td colspan="7" class="vacio">Esperando conexión de las planillas…</td></tr>';return;}
   /* 28-09: aquí solo Chile; los de España/Colombia salen en su país */
-  const abCL=abandonadosWeb.filter(o=>paisDeTel(o.tel)===visPaisSel());
+  const abCL=abandonadosWeb.filter(o=>(o.pais||paisDeTel(o.tel))===visPaisSel());
   if(!abCL.length){tb.innerHTML='<tr><td colspan="7" class="vacio">'+(visPaisSel()==='CL'?'Sin abandonados pendientes. 🎉':'Sin carritos abandonados de '+(NOM_EU[visPaisSel()]||(visPaisSel()==='RO'?'Rumanía':'Colombia'))+' todavía. A estos clientes no les escribe ningún flujo de Chile.')+'</td></tr>';return;}
   tb.innerHTML=abCL.slice(0,100).map((o,i)=>`
     <tr onclick="verAbandonado(${i})" style="cursor:pointer">
@@ -4471,7 +4476,7 @@ function paisesDe(n){
   return MENU_PAIS[n.dataset.view]||'CL,ES,PT,CO,RO';
 }
 /* de qué país es un teléfono o una página de visitas (20-10: +351 y las páginas pt- son de Portugal; +40 y ro- de Rumanía) */
-function paisDeTel(t){ t=soloNum(t); if(/^34\d{9}$/.test(t)) return 'ES'; if(/^351\d{9}$/.test(t)) return 'PT'; if(/^40\d{9}$/.test(t)) return 'RO'; if(/^57\d{10}$/.test(t)) return 'CO'; return 'CL'; }
+function paisDeTel(t){ t=soloNum(t); if(/^34\d{9}$/.test(t)) return 'ES'; if(/^351\d{9}$/.test(t)) return 'PT'; if(/^400?\d{9}$/.test(t)) return 'RO';   /* 27-10: el rumano escribe su móvil con el 0 (07xx…): +40 + 0712… también es Rumanía, no Chile */ if(/^57\d{10}$/.test(t)) return 'CO'; return 'CL'; }
 function paisDePagVis(s){ s=String(s||''); if(/^co-/.test(s)) return 'CO'; if(/^pt-/.test(s)) return 'PT'; if(/^ro-/.test(s)) return 'RO'; return (/^es-/.test(s)||s==='tienda-balsamo'||/^tienda-es-/.test(s))?'ES':'CL'; }
 
 /* Secciones que en España/Portugal y Colombia se pintan aparte: se esconde el contenido de
@@ -4502,7 +4507,7 @@ function htmlOtroPais(v){
     return tablaVentasPais(pag,true,'Todavía no hay pedidos de la página de España ni de Portugal.');
   }
   if(v==='abandonados'){
-    var ab=abandonadosWeb.filter(function(o){return paisDeTel(o.tel)===(ES?fPais:'CO');});
+    var ab=abandonadosWeb.filter(function(o){return (o.pais||paisDeTel(o.tel))===(ES?fPais:'CO');});
     if(!ab.length) return vacioPais('Sin carritos abandonados de '+nom+' todavía. Se guardan cuando alguien escribe su teléfono en el formulario y se va sin comprar. <b>A estos clientes no les escribe ningún flujo de Chile.</b>');
     return '<div class="panel"><table><thead><tr><th>Cliente</th><th>Producto</th><th>Ciudad</th><th>Cant.</th><th>Total</th></tr></thead><tbody>'+
       ab.slice(0,100).map(function(o){ return '<tr><td class="cli">'+esc(o.cli)+'<small>'+esc(o.fecha)+' · +'+o.tel+'</small></td><td>'+esc(o.prod)+'</td><td>'+esc(o.comuna)+'</td><td>'+o.cant+'</td><td>'+fmtEUR(numEUR(o.totRaw))+'</td></tr>'; }).join('')+
