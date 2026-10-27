@@ -6,7 +6,7 @@
 .cp-rn{font-size:12px;font-weight:800;letter-spacing:.06em}
 .rp-paises.cp-2{margin-top:0;grid-template-columns:repeat(2,1fr)} .rp-paises.cp-3{margin-top:0;grid-template-columns:repeat(3,1fr)}
 .cp-fecha{font-size:12px;color:var(--ink-2);margin-top:4px;font-weight:600;line-height:1.35} .cp-fecha b{color:var(--brand)}
-.cp-kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:16px}
+.cp-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
 .cp-kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;box-shadow:var(--shadow)}
 .cp-kpi .lbl{font-size:13px;color:var(--ink-2);font-weight:500}
 .cp-kpi .val{font-size:24px;font-weight:800;letter-spacing:-.02em;margin-top:10px;font-variant-numeric:tabular-nums}
