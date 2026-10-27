@@ -5157,7 +5157,7 @@ function pintarCierre(C){
     var fecha='<span class="fecha">'+fechaPaisHtml(p.zona).replace(' hora de ','<small>hora de ')+'</small></span>';
     return '<tr><td><span class="pais"><span class="flag '+p.flag+'"></span>'+p.nom+'</span></td><td>'+fecha+'</td>'+
       (p.n?cel(p.n,p.vLoc+' · ≈ '+cop(p.vCop)):vac('0 · todavía sin ventas'))+
-      (vacio?vac(p.sin||'0 · nada marcado por Dropi en '+lbl):
+      (vacio?vac(p.sin||'0 · Dropi no marcó nada ('+lbl+')'):
         cel(c.entregas,'entra '+cop(c.entra))+
         (c.devoluciones?cel(c.devoluciones,'−'+cop(c.devol),'neg'):vac('0'))+
         (c.meta?cel(cop(c.meta),''):vac('$0'))+
