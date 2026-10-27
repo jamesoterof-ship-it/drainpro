@@ -1,0 +1,30 @@
+/* 26-10 (James): cierre del día por país, totalizador LATAM/EUROPA e indicadores de línea (Resumen general).
+   Va en archivo aparte con el OK de James (el candado de diseño frenó el bloque dentro de index.html). */
+.cp-regiones{display:grid;grid-template-columns:2fr 3fr;gap:16px;margin-top:16px}
+.cp-region{border:1px solid var(--border);border-radius:12px;padding:12px 14px;background:var(--surface)}
+.cp-rh{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;font-size:12.5px;color:var(--ink-2);flex-wrap:wrap}
+.cp-rn{font-size:12px;font-weight:800;letter-spacing:.06em}
+.rp-paises.cp-2{margin-top:0;grid-template-columns:repeat(2,1fr)} .rp-paises.cp-3{margin-top:0;grid-template-columns:repeat(3,1fr)}
+.cp-fecha{font-size:12px;color:var(--ink-2);margin-top:4px;font-weight:600;line-height:1.35} .cp-fecha b{color:var(--brand)}
+.cp-kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:16px}
+.cp-kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;box-shadow:var(--shadow)}
+.cp-kpi .lbl{font-size:13px;color:var(--ink-2);font-weight:500}
+.cp-kpi .val{font-size:24px;font-weight:800;letter-spacing:-.02em;margin-top:10px;font-variant-numeric:tabular-nums}
+.cp-kpi .meta{font-size:12.5px;color:var(--ink-3);margin-top:6px;line-height:1.4}
+.cp-kpi.oro{border-color:rgba(216,165,46,.6);background:linear-gradient(135deg,rgba(216,165,46,.10),rgba(216,165,46,.02))} .cp-kpi.oro .val{color:#8a6100}
+:root[data-theme="dark"] .cp-kpi.oro .val,:root[data-theme="dark"] .cp-tabla tfoot td.oro{color:#e8c877}
+.cp-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);margin-bottom:16px;overflow-x:auto}
+.cp-card .tbl-head .s{font-size:12.5px;color:var(--ink-3)}
+.cp-tabla{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
+.cp-tabla th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-3);font-weight:700;text-align:right;padding:10px 14px;background:var(--surface-2);border-top:1px solid var(--border);border-bottom:1px solid var(--border);white-space:nowrap}
+.cp-tabla th:first-child,.cp-tabla td:first-child,.cp-tabla th:nth-child(2),.cp-tabla td:nth-child(2){text-align:left}
+.cp-tabla td{padding:11px 14px;border-bottom:1px solid var(--border);text-align:right;font-variant-numeric:tabular-nums;vertical-align:top;white-space:nowrap}
+.cp-tabla td .n{font-weight:700;font-size:14px} .cp-tabla td .cop{display:block;font-size:11.5px;color:var(--ink-3);margin-top:2px;white-space:normal}
+.cp-tabla td .pais{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13.5px}
+.cp-tabla td .fecha{font-weight:600} .cp-tabla td .fecha small{display:block;color:var(--ink-3);font-weight:500;font-size:11.5px;margin-top:2px}
+.cp-tabla td.pos .n{color:var(--green)} .cp-tabla td.neg .n{color:var(--red)} .cp-tabla td.vacio{color:var(--ink-3);font-weight:500}
+.cp-tabla tr.sub td{font-weight:700} .cp-tabla tr.sub.latam td{background:var(--brand-tint)} .cp-tabla tr.sub.eu td{background:var(--green-tint)}
+.cp-tabla tfoot td{background:var(--surface-2);font-weight:800;border-bottom:none;border-top:2px solid var(--border);font-size:14px} .cp-tabla tfoot td .cop{font-weight:500} .cp-tabla tfoot td.oro{color:#8a6100}
+.cp-graf{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 10px 10px} .cp-graf .tt{font-size:12.5px;font-weight:700;color:var(--ink-2);padding:4px 10px} .cp-graf .g{height:240px}
+.cp-nota{font-size:12.5px;color:var(--ink-3);padding:12px 20px 16px;line-height:1.5} .cp-nota b{color:var(--ink-2)}
+@media(max-width:1000px){.cp-regiones{grid-template-columns:1fr}.cp-kpis{grid-template-columns:repeat(2,1fr)}.cp-graf{grid-template-columns:1fr}}
