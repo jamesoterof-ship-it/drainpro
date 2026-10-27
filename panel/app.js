@@ -402,6 +402,18 @@ function enRangoDe(ts,rg,zona){
     const a=new Date(rg.desde), b=new Date(rg.hasta);
     return ts>=_medianocheZona(a.getFullYear(),a.getMonth()+1,a.getDate(),z)&&ts<_medianocheZona(b.getFullYear(),b.getMonth()+1,b.getDate()+1,z);
   }
+  /* 27-10 (James): en el Resumen general el corte es por FECHA y la fecha la pone Colombia.
+     Mientras en Bogotá sea 27, cada país muestra SU día 27 (00:00 a 24:00 de su hora): España no
+     vuelve a 0 a las 6 p. m. de Bogotá, y lo que venda después (ya 28 en Madrid) sale mañana. */
+  if(typeof fPais!=='undefined'&&fPais==='todos'&&zona){
+    const ini=off=>_iniDiaCal(off,z,ZONA_CO);
+    if(rg.tipo==='hoy')  return ts>=ini(0)&&ts<ini(-1);
+    if(rg.tipo==='ayer') return ts>=ini(1)&&ts<ini(0);
+    if(rg.tipo==='7d')   return ts>=ini(6)&&ts<ini(-1);
+    if(rg.tipo==='30d')  return ts>=ini(29)&&ts<ini(-1);
+    if(rg.tipo==='mes'){ const p=_ymdZona(Date.now(),ZONA_CO).split('-'); return ts>=_medianocheZona(+p[0],+p[1],1,z)&&ts<ini(-1); }
+    return true;
+  }
   if(rg.tipo==='hoy')  return ts>=inicioDia(0,z);
   if(rg.tipo==='ayer') return ts>=inicioDia(1,z)&&ts<inicioDia(0,z);
   if(rg.tipo==='7d')   return ts>=inicioDia(6,z);
@@ -409,6 +421,8 @@ function enRangoDe(ts,rg,zona){
   if(rg.tipo==='mes')  return ts>=inicioMes(z);   /* 26-10 (James): "Este mes" = desde el 1 del mes del país */
   return true;
 }
+/* medianoche (hora del país z) del día que marca el calendario de la zona cal, corrido off días atrás */
+function _iniDiaCal(off,z,cal){ const p=_ymdZona(Date.now(),cal).split('-'); return _medianocheZona(+p[0],+p[1],+p[2]-off,z); }
 function inicioMes(z){ z=z||zonaPanel(); var p=_ymdZona(Date.now(),z).split('-'); return _medianocheZona(+p[0],+p[1],1,z); }
 const enRango=ts=>enRangoDe(ts,R);
 /* una venta en el rango, con el día de SU país (sirve igual en el Resumen general) */
@@ -5148,11 +5162,11 @@ function pintarCierre(C){
   var box=document.getElementById('cierrePais'); if(!box||fPais!=='todos'||!TASAS) return;
   var T=totalesPais(), lbl=rangoTxt();
   var P=[
-    {k:'CL',nom:'Chile',flag:'flag-cl',zona:ZONA_CL,reg:'LATAM',n:T.cl.n,vLoc:fmtCLP(T.cl.t)+' CLP',vCop:T.cl.t*TASAS.clp,caja:sumaCaja(C.CL,diasDelRango(ZONA_CL)),sin:C.CL?'':'la caja de Chile no respondió'},
+    {k:'CL',nom:'Chile',flag:'flag-cl',zona:ZONA_CL,reg:'LATAM',n:T.cl.n,vLoc:fmtCLP(T.cl.t)+' CLP',vCop:T.cl.t*TASAS.clp,caja:sumaCaja(C.CL,diasDelRango(ZONA_CO)),sin:C.CL?'':'la caja de Chile no respondió'},
     {k:'CO',nom:'Colombia',flag:'flag-co',zona:ZONA_CO,reg:'LATAM',n:T.co.n,vLoc:fmtCOP(T.co.t)+' COP',vCop:T.co.t,caja:sumaCaja([],[]),sin:'Colombia todavía no tiene caja'},
-    {k:'ES',nom:'España',flag:'flag-es',zona:ZONA_ES,reg:'EUROPA',n:T.es.n,vLoc:fmtEUR(T.es.t),vCop:T.es.t*TASAS.eur,caja:sumaCaja(C.ES,diasDelRango(ZONA_ES)),sin:''},
-    {k:'PT',nom:'Portugal',flag:'flag-pt',zona:ZONA_PT,reg:'EUROPA',n:T.pt.n,vLoc:fmtEUR(T.pt.t),vCop:T.pt.t*TASAS.eur,caja:sumaCaja(C.PT,diasDelRango(ZONA_PT)),sin:''},
-    {k:'RO',nom:'Rumanía',flag:'flag-ro',zona:ZONA_RO,reg:'EUROPA',n:T.ro.n,vLoc:fmtRON(T.ro.t),vCop:TASAS.ron?T.ro.t*TASAS.ron:0,caja:sumaCaja(C.RO,diasDelRango(ZONA_RO)),sin:!TASAS.ron?'sin tasa del leu':(window.CAJA_RO_ERROR?'la caja de Rumanía no está conectada':'')}
+    {k:'ES',nom:'España',flag:'flag-es',zona:ZONA_ES,reg:'EUROPA',n:T.es.n,vLoc:fmtEUR(T.es.t),vCop:T.es.t*TASAS.eur,caja:sumaCaja(C.ES,diasDelRango(ZONA_CO)),sin:''},
+    {k:'PT',nom:'Portugal',flag:'flag-pt',zona:ZONA_PT,reg:'EUROPA',n:T.pt.n,vLoc:fmtEUR(T.pt.t),vCop:T.pt.t*TASAS.eur,caja:sumaCaja(C.PT,diasDelRango(ZONA_CO)),sin:''},
+    {k:'RO',nom:'Rumanía',flag:'flag-ro',zona:ZONA_RO,reg:'EUROPA',n:T.ro.n,vLoc:fmtRON(T.ro.t),vCop:TASAS.ron?T.ro.t*TASAS.ron:0,caja:sumaCaja(C.RO,diasDelRango(ZONA_CO)),sin:!TASAS.ron?'sin tasa del leu':(window.CAJA_RO_ERROR?'la caja de Rumanía no está conectada':'')}
   ];
   /* los negativos con el signo adelante del $ (fmtCOP daría "$-1.393.658") */
   var pesos=function(v){ return (v<0?'−':'')+fmtCOP(Math.abs(v)); };
@@ -5202,12 +5216,12 @@ function pintarCierre(C){
     '<div class="cp-card"><div class="tbl-head"><h2>Totalizador · Latam y Europa</h2><span class="s">Latam = Chile + Colombia · Europa = España + Portugal + Rumanía · todo en pesos colombianos</span></div>'+
       '<table class="cp-tabla"><thead><tr><th>Región</th><th>Países</th><th>Ventas</th><th>Entregas</th><th>Devoluciones</th><th>Gasto Meta</th><th>Bots</th><th>Sueldo</th><th>Te queda</th></tr></thead><tbody>'+
       filaSub('🌎 LATAM','Chile · Colombia',LA,'latam')+filaSub('🇪🇺 EUROPA','España · Portugal · Rumanía',EU,'eu')+'</tbody>'+pie('Latam + Europa')+'</table></div>'+
-    '<div class="cp-card"><div class="tbl-head"><h2>Cierre '+lbl+' por país</h2><span class="s">cada país con su propia fecha · subtotal por región · total en pesos colombianos</span></div>'+
+    '<div class="cp-card"><div class="tbl-head"><h2>Cierre '+lbl+' por país</h2><span class="s">la fecha la pone Colombia y cada país muestra ese día con su hora · subtotal por región · total en pesos colombianos</span></div>'+
       '<table class="cp-tabla">'+cab+'<tbody>'+
       P.filter(function(p){return p.reg==='LATAM';}).map(fila).join('')+filaSub('🌎 LATAM','Chile + Colombia',LA,'latam')+
       P.filter(function(p){return p.reg==='EUROPA';}).map(fila).join('')+filaSub('🇪🇺 EUROPA','España + Portugal + Rumanía',EU,'eu')+
       '</tbody>'+pie('en pesos colombianos')+'</table>'+
-      '<div class="cp-nota"><b>Cómo se cuenta cada columna:</b> <b>Ventas</b> = pedidos hechos en el rango, con la hora de cada país. '+
+      '<div class="cp-nota"><b>Cómo se cuenta cada columna:</b> <b>Ventas</b> = pedidos de esas fechas (las pone Colombia), cada país de 00:00 a 24:00 de su hora. '+
       '<b>Entregas</b> y <b>Devoluciones</b> = lo que Dropi marcó en esos días (son pedidos de días anteriores; por eso no cuadran con las ventas del mismo día). '+
       '"Entra" es lo que liquida Dropi ya descontados costo del producto y flete. <b>Gasto Meta</b> = gasto de las campañas por día, repartido por país según el nombre de la campaña. '+
       '<b>Te queda</b> = entra − devoluciones − Meta − bots − sueldo (bots y sueldo solo en Chile). Al cambiar el rango de arriba, todo esto cambia con él.</div></div>';
@@ -5218,8 +5232,8 @@ function pintarCierreGraf(C){
   var g1=document.getElementById('cpG1'), g2=document.getElementById('cpG2'); if(!g1||!g2||typeof echarts==='undefined') return;
   /* con Hoy o Ayer una línea de un punto no dice nada: se muestran los últimos 14 días */
   var corto=(R.tipo==='hoy'||R.tipo==='ayer'), Rsave=R;
-  if(corto) R={tipo:'fechas',desde:inicioDia(13,ZONA_CL),hasta:inicioDia(0,ZONA_CL)};
-  var dias=diasDelRango(ZONA_CL); R=Rsave;
+  if(corto) R={tipo:'fechas',desde:inicioDia(13,ZONA_CO),hasta:inicioDia(0,ZONA_CO)};
+  var dias=diasDelRango(ZONA_CO); R=Rsave;   /* 27-10: las fechas las pone Colombia; cada caja trae el día de su país */
   var sub=document.getElementById('cpGrafSub'); if(sub) sub.textContent=(corto?'últimos 14 días':rangoTxt())+' · por día · en millones de pesos colombianos';
   var m={CL:porDiaCaja(C.CL),ES:porDiaCaja(C.ES),PT:porDiaCaja(C.PT),RO:porDiaCaja(C.RO)};
   var v=function(k,d,campo){ var x=m[k][d]; return x?(Number(x[campo])||0):0; };
