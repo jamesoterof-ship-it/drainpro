@@ -5147,8 +5147,8 @@ function pintarCierre(C){
   /* los negativos con el signo adelante del $ (fmtCOP daría "$-1.393.658") */
   var pesos=function(v){ return (v<0?'−':'')+fmtCOP(Math.abs(v)); };
   var cop=function(v){ return pesos(v)+' COP'; };
-  var suma=function(arr){ var s={n:0,vCop:0,entregas:0,entra:0,devoluciones:0,devol:0,meta:0,bots:0,queda:0};
-    arr.forEach(function(p){ s.n+=p.n; s.vCop+=p.vCop; s.entregas+=p.caja.entregas; s.entra+=p.caja.entra; s.devoluciones+=p.caja.devoluciones; s.devol+=p.caja.devol; s.meta+=p.caja.meta; s.bots+=p.caja.camila+p.caja.sueldo; s.queda+=p.caja.queda; }); return s; };
+  var suma=function(arr){ var s={n:0,vCop:0,entregas:0,entra:0,devoluciones:0,devol:0,meta:0,bots:0,sueldo:0,queda:0};
+    arr.forEach(function(p){ s.n+=p.n; s.vCop+=p.vCop; s.entregas+=p.caja.entregas; s.entra+=p.caja.entra; s.devoluciones+=p.caja.devoluciones; s.devol+=p.caja.devol; s.meta+=p.caja.meta; s.bots+=p.caja.camila; s.sueldo+=p.caja.sueldo; s.queda+=p.caja.queda; }); return s; };
   var LA=suma(P.filter(function(p){return p.reg==='LATAM';})), EU=suma(P.filter(function(p){return p.reg==='EUROPA';})), TT=suma(P);
   var cel=function(n,txt,cls){ return '<td'+(cls?' class="'+cls+'"':'')+'><span class="n">'+n+'</span>'+(txt?'<span class="cop">'+txt+'</span>':'')+'</td>'; };
   var vac=function(t){ return '<td class="vacio">'+t+'</td>'; };
@@ -5161,34 +5161,36 @@ function pintarCierre(C){
         cel(c.entregas,'entra '+cop(c.entra))+
         (c.devoluciones?cel(c.devoluciones,'−'+cop(c.devol),'neg'):vac('0'))+
         (c.meta?cel(cop(c.meta),''):vac('$0'))+
-        (c.camila+c.sueldo?cel('−'+cop(c.camila+c.sueldo),'bots y sueldo'):vac('—'))+
+        (c.camila?cel('−'+cop(c.camila),''):vac('—'))+
+        (c.sueldo?cel('−'+cop(c.sueldo),''):vac('—'))+
         cel(cop(c.queda),'',c.queda>=0?'pos':'neg'))+
-      (vacio?'<td class="vacio">0</td><td class="vacio">$0</td><td class="vacio">—</td><td class="vacio">$0</td>':'')+'</tr>';
+      (vacio?'<td class="vacio">0</td><td class="vacio">$0</td><td class="vacio">—</td><td class="vacio">—</td><td class="vacio">$0</td>':'')+'</tr>';
   };
   var filaSub=function(nom,paises,s,cls){
     return '<tr class="sub '+cls+'"><td>'+nom+'</td><td style="font-size:12px;color:var(--ink-2)">'+paises+'</td>'+
       cel(s.n,cop(s.vCop))+cel(s.entregas,'entra '+cop(s.entra))+cel(s.devoluciones,'−'+cop(s.devol),s.devoluciones?'neg':'')+
-      cel(cop(s.meta),'')+cel(s.bots?'−'+cop(s.bots):'—','')+cel(cop(s.queda),'',s.queda>=0?'pos':'neg')+'</tr>';
+      cel(cop(s.meta),'')+cel(s.bots?'−'+cop(s.bots):'—','')+cel(s.sueldo?'−'+cop(s.sueldo):'—','')+cel(cop(s.queda),'',s.queda>=0?'pos':'neg')+'</tr>';
   };
-  var cab='<thead><tr><th>País</th><th>Fecha del país</th><th>Ventas</th><th>Entregas</th><th>Devoluciones</th><th>Gasto Meta</th><th>Bots + sueldo</th><th>Te queda</th></tr></thead>';
+  var cab='<thead><tr><th>País</th><th>Fecha del país</th><th>Ventas</th><th>Entregas</th><th>Devoluciones</th><th>Gasto Meta</th><th>Bots</th><th>Sueldo</th><th>Te queda</th></tr></thead>';
   var pie=function(txt){ return '<tfoot><tr><td>TOTAL</td><td style="font-weight:500;color:var(--ink-3)">'+txt+'</td>'+
       '<td>'+TT.n+'<span class="cop">'+cop(TT.vCop)+'</span></td><td>'+TT.entregas+'<span class="cop">'+cop(TT.entra)+'</span></td>'+
       '<td style="color:var(--red)">'+TT.devoluciones+'<span class="cop">−'+cop(TT.devol)+'</span></td><td>'+cop(TT.meta)+'</td>'+
-      '<td>'+(TT.bots?'−'+cop(TT.bots):'—')+'</td><td class="oro">'+cop(TT.queda)+'<span class="cop">te queda '+lbl+'</span></td></tr></tfoot>'; };
+      '<td>'+(TT.bots?'−'+cop(TT.bots):'—')+'</td><td>'+(TT.sueldo?'−'+cop(TT.sueldo):'—')+'</td><td class="oro">'+cop(TT.queda)+'<span class="cop">te queda '+lbl+'</span></td></tr></tfoot>'; };
   var det=function(campo,fmt){ return P.filter(function(p){return p.caja[campo];}).map(function(p){ return p.nom+' '+(fmt?fmt(p.caja[campo]):p.caja[campo]); }).join(' · ')||'—'; };
   var html=
     '<div class="cp-kpis">'+
       '<div class="cp-kpi"><div class="lbl">Entregas '+lbl+'</div><div class="val">'+TT.entregas+'</div><div class="meta">'+det('entregas')+'</div></div>'+
       '<div class="cp-kpi"><div class="lbl">Devoluciones '+lbl+'</div><div class="val" style="color:var(--red)">'+TT.devoluciones+'</div><div class="meta">−'+cop(TT.devol)+' · '+det('devoluciones')+'</div></div>'+
       '<div class="cp-kpi"><div class="lbl">Gasto de Meta '+lbl+'</div><div class="val">'+pesos(TT.meta)+'</div><div class="meta">COP · '+det('meta',pesos)+'</div></div>'+
-      '<div class="cp-kpi"><div class="lbl">Bots + sueldo</div><div class="val">'+(TT.bots?'−'+pesos(TT.bots):'—')+'</div><div class="meta">COP · solo se descuenta en Chile</div></div>'+
+      '<div class="cp-kpi"><div class="lbl">Bots</div><div class="val">'+(TT.bots?'−'+pesos(TT.bots):'—')+'</div><div class="meta">COP · Camila, Carlos y los demás · solo Chile</div></div>'+
+      '<div class="cp-kpi"><div class="lbl">Tu sueldo</div><div class="val">'+(TT.sueldo?'−'+pesos(TT.sueldo):'—')+'</div><div class="meta">COP · se descuenta una sola vez, en Chile</div></div>'+
       '<div class="cp-kpi oro"><div class="lbl">TE QUEDA '+lbl+'</div><div class="val"'+(TT.queda<0?' style="color:var(--red)"':'')+'>'+pesos(TT.queda)+'</div><div class="meta">COP · entregado − devoluciones − Meta − bots − sueldo</div></div>'+
     '</div>'+
     '<div class="cp-card" style="padding-bottom:6px"><div class="tbl-head"><h2>Indicadores</h2><span class="s" id="cpGrafSub"></span></div>'+
       '<div class="cp-graf"><div><div class="tt">Te queda por día · Latam vs Europa</div><div class="g" id="cpG1"></div></div>'+
       '<div><div class="tt">Entregado · gasto Meta · devoluciones</div><div class="g" id="cpG2"></div></div></div></div>'+
     '<div class="cp-card"><div class="tbl-head"><h2>Totalizador · Latam y Europa</h2><span class="s">Latam = Chile + Colombia · Europa = España + Portugal + Rumanía · todo en pesos colombianos</span></div>'+
-      '<table class="cp-tabla"><thead><tr><th>Región</th><th>Países</th><th>Ventas</th><th>Entregas</th><th>Devoluciones</th><th>Gasto Meta</th><th>Bots + sueldo</th><th>Te queda</th></tr></thead><tbody>'+
+      '<table class="cp-tabla"><thead><tr><th>Región</th><th>Países</th><th>Ventas</th><th>Entregas</th><th>Devoluciones</th><th>Gasto Meta</th><th>Bots</th><th>Sueldo</th><th>Te queda</th></tr></thead><tbody>'+
       filaSub('🌎 LATAM','Chile · Colombia',LA,'latam')+filaSub('🇪🇺 EUROPA','España · Portugal · Rumanía',EU,'eu')+'</tbody>'+pie('Latam + Europa')+'</table></div>'+
     '<div class="cp-card"><div class="tbl-head"><h2>Cierre '+lbl+' por país</h2><span class="s">cada país con su propia fecha · subtotal por región · total en pesos colombianos</span></div>'+
       '<table class="cp-tabla">'+cab+'<tbody>'+
