@@ -760,7 +760,7 @@ body:not([data-pais="CL"]) :is(#badgeCancelar,#badgeNovedades,#badgeListanegra,#
       <div id="resPais" hidden></div>
 
       <div id="resChile">
-      <div class="kpis">
+      <div class="kpis" id="resKpis">
         <div class="kpi">
           <div class="top-r"><span class="lbl" id="lTot">Ventas totales (hoy)</span><span class="icn" style="background:var(--border-2);color:var(--ink)"><svg class="ico-sm" viewBox="0 0 24 24"><path d="M6 2 3 6v13a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></span></div>
           <div class="val" id="kTot">…</div>
@@ -787,7 +787,7 @@ body:not([data-pais="CL"]) :is(#badgeCancelar,#badgeNovedades,#badgeListanegra,#
         </div>
       </div>
 
-      <div class="row">
+      <div class="row" id="resRow1">
         <div class="panel">
           <div class="ph">
             <div><h2>Ventas por día</h2><div class="sm">Según el rango y canal elegidos</div></div>
@@ -1589,7 +1589,7 @@ body:not([data-pais="CL"]) :is(#badgeCancelar,#badgeNovedades,#badgeListanegra,#
      apagado. Para devolverlo: recuperar este bloque del commit anterior y activar el flujo. -->
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
-<script src="app.js?v=261"></script>
+<script src="app.js?v=262"></script>
 <script src="ganancia.js?v=129"></script>
 </body>
 </html>

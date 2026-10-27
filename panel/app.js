@@ -4686,6 +4686,9 @@ function renderPaisTab(){
   var box=document.getElementById('resPais'), chi=document.getElementById('resChile'); if(!box||!chi) return;
   document.querySelectorAll('#segPais .minitab').forEach(function(b){ b.classList.toggle('act',b.dataset.p===fPais); });
   chi.hidden=false;
+  /* 26-10 (James: "esto para qué ya"): en el Resumen general los cuadros viejos (ventas por canal, por moneda,
+     barras por día y lista por país) sobran: el cierre por país ya lo trae. Siguen en las pestañas de cada país. */
+  ['resKpis','resRow1'].forEach(function(i){ var e=document.getElementById(i); if(e) e.hidden=(fPais==='todos'); });
   /* 02-10 (James): "ponme la hora de Chile, así como hiciste con España" */
   if(fPais==='CL'){ box.hidden=false;
     /* 21-10 (James): "pon esto igual en el panel de Chile": las dos líneas de España (hora + montos, por aprobar e ir a aprobar) */
