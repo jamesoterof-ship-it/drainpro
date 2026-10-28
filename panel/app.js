@@ -4380,7 +4380,8 @@ function esFilaES(r){
 var ventasRO=[];
 function esFilaRO(r){
   var p=String(r.PAIS||'').toUpperCase(), b=String(r.BOT||'');
-  return p==='RO'||/p[aá]gina\s+ro\b|^carmen\s*ro\b/i.test(b);
+  /* 28-10: 'Ioana' = el bot de WhatsApp de Rumanía (+40). /ventas no trae PAIS: sin esto su venta caía en Chile */
+  return p==='RO'||/p[aá]gina\s+ro\b|^carmen\s*ro\b|^ioana\b/i.test(b);
 }
 function fmtRON(n){ return (Math.round(n*100)/100).toLocaleString('ro-RO',{minimumFractionDigits:2,maximumFractionDigits:2})+' lei'; }
 function filaRO(r){
