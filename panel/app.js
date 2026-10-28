@@ -249,6 +249,9 @@ function btnDud(k,dud){
    VERDE; apretar el boton es la aprobacion de James. */
 function soltarYa(k,id){
   if(typeof confirm==='function' && !confirm('¿Soltar esta venta ya, sin esperar la hora?\n\nEl cliente ya confirmó y el inspector la dejó en verde. Se monta en Dropi en el próximo ciclo (≈5 min).')) return;
+  /* 28-10 James: "ponme el botón de soltar en España igual que Chile". En España y Portugal el montador (n8n) no espera
+     la hora: la espera es solo del panel. Soltar = aprobar ya (la llave es: va a pedidos_aprobados y el montador la toma en ≤3 min). */
+  if(/^es:/.test(String(k))){ aprobar(k); if(typeof toast==='function') toast('Soltada ✓ — se monta en Dropi PRO en el próximo ciclo'); return; }
   fetch(BASE+'/soltar-ya',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({venta_id:String(id)})})
     .then(function(r){ return r.json(); })
     .then(function(j){
@@ -5129,7 +5132,8 @@ function renderAprobarPais(){
           '<td>'+esc(o.dir)+'<div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.zona)+(o.region&&o.region!=='—'?', '+esc(o.region):'')+'</div></td>'+
           '<td>'+esc(o.cant)+'</td><td>'+fmtEUR(o.totalNum)+'</td><td onclick="event.stopPropagation()">'+(esPagoPend(o)
             ?'<span style="font-size:12px;color:#b45309;font-weight:700">Esperando el pago</span><div style="font-size:11px;color:var(--ink-3)">se aprueba cuando llegue el comprobante</div>'
-            :celdaAprob(k,'',o.id,falta,'',false,dudES(o),_ms))+'</td></tr>';
+            /* 28-10 James: botón "⚡ Soltar ya" igual que Chile: inspector en VERDE + cliente confirmó + sin pago pendiente */
+            :celdaAprob(k,'',o.id,falta,'',false,dudES(o),_ms,(String(o.nivel||'').toUpperCase()==='VERDE'&&confirmadoES(o)&&!falta)?String(o.id):''))+'</td></tr>';
       }).join('')+'</tbody></table>'
       :'<div class="vacio" style="padding:22px">'+(CONF_ES?vacioES:'Cargando las confirmaciones de los clientes…')+'</div>')+'</div>';
 }
