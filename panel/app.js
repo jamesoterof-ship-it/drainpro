@@ -2036,6 +2036,9 @@ function renderAprobar(){
   const bg=document.getElementById('badgeAprobar');
   if(bg){ bg.style.display=(nPend&&!esEU()&&fPais!=='CO'&&fPais!=='RO')?'':'none'; bg.textContent=nPend; }
   var pnCL=document.getElementById('pnNumCL'); if(pnCL) pnCL.textContent=nPend||'';
+  /* 28-10 James: bolita VERDE = de las por aprobar, las que el inspector ya marcó VERDE ("✓ se puede aprobar") */
+  const nVerde=items.filter(x=>x.st==='pendiente' && !x.prog && !x.dud && x.nivel==='VERDE').length;
+  var pvCL=document.getElementById('pnVerdeCL'); if(pvCL) pvCL.textContent=nVerde||'';
   window._nPendCL=nPend; var pcl=document.getElementById('pendCL'); if(pcl) pcl.textContent=nPend; /* 21-10: el aviso de Chile en Resumen */
   agRiesgoCalc(items);
   /* LO MAS NUEVO ARRIBA, lo mas viejo abajo. Sin excepciones y sin separar por
@@ -4489,6 +4492,8 @@ function fmtMonP(n){
 }
 
 function irPais(p){ elegirPais(p); }
+/* 28-10 James: tocar la bolita verde abre Aprobar del país (sin disparar el botón del país debajo) */
+function irAprobarVerde(ev,p){ if(ev){ ev.stopPropagation(); ev.preventDefault(); } elegirPais(p); setTimeout(function(){ mostrarVista('aprobar'); },60); }
 
 /* ---------- el país manda sobre TODO el panel (James 28-09: "cada quien por aparte") ----------
    Cada entrada del menú dice de qué países es. "todos" = solo el Resumen en COP y lo general. */
@@ -5000,12 +5005,17 @@ function renderAprobarPais(){
   var nbP=document.getElementById('numAprobPT'); if(nbP){ nbP.textContent=pendPT.length; nbP.style.display=pendPT.length?'':'none'; }
   var pnES=document.getElementById('pnNumES'); if(pnES) pnES.textContent=pend.length||'';
   var pnPT=document.getElementById('pnNumPT'); if(pnPT) pnPT.textContent=pendPT.length||'';
+  /* 28-10 James: bolita VERDE = las por aprobar que el inspector marcó VERDE */
+  var verdes=function(arr){ return arr.filter(function(o){ return String(o.nivel||'').toUpperCase()==='VERDE'; }).length; };
+  var pvES=document.getElementById('pnVerdeES'); if(pvES) pvES.textContent=verdes(pend)||'';
+  var pvPT=document.getElementById('pnVerdePT'); if(pvPT) pvPT.textContent=verdes(pendPT)||'';
   var nAct=fPais==='PT'?pendPT.length:pend.length;
   var bES=document.getElementById('badgeAprobarES'); if(bES){ bES.textContent=nAct; bES.style.display=(nAct&&esEU())?'':'none'; }
   /* 20-10: el contador de Rumanía, aparte (llave ro:) */
   var pendRO=ventasRO.filter(function(o){return !o.montado&&!esPagoPend(o)&&!esAprobado('ro:'+o.id)&&!esRechazado('ro:'+o.id)&&confirmadoRO(o)&&!_dudC.has('ro:'+o.id);});
   var nbRO=document.getElementById('numAprobRO'); if(nbRO){ nbRO.textContent=pendRO.length; nbRO.style.display=pendRO.length?'':'none'; }
   var pnRO=document.getElementById('pnNumRO'); if(pnRO) pnRO.textContent=pendRO.length||'';
+  var pvRO=document.getElementById('pnVerdeRO'); if(pvRO) pvRO.textContent=verdes(pendRO)||'';
   var bRO=document.getElementById('badgeAprobarRO'); if(bRO){ bRO.textContent=pendRO.length; bRO.style.display=(pendRO.length&&fPais==='RO')?'':'none'; }
   if(fPaisAprob==='CL'){ ch.hidden=false; ot.hidden=true; return; }
   ch.hidden=true; ot.hidden=false;

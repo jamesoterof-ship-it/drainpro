@@ -545,6 +545,8 @@ tbody tr:hover .chev{color:var(--brand)}
 .paisnav button.act{background:var(--ink);color:#fff;border-color:var(--ink)}
 .paisnav .pn-num{margin-left:auto;background:#e1283c;color:#fff;border-radius:999px;font-size:10.5px;padding:0 6px}
 .paisnav .pn-num:empty{display:none}
+.paisnav .pn-num.pn-verde{margin-left:4px;background:#179f6b;cursor:pointer}
+.paisnav .pn-num+.pn-num.pn-verde{margin-left:4px}
 .paisnav .pn-grupo{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);padding:8px 2px 2px}
 #segPais[hidden],#paisAprob[hidden]{display:none!important}
 body:not([data-pais="CL"]) :is(#badgeCancelar,#badgeNovedades,#badgeListanegra,#badgeEntregas,#convBadge,#redesBadge){display:none!important}
@@ -566,12 +568,13 @@ body:not([data-pais="CL"]) :is(#badgeCancelar,#badgeNovedades,#badgeListanegra,#
       <button data-p="todos">Resumen · todo en COP</button>
       <!-- 21-10 James: países de Latinoamérica y de Europa por aparte -->
       <div class="pn-grupo">Latinoamérica</div>
-      <button data-p="CL"><span class="flag flag-cl"></span>Chile <b class="pn-num" id="pnNumCL"></b></button>
+      <!-- 28-10 James: bolita ROJA = por aprobar · bolita VERDE = de esas, las que el inspector ya marcó "se puede aprobar" (tocarla abre Aprobar) -->
+      <button data-p="CL"><span class="flag flag-cl"></span>Chile <b class="pn-num" id="pnNumCL"></b><b class="pn-num pn-verde" id="pnVerdeCL" title="verificadas por el inspector: se pueden aprobar" onclick="irAprobarVerde(event,'CL')"></b></button>
       <button data-p="CO"><span class="flag flag-co"></span>Colombia</button>
       <div class="pn-grupo">Europa</div>
-      <button data-p="ES"><span class="flag flag-es"></span>España <b class="pn-num" id="pnNumES"></b></button>
-      <button data-p="PT"><span class="flag flag-pt"></span>Portugal <b class="pn-num" id="pnNumPT"></b></button>
-      <button data-p="RO"><span class="flag flag-ro"></span>Rumanía <b class="pn-num" id="pnNumRO"></b></button>
+      <button data-p="ES"><span class="flag flag-es"></span>España <b class="pn-num" id="pnNumES"></b><b class="pn-num pn-verde" id="pnVerdeES" title="verificadas por el inspector: se pueden aprobar" onclick="irAprobarVerde(event,'ES')"></b></button>
+      <button data-p="PT"><span class="flag flag-pt"></span>Portugal <b class="pn-num" id="pnNumPT"></b><b class="pn-num pn-verde" id="pnVerdePT" title="verificadas por el inspector: se pueden aprobar" onclick="irAprobarVerde(event,'PT')"></b></button>
+      <button data-p="RO"><span class="flag flag-ro"></span>Rumanía <b class="pn-num" id="pnNumRO"></b><b class="pn-num pn-verde" id="pnVerdeRO" title="verificadas por el inspector: se pueden aprobar" onclick="irAprobarVerde(event,'RO')"></b></button>
     </div>
 
     <nav style="padding-top:4px">
@@ -1589,7 +1592,7 @@ body:not([data-pais="CL"]) :is(#badgeCancelar,#badgeNovedades,#badgeListanegra,#
      apagado. Para devolverlo: recuperar este bloque del commit anterior y activar el flujo. -->
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
-<script src="app.js?v=271"></script>
+<script src="app.js?v=272"></script>
 <script src="ganancia.js?v=129"></script>
 </body>
 </html>
