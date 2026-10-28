@@ -2035,9 +2035,13 @@ function renderAprobar(){
   const nPend=items.filter(x=>x.st==='pendiente' && !x.prog && !x.dud).length;
   const bg=document.getElementById('badgeAprobar');
   if(bg){ bg.style.display=(nPend&&!esEU()&&fPais!=='CO'&&fPais!=='RO')?'':'none'; bg.textContent=nPend; }
-  var pnCL=document.getElementById('pnNumCL'); if(pnCL) pnCL.textContent=nPend||'';
-  /* 28-10 James: bolita VERDE = de las por aprobar, las que el inspector ya marcó VERDE ("✓ se puede aprobar") */
-  const nVerde=items.filter(x=>x.st==='pendiente' && !x.prog && !x.dud && x.nivel==='VERDE').length;
+  /* 28-10 James: en el menú de países la bolita VERDE = por aprobar que el inspector marcó VERDE ("✓ se puede aprobar") y ya
+     pasaron la espera de una hora (mientras diga "faltan X min" no cuenta en ninguna); la ROJA = las que faltan (pendientes
+     que NO están en verde: sin revisar, amarillas o rojas). Chile 6 pendientes con 4 verdes = 2 rojas. */
+  const pendL=items.filter(x=>x.st==='pendiente' && !x.prog && !x.dud);
+  const nVerde=pendL.filter(x=>x.nivel==='VERDE' && (function(){ var m=minutosDe(x); return m===null || m>=ESPERA_MIN; })()).length;
+  const nRojo=pendL.filter(x=>x.nivel!=='VERDE').length;
+  var pnCL=document.getElementById('pnNumCL'); if(pnCL) pnCL.textContent=nRojo||'';
   var pvCL=document.getElementById('pnVerdeCL'); if(pvCL) pvCL.textContent=nVerde||'';
   window._nPendCL=nPend; var pcl=document.getElementById('pendCL'); if(pcl) pcl.textContent=nPend; /* 21-10: el aviso de Chile en Resumen */
   agRiesgoCalc(items);
@@ -5003,10 +5007,12 @@ function renderAprobarPais(){
   var pend=pendDe('ES'), pendPT=pendDe('PT');
   var nb=document.getElementById('numAprobES'); if(nb){ nb.textContent=pend.length; nb.style.display=pend.length?'':'none'; }
   var nbP=document.getElementById('numAprobPT'); if(nbP){ nbP.textContent=pendPT.length; nbP.style.display=pendPT.length?'':'none'; }
-  var pnES=document.getElementById('pnNumES'); if(pnES) pnES.textContent=pend.length||'';
-  var pnPT=document.getElementById('pnNumPT'); if(pnPT) pnPT.textContent=pendPT.length||'';
-  /* 28-10 James: bolita VERDE = las por aprobar que el inspector marcó VERDE */
-  var verdes=function(arr){ return arr.filter(function(o){ return String(o.nivel||'').toUpperCase()==='VERDE'; }).length; };
+  /* 28-10 James: en el menú de países VERDE = inspector VERDE y ya pasó la espera de una hora (las que dicen "faltan X min"
+     no cuentan en ninguna); ROJA = las que faltan (pendientes que NO están en verde). */
+  var verdes=function(arr){ return arr.filter(function(o){ return String(o.nivel||'').toUpperCase()==='VERDE' && (!o.creadoMs || (Date.now()-o.creadoMs)>=ESPERA_MIN*60000); }).length; };
+  var rojas=function(arr){ return arr.filter(function(o){ return String(o.nivel||'').toUpperCase()!=='VERDE'; }).length; };
+  var pnES=document.getElementById('pnNumES'); if(pnES) pnES.textContent=rojas(pend)||'';
+  var pnPT=document.getElementById('pnNumPT'); if(pnPT) pnPT.textContent=rojas(pendPT)||'';
   var pvES=document.getElementById('pnVerdeES'); if(pvES) pvES.textContent=verdes(pend)||'';
   var pvPT=document.getElementById('pnVerdePT'); if(pvPT) pvPT.textContent=verdes(pendPT)||'';
   var nAct=fPais==='PT'?pendPT.length:pend.length;
@@ -5014,7 +5020,7 @@ function renderAprobarPais(){
   /* 20-10: el contador de Rumanía, aparte (llave ro:) */
   var pendRO=ventasRO.filter(function(o){return !o.montado&&!esPagoPend(o)&&!esAprobado('ro:'+o.id)&&!esRechazado('ro:'+o.id)&&confirmadoRO(o)&&!_dudC.has('ro:'+o.id);});
   var nbRO=document.getElementById('numAprobRO'); if(nbRO){ nbRO.textContent=pendRO.length; nbRO.style.display=pendRO.length?'':'none'; }
-  var pnRO=document.getElementById('pnNumRO'); if(pnRO) pnRO.textContent=pendRO.length||'';
+  var pnRO=document.getElementById('pnNumRO'); if(pnRO) pnRO.textContent=rojas(pendRO)||'';
   var pvRO=document.getElementById('pnVerdeRO'); if(pvRO) pvRO.textContent=verdes(pendRO)||'';
   var bRO=document.getElementById('badgeAprobarRO'); if(bRO){ bRO.textContent=pendRO.length; bRO.style.display=(pendRO.length&&fPais==='RO')?'':'none'; }
   if(fPaisAprob==='CL'){ ch.hidden=false; ot.hidden=true; return; }
