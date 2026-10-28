@@ -292,6 +292,17 @@ function celdaAprob(k,montadoHtml,rid,faltaDir,prog,enRevision,dud,creadoMs,solt
   if(prog) return '<span class="st st-ab" style="background:#fff3e2;color:#b45309"><i style="background:#d97706"></i>'+esc(prog.charAt(0).toUpperCase()+prog.slice(1))+'</span>';
   return '<button class="b-apr" onclick="aprobar(&quot;'+k+'&quot;)">✓ Aprobar</button>'+mover+'<button class="b-rech" title="Eliminar — sale de la lista y no se monta en Dropi" onclick="eliminar(&quot;'+k+'&quot;,&quot;'+(rid||'')+'&quot;)">🗑</button>';
 }
+/* 28-10 (5ª vuelta, James: "Rumanía se puso para aprobar y no estaba en verde"): la bolita VERDE del menú de países cuenta
+   EXACTAMENTE las filas que muestran un botón para actuar ya (✓ Aprobar o ⚡ Soltar ya), con la misma lógica de celdaAprob.
+   Antes dependía de que el inspector la marcara VERDE, y el inspector solo corre en Chile y España: en Portugal y Rumanía
+   nunca había verde aunque la venta ya tuviera el botón Aprobar. Los mismos argumentos que celdaAprob. */
+function sePuedeActuar(k,faltaDir,prog,creadoMs,soltarId){
+  if(esAprobado(k)||esRechazado(k)) return false;
+  var _m=Number(creadoMs)>0?Math.floor((Date.now()-Number(creadoMs))/60000):null;
+  if(_m!==null&&_m<ESPERA_MIN) return !!soltarId;
+  if(faltaDir||prog) return false;
+  return true;
+}
 
 const PAGINAS=[
   {id:'shilajit', nombre:'Shilajit Ultra', url:'https://script.google.com/macros/s/AKfycbzhWqfMJVJiquBdOfOAqkgVFp9dHBphmpEk4CLd4woXSb4A9vIN_1iPq3PkjKKKHCusGQ/exec', color:'#0e8074'},
@@ -2044,9 +2055,10 @@ function renderAprobar(){
      sin revisar, amarillas o rojas). Chile 6 pendientes con 4 verdes = 2 rojas. */
   /* 28-10 (4ª vuelta, James: "Chile tiene unas para soltar ya y ni siquiera me aparecen en verde"): VERDE = las que puedes
      ATENDER YA: inspector en verde, estén o no dentro de la hora (dentro de la hora tienen el botón "⚡ Soltar ya"). */
+  /* 28-10 (5ª vuelta): VERDE = la fila muestra "✓ Aprobar" o "⚡ Soltar ya" (misma lógica que la celda, sePuedeActuar). */
   const pendL=items.filter(x=>x.st==='pendiente' && !x.prog && !x.dud);
-  const nVerde=pendL.filter(x=>x.nivel==='VERDE').length;
-  const nRojo=pendL.filter(x=>x.nivel!=='VERDE').length;
+  const nVerde=pendL.filter(x=>sePuedeActuar(x.k,x.faltaDir,x.vuelve,esperaCL(x),soltarIdCL(x))).length;
+  const nRojo=pendL.length-nVerde;
   var pnCL=document.getElementById('pnNumCL'); if(pnCL) pnCL.textContent=nRojo||'';
   var pvCL=document.getElementById('pnVerdeCL'); if(pvCL) pvCL.textContent=nVerde||'';
   window._nPendCL=nPend; var pcl=document.getElementById('pendCL'); if(pcl) pcl.textContent=nPend; /* 21-10: el aviso de Chile en Resumen */
@@ -2075,9 +2087,16 @@ function renderAprobar(){
       <td>${esc(x.comuna||'—')}</td>
       <td>${x.cant}</td>
       <td class="money">${x.total}</td>
-      <td class="cell-aprob" onclick="event.stopPropagation()">${x.trab?motivoTrab(x):''}${x.st==='esperapago'?'<span style="font-size:12px;color:#b45309;font-weight:700">Esperando el pago</span><div style="font-size:11px;color:var(--ink-3)">se aprueba cuando PayPal lo confirme</div>':celdaAprob(x.k, x.st==='montado'?'<span class="st st-ok"><i></i>Montado</span>':'', x.rid||'', x.faltaDir, x.vuelve, enRevisionInsp(x.nivel, x.creadoMs), !!x.dud, (/PAGADO paypal/.test(String(x.pago||''))?0:x.creadoMs) /* 05-10 James: lo ya pagado con PayPal no espera la hora */, (x.nivel==='VERDE' && !x.abono && x.st==='pendiente' && !x.prog) ? (x.canal==='Página' ? String((x.raw&&x.raw.fila)||'').replace(/^wa/,'') : (x.canal==='WhatsApp' ? String(x.rid||'') : '')) : '')}</td>
+      <td class="cell-aprob" onclick="event.stopPropagation()">${x.trab?motivoTrab(x):''}${x.st==='esperapago'?'<span style="font-size:12px;color:#b45309;font-weight:700">Esperando el pago</span><div style="font-size:11px;color:var(--ink-3)">se aprueba cuando PayPal lo confirme</div>':celdaAprob(x.k, x.st==='montado'?'<span class="st st-ok"><i></i>Montado</span>':'', x.rid||'', x.faltaDir, x.vuelve, enRevisionInsp(x.nivel, x.creadoMs), !!x.dud, esperaCL(x), soltarIdCL(x))}</td>
       <td onclick="event.stopPropagation()"><a class="qr" style="text-decoration:none;cursor:pointer" onclick="crmAbrir('${x.tel}')">WhatsApp</a></td>
     </tr>`).join('');
+}
+/* 05-10 James: lo ya pagado con PayPal no espera la hora */
+function esperaCL(x){ return /PAGADO paypal/.test(String(x.pago||''))?0:x.creadoMs; }
+/* id para "⚡ Soltar ya" en Chile: inspector VERDE, sin anticipo pendiente, pendiente y no programada (misma regla en la fila y en la bolita) */
+function soltarIdCL(x){
+  if(!(x.nivel==='VERDE' && !x.abono && x.st==='pendiente' && !x.prog)) return '';
+  return x.canal==='Página' ? String((x.raw&&x.raw.fila)||'').replace(/^wa/,'') : (x.canal==='WhatsApp' ? String(x.rid||'') : '');
 }
 /* detalle del cliente al hacer clic en una fila de Aprobación (página o WhatsApp) */
 function verAprob(i){
@@ -4966,7 +4985,7 @@ function renderAprobarRO(ot){
           '<td>'+esc(o.dir)+'<div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.zona)+(o.region&&o.region!=='—'?', '+esc(o.region):'')+'</div></td>'+
           '<td>'+esc(o.cant)+'</td><td>'+fmtRON(o.totalNum)+'</td><td onclick="event.stopPropagation()">'+(esPagoPend(o)
             ?'<span style="font-size:12px;color:#b45309;font-weight:700">Esperando el pago</span><div style="font-size:11px;color:var(--ink-3)">se aprueba cuando llegue el comprobante</div>'
-            :celdaAprob(k,'',o.id,falta,'',false,dud(o),o.creadoMs))+'</td></tr>';
+            :celdaAprob(k,'',o.id,falta,'',false,dud(o),esperaES(o)))+'</td></tr>';
       }).join('')+'</tbody></table>'
       :'<div class="vacio" style="padding:22px">'+(CONF_RO?vacio:'Cargando…')+'</div>')+'</div>';
 }
@@ -5002,6 +5021,12 @@ function estadoLlamadaCO(x,o,pre){
   else lla='<span style="color:#c62828">⏳ no ha llamado</span>';
   return '<div style="'+st+'">💬 Mensaje: '+msj+'</div><div style="'+st+'">📞 Llamada: '+lla+'</div>'+extra;
 }
+/* 28-10: las mismas tres reglas que usan las filas de España/Portugal/Rumanía, compartidas con la bolita verde del menú */
+function faltaEU(o){ return !nombreSirve(o.cli)?'nom':(!dirSirve(o.dir)?true:false); }
+/* 18-10 James: la venta ya PAGADA y verificada por PayPal no espera la hora */
+function esperaES(o){ return /PAGADO paypal /.test(o.nota||'')?0:o.creadoMs; }
+/* id para "⚡ Soltar ya" en España/Portugal: inspector VERDE + cliente confirmó + sin falta de nombre/dirección */
+function soltarIdES(o){ return (String(o.nivel||'').toUpperCase()==='VERDE'&&confirmadoES(o)&&!faltaEU(o))?String(o.id):''; }
 function renderAprobarPais(){
   var ch=document.getElementById('aprobChile'), ot=document.getElementById('aprobOtro'); if(!ch||!ot) return;
   document.querySelectorAll('#paisAprob .minitab').forEach(function(b){ b.classList.toggle('act',b.dataset.p===fPaisAprob); });
@@ -5018,19 +5043,22 @@ function renderAprobarPais(){
      "faltan X min" no se pueden aprobar: no van en ninguna bolita); ROJA = las que faltan (pendientes que NO están en verde). */
   /* 28-10 (4ª vuelta): VERDE = las que puedes atender YA. España y Portugal ya tienen "⚡ Soltar ya" dentro de la hora
      (v=276), así que toda VERDE cuenta; Rumanía no tiene ese botón todavía, ahí solo cuentan las que ya pasaron la hora. */
-  var verdes=function(arr,conSoltar){ return arr.filter(function(o){ return String(o.nivel||'').toUpperCase()==='VERDE' && (conSoltar || !o.creadoMs || (Date.now()-o.creadoMs)>=ESPERA_MIN*60000); }).length; };
-  var rojas=function(arr){ return arr.filter(function(o){ return String(o.nivel||'').toUpperCase()!=='VERDE'; }).length; };
-  var pnES=document.getElementById('pnNumES'); if(pnES) pnES.textContent=rojas(pend)||'';
-  var pnPT=document.getElementById('pnNumPT'); if(pnPT) pnPT.textContent=rojas(pendPT)||'';
-  var pvES=document.getElementById('pnVerdeES'); if(pvES) pvES.textContent=verdes(pend,true)||'';
-  var pvPT=document.getElementById('pnVerdePT'); if(pvPT) pvPT.textContent=verdes(pendPT,true)||'';
+  /* 28-10 (5ª vuelta, James: "Rumanía se puso para aprobar y no estaba en verde"): VERDE = la fila muestra "✓ Aprobar" o
+     "⚡ Soltar ya" (sePuedeActuar, misma lógica que la celda). El inspector solo corre en Chile y España: en Portugal y Rumanía
+     la venta queda verde cuando cumple la hora y se puede aprobar. ROJA = las pendientes que todavía no tienen botón. */
+  var verdes=function(arr,pre){ return arr.filter(function(o){ return sePuedeActuar(pre+o.id,faltaEU(o),'',esperaES(o),pre==='es:'?soltarIdES(o):''); }).length; };
+  var rojas=function(arr,pre){ return arr.length-verdes(arr,pre); };
+  var pnES=document.getElementById('pnNumES'); if(pnES) pnES.textContent=rojas(pend,'es:')||'';
+  var pnPT=document.getElementById('pnNumPT'); if(pnPT) pnPT.textContent=rojas(pendPT,'es:')||'';
+  var pvES=document.getElementById('pnVerdeES'); if(pvES) pvES.textContent=verdes(pend,'es:')||'';
+  var pvPT=document.getElementById('pnVerdePT'); if(pvPT) pvPT.textContent=verdes(pendPT,'es:')||'';
   var nAct=fPais==='PT'?pendPT.length:pend.length;
   var bES=document.getElementById('badgeAprobarES'); if(bES){ bES.textContent=nAct; bES.style.display=(nAct&&esEU())?'':'none'; }
   /* 20-10: el contador de Rumanía, aparte (llave ro:) */
   var pendRO=ventasRO.filter(function(o){return !o.montado&&!esPagoPend(o)&&!esAprobado('ro:'+o.id)&&!esRechazado('ro:'+o.id)&&confirmadoRO(o)&&!_dudC.has('ro:'+o.id);});
   var nbRO=document.getElementById('numAprobRO'); if(nbRO){ nbRO.textContent=pendRO.length; nbRO.style.display=pendRO.length?'':'none'; }
-  var pnRO=document.getElementById('pnNumRO'); if(pnRO) pnRO.textContent=rojas(pendRO)||'';
-  var pvRO=document.getElementById('pnVerdeRO'); if(pvRO) pvRO.textContent=verdes(pendRO)||'';
+  var pnRO=document.getElementById('pnNumRO'); if(pnRO) pnRO.textContent=rojas(pendRO,'ro:')||'';
+  var pvRO=document.getElementById('pnVerdeRO'); if(pvRO) pvRO.textContent=verdes(pendRO,'ro:')||'';
   var bRO=document.getElementById('badgeAprobarRO'); if(bRO){ bRO.textContent=pendRO.length; bRO.style.display=(pendRO.length&&fPais==='RO')?'':'none'; }
   if(fPaisAprob==='CL'){ ch.hidden=false; ot.hidden=true; return; }
   ch.hidden=true; ot.hidden=false;
@@ -5119,12 +5147,12 @@ function renderAprobarPais(){
       :'<span style="font-size:12px;color:#8a93a0">Van a Dropi PRO, nunca a Dropi Chile. Lo que apruebes se crea solo en Dropi PRO (cada 5 min): contra reembolso con cobro, y el pago anticipado ya pagado SIN cobro.</span>')+tabsES+'</div>'+avisoTrabES+
     (lista.length?'<table><thead><tr><th>Cliente</th><th>País</th><th>Producto</th><th>Dirección</th><th>Cant.</th><th>Total</th><th>Aprobación</th></tr></thead><tbody>'+
       lista.map(function(o,ix){
-        var k='es:'+o.id, falta=!nombreSirve(o.cli)?'nom':(!dirSirve(o.dir)?true:false);
+        var k='es:'+o.id, falta=faltaEU(o);
         /* 13-10 (James: "el inspector igual que Chile"): la fila se pinta con el color del revisor y lleva el chip y el motivo */
         var _rv=REV[o.nivel]&&REV[o.nivel].fila?';background:'+REV[o.nivel].fila:'';
         /* 18-10 James ("apenas aparezca el pago me debe aparecer enseguida para aprobar, no esperar"): la venta ya PAGADA y
            verificada por PayPal no espera la hora: el cliente ya pagó, no hay cambio de idea que esperar */
-        var _pagado=/PAGADO paypal /.test(o.nota||''), _ms=_pagado?0:o.creadoMs;
+        var _pagado=/PAGADO paypal /.test(o.nota||''), _ms=esperaES(o);
         return '<tr style="cursor:pointer'+_rv+'" onclick="verAprobES('+ix+')"><td><b>'+esc(o.cli)+'</b>'+huellaBadge(o.tel)+chipRev(_pagado?Object.assign({},o,{creadoMs:0}):o)+'<div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.fecha)+' · +'+esc(o.tel)+'</div>'+motivoRev(o)+
           /* 04-10: el anticipado no "confirma": espera el pago (lo dice la píldora de pago) */
           (esWebES(o)&&!/pago:\s*pre/i.test(o.nota||'')?(confirmadoES(o)?'<div style="font-size:11.5px;color:#15803d;font-weight:700;margin-top:2px">✅ Confirmó</div>':'<div style="font-size:11.5px;color:#c62828;font-weight:700;margin-top:2px">⏳ Sin confirmar · '+esc(estadoConfES(o))+'</div>')
@@ -5138,7 +5166,7 @@ function renderAprobarPais(){
           '<td>'+esc(o.cant)+'</td><td>'+fmtEUR(o.totalNum)+'</td><td onclick="event.stopPropagation()">'+(esPagoPend(o)
             ?'<span style="font-size:12px;color:#b45309;font-weight:700">Esperando el pago</span><div style="font-size:11px;color:var(--ink-3)">se aprueba cuando llegue el comprobante</div>'
             /* 28-10 James: botón "⚡ Soltar ya" igual que Chile: inspector en VERDE + cliente confirmó + sin pago pendiente */
-            :celdaAprob(k,'',o.id,falta,'',false,dudES(o),_ms,(String(o.nivel||'').toUpperCase()==='VERDE'&&confirmadoES(o)&&!falta)?String(o.id):''))+'</td></tr>';
+            :celdaAprob(k,'',o.id,falta,'',false,dudES(o),_ms,soltarIdES(o)))+'</td></tr>';
       }).join('')+'</tbody></table>'
       :'<div class="vacio" style="padding:22px">'+(CONF_ES?vacioES:'Cargando las confirmaciones de los clientes…')+'</div>')+'</div>';
 }
