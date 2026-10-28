@@ -41,6 +41,9 @@ async function cargarHuellas(){
     const m={}; (Array.isArray(arr)?arr:[]).forEach(h=>{ if(h&&h.tel8) m[h.tel8]=h; });
     try{ const rc=await fetch(BASE+'/leer-huellas-co?t='+Date.now(),{cache:'no-store'}); const jc=await rc.json();
       ((jc&&jc.huellas)||[]).forEach(h=>{ if(h&&h.tel10) m['co'+h.tel10]=h; }); }catch(e){}
+    /* 28-10 James: huella de ESPAÑA aparte (flujo VRYF9q29O7p9VhXo, vista huella_es): clave 'es'+9 dígitos, no se mezcla con Chile */
+    try{ const re=await fetch(BASE+'/leer-huellas-es?t='+Date.now(),{cache:'no-store'}); const je=await re.json();
+      ((je&&je.huellas)||[]).forEach(h=>{ if(h&&h.tel9) m['es'+h.tel9]=Object.assign({es:1},h); }); }catch(e){}
     window.huellaMap=m;
     if(typeof refrescarAprob==='function') refrescarAprob();
     else if(typeof renderAprobar==='function') renderAprobar();
@@ -48,10 +51,11 @@ async function cargarHuellas(){
 }
 function huellaBadge(tel){
   var _d=String(tel||'').replace(/\D/g,'');
-  var k=(_d.length===12&&_d.indexOf('57')===0)?'co'+_d.slice(-10):_d.slice(-8); if(!k) return '';
+  var _es=(_d.length===11&&_d.indexOf('34')===0)||(_d.length===9&&/^[67]/.test(_d));
+  var k=(_d.length===12&&_d.indexOf('57')===0)?'co'+_d.slice(-10):_es?'es'+_d.slice(-9):_d.slice(-8); if(!k) return '';
   var h=(window.huellaMap||{})[k];
   var rc, sym, t;
-  if(!h){ rc='#9aa4b2'; sym='+'; t='Cliente nuevo (sin historial)'; }
+  if(!h || (h.es && h.risk_label==='Sin historial')){ rc='#9aa4b2'; sym='+'; t='Cliente nuevo (sin historial)'; }
   else {
     rc={'Segura':'#1d9e75','Probable':'#caa000','Riesgosa':'#e24b4a','Crítica':'#b71c1c'}[h.risk_label] || ((+h.n_dev||0)>0?'#e24b4a':'#8a93a0');
     sym=(h.risk_label==='Segura' && (+h.n_dev||0)===0)?'✓':'!'; t='Ver alerta del cliente';
@@ -69,6 +73,12 @@ function verHuella(btn,k){
   if(!h){
     d.innerHTML='<div style="font-weight:700;margin-bottom:7px;color:'+tx+';display:flex;align-items:center;gap:7px"><span style="width:9px;height:9px;border-radius:50%;background:#9aa4b2;display:inline-block"></span>Cliente nuevo</div>'
       +'<div>Sin historial en tu tienda ni en Dropi. Es la <b style="color:'+tx+'">primera vez</b> que te pide.</div>';
+  } else if(h.es){
+    /* España: solo nuestra huella (Dropi PRO no tiene huella de plataforma) */
+    var ce={'Segura':'#1d9e75','Riesgosa':'#e24b4a'}[h.risk_label]||'#9aa4b2', npe=+h.n_ped||0, nee=+h.n_ent||0, nde=+h.n_dev||0;
+    d.innerHTML='<div style="font-weight:700;margin-bottom:9px;color:'+tx+';display:flex;align-items:center;gap:7px"><span style="width:9px;height:9px;border-radius:50%;background:'+ce+';display:inline-block"></span>'+(h.risk_label==='Sin historial'?'Cliente nuevo':h.risk_label)+' · España</div>'
+      +'<div style="margin-bottom:6px">Con nosotros: <b style="color:'+tx+'">'+npe+' pedidos</b> · <b style="color:#1d9e75">'+nee+' entregados</b> · <b style="color:'+(nde>0?'#d8472e':'#1d9e75')+'">'+nde+' rehusados/devueltos</b></div>'
+      +(h.risk_label==='Riesgosa'?'<div style="color:#d8472e;font-weight:700">Solo con PAGO ANTICIPADO. Contra entrega no.</div>':h.risk_label==='Segura'?'<div>Ya recibió con nosotros sin devolver.</div>':'<div>Sus pedidos todavía no se han entregado.</div>');
   } else {
     var rc={'Segura':'#1d9e75','Probable':'#caa000','Riesgosa':'#d8782e','Crítica':'#e24b4a'}[h.risk_label]||'#8a93a0';
     var np=+h.n_ped||0,nd=+h.n_dev||0,dt=+h.dropi_total||0,dd=+h.dropi_dev||0;
@@ -5090,7 +5100,7 @@ function renderAprobarPais(){
         /* 18-10 James ("apenas aparezca el pago me debe aparecer enseguida para aprobar, no esperar"): la venta ya PAGADA y
            verificada por PayPal no espera la hora: el cliente ya pagó, no hay cambio de idea que esperar */
         var _pagado=/PAGADO paypal /.test(o.nota||''), _ms=_pagado?0:o.creadoMs;
-        return '<tr style="cursor:pointer'+_rv+'" onclick="verAprobES('+ix+')"><td><b>'+esc(o.cli)+'</b>'+chipRev(_pagado?Object.assign({},o,{creadoMs:0}):o)+'<div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.fecha)+' · +'+esc(o.tel)+'</div>'+motivoRev(o)+
+        return '<tr style="cursor:pointer'+_rv+'" onclick="verAprobES('+ix+')"><td><b>'+esc(o.cli)+'</b>'+huellaBadge(o.tel)+chipRev(_pagado?Object.assign({},o,{creadoMs:0}):o)+'<div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.fecha)+' · +'+esc(o.tel)+'</div>'+motivoRev(o)+
           /* 04-10: el anticipado no "confirma": espera el pago (lo dice la píldora de pago) */
           (esWebES(o)&&!/pago:\s*pre/i.test(o.nota||'')?(confirmadoES(o)?'<div style="font-size:11.5px;color:#15803d;font-weight:700;margin-top:2px">✅ Confirmó</div>':'<div style="font-size:11.5px;color:#c62828;font-weight:700;margin-top:2px">⏳ Sin confirmar · '+esc(estadoConfES(o))+'</div>')
             /* 08-10 James ("y pones así que confirmó también"): la venta de Carmen el cliente la confirmó dentro del chat antes de registrarse */
