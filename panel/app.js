@@ -2042,8 +2042,10 @@ function renderAprobar(){
      aprobar") Y que ya cumplieron la espera de una hora; las verdes que aún dicen "faltan X min" no se pueden aprobar y no van
      en ninguna bolita (pasan a verde solas al cumplir la hora). La ROJA = las que faltan (pendientes que NO están en verde:
      sin revisar, amarillas o rojas). Chile 6 pendientes con 4 verdes = 2 rojas. */
+  /* 28-10 (4ª vuelta, James: "Chile tiene unas para soltar ya y ni siquiera me aparecen en verde"): VERDE = las que puedes
+     ATENDER YA: inspector en verde, estén o no dentro de la hora (dentro de la hora tienen el botón "⚡ Soltar ya"). */
   const pendL=items.filter(x=>x.st==='pendiente' && !x.prog && !x.dud);
-  const nVerde=pendL.filter(x=>x.nivel==='VERDE' && (function(){ var m=minutosDe(x); return m===null || m>=ESPERA_MIN; })()).length;
+  const nVerde=pendL.filter(x=>x.nivel==='VERDE').length;
   const nRojo=pendL.filter(x=>x.nivel!=='VERDE').length;
   var pnCL=document.getElementById('pnNumCL'); if(pnCL) pnCL.textContent=nRojo||'';
   var pvCL=document.getElementById('pnVerdeCL'); if(pvCL) pvCL.textContent=nVerde||'';
@@ -5013,12 +5015,14 @@ function renderAprobarPais(){
   var nbP=document.getElementById('numAprobPT'); if(nbP){ nbP.textContent=pendPT.length; nbP.style.display=pendPT.length?'':'none'; }
   /* 28-10 James: en el menú de países VERDE = inspector VERDE y ya cumplida la espera de una hora (las que aún dicen
      "faltan X min" no se pueden aprobar: no van en ninguna bolita); ROJA = las que faltan (pendientes que NO están en verde). */
-  var verdes=function(arr){ return arr.filter(function(o){ return String(o.nivel||'').toUpperCase()==='VERDE' && (!o.creadoMs || (Date.now()-o.creadoMs)>=ESPERA_MIN*60000); }).length; };
+  /* 28-10 (4ª vuelta): VERDE = las que puedes atender YA. España y Portugal ya tienen "⚡ Soltar ya" dentro de la hora
+     (v=276), así que toda VERDE cuenta; Rumanía no tiene ese botón todavía, ahí solo cuentan las que ya pasaron la hora. */
+  var verdes=function(arr,conSoltar){ return arr.filter(function(o){ return String(o.nivel||'').toUpperCase()==='VERDE' && (conSoltar || !o.creadoMs || (Date.now()-o.creadoMs)>=ESPERA_MIN*60000); }).length; };
   var rojas=function(arr){ return arr.filter(function(o){ return String(o.nivel||'').toUpperCase()!=='VERDE'; }).length; };
   var pnES=document.getElementById('pnNumES'); if(pnES) pnES.textContent=rojas(pend)||'';
   var pnPT=document.getElementById('pnNumPT'); if(pnPT) pnPT.textContent=rojas(pendPT)||'';
-  var pvES=document.getElementById('pnVerdeES'); if(pvES) pvES.textContent=verdes(pend)||'';
-  var pvPT=document.getElementById('pnVerdePT'); if(pvPT) pvPT.textContent=verdes(pendPT)||'';
+  var pvES=document.getElementById('pnVerdeES'); if(pvES) pvES.textContent=verdes(pend,true)||'';
+  var pvPT=document.getElementById('pnVerdePT'); if(pvPT) pvPT.textContent=verdes(pendPT,true)||'';
   var nAct=fPais==='PT'?pendPT.length:pend.length;
   var bES=document.getElementById('badgeAprobarES'); if(bES){ bES.textContent=nAct; bES.style.display=(nAct&&esEU())?'':'none'; }
   /* 20-10: el contador de Rumanía, aparte (llave ro:) */
