@@ -2035,11 +2035,11 @@ function renderAprobar(){
   const nPend=items.filter(x=>x.st==='pendiente' && !x.prog && !x.dud).length;
   const bg=document.getElementById('badgeAprobar');
   if(bg){ bg.style.display=(nPend&&!esEU()&&fPais!=='CO'&&fPais!=='RO')?'':'none'; bg.textContent=nPend; }
-  /* 28-10 James: en el menú de países la bolita VERDE = por aprobar que el inspector marcó VERDE ("✓ se puede aprobar") y ya
-     pasaron la espera de una hora (mientras diga "faltan X min" no cuenta en ninguna); la ROJA = las que faltan (pendientes
-     que NO están en verde: sin revisar, amarillas o rojas). Chile 6 pendientes con 4 verdes = 2 rojas. */
+  /* 28-10 James: en el menú de países la bolita VERDE = por aprobar que el inspector ya marcó VERDE ("✓ se puede aprobar"),
+     contadas ENSEGUIDA (aunque sigan en la espera de una hora); la ROJA = las que faltan (pendientes que NO están en verde:
+     sin revisar, amarillas o rojas). Chile 6 pendientes con 4 verdes = 2 rojas. */
   const pendL=items.filter(x=>x.st==='pendiente' && !x.prog && !x.dud);
-  const nVerde=pendL.filter(x=>x.nivel==='VERDE' && (function(){ var m=minutosDe(x); return m===null || m>=ESPERA_MIN; })()).length;
+  const nVerde=pendL.filter(x=>x.nivel==='VERDE').length;
   const nRojo=pendL.filter(x=>x.nivel!=='VERDE').length;
   var pnCL=document.getElementById('pnNumCL'); if(pnCL) pnCL.textContent=nRojo||'';
   var pvCL=document.getElementById('pnVerdeCL'); if(pvCL) pvCL.textContent=nVerde||'';
@@ -5007,9 +5007,9 @@ function renderAprobarPais(){
   var pend=pendDe('ES'), pendPT=pendDe('PT');
   var nb=document.getElementById('numAprobES'); if(nb){ nb.textContent=pend.length; nb.style.display=pend.length?'':'none'; }
   var nbP=document.getElementById('numAprobPT'); if(nbP){ nbP.textContent=pendPT.length; nbP.style.display=pendPT.length?'':'none'; }
-  /* 28-10 James: en el menú de países VERDE = inspector VERDE y ya pasó la espera de una hora (las que dicen "faltan X min"
-     no cuentan en ninguna); ROJA = las que faltan (pendientes que NO están en verde). */
-  var verdes=function(arr){ return arr.filter(function(o){ return String(o.nivel||'').toUpperCase()==='VERDE' && (!o.creadoMs || (Date.now()-o.creadoMs)>=ESPERA_MIN*60000); }).length; };
+  /* 28-10 James: en el menú de países VERDE = inspector VERDE, contadas enseguida (aunque sigan en la espera de una hora);
+     ROJA = las que faltan (pendientes que NO están en verde). */
+  var verdes=function(arr){ return arr.filter(function(o){ return String(o.nivel||'').toUpperCase()==='VERDE'; }).length; };
   var rojas=function(arr){ return arr.filter(function(o){ return String(o.nivel||'').toUpperCase()!=='VERDE'; }).length; };
   var pnES=document.getElementById('pnNumES'); if(pnES) pnES.textContent=rojas(pend)||'';
   var pnPT=document.getElementById('pnNumPT'); if(pnPT) pnPT.textContent=rojas(pendPT)||'';
