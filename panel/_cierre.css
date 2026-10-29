@@ -1,7 +1,9 @@
 /* 26-10 (James): cierre del día por país, totalizador LATAM/EUROPA e indicadores de línea (Resumen general).
    Va en archivo aparte con el OK de James (el candado de diseño frenó el bloque dentro de index.html). */
-.cp-regiones{display:grid;grid-template-columns:2fr 3fr;gap:16px;margin-top:16px}
-.cp-region{border:1px solid var(--border);border-radius:12px;padding:12px 14px;background:var(--surface)}
+/* 28-10 James ("ponlas de la misma medida… reparte bien"): LATAM y EUROPA tienen 3 países cada una → mitad y mitad, tarjetas iguales */
+.cp-regiones{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+.cp-region{border:1px solid var(--border);border-radius:12px;padding:12px 14px;background:var(--surface);min-width:0}
+.cp-region .rp-pais{min-width:0}
 .cp-rh{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;font-size:12.5px;color:var(--ink-2);flex-wrap:wrap}
 .cp-rn{font-size:12px;font-weight:800;letter-spacing:.06em}
 .rp-paises.cp-2{margin-top:0;grid-template-columns:repeat(2,1fr)} .rp-paises.cp-3{margin-top:0;grid-template-columns:repeat(3,1fr)}
