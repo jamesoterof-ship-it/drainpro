@@ -53,18 +53,23 @@
 :root[data-theme="dark"] .seg button.act,
 :root[data-theme="dark"] .minitab.act{background:var(--brand);color:#fff;border-color:var(--brand)}
 :root[data-theme="dark"] .seg.alt button.act{background:var(--brand-tint);color:var(--brand-700)}
-/* 28-10 James ("ese negro se ve feo, paso todo el día viendo el panel y me empaña la vista; algo elegante"): lo activo
-   ya no va en negro sino en azul suave (fondo azul claro, letra azul oscura, borde fino), el mismo tono que ya usan las
-   pestañas alternas del panel. País elegido, botón de canal, pestañas, chats y avatar. Solo en tema claro. */
+/* 28-10 James ("ese negro plano se ve feo, me empaña la vista; un negro vidrioso, elegante" · "azul NO es el color de Jaye"):
+   lo activo sigue en negro pero con brillo de vidrio (degradado gris azulado → negro, filo de luz arriba, sombra suave),
+   nunca negro liso: país elegido, botón de canal, pestañas, chats, avatar y el logo de arriba. Solo en tema claro. */
+:root:not([data-theme="dark"]){--ink-glass:linear-gradient(180deg,#4a5370 0%,#262f45 42%,#121a2e 100%);
+  --ink-glass-shadow:inset 0 1px 0 rgba(255,255,255,.30),inset 0 -1px 0 rgba(0,0,0,.35),0 2px 8px rgba(15,23,41,.30)}
 :root:not([data-theme="dark"]) .paisnav button.act,
 :root:not([data-theme="dark"]) .seg button.act,
 :root:not([data-theme="dark"]) .minitab.act,
 :root:not([data-theme="dark"]) .crm-tabs button.act,
 :root:not([data-theme="dark"]) .crm-mini.on,
-:root:not([data-theme="dark"]) .b-copy{background:var(--brand-tint);color:var(--brand-700);border-color:#c7d3f7;box-shadow:inset 0 0 0 1px rgba(48,86,201,.10)}
-:root:not([data-theme="dark"]) .paisnav button.act{font-weight:700}
+:root:not([data-theme="dark"]) .b-copy,
 :root:not([data-theme="dark"]) .user .av,
-:root:not([data-theme="dark"]) .nav-i.act .badge{background:var(--brand-tint);color:var(--brand-700)}
+:root:not([data-theme="dark"]) .nav-i.act .badge{background:var(--ink-glass);box-shadow:var(--ink-glass-shadow);border-color:#1a2238}
+:root:not([data-theme="dark"]) .brand{position:relative}
+:root:not([data-theme="dark"]) .brand img{box-shadow:var(--ink-glass-shadow)}
+:root:not([data-theme="dark"]) .brand::before{content:"";position:absolute;left:20px;top:20px;width:64px;height:32px;border-radius:7px;pointer-events:none;
+  background:linear-gradient(180deg,rgba(255,255,255,.30) 0%,rgba(255,255,255,.10) 42%,rgba(255,255,255,0) 58%)}
 :root[data-theme="dark"] .nav-i.act .badge,
 :root[data-theme="dark"] .b-copy{background:var(--brand);color:#fff}
 :root[data-theme="dark"] .b-copy{border-color:var(--brand)}
