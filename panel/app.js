@@ -4455,7 +4455,8 @@ function filaRO(r){
 var ventasMX=[];
 function esFilaMX(r){
   var p=String(r.PAIS||'').toUpperCase(), b=String(r.BOT||'');
-  return p==='MX'||/p[aá]gina\s+mx\b/i.test(b);
+  /* 28-10: también las de Lupita (bot de WhatsApp de México): /ventas no trae el país y "Lupita MX" caía en Chile */
+  return p==='MX'||/p[aá]gina\s+mx\b/i.test(b)||/^lupita\b/i.test(b);
 }
 function fmtMXN(n){ return '$'+Math.round(n).toLocaleString('es-MX')+' MXN'; }
 function filaMX(r){
