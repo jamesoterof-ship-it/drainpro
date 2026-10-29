@@ -53,6 +53,18 @@
 :root[data-theme="dark"] .seg button.act,
 :root[data-theme="dark"] .minitab.act{background:var(--brand);color:#fff;border-color:var(--brand)}
 :root[data-theme="dark"] .seg.alt button.act{background:var(--brand-tint);color:var(--brand-700)}
+/* 28-10 James ("ese negro se ve feo, paso todo el día viendo el panel y me empaña la vista; algo elegante"): lo activo
+   ya no va en negro sino en azul suave (fondo azul claro, letra azul oscura, borde fino), el mismo tono que ya usan las
+   pestañas alternas del panel. País elegido, botón de canal, pestañas, chats y avatar. Solo en tema claro. */
+:root:not([data-theme="dark"]) .paisnav button.act,
+:root:not([data-theme="dark"]) .seg button.act,
+:root:not([data-theme="dark"]) .minitab.act,
+:root:not([data-theme="dark"]) .crm-tabs button.act,
+:root:not([data-theme="dark"]) .crm-mini.on,
+:root:not([data-theme="dark"]) .b-copy{background:var(--brand-tint);color:var(--brand-700);border-color:#c7d3f7;box-shadow:inset 0 0 0 1px rgba(48,86,201,.10)}
+:root:not([data-theme="dark"]) .paisnav button.act{font-weight:700}
+:root:not([data-theme="dark"]) .user .av,
+:root:not([data-theme="dark"]) .nav-i.act .badge{background:var(--brand-tint);color:var(--brand-700)}
 :root[data-theme="dark"] .nav-i.act .badge,
 :root[data-theme="dark"] .b-copy{background:var(--brand);color:#fff}
 :root[data-theme="dark"] .b-copy{border-color:var(--brand)}
