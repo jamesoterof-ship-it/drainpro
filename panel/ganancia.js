@@ -22,7 +22,8 @@
      sirve a cada país. Chile descuenta bots y tu sueldo; España y Colombia no (el sueldo
      ya se descuenta una sola vez, en Chile). */
   var MODO = { pais: 'CL', sueldo: SUELDO_MES, bots: BOTS_DIA, botsTxt: 'Camila, Carlos y 3 más', dropi: 'Dropi' };
-  function paisGan() { return (window.fPais === 'ES' || window.fPais === 'PT' || window.fPais === 'CO' || window.fPais === 'RO') ? window.fPais : 'CL'; }
+  /* 28-10: México como Rumanía (sin esto la pestaña de México mostraba la caja de Chile) */
+  function paisGan() { return (window.fPais === 'ES' || window.fPais === 'PT' || window.fPais === 'CO' || window.fPais === 'RO' || window.fPais === 'MX') ? window.fPais : 'CL'; }
 
   var pes = function (n) { return '$' + Math.round(Number(n) || 0).toLocaleString('es-CO'); };
   var num = function (n) { return Math.round(Number(n) || 0); };
@@ -34,7 +35,7 @@
      Se recalcula en cada pintada: el país se cambia sin recargar la página. */
   function hoyGan() {
     /* 20-10: Portugal con la hora de Lisboa */
-    var d = new Date(new Date().toLocaleString('en-US', { timeZone: paisGan() === 'ES' ? 'Europe/Madrid' : paisGan() === 'PT' ? 'Europe/Lisbon' : paisGan() === 'RO' ? 'Europe/Bucharest' : 'America/Bogota' }));
+    var d = new Date(new Date().toLocaleString('en-US', { timeZone: paisGan() === 'ES' ? 'Europe/Madrid' : paisGan() === 'PT' ? 'Europe/Lisbon' : paisGan() === 'RO' ? 'Europe/Bucharest' : paisGan() === 'MX' ? 'America/Mexico_City' : 'America/Bogota' }));   /* 28-10: México */
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   }
   var HOY = hoyGan();
@@ -77,6 +78,7 @@
                  : 'No hay entregas en esa fecha.')
         + (MODO.pais !== 'CL' ? ' ' + (MODO.pais === 'CO' ? 'Colombia todavía no vende.'
           : MODO.pais === 'RO' ? (window.CAJA_RO_ERROR ? 'Caja de Rumanía todavía no conectada.' : 'Rumanía todavía no tiene entregas de Dropi PRO.')
+          : MODO.pais === 'MX' ? (window.CAJA_MX_ERROR ? 'México sin caja todavía.' : 'México todavía no tiene entregas de Dropi.')
           : (MODO.pais === 'PT' ? 'Portugal' : 'España') + ' todavía no tiene entregas de Dropi PRO.') : '') + '</td></tr>';
       var tfv = document.querySelector('#tablaGan tfoot'); if (tfv) tfv.innerHTML = '';
       var kv = document.getElementById('ganKpis'); if (kv) kv.innerHTML = '';
@@ -318,7 +320,7 @@
   window.cargarGanancia = function () {
     var P = paisGan();
     if (P !== 'CL') {
-      MODO = { pais: P, sueldo: 0, bots: 0, botsTxt: 'sin costo asignado aquí', dropi: (P === 'ES' || P === 'PT') ? 'Dropi PRO' : P === 'RO' ? 'Dropi PRO Rumanía' : 'Dropi' };
+      MODO = { pais: P, sueldo: 0, bots: 0, botsTxt: 'sin costo asignado aquí', dropi: (P === 'ES' || P === 'PT') ? 'Dropi PRO' : P === 'RO' ? 'Dropi PRO Rumanía' : P === 'MX' ? 'Dropi México' : 'Dropi' };
       dias = [];
       if (typeof window.diasGananciaPais === 'function') window.diasGananciaPais(P, function (arr) { if (paisGan() !== P) return; dias = arr; pintarGanancia(); });
       pintarGanancia();

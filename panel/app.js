@@ -18,6 +18,8 @@ const URL_RESP_INES=BASE+'/ines-responder';
    chats con pais = 'RO' y la respuesta sale por el +40. Si fallan, el panel muestra vacío y sigue funcionando. */
 const URL_CONV_CARMEN_RO=BASE+'/carmen-ro-conversaciones', URL_HIST_CARMEN_RO=BASE+'/carmen-ro-historial',
       URL_RESP_CARMEN_RO=BASE+'/carmen-ro-responder', URL_PAUSA_CARMEN_RO=BASE+'/carmen-ro-pausar';
+/* 28-10: México como Rumanía. PENDIENTE: México todavía no tiene bot de WhatsApp (nombre por definir con James):
+   cuando exista se agregan aquí sus 4 webhooks (/<bot>-mx-conversaciones, -historial, -responder, -pausar). */
 const URL_VENTAS=BASE+'/ventas';
 const URL_APROBAR=BASE+'/aprobar-pedido';
 const URL_EDITARWA=BASE+'/editar-pedido-wa';
@@ -321,7 +323,7 @@ const ANTICIPO_CLP=5000;
 const anticipoPagado=o=>/abono pagado/i.test(String((o&&o.estado)||''));
 const cobroCLP=(o,txt)=>{ if(!anticipoPagado(o)) return txt; const n=numero(txt); return n>ANTICIPO_CLP?fmtCLP(n-ANTICIPO_CLP):txt; };
 const filaAnticipo=(o,txt)=>anticipoPagado(o)?'<div class="dl"><span class="k">Anticipo</span><span class="v" style="color:#1b7f3b;font-weight:800">PAGADO · se descuentan $5.000 del precio '+esc(String(txt))+'</span></div>':'';
-const FLAG={CL:'flag-cl',CO:'flag-co',PY:'flag-py',ES:'flag-es',PT:'flag-pt',RO:'flag-ro'};
+const FLAG={CL:'flag-cl',CO:'flag-co',PY:'flag-py',ES:'flag-es',PT:'flag-pt',RO:'flag-ro',MX:'flag-mx'};   /* 28-10: México como Rumanía */
 /* El bot del numero chileno se mostraba como 'Carlos' y el de logistica tambien:
    no habia forma de saber cual estabas mirando, y una regla que faltaba en uno se
    buscaba en el otro. La CLAVE interna sigue siendo Carlos (la usan los filtros);
@@ -377,11 +379,13 @@ function fechaOrden(f,h){
    las 2 de la mañana de allá. Las ventas guardan el instante exacto (CREADO_MS). */
 /* 20-10 (James): Portugal con SU hora (Lisboa, una hora menos que Madrid) */
 const ZONA_ES='Europe/Madrid', ZONA_PT='Europe/Lisbon', ZONA_CL='America/Santiago', ZONA_CO='America/Bogota', ZONA_RO='Europe/Bucharest';
-function zonaPanel(){ var p=(typeof fPais!=='undefined')?fPais:'todos'; return p==='ES'?ZONA_ES:p==='PT'?ZONA_PT:p==='RO'?ZONA_RO:p==='CO'?ZONA_CO:ZONA_CL; }
+const ZONA_MX='America/Mexico_City';   /* 28-10: México como Rumanía, con la hora de Ciudad de México */
+function zonaPanel(){ var p=(typeof fPais!=='undefined')?fPais:'todos'; return p==='ES'?ZONA_ES:p==='PT'?ZONA_PT:p==='RO'?ZONA_RO:p==='MX'?ZONA_MX:p==='CO'?ZONA_CO:ZONA_CL; }
 /* el país de una venta, para el Resumen general (en una pestaña de país manda la del país) */
 function zonaVenta(o){
   if(typeof fPais!=='undefined'&&fPais!=='todos') return zonaPanel();
   if(o&&o.sub==='RO') return ZONA_RO;          /* Rumanía (20-10) */
+  if(o&&o.sub==='MX') return ZONA_MX;          /* 28-10: México como Rumanía */
   if(o&&o.sub) return o.sub==='PT'?ZONA_PT:ZONA_ES;   /* España / Portugal */
   if(o&&o.loc==='CO') return ZONA_CO;
   return ZONA_CL;
@@ -527,10 +531,13 @@ async function cargarVentas(){
   try{
     const res=await fetch(URL_VENTAS); const data=await res.json();
     const rows=Array.isArray(data)?data:(data.body||[]);
-    const ords=[]; const _vistas={}; const _es=[]; const _co=[]; const _ro=[];
+    const ords=[]; const _vistas={}; const _es=[]; const _co=[]; const _ro=[]; const _mx=[];
     rows.forEach(r=>{ if(!r||(!r.NOMBRE&&!r.PRODUCTO))return;
       /* 20-10: RUMANÍA va primero y a su propia lista (lei). Nunca entra a Chile ni a España. */
       if(esFilaRO(r)){ if(!/^ELIMINAD/i.test(String(r.ESTADO||''))) _ro.push(filaRO(r)); return; }
+      /* 28-10: MÉXICO como Rumanía: a su propia lista (pesos mexicanos). /ventas no trae PAIS y lo desconocido
+         caía en Chile. Las ELIMINADAS (ej. la 7314 de prueba de PayPal) no aparecen en ningún lado. */
+      if(esFilaMX(r)){ if(!/^ELIMINAD/i.test(String(r.ESTADO||''))) _mx.push(filaMX(r)); return; }
       if(/web/i.test(String(r.BOT||''))) return;   // los pedidos de las landings son canal PAGINA, no WhatsApp
       /* 28-09: los pedidos de ESPAÑA y PORTUGAL (bot "Página ES"/"Página PT") van a
          su propia lista, en euros. Antes entraban aquí como venta de Chile y el
@@ -601,6 +608,7 @@ async function cargarVentas(){
     ventasEU=_es.sort((a,b)=>b.orden-a.orden); filtrarEU();
     ventasCO=_co.sort((a,b)=>b.orden-a.orden);
     ventasRO=_ro.sort((a,b)=>b.orden-a.orden);
+    ventasMX=_mx.sort((a,b)=>b.orden-a.orden);   /* 28-10: México como Rumanía */
     // contador del canal de redes en el menu
     var _b=document.getElementById('redesBadge');
     if(_b){ var _n=ordenes.filter(o=>o.bot==='Redes').length; _b.textContent=_n; _b.style.display=_n?'':'none'; }
@@ -716,7 +724,7 @@ async function cargarPaginas(){
      YA con el indicativo (351910690885) y aquí se le pegaba otra vez (+351351…): no calzaba con ningún país y caía en Chile.
      Ahora no se duplica, y el país sale del INDICATIVO guardado (aunque el número venga mal escrito, ej. "6"). */
   const telAb=(ind,t)=>{ const i=soloNum(ind), n=soloNum(t); return (i && n.indexOf(i)===0 && n.length>i.length+7) ? n : i+n; };
-  const paisInd={'34':'ES','351':'PT','40':'RO','57':'CO','56':'CL'};
+  const paisInd={'34':'ES','351':'PT','40':'RO','57':'CO','56':'CL','52':'MX'};   /* 28-10: +52 = México (como Rumanía) */
   abandonadosWeb=abs.map(r=>({fecha:r.fecha||'',cli:r.nombre||'—',tel:telAb(r.indicativo,r.telefono),pais:paisInd[soloNum(r.indicativo)]||'',
     prod:r.producto,color:r.color,estado:String(r.estado||'').toUpperCase(),comuna:r.comuna||'—',
     dir:r.direccion||'',ref:r.referencia||'',region:r.region||'',correo:r.correo||'',
@@ -739,7 +747,7 @@ function renderResumen(){
   const usaWA = fCanal==='todos'||fCanal==='wa', usaWeb = fCanal==='todos'||fCanal==='web';
   const usaRed = fCanal==='todos'||fCanal==='redes';
   const lbl=rangoTxt();
-  const MON=esEU()?'EUR':fPais==='RO'?'RON':fPais==='CO'?'COP':'CLP';
+  const MON=esEU()?'EUR':fPais==='RO'?'RON':fPais==='MX'?'MXN':fPais==='CO'?'COP':'CLP';   /* 28-10: México en pesos mexicanos */
   ['lTot','lWa','lWeb','lMon'].forEach((id,i)=>{ if(el(id)) el(id).textContent=['Ventas totales ('+lbl+')','Ventas por WhatsApp ('+lbl+')','Ventas por página ('+lbl+')','Ventas '+lbl+' · en '+MON][i]; });
   if(el('lRed')) el('lRed').textContent='Ventas por redes ('+lbl+')';
   if(el('kRed')) el('kRed').textContent=usaRed?redR.length:'—';
@@ -755,12 +763,14 @@ function renderResumen(){
     const tEU=usaWeb?s(webR,'totalNum','EUR'):0;
     const tCO=(usaWA?s(waR,'precioNum','COP'):0)+(usaRed?s(redR,'precioNum','COP'):0);
     const tRO=usaWeb?s(webR,'totalNum','RON'):0;   /* 20-10: Rumanía en lei */
-    const tot=TASAS&&(!tRO||TASAS.ron)?tCL*TASAS.clp+tEU*TASAS.eur+tCO+(tRO?tRO*TASAS.ron:0):null;
+    const tMX=usaWeb?s(webR,'totalNum','MXN'):0;   /* 28-10: México como Rumanía, en pesos mexicanos */
+    const tot=TASAS&&(!tRO||TASAS.ron)&&(!tMX||TASAS.mxn)?tCL*TASAS.clp+tEU*TASAS.eur+tCO+(tRO?tRO*TASAS.ron:0)+(tMX?tMX*TASAS.mxn:0):null;
     el('lMon').textContent='Ventas '+lbl+' · por moneda';
     el('kMonedas').innerHTML=
       '<div class="mm"><span class="flag flag-cl"></span>'+fmtCLP(tCL)+'<small>CLP</small></div>'+
       '<div class="mm"><span class="flag flag-es"></span>'+fmtEUR(tEU).replace(' €','')+'<small>EUR</small></div>'+
       (tRO?'<div class="mm"><span class="flag flag-ro"></span>'+fmtRON(tRO).replace(' lei','')+'<small>RON</small></div>':'')+
+      (tMX?'<div class="mm"><span class="flag flag-mx"></span>'+fmtMXN(tMX).replace(' MXN','')+'<small>MXN</small></div>':'')+
       '<div class="mm"><span class="flag flag-co"></span>'+fmtCOP(tCO)+'<small>COP</small></div>'+
       '<div class="mm" style="border-top:1px solid var(--border);padding-top:6px">= '+(tot===null?'sin tasa':fmtCOP(tot))+'<small>total COP</small></div>';
   } else if(el('kMonedas')){
@@ -768,8 +778,8 @@ function renderResumen(){
     const tLoc=(usaWA?waR.reduce((a,b)=>a+b.precioNum,0):0)
               +(usaRed?redR.reduce((a,b)=>a+b.precioNum,0):0)
               +(usaWeb?webR.reduce((a,b)=>a+b.totalNum,0):0);
-    const tasa=esEU()?(TASAS&&TASAS.eur):fPais==='RO'?(TASAS&&TASAS.ron):fPais==='CO'?1:(TASAS&&TASAS.clp);
-    const num=esEU()?fmtEUR(tLoc).replace(' €',''):fPais==='RO'?fmtRON(tLoc).replace(' lei',''):fPais==='CO'?fmtCOP(tLoc):fmtCLP(tLoc);
+    const tasa=esEU()?(TASAS&&TASAS.eur):fPais==='RO'?(TASAS&&TASAS.ron):fPais==='MX'?(TASAS&&TASAS.mxn):fPais==='CO'?1:(TASAS&&TASAS.clp);
+    const num=esEU()?fmtEUR(tLoc).replace(' €',''):fPais==='RO'?fmtRON(tLoc).replace(' lei',''):fPais==='MX'?fmtMXN(tLoc).replace(' MXN',''):fPais==='CO'?fmtCOP(tLoc):fmtCLP(tLoc);
     el('kMonedas').innerHTML=
       '<div class="mm"><span class="flag '+(FLAG[fPais]||'flag-cl')+'"></span>'+num+'<small>'+MON+'</small></div>'+
       (fPais==='CO'?'':'<div class="mm" style="font-size:13.5px;color:var(--ink-2)">≈ '+(tasa?fmtCOP(tLoc*tasa):'sin tasa')+'<small>COP</small></div>');
@@ -882,18 +892,26 @@ function renderPaises(){
     const ps1=document.getElementById('paisesSub'); if(ps1) ps1.textContent=rangoTxt()+' · Rumanía';
     return;
   }
+  /* 28-10: en la pestaña de México, solo México (como Rumanía) */
+  if(fPais==='MX'){
+    const rm=ventasMX.filter(enRangoO), tm=rm.reduce((a,o)=>a+o.totalNum,0);
+    cont.innerHTML=`<div class="pais"><span class="flag flag-mx"></span>México<div class="track"><i style="width:${rm.length?100:0}%;background:#006847"></i></div><b>${rm.length} · ${fmtMXN(tm)}</b><span class="pct">${rm.length?100:0}%</span></div>`;
+    const psM=document.getElementById('paisesSub'); if(psM) psM.textContent=rangoTxt()+' · México';
+    return;
+  }
   /* 28-09: Paraguay fuera (James), España y Portugal dentro (en euros); 20-10: cada uno en su fila */
-  const g={CL:{n:0,t:0},CO:{n:0,t:0},PY:{n:0,t:0},ES:{n:0,t:0},PT:{n:0,t:0},RO:{n:0,t:0}};
+  const g={CL:{n:0,t:0},CO:{n:0,t:0},PY:{n:0,t:0},ES:{n:0,t:0},PT:{n:0,t:0},RO:{n:0,t:0},MX:{n:0,t:0}};
   if(fCanal!=='web') ordenes.filter(enRangoO).forEach(o=>{g[o.loc].n++;g[o.loc].t+=o.precioNum;});
   if(fCanal!=='wa') pedidosWeb.filter(enRangoO).forEach(o=>{g.CL.n++;g.CL.t+=o.totalNum;});
   /* 01-10: las de la pagina de Colombia (ventasCO) tampoco entraban en "Ventas por pais" */
   if(fCanal!=='wa') (typeof ventasCO!=='undefined'?ventasCO:[]).filter(enRangoO).forEach(o=>{g.CO.n++;g.CO.t+=o.totalNum;});
   (typeof ventasES!=='undefined'?ventasES:[]).filter(enRangoO).forEach(o=>{g[o.sub].n++;g[o.sub].t+=o.totalNum;});
   (typeof ventasRO!=='undefined'?ventasRO:[]).filter(enRangoO).forEach(o=>{g.RO.n++;g.RO.t+=o.totalNum;});
-  const tot=g.CL.n+g.CO.n+g.ES.n+g.PT.n+g.RO.n||1;
+  (typeof ventasMX!=='undefined'?ventasMX:[]).filter(enRangoO).forEach(o=>{g.MX.n++;g.MX.t+=o.totalNum;});   /* 28-10: México como Rumanía */
+  const tot=g.CL.n+g.CO.n+g.ES.n+g.PT.n+g.RO.n+g.MX.n||1;
   const fila=(loc,nom,color,fmt)=>{const p=Math.round(g[loc].n/tot*100);
     return `<div class="pais"><span class="flag ${FLAG[loc]}"></span>${nom}<div class="track"><i style="width:${p}%;background:${color}"></i></div><b>${g[loc].n} · ${fmt(g[loc].t)}</b><span class="pct">${p}%</span></div>`;};
-  cont.innerHTML=fila('CL','Chile','#0e8074',fmtCLP)+fila('ES','España','#aa151b',fmtEUR)+fila('PT','Portugal','#006600',fmtEUR)+fila('CO','Colombia','var(--blue)',fmtCOP)+(g.RO.n?fila('RO','Rumanía','#002B7F',fmtRON):'');
+  cont.innerHTML=fila('CL','Chile','#0e8074',fmtCLP)+fila('ES','España','#aa151b',fmtEUR)+fila('PT','Portugal','#006600',fmtEUR)+fila('CO','Colombia','var(--blue)',fmtCOP)+(g.RO.n?fila('RO','Rumanía','#002B7F',fmtRON):'')+(g.MX.n?fila('MX','México','#006847',fmtMXN):'');
   const ps=document.getElementById('paisesSub'); if(ps) ps.textContent=rangoTxt()+' · '+(fCanal==='todos'?'todos los canales':fCanal==='wa'?'WhatsApp':'páginas');
 }
 
@@ -912,6 +930,7 @@ function renderPedidosWeb(){
   if(esEU(visPaisSel())) cargarConfES();
   var _thL=document.getElementById('thLlamadaCO'); if(_thL) _thL.style.display=visPaisSel()==='CO'?'':'none';
   if(visPaisSel()==='RO') cargarConfRO();
+  if(visPaisSel()==='MX') cargarConfMX();   /* 28-10: México como Rumanía */
   const tb=document.getElementById('tbodyPedidos'); if(!tb) return;
   chipsPedidosWeb();
   const q=(document.getElementById('pbuscar')?.value||'').toLowerCase();
@@ -945,6 +964,12 @@ function pedidosPais(){
     return {cli:o.cli,tel:o.tel,fecha:o.fecha,color:'#002B7F',prod:o.prod+' · RO',comuna:o.zona,region:o.region,
       cant:o.cant,total:fmtRON(o.totalNum),conf:(o.montado||confirmadoRO(o))&&!/pago\s*pendiente|falta/i.test(o.estado),abono:false,dropi:o.montado,dir:o.dir,
       llave:'ro:'+o.id,orden:o.orden,creadoMs:o.creadoMs,eur:true,pagina:pagVisRO(o)};
+  });
+  /* 28-10: México como Rumanía, en pesos mexicanos y con llave "mx:" */
+  if(P==='MX') return ventasMX.filter(function(o){return /p[aá]gina/i.test(o.bot);}).map(function(o){
+    return {cli:o.cli,tel:o.tel,fecha:o.fecha,color:'#006847',prod:o.prod+' · MX',comuna:o.zona,region:o.region,
+      cant:o.cant,total:fmtMXN(o.totalNum),conf:(o.montado||confirmadoMX(o))&&!/pago\s*pendiente|falta/i.test(o.estado),abono:false,dropi:o.montado,dir:o.dir,
+      llave:'mx:'+o.id,orden:o.orden,creadoMs:o.creadoMs,eur:true,pagina:pagVisMX(o)};
   });
   return ventasES.filter(function(o){return /p[aá]gina/i.test(o.bot);}).map(function(o){
     return {cli:o.cli,tel:o.tel,fecha:o.fecha,color:o.sub==='PT'?'#006600':'#aa151b',prod:o.prod+' · '+o.sub,comuna:o.zona,region:o.region,
@@ -1040,14 +1065,14 @@ function renderAbandonadosWeb(){
   if(!PAGINAS.some(p=>p.url)){tb.innerHTML='<tr><td colspan="7" class="vacio">Esperando conexión de las planillas…</td></tr>';return;}
   /* 28-09: aquí solo Chile; los de España/Colombia salen en su país */
   const abCL=abandonadosWeb.filter(o=>(o.pais||paisDeTel(o.tel))===visPaisSel());
-  if(!abCL.length){tb.innerHTML='<tr><td colspan="7" class="vacio">'+(visPaisSel()==='CL'?'Sin abandonados pendientes. 🎉':'Sin carritos abandonados de '+(NOM_EU[visPaisSel()]||(visPaisSel()==='RO'?'Rumanía':'Colombia'))+' todavía. A estos clientes no les escribe ningún flujo de Chile.')+'</td></tr>';return;}
+  if(!abCL.length){tb.innerHTML='<tr><td colspan="7" class="vacio">'+(visPaisSel()==='CL'?'Sin abandonados pendientes. 🎉':'Sin carritos abandonados de '+(NOM_EU[visPaisSel()]||(visPaisSel()==='RO'?'Rumanía':visPaisSel()==='MX'?'México':'Colombia'))+' todavía. A estos clientes no les escribe ningún flujo de Chile.')+'</td></tr>';return;}
   tb.innerHTML=abCL.slice(0,100).map((o,i)=>`
     <tr onclick="verAbandonado(${i})" style="cursor:pointer">
       <td class="cli">${esc(o.cli)}<small>${esc(o.fecha)} · +${o.tel}</small></td>
       <td><span class="pchip"><i style="background:${o.color}"></i>${esc(o.prod)}</span></td>
       <td>${esc(o.comuna)}</td>
       <td>${o.cant}</td>
-      <td class="money">${paisDeTel(o.tel)==='CL'?o.total:fmtEUR(numEUR(o.totRaw))}</td>
+      <td class="money">${paisDeTel(o.tel)==='CL'?o.total:paisDeTel(o.tel)==='MX'?fmtMXN(numEUR(o.totRaw)):fmtEUR(numEUR(o.totRaw))}</td>
       <td>${o.contactado?'<span class="st st-ok"><i></i>✓ Mensaje enviado</span>'+(o.contactadoFecha?'<small style="display:block;color:var(--ink-3)">'+esc(o.contactadoFecha)+'</small>':''):'<span class="st st-ab"><i></i>Sin contactar</span>'}</td>
       <td onclick="event.stopPropagation()"><a class="qr" style="text-decoration:none;cursor:pointer" onclick="crmAbrir('${o.tel}')">WhatsApp</a></td>
     </tr>`).join('');
@@ -1065,7 +1090,7 @@ function verAbandonado(i){
     (o.region?fila('Región',o.region):'')+
     fila('Estado',o.contactado?('Mensaje de recuperación enviado'+(o.contactadoFecha?' · '+o.contactadoFecha:'')):'Sin contactar')+
     fila('Fecha',o.fecha);
-  document.getElementById('mTotal').textContent=paisDeTel(o.tel)==='CL'?o.total+' CLP':paisDeTel(o.tel)==='RO'?fmtRON(numEUR(o.totRaw)):fmtEUR(numEUR(o.totRaw));
+  document.getElementById('mTotal').textContent=paisDeTel(o.tel)==='CL'?o.total+' CLP':paisDeTel(o.tel)==='RO'?fmtRON(numEUR(o.totRaw)):paisDeTel(o.tel)==='MX'?fmtMXN(numEUR(o.totRaw)):fmtEUR(numEUR(o.totRaw));
   window._ventaAbierta={cli:o.cli,dir:(o.dir||'')+(o.ref?' - '+o.ref:''),region:o.region,tel:o.tel,prod:o.prod,cant:o.cant,precio:o.total};
   document.getElementById('ov').classList.add('open');
 }
@@ -1075,13 +1100,14 @@ let fPagV='todas';
 window.setPagV=function(id){ fPagV=id; renderVisitas(); };
 /* 28-09: la pantalla de visitas es la MISMA para los tres países; solo cambian los datos
    (James: "el diseño es igual, no así simple"). */
-function visPaisSel(){ return esEU()?fPais:fPais==='RO'?'RO':(fPais==='CO'?'CO':'CL'); }
+function visPaisSel(){ return esEU()?fPais:fPais==='RO'?'RO':fPais==='MX'?'MX':(fPais==='CO'?'CO':'CL'); }   /* 28-10: México como Rumanía */
 function pagesVis(){ var P=visPaisSel(), m={}; (visitasWeb||[]).forEach(function(v){ if(!v||!v.pagina||paisDePagVis(v.pagina)!==P) return; var k=npV(v.pagina); if(!m[k]) m[k]={id:k,nombre:nombrePagVis(k,(function(n){ n=n.replace(/ · (España|Portugal)$/,''); return /españa|portugal/i.test(n)?n:n+(/^pt-/.test(k)?' · Portugal':/^es-/.test(k)?' · España':''); })(String(v.producto||''))),color:v.color||'#6cc24a'}; }); var a=Object.keys(m).map(function(k){return m[k];}); return a.length?a:(P==='CL'?PAGINAS.filter(p=>p.url):[]); }
 /* pedidos que cuentan en visitas: Chile = pedidos de página; España = ventas de la página ES/PT */
 function pedsVis(){
   var P=visPaisSel(); if(P==='CL') return pedidosWeb;
   if(P==='CO') return ventasCO.map(function(o){ return {orden:o.orden,prod:o.prod,pagina:pagCO(o)}; });
   if(P==='RO') return ventasRO.filter(function(o){return /p[aá]gina/i.test(o.bot);}).map(function(o){ return {orden:o.orden,prod:o.prod,pagina:pagVisRO(o)}; });
+  if(P==='MX') return ventasMX.filter(function(o){return /p[aá]gina/i.test(o.bot);}).map(function(o){ return {orden:o.orden,prod:o.prod,pagina:pagVisMX(o)}; });   /* 28-10: México como Rumanía */
   return ventasES.filter(function(o){return /p[aá]gina/i.test(o.bot);}).map(function(o){ return {orden:o.orden,prod:o.prod,pagina:pagVisES(o)}; });
 }
 /* 20-10: la página de visitas de una venta de Rumanía (prefijo "ro-") */
@@ -1089,6 +1115,12 @@ function pagVisRO(o){
   var k=nrmNomPag(o.prod);
   var v=(visitasWeb||[]).find(function(x){ return x&&x.pagina&&npV(x.pagina).indexOf('ro-')===0&&nrmNomPag(String(x.producto||'').replace(/ · Rumanía$/,''))===k; });
   return v?npV(v.pagina):'ro-otro';
+}
+/* 28-10: la página de visitas de una venta de México (prefijo "mx-"), como Rumanía */
+function pagVisMX(o){
+  var k=nrmNomPag(o.prod);
+  var v=(visitasWeb||[]).find(function(x){ return x&&x.pagina&&npV(x.pagina).indexOf('mx-')===0&&nrmNomPag(String(x.producto||'').replace(/ · México$/,''))===k; });
+  return v?npV(v.pagina):'mx-otro';
 }
 function pagVisES(o){
   var pre=o.sub==='PT'?'pt-':'es-', k=nrmNomPag(o.prod);
@@ -1177,7 +1209,7 @@ function renderVisitas(){
   const vfs=document.getElementById('visFunSub'); if(vfs) vfs.textContent=lbl;
 
   // tarjetas por página
-  if(!conectadas.length){ box.innerHTML='<div class="vacio">'+(visPaisSel()==='CL'?'Conecta las planillas para ver visitas.':(visPaisSel()==='CO'?'Colombia todavía no tiene página: no hay visitas que medir.':visPaisSel()==='RO'?'Rumanía todavía no tiene página: no hay visitas que medir.':'La página de '+(NOM_EU[visPaisSel()]||'España')+' todavía no tiene visitas.'))+'</div>'; return; }
+  if(!conectadas.length){ box.innerHTML='<div class="vacio">'+(visPaisSel()==='CL'?'Conecta las planillas para ver visitas.':(visPaisSel()==='CO'?'Colombia todavía no tiene página: no hay visitas que medir.':visPaisSel()==='RO'?'Rumanía todavía no tiene página: no hay visitas que medir.':visPaisSel()==='MX'?'La página de México todavía no tiene visitas.':'La página de '+(NOM_EU[visPaisSel()]||'España')+' todavía no tiene visitas.'))+'</div>'; return; }
   box.innerHTML=data.map(p=>{
     const conv=p.vis?(p.peds/p.vis*100):0;
     return `<div class="kpi" style="margin-bottom:14px">
@@ -1315,6 +1347,14 @@ function ventasCarmenRO(){
     precioNum:o.totalNum,precio:fmtRON(o.totalNum),dir:o.dir,zona:o.zona,region:o.region,nota:o.nota,desde:'',revision:'',nivel:'',fecha:o.fecha,hora:'',
     orden:o.orden,conf:!/pago\s*pendiente|falta/i.test(o.estado),abono:false,montado:o.montado,ordenDropi:(String(o.estado).match(/#(\d+)/)||[])[1]||'',
     estado:o.estado,bot:'CarmenRO',loc:'RO',red:'',llave:'ro:'+o.id,creadoMs:o.creadoMs,eur:true}; });
+}
+/* 28-10: México como Rumanía. Las ventas del futuro bot de WhatsApp de México (lo que no es "Página MX"),
+   en pesos mexicanos y con llave "mx:". Hoy sale vacía: el bot todavía no existe. */
+function ventasBotMX(){
+  return ventasMX.filter(function(o){return !/p[aá]gina/i.test(o.bot);}).map(function(o){ return {rid:o.id,cli:o.cli,tel:o.tel,prod:o.prod,cant:o.cant,
+    precioNum:o.totalNum,precio:fmtMXN(o.totalNum),dir:o.dir,zona:o.zona,region:o.region,nota:o.nota,desde:'',revision:'',nivel:'',fecha:o.fecha,hora:'',
+    orden:o.orden,conf:!/pago\s*pendiente|falta/i.test(o.estado),abono:false,montado:o.montado,ordenDropi:(String(o.estado).match(/#(\d+)/)||[])[1]||'',
+    estado:o.estado,bot:'BotMX',loc:'MX',red:'',llave:'mx:'+o.id,creadoMs:o.creadoMs,eur:true}; });
 }
 function verVentaBot(i){window._ventasF=window._ventasBotF;verVenta(i);}
 function setTabConv(t){
@@ -1534,7 +1574,7 @@ function _fVms(f){ const m=String(f||'').match(/(\d{1,2})-(\d{1,2})-(\d{4})/); i
 function renderVentasWA(){
   const tb=document.getElementById('tbodyVentasWA'); if(!tb) return;
   const q=(document.getElementById('vbuscar')?.value||'').toLowerCase();
-  let arr=esEU(visPaisSel())?ventasCarmen():visPaisSel()==='RO'?ventasCarmenRO():ordenes.filter(o=>o.loc===visPaisSel());   /* 28-09: solo el país elegido */
+  let arr=esEU(visPaisSel())?ventasCarmen():visPaisSel()==='RO'?ventasCarmenRO():visPaisSel()==='MX'?ventasBotMX():ordenes.filter(o=>o.loc===visPaisSel());   /* 28-10: México como Rumanía */   /* 28-09: solo el país elegido */
   const _d1=(document.getElementById('vDesde')||{}).value, _d2=(document.getElementById('vHasta')||{}).value;
   if(_d1||_d2){
     const desde=_d1?new Date(_d1+'T00:00:00').getTime():0;
@@ -1553,7 +1593,7 @@ function renderVentasWA(){
     const sum={};
     arr.forEach(o=>{ const v=o.eur?o.precioNum:(Number(String(o.precio||'').replace(/\D/g,''))||0); sum[o.loc]=(sum[o.loc]||0)+v; });
     const MON={CL:'CLP',CO:'COP',PY:'PYG'};
-    const partes=Object.keys(sum).map(k=>(k==='ES'||k==='PT')?fmtEUR(sum[k]):k==='RO'?fmtRON(sum[k]):MON[k]+' $'+sum[k].toLocaleString('es-CO'));
+    const partes=Object.keys(sum).map(k=>(k==='ES'||k==='PT')?fmtEUR(sum[k]):k==='RO'?fmtRON(sum[k]):k==='MX'?fmtMXN(sum[k]):MON[k]+' $'+sum[k].toLocaleString('es-CO'));
     el.textContent=arr.length+' venta'+(arr.length===1?'':'s')+(partes.length?' · '+partes.join(' · '):'');
   })();
   if(fPaisV!=='todas') arr=arr.filter(o=>o.loc===fPaisV);
@@ -1703,7 +1743,7 @@ function verVenta(i){
   document.getElementById('mTitulo').textContent=o.cli;
   document.getElementById('mBody').innerHTML=
     bloqueNota(o.nota)+bloqueEspera(o.nota,o.montado)+bloqueSinUbicar(o.dir,o.montado,o.nota)+
-    fila('Canal',o.esWeb?'Página · '+o.prod:'WhatsApp · '+BOTNOM[o.bot])+fila('País',{CL:'Chile',CO:'Colombia',PY:'Paraguay',ES:'España',PT:'Portugal',RO:'Rumanía'}[o.loc])+
+    fila('Canal',o.esWeb?'Página · '+o.prod:'WhatsApp · '+(o.bot==='BotMX'?'México':BOTNOM[o.bot]))+fila('País',{CL:'Chile',CO:'Colombia',PY:'Paraguay',ES:'España',PT:'Portugal',RO:'Rumanía',MX:'México'}[o.loc])+
     fila('Producto',o.prod)+fila('Cantidad',o.cant+' unidades')+(regalosDG(o)?fila('Regalos',regalosDG(o)):'')+fila('Teléfono','+'+o.tel)+
     fila('Dirección',o.dir)+fila('Comuna / Ciudad',o.zona)+fila('Región / Depto.',o.region)+
     filaRotulo(o.nota)+
@@ -1728,7 +1768,8 @@ function renderBots(){
   const cont=document.getElementById('botcards'); if(!cont) return;
   const hoyV=ordenes.filter(o=>o.orden>=inicioDia(0));
   /* 28-09: cada país ve solo sus bots (Colombia y Paraguay ya no salen en Chile) */
-  cont.innerHTML=(esEU(visPaisSel())?['Carmen']:visPaisSel()==='RO'?['CarmenRO']:visPaisSel()==='CO'?['James']:['Carlos','Logistica','Redes']).map(b=>{
+  /* 28-10: México todavía no tiene bot de WhatsApp: su lista de bots va vacía (PENDIENTE: agregarlo cuando James le ponga nombre) */
+  cont.innerHTML=(esEU(visPaisSel())?['Carmen']:visPaisSel()==='RO'?['CarmenRO']:visPaisSel()==='MX'?[]:visPaisSel()==='CO'?['James']:['Carlos','Logistica','Redes']).map(b=>{
     const cs=convDelBot(b);
     const pausadas=cs.filter(c=>c.estado==='pausada').length;
     const ventasHoy=b==='Logistica'
@@ -2048,7 +2089,7 @@ function renderAprobar(){
   if(btr){ btr.style.display=nTrab?'':'none'; btr.textContent=nTrab; }
   const nPend=items.filter(x=>x.st==='pendiente' && !x.prog && !x.dud).length;
   const bg=document.getElementById('badgeAprobar');
-  if(bg){ bg.style.display=(nPend&&!esEU()&&fPais!=='CO'&&fPais!=='RO')?'':'none'; bg.textContent=nPend; }
+  if(bg){ bg.style.display=(nPend&&!esEU()&&fPais!=='CO'&&fPais!=='RO'&&fPais!=='MX')?'':'none'; bg.textContent=nPend; }   /* 28-10: en México no sale el contador de Chile */
   /* 28-10 James (3 vueltas): en el menú de países la bolita VERDE = por aprobar que el inspector marcó VERDE ("✓ se puede
      aprobar") Y que ya cumplieron la espera de una hora; las verdes que aún dicen "faltan X min" no se pueden aprobar y no van
      en ninguna bolita (pasan a verde solas al cumplir la hora). La ROJA = las que faltan (pendientes que NO están en verde:
@@ -2125,7 +2166,7 @@ function verAprob(i){
   }else{
     document.getElementById('mBody').innerHTML=zrHtml+
       bloqueRev(o)+bloqueNota(o.nota)+bloqueEspera(o.nota,o.montado)+bloqueSinUbicar(o.dir,o.montado,o.nota,enRevisionInsp(o.nivel,o.creadoMs))+
-      fila('Canal',(o.bot==='Redes'?'Redes · '+redNombre(o.red)+' · ':'WhatsApp · ')+(BOTNOM[o.bot]||''))+fila('País',{CL:'Chile',CO:'Colombia',PY:'Paraguay',ES:'España',PT:'Portugal',RO:'Rumanía'}[o.loc]||'—')+
+      fila('Canal',(o.bot==='Redes'?'Redes · '+redNombre(o.red)+' · ':'WhatsApp · ')+(BOTNOM[o.bot]||''))+fila('País',{CL:'Chile',CO:'Colombia',PY:'Paraguay',ES:'España',PT:'Portugal',RO:'Rumanía',MX:'México'}[o.loc]||'—')+
       fila('Producto',o.prod)+fila('Cantidad',o.cant+' unidades')+(regalosDG(o)?fila('Regalos',regalosDG(o)):'')+fila('Teléfono','+'+o.tel)+
       fila('Dirección',o.dir)+fila('Comuna / Ciudad',o.zona)+fila('Región / Depto.',o.region)+
       filaRotulo(o.nota)+
@@ -4390,6 +4431,7 @@ function subDeTel(t){ return soloNum(t).indexOf('351')===0?'PT':'ES'; }
 
 function esFilaES(r){
   if(esFilaRO(r)) return false;   /* 20-10: "Carmen RO" empieza por "Carmen" pero es de Rumanía */
+  if(esFilaMX(r)) return false;   /* 28-10: México como Rumanía: una venta de México nunca es de España */
   var p=String(r.PAIS||'').toUpperCase();
   /* 'Carmen' = el bot de WhatsApp de España y Portugal (+34), 28-09 · 25-10: 'Ines' = Portugal (+351). /ventas no trae PAIS: sin esto la venta de Inês caía en Chile */
   return p==='ES'||p==='PT'||/p[aá]gina\s+(es|pt)\b|^(carmen|in[eê]s)\b/i.test(String(r.BOT||''));
@@ -4405,6 +4447,19 @@ function esFilaRO(r){
 function fmtRON(n){ return (Math.round(n*100)/100).toLocaleString('ro-RO',{minimumFractionDigits:2,maximumFractionDigits:2})+' lei'; }
 function filaRO(r){
   var o=filaES(r); o.sub='RO'; o.loc='RO'; return o;
+}
+/* 28-10: MÉXICO como Rumanía. Ventas con PAIS 'MX' o bot "Página MX" (jayegroupshop.com/brain/), en pesos
+   mexicanos (MXN). Su llave de aprobación es "mx:<id>": ningún montador la reconoce todavía (no hay montador de México).
+   PENDIENTE: el bot de WhatsApp de México todavía no tiene nombre; cuando lo tenga se agrega aquí ("^<bot>\s*mx\b").
+   /ventas no trae PAIS: por eso se mira el bot (si no, la venta caería en Chile). */
+var ventasMX=[];
+function esFilaMX(r){
+  var p=String(r.PAIS||'').toUpperCase(), b=String(r.BOT||'');
+  return p==='MX'||/p[aá]gina\s+mx\b/i.test(b);
+}
+function fmtMXN(n){ return '$'+Math.round(n).toLocaleString('es-MX')+' MXN'; }
+function filaMX(r){
+  var o=filaES(r); o.sub='MX'; o.loc='MX'; return o;
 }
 /* "29,90" / "29.90" / "1.234,50" -> número con decimales (el numero() de Chile
    borra los puntos y "29.90" quedaba en 2990) */
@@ -4444,11 +4499,12 @@ function pagCO(o){ return /gafa|lente|aumento/i.test(String(o.prod||''))?'co-gaf
 
 function cargarTasas(){
   try{ var c=JSON.parse(localStorage.getItem('jaye_tasas')||'null');
-    if(c&&c.dia===new Date().toDateString()&&c.clp&&c.eur&&('ron' in c)){ TASAS=c; return; } }catch(e){}
+    if(c&&c.dia===new Date().toDateString()&&c.clp&&c.eur&&('ron' in c)&&('mxn' in c)){ TASAS=c; return; } }catch(e){}   /* 28-10: el caché viejo sin peso mexicano se vuelve a pedir */
   fetch('https://open.er-api.com/v6/latest/COP').then(function(r){return r.json();}).then(function(j){
     if(!j||j.result!=='success'||!j.rates||!j.rates.CLP||!j.rates.EUR) return;
     /* 20-10: el leu (RON) de la MISMA fuente; si no viene, Rumanía no se suma (nunca una cifra inventada) */
-    TASAS={dia:new Date().toDateString(),clp:1/j.rates.CLP,eur:1/j.rates.EUR,ron:j.rates.RON?1/j.rates.RON:null,fecha:j.time_last_update_utc||''};
+    /* 28-10: el peso mexicano (MXN) de la MISMA fuente, como el leu; si no viene, México no se suma */
+    TASAS={dia:new Date().toDateString(),clp:1/j.rates.CLP,eur:1/j.rates.EUR,ron:j.rates.RON?1/j.rates.RON:null,mxn:j.rates.MXN?1/j.rates.MXN:null,fecha:j.time_last_update_utc||''};
     try{ localStorage.setItem('jaye_tasas',JSON.stringify(TASAS)); }catch(e){}
     renderPaisTab();
   }).catch(function(){});
@@ -4460,13 +4516,15 @@ function tasaTxt(){
   var f=TASAS.fecha?new Date(TASAS.fecha).toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric',timeZone:'UTC'}):'';
   return 'Tasa del '+f+' (open.er-api.com): 1 CLP = '+TASAS.clp.toLocaleString('es-CO',{maximumFractionDigits:4})+
     ' COP · 1 € = '+TASAS.eur.toLocaleString('es-CO',{maximumFractionDigits:2})+' COP'+
-    (TASAS.ron?' · 1 leu = '+TASAS.ron.toLocaleString('es-CO',{maximumFractionDigits:2})+' COP':'');
+    (TASAS.ron?' · 1 leu = '+TASAS.ron.toLocaleString('es-CO',{maximumFractionDigits:2})+' COP':'')+
+    (TASAS.mxn?' · 1 peso mexicano = '+TASAS.mxn.toLocaleString('es-CO',{maximumFractionDigits:2})+' COP':'');   /* 28-10: México */
 }
 
 /* lo vendido en el rango elegido (Hoy / Ayer / 7 días...), por país */
 function totalesPais(){
-  var T={cl:{n:0,t:0},es:{n:0,t:0,ES:0,PT:0},pt:{n:0,t:0},co:{n:0,t:0},ro:{n:0,t:0}};
+  var T={cl:{n:0,t:0},es:{n:0,t:0,ES:0,PT:0},pt:{n:0,t:0},co:{n:0,t:0},ro:{n:0,t:0},mx:{n:0,t:0}};
   ventasRO.filter(enRangoO).forEach(function(o){T.ro.n++;T.ro.t+=o.totalNum;});   /* 20-10: Rumanía, en lei */
+  ventasMX.filter(enRangoO).forEach(function(o){T.mx.n++;T.mx.t+=o.totalNum;});   /* 28-10: México como Rumanía, en pesos mexicanos */
   ordenes.filter(enRangoO).forEach(function(o){
     if(o.loc==='CL'){T.cl.n++;T.cl.t+=o.precioNum;} else if(o.loc==='CO'){T.co.n++;T.co.t+=o.precioNum;} });
   pedidosWeb.filter(enRangoO).forEach(function(o){T.cl.n++;T.cl.t+=o.totalNum;});
@@ -4484,7 +4542,7 @@ function kpiHtml(lbl,val,meta){
    Resumen: todos los países juntos (sin Paraguay). Chile / Colombia: su WhatsApp,
    redes y páginas. España y Portugal: sus pedidos de página, en euros. */
 function _ordP(){
-  if(esEU()||fPais==='RO') return [];
+  if(esEU()||fPais==='RO'||fPais==='MX') return [];   /* 28-10: México como Rumanía (no usa las ventas de Chile) */
   if(fPais==='todos') return ordenes.filter(function(o){return o.loc==='CL'||o.loc==='CO';});
   var loc=fPais==='CO'?'CO':'CL';
   return ordenes.filter(function(o){return o.loc===loc;});
@@ -4502,23 +4560,29 @@ function _webRO(){
   return ventasRO.map(function(o){return {orden:o.orden,totalNum:o.totalNum,prod:o.prod,cli:o.cli,fecha:o.fecha,
     color:'#002B7F',total:fmtRON(o.totalNum),sub:'RO'};});
 }
+/* 28-10: México como Rumanía (todas sus ventas en una lista, en pesos mexicanos) */
+function _webMX(){
+  return ventasMX.map(function(o){return {orden:o.orden,totalNum:o.totalNum,prod:o.prod,cli:o.cli,fecha:o.fecha,
+    color:'#006847',total:fmtMXN(o.totalNum),sub:'MX'};});
+}
 function _webP(){
   if(esEU()) return _webES();
   if(fPais==='RO') return _webRO();
+  if(fPais==='MX') return _webMX();
   if(fPais==='CO') return _webCO();
-  if(fPais==='todos') return pedidosWeb.concat(_webES(),_webCO(),_webRO());
+  if(fPais==='todos') return pedidosWeb.concat(_webES(),_webCO(),_webRO(),_webMX());
   return pedidosWeb;
 }
-function _mon(o){ return o.sub==='RO'?'RON':o.sub?'EUR':(o.loc==='CO'?'COP':'CLP'); }
+function _mon(o){ return o.sub==='RO'?'RON':o.sub==='MX'?'MXN':o.sub?'EUR':(o.loc==='CO'?'COP':'CLP'); }
 /* en el Resumen se suman monedas distintas: cada venta se pasa a pesos colombianos */
 function _val(o,campo){
   var n=o[campo]||0; if(fPais!=='todos') return n;
-  var m=_mon(o), t=m==='EUR'?(TASAS&&TASAS.eur):m==='RON'?(TASAS&&TASAS.ron):m==='CLP'?(TASAS&&TASAS.clp):1;
+  var m=_mon(o), t=m==='EUR'?(TASAS&&TASAS.eur):m==='RON'?(TASAS&&TASAS.ron):m==='MXN'?(TASAS&&TASAS.mxn):m==='CLP'?(TASAS&&TASAS.clp):1;
   return t? n*t : 0;
 }
 function fmtMonP(n){
   if(fPais==='todos') return TASAS? fmtCOP(n)+' COP' : 'sin tasa del día';
-  return esEU()?fmtEUR(n):fPais==='RO'?fmtRON(n):fPais==='CO'?fmtCOP(n)+' COP':fmtCLP(n)+' CLP';
+  return esEU()?fmtEUR(n):fPais==='RO'?fmtRON(n):fPais==='MX'?fmtMXN(n):fPais==='CO'?fmtCOP(n)+' COP':fmtCLP(n)+' CLP';
 }
 
 function irPais(p){ elegirPais(p); }
@@ -4530,18 +4594,18 @@ function irAprobarVerde(ev,p){ if(ev){ ev.stopPropagation(); ev.preventDefault()
 /* James 28-09 (2ª vuelta): "todo esto tiene que aparecer también en Colombia y en España y
    Portugal". Todas las secciones están en los tres países; cada una muestra SOLO lo de su
    país, y si un país todavía no tiene datos lo dice, nunca muestra los de Chile. */
-var MENU_PAIS={ radar:'todos,CL,ES,PT,CO,RO', historico:'todos,CL,ES,PT,CO', config:'todos,CL,ES,PT,CO,RO', resumen:'todos,CL,ES,PT,CO,RO' };
+var MENU_PAIS={ radar:'todos,CL,ES,PT,CO,RO,MX', historico:'todos,CL,ES,PT,CO', config:'todos,CL,ES,PT,CO,RO,MX', resumen:'todos,CL,ES,PT,CO,RO,MX' };   /* 28-10: México como Rumanía */
 function paisesDe(n){
   if(n.dataset.bot==='James') return 'CO';
   if(n.dataset.bot==='Carmen') return n.dataset.pt?'PT':'ES';   /* 20-10: "Carmen · España" en España, "Carmen · Portugal" en Portugal */
   if(n.dataset.bot==='CarmenRO') return 'RO';
   if(n.dataset.bot==='Carlos'||n.dataset.bot==='Logistica') return 'CL';
   if(n.dataset.bot==='Redes') return 'CL,ES,PT,CO';   /* 20-10: Rumanía no vende por redes */
-  return MENU_PAIS[n.dataset.view]||'CL,ES,PT,CO,RO';
+  return MENU_PAIS[n.dataset.view]||'CL,ES,PT,CO,RO,MX';   /* 28-10: México ve las mismas secciones que Rumanía */
 }
 /* de qué país es un teléfono o una página de visitas (20-10: +351 y las páginas pt- son de Portugal; +40 y ro- de Rumanía) */
-function paisDeTel(t){ t=soloNum(t); if(/^34\d{9}$/.test(t)) return 'ES'; if(/^351\d{9}$/.test(t)) return 'PT'; if(/^400?\d{9}$/.test(t)) return 'RO';   /* 27-10: el rumano escribe su móvil con el 0 (07xx…): +40 + 0712… también es Rumanía, no Chile */ if(/^57\d{10}$/.test(t)) return 'CO'; return 'CL'; }
-function paisDePagVis(s){ s=String(s||''); if(/^co-/.test(s)) return 'CO'; if(/^pt-/.test(s)) return 'PT'; if(/^ro-/.test(s)) return 'RO'; return (/^es-/.test(s)||s==='tienda-balsamo'||/^tienda-es-/.test(s))?'ES':'CL'; }
+function paisDeTel(t){ t=soloNum(t); if(/^34\d{9}$/.test(t)) return 'ES'; if(/^351\d{9}$/.test(t)) return 'PT'; if(/^400?\d{9}$/.test(t)) return 'RO';   /* 27-10: el rumano escribe su móvil con el 0 (07xx…): +40 + 0712… también es Rumanía, no Chile */ if(/^57\d{10}$/.test(t)) return 'CO'; if(/^52\d{10}$/.test(t)) return 'MX'; return 'CL'; }   /* 28-10: +52 y 10 dígitos = México (como Rumanía); no choca con Chile 56… ni Colombia 57… */
+function paisDePagVis(s){ s=String(s||''); if(/^co-/.test(s)) return 'CO'; if(/^pt-/.test(s)) return 'PT'; if(/^ro-/.test(s)) return 'RO'; if(/^mx-/.test(s)) return 'MX';   /* 28-10: páginas mx- = México */ return (/^es-/.test(s)||s==='tienda-balsamo'||/^tienda-es-/.test(s))?'ES':'CL'; }
 
 /* Secciones que en España/Portugal y Colombia se pintan aparte: se esconde el contenido de
    Chile de la vista y se muestra una caja propia del país. */
@@ -4613,7 +4677,7 @@ function htmlOtroPais(v){
 }
 var _mostrarVistaBase=mostrarVista;
 mostrarVista=function(v){ _mostrarVistaBase(v); pintarOtroPais(v); };
-var NOM_PAIS={todos:'Resumen general',CL:'Resumen de Chile',ES:'Resumen de España',PT:'Resumen de Portugal',CO:'Resumen de Colombia',RO:'Resumen de Rumanía'};
+var NOM_PAIS={todos:'Resumen general',CL:'Resumen de Chile',ES:'Resumen de España',PT:'Resumen de Portugal',CO:'Resumen de Colombia',RO:'Resumen de Rumanía',MX:'Resumen de México'};
 function aplicarPaisMenu(){
   document.querySelectorAll('#paisNav button').forEach(function(b){ b.classList.toggle('act',b.dataset.p===fPais); });
   document.body.dataset.pais=fPais;   /* los contadores de Chile solo se ven en Chile (CSS) */
@@ -4635,12 +4699,15 @@ function aplicarPaisMenu(){
   if(bES) bES.style.display=(esEU()&&bES.textContent&&bES.textContent!=='0')?'':'none';
   var bRO=document.getElementById('badgeAprobarRO');
   if(bRO) bRO.style.display=(fPais==='RO'&&bRO.textContent&&bRO.textContent!=='0')?'':'none';
-  /* las alertas de campañas son de Chile: en España, Portugal, Rumanía y Colombia no se muestran */
-  var al=document.getElementById('alertasCamp'); if(al) al.style.display=(esEU()||fPais==='CO'||fPais==='RO')?'none':'';
+  var bMX=document.getElementById('badgeAprobarMX');   /* 28-10: México como Rumanía */
+  if(bMX) bMX.style.display=(fPais==='MX'&&bMX.textContent&&bMX.textContent!=='0')?'':'none';
+  /* las alertas de campañas son de Chile: en España, Portugal, Rumanía, México y Colombia no se muestran */
+  var al=document.getElementById('alertasCamp'); if(al) al.style.display=(esEU()||fPais==='CO'||fPais==='RO'||fPais==='MX')?'none':'';
   if(TITULOS&&TITULOS.ganancia){ if(!TITULOS._ganCL) TITULOS._ganCL=TITULOS.ganancia[1];
     TITULOS.ganancia[1]=fPais==='PT'?'Lo que liquida Dropi PRO menos devoluciones y la pauta de Portugal · en pesos colombianos'
       :fPais==='ES'?'Lo que liquida Dropi PRO menos devoluciones y la pauta de España · en pesos colombianos'
       :fPais==='RO'?'Lo que liquida Dropi PRO Rumanía menos devoluciones y la pauta de Rumanía · en pesos colombianos'
+      :fPais==='MX'?'Lo que liquida Dropi México menos devoluciones y la pauta de México · en pesos colombianos'
       :fPais==='CO'?'Colombia · en pesos colombianos':TITULOS._ganCL; }
 }
 function vistaActual(){ var v=document.querySelector('.view.act'); return v?v.id.replace('view-',''):'resumen'; }
@@ -4699,8 +4766,36 @@ function diasGananciaRO(cb){
     .then(function(j){ if(!j||typeof j!=='object') throw 0; CAJA_RO=j; window.CAJA_RO_ERROR=false; armar(); })
     .catch(function(){ window.CAJA_RO_ERROR=true; cb([]); });
 }
+/* 28-10: MÉXICO como Rumanía, con SU caja (/caja-mexico, misma forma que /caja-rumania pero en pesos mexicanos:
+   envio_mxn, producto_mxn_por, producto_mxn, devolucion_mxn; pauta en COP de las campañas con "MEXICO" en el nombre).
+   PENDIENTE: ese webhook todavía NO existe en n8n. Si falla, México va en 0 con "sin caja todavía" y no se inventa nada.
+   Para no pedirle a n8n un webhook que no existe en cada repintada, después de un fallo se espera 5 min. */
+var CAJA_MX=null, _cajaMXfallo=0; window.CAJA_MX_ERROR=false;
+function diasGananciaMX(cb){
+  var armar=function(){
+    var C=CAJA_MX.costos||{}, t=TASAS&&TASAS.mxn, por={};
+    if(!t){ cb([]); return; }
+    var dia=function(k){ return por[k]||(por[k]={dia:k,entregas:0,entra:0,devol:0,devoluciones:0,meta:0,camila:0,sueldo:0,queda:0}); };
+    (CAJA_MX.ventas||[]).forEach(function(v){
+      if(!v.dropi_dia) return; var k=String(v.dropi_dia).slice(0,10);
+      if(/entreg/i.test(v.dropi||'')){ var x=dia(k), cant=Number(v.cant)||1;
+        x.entregas++; var cu=(C.producto_mxn_por&&C.producto_mxn_por[v.prod])||C.producto_mxn||0;
+        x.entra+=((Number(v.precio)||0)-cant*cu-(C.envio_mxn||0))*t; }
+      else if(/devol|rechaz/i.test(v.dropi||'')){ var y=dia(k); y.devoluciones++; y.devol+=(C.devolucion_mxn||0)*t; }
+    });
+    (CAJA_MX.pauta||[]).forEach(function(p){ dia(p.dia).meta+=Number(p.cop)||0; });
+    cb(Object.keys(por).map(function(k){ var x=por[k]; x.entra=Math.round(x.entra); x.devol=Math.round(x.devol); x.queda=x.entra-x.devol-x.meta; return x; })
+      .sort(function(a,b){ return a.dia<b.dia?1:-1; }));
+  };
+  if(CAJA_MX) armar();
+  else if(window.CAJA_MX_ERROR&&Date.now()-_cajaMXfallo<300000) cb([]);
+  else fetch(BASE+'/caja-mexico',{cache:'no-store'}).then(function(r){ if(!r.ok) throw 0; return r.json(); })
+    .then(function(j){ if(!j||typeof j!=='object') throw 0; CAJA_MX=j; window.CAJA_MX_ERROR=false; armar(); })
+    .catch(function(){ window.CAJA_MX_ERROR=true; _cajaMXfallo=Date.now(); cb([]); });
+}
 window.diasGananciaPais=function(P,cb){
   if(P==='RO'){ diasGananciaRO(cb); return; }
+  if(P==='MX'){ diasGananciaMX(cb); return; }   /* 28-10: México como Rumanía */
   if(!esEU(P)){ cb([]); return; }
   var armar=function(){
     var C=CAJA_ES.costos||{}, t=TASAS&&TASAS.eur, por={};
@@ -4733,21 +4828,24 @@ document.querySelectorAll('.nav-i[data-view="ganancia"]').forEach(function(n){ n
 /* la fecha de la cabecera: en la pestaña de España, la de Madrid */
 function fechaCabecera(){ var f=document.getElementById('fechaHead'); if(!f) return;
   /* cada pestaña con la fecha de su país; el Resumen general, la del computador */
-  var p=(typeof fPais!=='undefined')?fPais:'todos', nom={ES:' (España)',PT:' (Portugal)',CL:' (Chile)',CO:' (Colombia)',RO:' (Rumanía)'}[p]||'';
+  var p=(typeof fPais!=='undefined')?fPais:'todos', nom={ES:' (España)',PT:' (Portugal)',CL:' (Chile)',CO:' (Colombia)',RO:' (Rumanía)',MX:' (México)'}[p]||'';
   f.textContent=new Date().toLocaleDateString('es-CL',nom?{weekday:'long',day:'numeric',month:'long',timeZone:zonaPanel()}:{weekday:'long',day:'numeric',month:'long'})+nom; }
 function horaES(){ return new Date().toLocaleTimeString('es-ES',{timeZone:ZONA_ES,hour:'2-digit',minute:'2-digit'})+' · '+new Date().toLocaleDateString('es-ES',{timeZone:ZONA_ES,weekday:'long',day:'numeric',month:'short'}); }
 function horaPT(){ return new Date().toLocaleTimeString('es-ES',{timeZone:ZONA_PT,hour:'2-digit',minute:'2-digit'})+' · '+new Date().toLocaleDateString('es-ES',{timeZone:ZONA_PT,weekday:'long',day:'numeric',month:'short'}); }
 function horaCL(){ return new Date().toLocaleTimeString('es-CL',{timeZone:ZONA_CL,hour:'2-digit',minute:'2-digit'})+' · '+new Date().toLocaleDateString('es-CL',{timeZone:ZONA_CL,weekday:'long',day:'numeric',month:'short'}); }
 function horaRO(){ return new Date().toLocaleTimeString('es-ES',{timeZone:ZONA_RO,hour:'2-digit',minute:'2-digit'})+' · '+new Date().toLocaleDateString('es-ES',{timeZone:ZONA_RO,weekday:'long',day:'numeric',month:'short'}); }
+/* 28-10: México como Rumanía, con la hora de Ciudad de México */
+function horaMX(){ return new Date().toLocaleTimeString('es-MX',{timeZone:ZONA_MX,hour:'2-digit',minute:'2-digit'})+' · '+new Date().toLocaleDateString('es-MX',{timeZone:ZONA_MX,weekday:'long',day:'numeric',month:'short'}); }
 /* al pasar la medianoche de CUALQUIER país se vuelve a pintar: el "hoy" de ese país cambia */
-var _diasPais=[ZONA_ES,ZONA_PT,ZONA_CL,ZONA_CO,ZONA_RO].map(function(z){return _ymdZona(Date.now(),z);}).join('|');
+var _diasPais=[ZONA_ES,ZONA_PT,ZONA_CL,ZONA_CO,ZONA_RO,ZONA_MX].map(function(z){return _ymdZona(Date.now(),z);}).join('|');
 setInterval(function(){
   var r=document.getElementById('relojES'); if(r) r.textContent=horaES();
   var rp=document.getElementById('relojPT'); if(rp) rp.textContent=horaPT();
   var rc=document.getElementById('relojCL'); if(rc) rc.textContent=horaCL();
   var rr=document.getElementById('relojRO'); if(rr) rr.textContent=horaRO();
+  var rm=document.getElementById('relojMX'); if(rm) rm.textContent=horaMX();   /* 28-10: México */
   fechaCabecera();
-  var hoy=[ZONA_ES,ZONA_PT,ZONA_CL,ZONA_CO,ZONA_RO].map(function(z){return _ymdZona(Date.now(),z);}).join('|');
+  var hoy=[ZONA_ES,ZONA_PT,ZONA_CL,ZONA_CO,ZONA_RO,ZONA_MX].map(function(z){return _ymdZona(Date.now(),z);}).join('|');
   if(hoy!==_diasPais){ _diasPais=hoy; try{ renderResumen(); }catch(e){} }
 },20000);
 function renderPaisTab(){
@@ -4772,7 +4870,8 @@ function renderPaisTab(){
 
   if(fPais==='todos'){
     /* 20-10: Rumanía en lei; si hay ventas rumanas y no hay tasa del leu, no se suma nada */
-    var tot=TASAS&&(!T.ro.t||TASAS.ron)? T.cl.t*TASAS.clp+(T.es.t+T.pt.t)*TASAS.eur+T.co.t+(T.ro.t?T.ro.t*TASAS.ron:0) : null;
+    /* 28-10: México como Rumanía, en pesos mexicanos; si hay ventas mexicanas y no hay tasa del peso mexicano, no se suma nada */
+    var tot=TASAS&&(!T.ro.t||TASAS.ron)&&(!T.mx.t||TASAS.mxn)? T.cl.t*TASAS.clp+(T.es.t+T.pt.t)*TASAS.eur+T.co.t+(T.ro.t?T.ro.t*TASAS.ron:0)+(T.mx.t?T.mx.t*TASAS.mxn:0) : null;
     /* 26-10 (James): cada país con SU fecha y hora, separados en LATAM (Chile, Colombia) y EUROPA
        (España, Portugal, Rumanía), cada región con su subtotal; debajo, el cierre del día por país. */
     var card=function(p,flag,nom,zona,n,local,enCop){
@@ -4780,18 +4879,21 @@ function renderPaisTab(){
         '<div class="cp-fecha">'+fechaPaisHtml(zona)+'</div>'+
         '<div class="v">'+n+' venta'+(n===1?'':'s')+'</div><div class="c" style="font-size:14px;color:var(--ink-2);font-weight:700">'+local+'</div><div class="c">'+enCop+'</div></div>';
     };
-    var laN=T.cl.n+T.co.n, laCop=TASAS?T.cl.t*TASAS.clp+T.co.t:null;
+    /* 28-10: México va en LATAM (no en Europa) */
+    var laN=T.cl.n+T.co.n+T.mx.n, laCop=TASAS&&(!T.mx.t||TASAS.mxn)?T.cl.t*TASAS.clp+T.co.t+(T.mx.t?T.mx.t*TASAS.mxn:0):null;
     var euN=T.es.n+T.pt.n+T.ro.n, euCop=TASAS&&(!T.ro.t||TASAS.ron)?(T.es.t+T.pt.t)*TASAS.eur+(T.ro.t?T.ro.t*TASAS.ron:0):null;
     var sub=function(n,c){ return '<b>'+n+' venta'+(n===1?'':'s')+'</b> · '+(c===null?'sin tasa del día':'≈ '+fmtCOP(c)+' COP'); };
     box.innerHTML='<div class="rp-total"><div style="display:flex;gap:40px;flex-wrap:wrap">'+
-        '<div><div class="lbl">Ventas de '+lbl+' · todos los países</div><div class="big">'+(T.cl.n+T.es.n+T.pt.n+T.co.n+T.ro.n)+'</div></div>'+
+        '<div><div class="lbl">Ventas de '+lbl+' · todos los países</div><div class="big">'+(T.cl.n+T.es.n+T.pt.n+T.co.n+T.ro.n+T.mx.n)+'</div></div>'+
         '<div><div class="lbl">Vendido '+lbl+' · en pesos colombianos</div><div class="big">'+(tot===null?'—':fmtCOP(tot)+' COP')+'</div></div>'+
       '</div>'+
       '<div class="tasa">'+esc(tasaTxt())+'</div>'+
       '<div class="cp-regiones">'+
-        '<div class="cp-region"><div class="cp-rh"><span class="cp-rn" style="color:var(--brand)">🌎 LATAM</span><span>'+sub(laN,laCop)+'</span></div><div class="rp-paises cp-2">'+
+        '<div class="cp-region"><div class="cp-rh"><span class="cp-rn" style="color:var(--brand)">🌎 LATAM</span><span>'+sub(laN,laCop)+'</span></div><div class="rp-paises cp-3">'+
           card('CL','flag-cl','Chile',ZONA_CL,T.cl.n,fmtCLP(T.cl.t)+' CLP',cop(T.cl.t,TASAS&&TASAS.clp))+
           card('CO','flag-co','Colombia',ZONA_CO,T.co.n,fmtCOP(T.co.t)+' COP',T.co.n?'':'todavía sin ventas')+
+          /* 28-10: México como Rumanía, en el grupo LATAM */
+          card('MX','flag-mx','México',ZONA_MX,T.mx.n,fmtMXN(T.mx.t),T.mx.n?(TASAS&&TASAS.mxn?cop(T.mx.t,TASAS.mxn):'sin tasa del peso mexicano'):'todavía sin ventas')+
         '</div></div>'+
         '<div class="cp-region"><div class="cp-rh"><span class="cp-rn" style="color:var(--green)">🇪🇺 EUROPA</span><span>'+sub(euN,euCop)+'</span></div><div class="rp-paises cp-3">'+
           card('ES','flag-es','España',ZONA_ES,T.es.n,fmtEUR(T.es.t),cop(T.es.t,TASAS&&TASAS.eur))+
@@ -4812,6 +4914,17 @@ function renderPaisTab(){
       '<div class="rp-aviso"><span class="flag flag-ro"></span> <b>Rumanía</b> · montos en lei ('+esc(TASAS&&TASAS.ron?'1 leu = '+TASAS.ron.toLocaleString('es-CO',{maximumFractionDigits:2})+' COP':'sin tasa del día')+'). '+
       'Por aprobar: <b>'+pendRO+'</b> · <a href="#" onclick="verAprobarPais(\'RO\');return false">ir a aprobar →</a> · '+
       'Todavía no hay montador de Rumanía: aprobar NO crea nada en Dropi PRO Rumanía.</div>';
+    return;
+  }
+
+  /* 28-10: MÉXICO como Rumanía: su hora (Ciudad de México), sus montos en pesos mexicanos y lo que hay por aprobar */
+  if(fPais==='MX'){
+    var _dudMX=dudSet();
+    var pendMX=ventasMX.filter(function(o){return !o.montado&&!esPagoPend(o)&&!esAprobado('mx:'+o.id)&&!esRechazado('mx:'+o.id)&&confirmadoMX(o)&&!_dudMX.has('mx:'+o.id);}).length;
+    box.innerHTML='<div class="rp-aviso" style="margin-bottom:8px"><b>🕐 Hora de México: <span id="relojMX">'+horaMX()+'</span></b> · aquí el día va de 00:00 a 24:00 de Ciudad de México (ventas, gráficas, ganancia y el gasto de Meta).</div>'+
+      '<div class="rp-aviso"><span class="flag flag-mx"></span> <b>México</b> · montos en pesos mexicanos ('+esc(TASAS&&TASAS.mxn?'1 peso mexicano = '+TASAS.mxn.toLocaleString('es-CO',{maximumFractionDigits:2})+' COP':'sin tasa del día')+'). '+
+      'Por aprobar: <b>'+pendMX+'</b> · <a href="#" onclick="verAprobarPais(\'MX\');return false">ir a aprobar →</a> · '+
+      'El montador de México está APAGADO (solo lo prende James): aprobar NO crea nada en Dropi México todavía.</div>';
     return;
   }
 
@@ -4989,6 +5102,64 @@ function renderAprobarRO(ot){
       }).join('')+'</tbody></table>'
       :'<div class="vacio" style="padding:22px">'+(CONF_RO?vacio:'Cargando…')+'</div>')+'</div>';
 }
+/* 28-10: MÉXICO como Rumanía. Las de la página (Página MX) esperan /mx-confirmaciones.
+   PENDIENTE: ese webhook todavía NO existe en n8n: si falla, quedan en "Esperando confirmación" y el panel sigue. */
+var CONF_MX=null, _confMXts=0;
+function cargarConfMX(){
+  if(Date.now()-_confMXts<10000) return; _confMXts=Date.now();
+  fetch(BASE+'/mx-confirmaciones?t='+Date.now(),{cache:'no-store'}).then(function(r){ if(!r.ok) throw 0; return r.json(); }).then(function(j){
+    var m={}; ((j&&j.filas)||[]).forEach(function(f){ m[String(f.id)]=f; }); CONF_MX=m; renderAprobarPais(); if(visPaisSel()==='MX') renderPedidosWeb();
+  }).catch(function(){ if(!CONF_MX){ CONF_MX={}; renderAprobarPais(); } });
+}
+function confirmadoMX(o){
+  if(!esWebES(o)) return true;                       /* futuro bot de WhatsApp de México: confirmado en el chat */
+  if(/pago:\s*pre/i.test(o.nota||'')) return true;   /* pago anticipado: lo confirma el pago */
+  var f=CONF_MX&&CONF_MX[String(o.id)]; return !!(f&&f.estado==='CONFIRMO');
+}
+function verAprobMX(i){ window._ventasF=window._aprobMX||[]; verVenta(i); }
+function renderAprobarMX(ot){
+  cargarConfMX();
+  var todas=ventasMX.filter(function(o){return !o.montado;});
+  var _d=dudSet(), dud=function(o){ return _d.has('mx:'+o.id); };
+  /* PAGO PENDIENTE (pago anticipado sin pagar) NO va a Pendientes: va a "Esperando pago", como en los otros países */
+  var gr={
+    pend:todas.filter(function(o){return !esPagoPend(o)&&confirmadoMX(o)&&!dud(o);}),
+    conf:todas.filter(function(o){return !esPagoPend(o)&&!confirmadoMX(o)&&!dud(o);}),
+    pago:todas.filter(function(o){return esPagoPend(o);}),
+    dud:todas.filter(function(o){return !esPagoPend(o)&&dud(o);}),
+    todas:todas };
+  var f=window._fAprobMX||'pend'; if(!gr[f]) f='pend';
+  var lista=gr[f];
+  var tab=function(id,txt,col){ var n=gr[id].length;
+    return '<button class="minitab'+(f===id?' act':'')+'" onclick="window._fAprobMX=\''+id+'\';renderAprobarPais()">'+txt+
+      (col&&n?' <span style="background:'+col+';color:#fff;border-radius:999px;font-size:10.5px;font-weight:800;padding:0 6px;margin-left:4px">'+n+'</span>':'')+'</button>'; };
+  var tabs='<div class="minitabs" style="margin-top:8px">'+tab('pend','Pendientes','#15803d')+tab('conf','Esperando confirmación','#d97706')+
+    tab('pago','Esperando pago','#b45309')+tab('dud','Dudosas','#c62828')+tab('todas','Todas','')+'</div>';
+  var vacio={pend:'Nada por aprobar. 🎉',conf:'Nadie esperando confirmar.',pago:'Nadie esperando pagar.',dud:'Ninguna venta dudosa.',todas:'Sin ventas pendientes.'}[f];
+  window._aprobMX=lista.map(function(o){ var web=esWebES(o);
+    return {esWeb:web, rid:o.id, cli:o.cli, tel:o.tel, prod:o.prod, cant:o.cant, precioNum:o.totalNum, precio:fmtMXN(o.totalNum),
+      dir:o.dir, zona:o.zona, region:o.region, nota:o.nota||'', desde:'', revision:o.revision||'', nivel:o.nivel||'', fecha:o.fecha, hora:'', orden:o.creadoMs||o.orden||0,
+      conf:true, abono:/abono pendiente/i.test(o.estado||''), montado:o.montado, ordenDropi:(String(o.estado||'').match(/#(\d+)/)||[])[1]||'',
+      estado:o.estado||'', bot:web?'Página':'BotMX', loc:'MX', red:'', llave:'mx:'+o.id, creadoMs:o.creadoMs, eur:true }; });
+  ot.innerHTML='<div class="panel"><div class="tbl-head"><h2>México · por aprobar</h2>'+
+    '<span style="font-size:12px;color:#8a93a0">Van a Dropi México, nunca a Dropi Chile ni a Dropi PRO España. El montador de México está APAGADO (solo lo prende James): aprobar deja la venta marcada, pero todavía NO la crea en Dropi.</span>'+tabs+'</div>'+
+    (lista.length?'<table><thead><tr><th>Cliente</th><th>País</th><th>Producto</th><th>Dirección</th><th>Cant.</th><th>Total</th><th>Aprobación</th></tr></thead><tbody>'+
+      lista.map(function(o,ix){
+        var k='mx:'+o.id, falta=!nombreSirve(o.cli)?'nom':(!dirSirve(o.dir)?true:false);
+        var _rv=REV[o.nivel]&&REV[o.nivel].fila?';background:'+REV[o.nivel].fila:'';
+        return '<tr style="cursor:pointer'+_rv+'" onclick="verAprobMX('+ix+')"><td><b>'+esc(o.cli)+'</b>'+chipRev(o)+'<div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.fecha)+' · +'+esc(o.tel)+'</div>'+motivoRev(o)+
+          (esWebES(o)&&!/pago:\s*pre/i.test(o.nota||'')?(confirmadoMX(o)?'<div style="font-size:11.5px;color:#15803d;font-weight:700;margin-top:2px">✅ Confirmó</div>':'<div style="font-size:11.5px;color:#c62828;font-weight:700;margin-top:2px">⏳ Sin confirmar</div>')
+            :(!esWebES(o)&&!/pago:\s*pre/i.test(o.nota||'')?'<div style="font-size:11.5px;color:#15803d;font-weight:700;margin-top:2px">✅ Confirmó en el chat</div>':''))+'</td>'+
+          '<td><span class="flag flag-mx"></span> MX</td><td>'+esc(o.prod)+
+          (/pago:\s*pre/i.test(o.nota)?pildoraPago(o):'')+
+          (/canal:\s*whatsapp/i.test(o.nota)?'<div style="font-size:11px;color:var(--ink-3)">por WhatsApp (México)</div>':'')+'</td>'+
+          '<td>'+esc(o.dir)+'<div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.zona)+(o.region&&o.region!=='—'?', '+esc(o.region):'')+'</div></td>'+
+          '<td>'+esc(o.cant)+'</td><td>'+fmtMXN(o.totalNum)+'</td><td onclick="event.stopPropagation()">'+(esPagoPend(o)
+            ?'<span style="font-size:12px;color:#b45309;font-weight:700">Esperando el pago</span><div style="font-size:11px;color:var(--ink-3)">se aprueba cuando llegue el comprobante</div>'
+            :celdaAprob(k,'',o.id,falta,'',false,dud(o),esperaES(o)))+'</td></tr>';
+      }).join('')+'</tbody></table>'
+      :'<div class="vacio" style="padding:22px">'+(CONF_MX?vacio:'Cargando…')+'</div>')+'</div>';
+}
 function confirmadoCO(id,o){
   var wa=LLAM_CO.some(function(l){return l.tipo==='wa'&&String(l.ref)===String(id)&&l.resultado==='CONFIRMO_WA';})||/CONFIRMADO/.test((o&&o.nota)||'');
   return wa||llamadaOkCO(id);
@@ -5060,10 +5231,18 @@ function renderAprobarPais(){
   var pnRO=document.getElementById('pnNumRO'); if(pnRO) pnRO.textContent=rojas(pendRO,'ro:')||'';
   var pvRO=document.getElementById('pnVerdeRO'); if(pvRO) pvRO.textContent=verdes(pendRO,'ro:')||'';
   var bRO=document.getElementById('badgeAprobarRO'); if(bRO){ bRO.textContent=pendRO.length; bRO.style.display=(pendRO.length&&fPais==='RO')?'':'none'; }
+  /* 28-10: el contador de México, aparte (llave mx:), como Rumanía. PAGO PENDIENTE no cuenta: va a "Esperando pago" */
+  var pendMX=ventasMX.filter(function(o){return !o.montado&&!esPagoPend(o)&&!esAprobado('mx:'+o.id)&&!esRechazado('mx:'+o.id)&&confirmadoMX(o)&&!_dudC.has('mx:'+o.id);});
+  var nbMX=document.getElementById('numAprobMX'); if(nbMX){ nbMX.textContent=pendMX.length; nbMX.style.display=pendMX.length?'':'none'; }
+  var pnMX=document.getElementById('pnNumMX'); if(pnMX) pnMX.textContent=rojas(pendMX,'mx:')||'';
+  var pvMX=document.getElementById('pnVerdeMX'); if(pvMX) pvMX.textContent=verdes(pendMX,'mx:')||'';
+  var bMX=document.getElementById('badgeAprobarMX'); if(bMX){ bMX.textContent=pendMX.length; bMX.style.display=(pendMX.length&&fPais==='MX')?'':'none'; }
   if(fPaisAprob==='CL'){ ch.hidden=false; ot.hidden=true; return; }
   ch.hidden=true; ot.hidden=false;
   /* 20-10: Rumanía tiene SU rama; nunca cae en la de España */
   if(fPaisAprob==='RO'){ renderAprobarRO(ot); return; }
+  /* 28-10: México también tiene SU rama (como Rumanía); nunca cae en la de España */
+  if(fPaisAprob==='MX'){ renderAprobarMX(ot); return; }
   if(fPaisAprob==='CO'){
     cargarLlamCO();
     /* 30-09: página (jayegroupshop.com) + WhatsApp de James. Llave "co:<id>": ningún
@@ -5177,7 +5356,7 @@ function renderAprobarPais(){
    caja-rumania = Rumanía). Colombia no tiene caja todavía: va en 0 y se dice. Todo en pesos colombianos con
    la tasa del día; sin tasa no se suma nada. Las entregas son de pedidos de días anteriores: no cuadran con
    las ventas del mismo día, y así se explica abajo de la tabla. */
-var CIUDAD_ZONA={'America/Santiago':'Chile','America/Bogota':'Bogotá','Europe/Madrid':'Madrid','Europe/Lisbon':'Lisboa','Europe/Bucharest':'Bucarest'};
+var CIUDAD_ZONA={'America/Santiago':'Chile','America/Bogota':'Bogotá','Europe/Madrid':'Madrid','Europe/Lisbon':'Lisboa','Europe/Bucharest':'Bucarest','America/Mexico_City':'Ciudad de México'};   /* 28-10: México */
 function fechaPaisHtml(z){
   var d=new Date();
   return esc(d.toLocaleDateString('es-CL',{timeZone:z,weekday:'long',day:'numeric',month:'long'}))+' · <b>'+
@@ -5220,7 +5399,9 @@ function renderCierre(){
   cajaChile(function(cl){ C.CL=cl;
     diasGananciaPais('ES',function(es){ C.ES=es;
       diasGananciaPais('PT',function(pt){ C.PT=pt;
-        diasGananciaPais('RO',function(ro){ C.RO=ro; _cajasCierre=C; if(seq===_cierreSeq) pintarCierre(C); }); }); }); });
+        diasGananciaPais('RO',function(ro){ C.RO=ro;
+          /* 28-10: México como Rumanía (si /caja-mexico no existe todavía, llega vacía) */
+          diasGananciaPais('MX',function(mx){ C.MX=mx; _cajasCierre=C; if(seq===_cierreSeq) pintarCierre(C); }); }); }); }); });
 }
 function pintarCierre(C){
   var box=document.getElementById('cierrePais'); if(!box||fPais!=='todos'||!TASAS) return;
@@ -5228,6 +5409,8 @@ function pintarCierre(C){
   var P=[
     {k:'CL',nom:'Chile',flag:'flag-cl',zona:ZONA_CL,reg:'LATAM',n:T.cl.n,vLoc:fmtCLP(T.cl.t)+' CLP',vCop:T.cl.t*TASAS.clp,caja:sumaCaja(C.CL,diasDelRango(ZONA_CO)),sin:C.CL?'':'la caja de Chile no respondió'},
     {k:'CO',nom:'Colombia',flag:'flag-co',zona:ZONA_CO,reg:'LATAM',n:T.co.n,vLoc:fmtCOP(T.co.t)+' COP',vCop:T.co.t,caja:sumaCaja([],[]),sin:'Colombia todavía no tiene caja'},
+    /* 28-10: México como Rumanía, en LATAM; sin /caja-mexico va en 0 con "sin caja todavía" */
+    {k:'MX',nom:'México',flag:'flag-mx',zona:ZONA_MX,reg:'LATAM',n:T.mx.n,vLoc:fmtMXN(T.mx.t),vCop:TASAS.mxn?T.mx.t*TASAS.mxn:0,caja:sumaCaja(C.MX,diasDelRango(ZONA_CO)),sin:!TASAS.mxn?'sin tasa del peso mexicano':(window.CAJA_MX_ERROR?'México sin caja todavía':'')},
     {k:'ES',nom:'España',flag:'flag-es',zona:ZONA_ES,reg:'EUROPA',n:T.es.n,vLoc:fmtEUR(T.es.t),vCop:T.es.t*TASAS.eur,caja:sumaCaja(C.ES,diasDelRango(ZONA_CO)),sin:''},
     {k:'PT',nom:'Portugal',flag:'flag-pt',zona:ZONA_PT,reg:'EUROPA',n:T.pt.n,vLoc:fmtEUR(T.pt.t),vCop:T.pt.t*TASAS.eur,caja:sumaCaja(C.PT,diasDelRango(ZONA_CO)),sin:''},
     {k:'RO',nom:'Rumanía',flag:'flag-ro',zona:ZONA_RO,reg:'EUROPA',n:T.ro.n,vLoc:fmtRON(T.ro.t),vCop:TASAS.ron?T.ro.t*TASAS.ron:0,caja:sumaCaja(C.RO,diasDelRango(ZONA_CO)),sin:!TASAS.ron?'sin tasa del leu':(window.CAJA_RO_ERROR?'la caja de Rumanía no está conectada':'')}
@@ -5268,7 +5451,7 @@ function pintarCierre(C){
      cuánto llevas de sueldo y cuánto de ganancia (ya descontado todo: devoluciones, Meta, bots y sueldo) */
   var _hoyCO=_ymdZona(Date.now(),ZONA_CO), _diasMes=[];
   for(var _d=1;_d<=+_hoyCO.slice(8);_d++) _diasMes.push(_hoyCO.slice(0,8)+String(_d).padStart(2,'0'));
-  var MES={sueldo:0,queda:0}; ['CL','ES','PT','RO'].forEach(function(k){ var s=sumaCaja(C[k],_diasMes); MES.sueldo+=s.sueldo; MES.queda+=s.queda; });
+  var MES={sueldo:0,queda:0}; ['CL','ES','PT','RO','MX'].forEach(function(k){ var s=sumaCaja(C[k],_diasMes); MES.sueldo+=s.sueldo; MES.queda+=s.queda; });
   var _nomMes=new Date().toLocaleDateString('es-CO',{timeZone:ZONA_CO,month:'long'});
   var det=function(campo,fmt){ return P.filter(function(p){return p.caja[campo];}).map(function(p){ return p.nom+' '+(fmt?fmt(p.caja[campo]):p.caja[campo]); }).join(' · ')||'—'; };
   var html=
@@ -5287,12 +5470,12 @@ function pintarCierre(C){
     '<div class="cp-card" style="padding-bottom:6px"><div class="tbl-head"><h2>Indicadores</h2><span class="s" id="cpGrafSub"></span></div>'+
       '<div class="cp-graf"><div><div class="tt">Te queda por día · Latam vs Europa</div><div class="g" id="cpG1"></div></div>'+
       '<div><div class="tt">Entregado · gasto Meta · devoluciones</div><div class="g" id="cpG2"></div></div></div></div>'+
-    '<div class="cp-card"><div class="tbl-head"><h2>Totalizador · Latam y Europa</h2><span class="s">Latam = Chile + Colombia · Europa = España + Portugal + Rumanía · todo en pesos colombianos</span></div>'+
+    '<div class="cp-card"><div class="tbl-head"><h2>Totalizador · Latam y Europa</h2><span class="s">Latam = Chile + Colombia + México · Europa = España + Portugal + Rumanía · todo en pesos colombianos</span></div>'+
       '<table class="cp-tabla"><thead><tr><th>Región</th><th>Países</th><th>Ventas</th><th>Entregas</th><th>Devoluciones</th><th>Gasto Meta</th><th>Bots</th><th>Sueldo</th><th>Te queda</th></tr></thead><tbody>'+
-      filaSub('🌎 LATAM','Chile · Colombia',LA,'latam')+filaSub('🇪🇺 EUROPA','España · Portugal · Rumanía',EU,'eu')+'</tbody>'+pie('Latam + Europa')+'</table></div>'+
+      filaSub('🌎 LATAM','Chile · Colombia · México',LA,'latam')+filaSub('🇪🇺 EUROPA','España · Portugal · Rumanía',EU,'eu')+'</tbody>'+pie('Latam + Europa')+'</table></div>'+
     '<div class="cp-card"><div class="tbl-head"><h2>Cierre '+lbl+' por país</h2><span class="s">la fecha la pone Colombia y cada país muestra ese día con su hora · subtotal por región · total en pesos colombianos</span></div>'+
       '<table class="cp-tabla">'+cab+'<tbody>'+
-      P.filter(function(p){return p.reg==='LATAM';}).map(fila).join('')+filaSub('🌎 LATAM','Chile + Colombia',LA,'latam')+
+      P.filter(function(p){return p.reg==='LATAM';}).map(fila).join('')+filaSub('🌎 LATAM','Chile + Colombia + México',LA,'latam')+
       P.filter(function(p){return p.reg==='EUROPA';}).map(fila).join('')+filaSub('🇪🇺 EUROPA','España + Portugal + Rumanía',EU,'eu')+
       '</tbody>'+pie('en pesos colombianos')+'</table>'+
       '<div class="cp-nota"><b>Cómo se cuenta cada columna:</b> <b>Ventas</b> = pedidos de esas fechas (las pone Colombia), cada país de 00:00 a 24:00 de su hora. '+
@@ -5309,13 +5492,13 @@ function pintarCierreGraf(C){
   if(corto) R={tipo:'fechas',desde:inicioDia(13,ZONA_CO),hasta:inicioDia(0,ZONA_CO)};
   var dias=diasDelRango(ZONA_CO); R=Rsave;   /* 27-10: las fechas las pone Colombia; cada caja trae el día de su país */
   var sub=document.getElementById('cpGrafSub'); if(sub) sub.textContent=(corto?'últimos 14 días':rangoTxt())+' · por día · en millones de pesos colombianos';
-  var m={CL:porDiaCaja(C.CL),ES:porDiaCaja(C.ES),PT:porDiaCaja(C.PT),RO:porDiaCaja(C.RO)};
+  var m={CL:porDiaCaja(C.CL),ES:porDiaCaja(C.ES),PT:porDiaCaja(C.PT),RO:porDiaCaja(C.RO),MX:porDiaCaja(C.MX)};   /* 28-10: México (LATAM) */
   var v=function(k,d,campo){ var x=m[k][d]; return x?(Number(x[campo])||0):0; };
   var q=function(k,d){ var x=m[k][d]; return x?(Number(x.entra)||0)-(Number(x.devol)||0)-(Number(x.meta)||0)-(Number(x.camila)||0)-(Number(x.sueldo)||0):0; };
   var M=function(n){ return Math.round(n/1e4)/100; };
-  var latam=dias.map(function(d){ return M(q('CL',d)); }), europa=dias.map(function(d){ return M(q('ES',d)+q('PT',d)+q('RO',d)); });
+  var latam=dias.map(function(d){ return M(q('CL',d)+q('MX',d)); }), europa=dias.map(function(d){ return M(q('ES',d)+q('PT',d)+q('RO',d)); });
   var total=latam.map(function(x,i){ return Math.round((x+europa[i])*100)/100; });
-  var sumD=function(campo){ return dias.map(function(d){ return M(['CL','ES','PT','RO'].reduce(function(a,k){ return a+v(k,d,campo); },0)); }); };
+  var sumD=function(campo){ return dias.map(function(d){ return M(['CL','ES','PT','RO','MX'].reduce(function(a,k){ return a+v(k,d,campo); },0)); }); };
   var ejeX=dias.map(function(d){ return d.slice(8)+'/'+d.slice(5,7); });
   var oscuro=document.documentElement.getAttribute('data-theme')==='dark';
   var base={grid:{left:48,right:14,top:30,bottom:26},textStyle:{fontFamily:'Inter'},tooltip:{trigger:'axis',valueFormatter:function(x){ return x+' M'; }},
