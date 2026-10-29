@@ -18,6 +18,10 @@ const URL_RESP_INES=BASE+'/ines-responder';
    chats con pais = 'RO' y la respuesta sale por el +40. Si fallan, el panel muestra vacío y sigue funcionando. */
 const URL_CONV_CARMEN_RO=BASE+'/carmen-ro-conversaciones', URL_HIST_CARMEN_RO=BASE+'/carmen-ro-historial',
       URL_RESP_CARMEN_RO=BASE+'/carmen-ro-responder', URL_PAUSA_CARMEN_RO=BASE+'/carmen-ro-pausar';
+/* 28-10: Lupita (WhatsApp México +52), flujo n8n 3GfiIPQSZd309fBo. Filtran pais='MX'. Responder no envía nada mientras
+   Lupita no esté prendida (ENVIO_LISTO=false en n8n). */
+const URL_CONV_LUPITA=BASE+'/lupita-mx-conversaciones', URL_HIST_LUPITA=BASE+'/lupita-mx-historial',
+      URL_RESP_LUPITA=BASE+'/lupita-mx-responder', URL_PAUSA_LUPITA=BASE+'/lupita-mx-pausar';
 /* 28-10: México como Rumanía. PENDIENTE: México todavía no tiene bot de WhatsApp (nombre por definir con James):
    cuando exista se agregan aquí sus 4 webhooks (/<bot>-mx-conversaciones, -historial, -responder, -pausar). */
 const URL_VENTAS=BASE+'/ventas';
@@ -328,9 +332,9 @@ const FLAG={CL:'flag-cl',CO:'flag-co',PY:'flag-py',ES:'flag-es',PT:'flag-pt',RO:
    no habia forma de saber cual estabas mirando, y una regla que faltaba en uno se
    buscaba en el otro. La CLAVE interna sigue siendo Carlos (la usan los filtros);
    lo que cambia es solo el nombre que se ve. */
-const BOTNOM={Carmen:'Carmen · España',CarmenRO:'Ioana · Rumanía',Carlos:'Camila · Chile',Logistica:'Laura · Logística',James:'James · Colombia',Ramon:'Ramón · Paraguay',Redes:'Camila Redes · Chile'};
-const BOTLOC={Carmen:'ES',CarmenRO:'RO',Carlos:'CL',Logistica:'CL',James:'CO',Ramon:'PY',Redes:'CL'};
-const BOTCOLOR={Carmen:'linear-gradient(135deg,#aa151b,#e0a800)',CarmenRO:'linear-gradient(135deg,#002B7F,#FCD116)',Carlos:'linear-gradient(135deg,#0e8074,#3aa897)',Logistica:'linear-gradient(135deg,#d97706,#f0a94a)',James:'linear-gradient(135deg,#3060ea,#6a92f5)',Ramon:'linear-gradient(135deg,#7c4dd8,#a98aec)',Redes:'linear-gradient(135deg,#d8256b,#f0699b)'};
+const BOTNOM={Carmen:'Carmen · España',CarmenRO:'Ioana · Rumanía',BotMX:'Lupita · México',Carlos:'Camila · Chile',Logistica:'Laura · Logística',James:'James · Colombia',Ramon:'Ramón · Paraguay',Redes:'Camila Redes · Chile'};
+const BOTLOC={Carmen:'ES',CarmenRO:'RO',BotMX:'MX',Carlos:'CL',Logistica:'CL',James:'CO',Ramon:'PY',Redes:'CL'};
+const BOTCOLOR={Carmen:'linear-gradient(135deg,#aa151b,#e0a800)',CarmenRO:'linear-gradient(135deg,#002B7F,#FCD116)',BotMX:'linear-gradient(135deg,#006847,#CE1126)',Carlos:'linear-gradient(135deg,#0e8074,#3aa897)',Logistica:'linear-gradient(135deg,#d97706,#f0a94a)',James:'linear-gradient(135deg,#3060ea,#6a92f5)',Ramon:'linear-gradient(135deg,#7c4dd8,#a98aec)',Redes:'linear-gradient(135deg,#d8256b,#f0699b)'};
 /* Konecta marca TODO pedido como canal "whatsapp", asi que el canal de verdad se
    cruza por el chat y llega aca dentro del nombre del bot. Sin sufijo = venta
    vieja, de antes del cruce: se muestra "Redes" a secas y no se inventa cual fue. */
@@ -467,8 +471,9 @@ function normConv(r){
   /* 20-10: Carmen Rumanía comparte las tablas de Carmen: un cliente +40 (o el bot "Carmen RO") es de Rumanía, nunca de España */
   const esCR=bot.includes('carmen')&&(/\bro\b|rumania|romania/.test(bot)||/^40\d{9}$/.test(tel));
   const esC=bot.includes('carmen')&&!esCR;
+  const esL=bot.includes('lupita');   /* 28-10: Lupita = México, nunca Chile */
   return {n:r.NOMBRE||tel||'Sin nombre',tel,ultimo:r.ULTIMO_MENSAJE||'',hora:r.HORA||'',fecha:r.FECHA||'',
-    orden:fechaOrden(r.FECHA,r.HORA),bot:esCR?'CarmenRO':esC?'Carmen':esR?'Ramon':esJ?'James':'Carlos',loc:esCR?'RO':esC?'ES':esR?'PY':esJ?'CO':'CL',
+    orden:fechaOrden(r.FECHA,r.HORA),bot:esL?'BotMX':esCR?'CarmenRO':esC?'Carmen':esR?'Ramon':esJ?'James':'Carlos',loc:esL?'MX':esCR?'RO':esC?'ES':esR?'PY':esJ?'CO':'CL',
     estado:modo==='agente'?'pausada':'activa',msgs:[],loaded:false,
     /* 24-10: país GUARDADO del chat de Carmen/Inês (Inês guarda PT aunque el teléfono sea +57 o +34) */
     sub:esC?(String(r.PAIS||'').toUpperCase()==='PT'||/^351/.test(tel)?'PT':'ES'):'',
@@ -516,6 +521,9 @@ async function cargarConvos(){
     /* 20-10: Carmen Rumanía (si el webhook todavía no existe, no pasa nada) */
     try{ const rr=await fetch(URL_CONV_CARMEN_RO,{cache:'no-store'}); if(rr.ok){ const dr=await rr.json();
       rows=rows.concat((Array.isArray(dr)?dr:(dr.body||[])).map(x=>Object.assign({},x,{BOT:'Carmen RO'}))); } }catch(e){}
+    /* 28-10: Lupita México (si el webhook está apagado, no pasa nada) */
+    try{ const rl=await fetch(URL_CONV_LUPITA,{cache:'no-store'}); if(rl.ok){ const dl=await rl.json();
+      rows=rows.concat((Array.isArray(dl)?dl:(dl.body||[])).map(x=>Object.assign({},x,{BOT:'Lupita MX'}))); } }catch(e){}
     const previo={}; convos.forEach(c=>{previo[c.tel]={msgs:c.msgs,loaded:c.loaded,sig:c.sig};});
     convos=rows.filter(r=>r&&r.TELEFONO).map(normConv).sort((a,b)=>b.orden-a.orden);
     // solo reusamos lo cacheado si el último mensaje es el mismo; si llegó uno nuevo, se recarga
@@ -1240,7 +1248,7 @@ function renderConvStats(){
   const ventas=esVistaLog()
     ? (function(){const s={};base.forEach(c=>s[soloNum(c.tel)]=1);
         return ordenes.filter(o=>s[soloNum(o.tel)] && enRangoDe(o.orden,Rconv)).length;})()
-    : (fBot==='Carmen'?ventasCarmen():fBot==='CarmenRO'?ventasCarmenRO():ordenes.filter(o=>o.bot===fBot)).filter(o=>enRangoDe(o.orden,Rconv)).length
+    : (fBot==='Carmen'?ventasCarmen():fBot==='CarmenRO'?ventasCarmenRO():fBot==='BotMX'?ventasBotMX():ordenes.filter(o=>o.bot===fBot)).filter(o=>enRangoDe(o.orden,Rconv)).length
       /* en «Camila · Chile» las ventas de PAGINA tambien cuentan (ver renderVentasBot) */
       + (fBot==='Carlos' ? (pedidosWeb||[]).filter(p=>enRangoDe(p.orden,Rconv)).length : 0);
   const conAgente=cs.filter(c=>c.estado==='pausada').length;
@@ -1301,7 +1309,7 @@ function renderVentasBot(){
   let arr=esVistaLog()
     ? (function(){const s={};convDelBot('Logistica').forEach(c=>s[soloNum(c.tel)]=1);
         return ordenes.filter(o=>s[soloNum(o.tel)]);})()
-    : (fBot==='Carmen'?ventasCarmen():fBot==='CarmenRO'?ventasCarmenRO():ordenes.filter(o=>o.bot===fBot));
+    : (fBot==='Carmen'?ventasCarmen():fBot==='CarmenRO'?ventasCarmenRO():fBot==='BotMX'?ventasBotMX():ordenes.filter(o=>o.bot===fBot));
   /* Las ventas de PAGINA de Chile tambien van aqui. `ordenes` las excluye a
      proposito (son canal pagina, no WhatsApp), asi que en «Camila · Chile» la
      subpestaña Ventas no mostraba ninguna venta de la tienda: el 9-sep el
@@ -1416,7 +1424,7 @@ async function abrirChat(tel){
 // trae el historial de verdad desde n8n. Devuelve true si pudo.
 async function traerHist(c){
   try{
-    const res=await fetch(c.bot==='CarmenRO'?URL_HIST_CARMEN_RO+'?telefono='+soloNum(c.tel)+'&t='+Date.now():c.bot==='Carmen'?URL_HIST_CARMEN+'?telefono='+soloNum(c.tel)+'&t='+Date.now():URL_HIST+'?telefono='+soloNum(c.tel)+'&pais='+(c.loc||'CL')+'&t='+Date.now());
+    const res=await fetch(c.bot==='BotMX'?URL_HIST_LUPITA+'?telefono='+soloNum(c.tel)+'&t='+Date.now():c.bot==='CarmenRO'?URL_HIST_CARMEN_RO+'?telefono='+soloNum(c.tel)+'&t='+Date.now():c.bot==='Carmen'?URL_HIST_CARMEN+'?telefono='+soloNum(c.tel)+'&t='+Date.now():URL_HIST+'?telefono='+soloNum(c.tel)+'&pais='+(c.loc||'CL')+'&t='+Date.now());
     const data=await res.json();
     const arr=Array.isArray(data)?data:(data?[data]:[]);
     const row=arr.find(r=>r&&r.historial&&soloNum(r.telefono)===soloNum(c.tel))||arr.find(r=>r&&r.historial);
@@ -1511,7 +1519,7 @@ async function togglePausa(){
   const c=convos.find(x=>x.tel===selTel); if(!c) return;
   const nuevo=c.estado==='pausada'?'bot':'agente';
   try{
-    await fetch(c.bot==='CarmenRO'?URL_PAUSA_CARMEN_RO:c.bot==='Carmen'?URL_PAUSA_CARMEN:URL_PAUSA,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({telefono:soloNum(c.tel),modo:nuevo})});
+    await fetch(c.bot==='BotMX'?URL_PAUSA_LUPITA:c.bot==='CarmenRO'?URL_PAUSA_CARMEN_RO:c.bot==='Carmen'?URL_PAUSA_CARMEN:URL_PAUSA,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({telefono:soloNum(c.tel),modo:nuevo})});
     c.estado=nuevo==='agente'?'pausada':'activa';
     pintarChatHead(c); renderConvList(); toast(nuevo==='agente'?'Bot pausado: tú atiendes esta conversación':'Bot reactivado');
   }catch(e){ toast('No se pudo cambiar el modo','err'); }
@@ -1520,12 +1528,12 @@ async function enviarRespuesta(){
   const inp=document.getElementById('chInput'); const t=inp.value.trim(); if(!t||!selTel) return;
   const c=convos.find(x=>x.tel===selTel); if(!c) return;
   inp.value=''; c.msgs.push({from:'agente',text:t}); renderBubbles(c);
-  if(c.bot==='Carmen'||c.bot==='CarmenRO'){
-    /* sale por el WhatsApp de España (+34, también para Rumanía); si WhatsApp no lo acepta se avisa y se quita el globo.
+  if(c.bot==='Carmen'||c.bot==='CarmenRO'||c.bot==='BotMX'){
+/* sale por el WhatsApp de España (+34, también para Rumanía); si WhatsApp no lo acepta se avisa y se quita el globo.
        20-10: Carmen Rumanía por SU webhook; nunca por el de Chile */
     try{
       /* 24-10: un chat +351 es de Portugal: se responde por el número de Portugal (+351, Inês), nunca por el +34 */
-      const r=await fetch(c.bot==='CarmenRO'?URL_RESP_CARMEN_RO:(c.sub||subDeTel(c.tel))==='PT'?URL_RESP_INES:URL_RESP_CARMEN,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({telefono:soloNum(c.tel),mensaje:t})});
+      const r=await fetch(c.bot==='BotMX'?URL_RESP_LUPITA:c.bot==='CarmenRO'?URL_RESP_CARMEN_RO:(c.sub||subDeTel(c.tel))==='PT'?URL_RESP_INES:URL_RESP_CARMEN,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({telefono:soloNum(c.tel),mensaje:t})});
       const j=await r.json().catch(()=>({}));
       if(!j||j.ok!==true) throw new Error((j&&j.error)||'No se pudo enviar');
       c.estado='pausada'; pintarChatHead(c); renderConvList(); refrescarChat(c);
@@ -1545,7 +1553,7 @@ const quickReply=txt=>{const i=document.getElementById('chInput');i.value=txt;i.
 function sendImg(input){
   const f=input.files&&input.files[0]; input.value=''; if(!f||!selTel) return;
   const c=convos.find(x=>x.tel===selTel); if(!c) return;
-  if(c.bot==='Carmen'||c.bot==='CarmenRO'){ toast('Las fotos a clientes de '+(c.bot==='CarmenRO'?'Rumanía':(c.sub||subDeTel(c.tel))==='PT'?'Portugal':'España')+' todavía no se mandan desde el panel','err'); return; }
+  if(c.bot==='Carmen'||c.bot==='CarmenRO'||c.bot==='BotMX'){ toast('Las fotos a clientes de '+(c.bot==='BotMX'?'México':c.bot==='CarmenRO'?'Rumanía':(c.sub||subDeTel(c.tel))==='PT'?'Portugal':'España')+' todavía no se mandan desde el panel','err'); return; }
   const rd=new FileReader();
   rd.onload=()=>{
     const img=new Image();
@@ -1769,13 +1777,14 @@ function renderBots(){
   const hoyV=ordenes.filter(o=>o.orden>=inicioDia(0));
   /* 28-09: cada país ve solo sus bots (Colombia y Paraguay ya no salen en Chile) */
   /* 28-10: México todavía no tiene bot de WhatsApp: su lista de bots va vacía (PENDIENTE: agregarlo cuando James le ponga nombre) */
-  cont.innerHTML=(esEU(visPaisSel())?['Carmen']:visPaisSel()==='RO'?['CarmenRO']:visPaisSel()==='MX'?[]:visPaisSel()==='CO'?['James']:['Carlos','Logistica','Redes']).map(b=>{
+  cont.innerHTML=(esEU(visPaisSel())?['Carmen']:visPaisSel()==='RO'?['CarmenRO']:visPaisSel()==='MX'?['BotMX']:visPaisSel()==='CO'?['James']:['Carlos','Logistica','Redes']).map(b=>{
     const cs=convDelBot(b);
     const pausadas=cs.filter(c=>c.estado==='pausada').length;
     const ventasHoy=b==='Logistica'
       ? (function(){const s={};cs.forEach(c=>s[soloNum(c.tel)]=1);return hoyV.filter(o=>s[soloNum(o.tel)]).length;})()
       : (b==='Carmen'?ventasCarmen().filter(o=>o.orden>=inicioDia(0,fPais==='PT'?ZONA_PT:ZONA_ES)).length
-        :b==='CarmenRO'?ventasCarmenRO().filter(o=>o.orden>=inicioDia(0,ZONA_RO)).length:hoyV.filter(o=>o.bot===b).length);
+        :b==='CarmenRO'?ventasCarmenRO().filter(o=>o.orden>=inicioDia(0,ZONA_RO)).length
+        :b==='BotMX'?ventasBotMX().filter(o=>o.orden>=inicioDia(0,ZONA_MX)).length:hoyV.filter(o=>o.bot===b).length);
     const loc=b==='Carmen'&&fPais==='PT'?'PT':BOTLOC[b];
     return `<div class="botmini">
       <span class="bav" style="background:${BOTCOLOR[b]};width:26px;height:26px;font-size:12px;line-height:26px">${b[0]}</span>
@@ -4600,6 +4609,7 @@ function paisesDe(n){
   if(n.dataset.bot==='James') return 'CO';
   if(n.dataset.bot==='Carmen') return n.dataset.pt?'PT':'ES';   /* 20-10: "Carmen · España" en España, "Carmen · Portugal" en Portugal */
   if(n.dataset.bot==='CarmenRO') return 'RO';
+  if(n.dataset.bot==='BotMX') return 'MX';   /* 28-10: Lupita */
   if(n.dataset.bot==='Carlos'||n.dataset.bot==='Logistica') return 'CL';
   if(n.dataset.bot==='Redes') return 'CL,ES,PT,CO';   /* 20-10: Rumanía no vende por redes */
   return MENU_PAIS[n.dataset.view]||'CL,ES,PT,CO,RO,MX';   /* 28-10: México ve las mismas secciones que Rumanía */
