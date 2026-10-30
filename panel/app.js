@@ -1171,7 +1171,9 @@ function renderVisitas(){
   // agregados por página, en el rango
   const data=pgs.map(p=>{
     let vis=0,form=0;
-    visitasWeb.filter(v=>npV(v.pagina)===npV(p.id)&&enRangoDe(fechaOrden(v.fecha,''),Rvis)).forEach(v=>{vis+=numero(v.visitas);form+=numero(v.formulario);});
+    /* 30-10: la visita viene con FECHA sola: se toma a mediodía, como en el gráfico. A medianoche de Colombia
+       caía en el día anterior de México y "Hoy" salía en 0 (James: "no marca nada"). */
+    visitasWeb.filter(v=>npV(v.pagina)===npV(p.id)&&enRangoDe(fechaOrden(v.fecha,'')+432e5,Rvis)).forEach(v=>{vis+=numero(v.visitas);form+=numero(v.formulario);});
     const peds=pedsVis().filter(o=>npV(paginaVis(o))===npV(p.id)&&enRangoDe(o.orden,Rvis)).length;
     return {id:p.id,nombre:p.nombre,color:p.color,vis,form,peds};
   });
