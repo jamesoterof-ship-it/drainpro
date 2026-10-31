@@ -5135,17 +5135,21 @@ function confirmadoMX(o){
   if(/pago:\s*pre/i.test(o.nota||'')) return true;   /* pago anticipado: lo confirma el pago */
   var f=CONF_MX&&CONF_MX[String(o.id)]; return !!(f&&f.estado==='CONFIRMO');
 }
+function abonoPendMX(o){ return /abono\s*pendiente/i.test(o.estado||''); }   /* 31-10: cliente riesgoso que no ha pagado el anticipo */
 function verAprobMX(i){ window._ventasF=window._aprobMX||[]; verVenta(i); }
 function renderAprobarMX(ot){
   cargarConfMX();
   var todas=ventasMX.filter(function(o){return !o.montado;});
   var _d=dudSet(), dud=function(o){ return _d.has('mx:'+o.id); };
-  /* PAGO PENDIENTE (pago anticipado sin pagar) NO va a Pendientes: va a "Esperando pago", como en los otros países */
+  /* PAGO PENDIENTE (pago anticipado sin pagar) NO va a Pendientes: va a "Esperando pago", como en los otros países.
+     31-10 James: el ANTICIPO PENDIENTE del cliente riesgoso tampoco (salía en Pendientes como "Confirmó en el chat"):
+     va a "Esperando pago" sin botón de aprobar; cuando paga pasa a ABONO PAGADO y vuelve a Pendientes. */
+  var espPago=function(o){ return esPagoPend(o)||abonoPendMX(o); };
   var gr={
-    pend:todas.filter(function(o){return !esPagoPend(o)&&confirmadoMX(o)&&!dud(o);}),
-    conf:todas.filter(function(o){return !esPagoPend(o)&&!confirmadoMX(o)&&!dud(o);}),
-    pago:todas.filter(function(o){return esPagoPend(o);}),
-    dud:todas.filter(function(o){return !esPagoPend(o)&&dud(o);}),
+    pend:todas.filter(function(o){return !espPago(o)&&confirmadoMX(o)&&!dud(o);}),
+    conf:todas.filter(function(o){return !espPago(o)&&!confirmadoMX(o)&&!dud(o);}),
+    pago:todas.filter(function(o){return espPago(o);}),
+    dud:todas.filter(function(o){return !espPago(o)&&dud(o);}),
     todas:todas };
   var f=window._fAprobMX||'pend'; if(!gr[f]) f='pend';
   var lista=gr[f];
@@ -5161,19 +5165,22 @@ function renderAprobarMX(ot){
       conf:true, abono:/abono pendiente/i.test(o.estado||''), montado:o.montado, ordenDropi:(String(o.estado||'').match(/#(\d+)/)||[])[1]||'',
       estado:o.estado||'', bot:web?'Página':'BotMX', loc:'MX', red:'', llave:'mx:'+o.id, creadoMs:o.creadoMs, eur:true }; });
   ot.innerHTML='<div class="panel"><div class="tbl-head"><h2>México · por aprobar</h2>'+
-    '<span style="font-size:12px;color:#8a93a0">Van a Dropi México, nunca a Dropi Chile ni a Dropi PRO España. El montador de México está APAGADO (solo lo prende James): aprobar deja la venta marcada, pero todavía NO la crea en Dropi.</span>'+tabs+'</div>'+
+    '<span style="font-size:12px;color:#8a93a0">Van a Dropi México, nunca a Dropi Chile ni a Dropi PRO España. Al aprobar, el montador de México la crea en Dropi México en los siguientes minutos (el cliente riesgoso, solo cuando pagó el anticipo).</span>'+tabs+'</div>'+
     (lista.length?'<table><thead><tr><th>Cliente</th><th>País</th><th>Producto</th><th>Dirección</th><th>Cant.</th><th>Total</th><th>Aprobación</th></tr></thead><tbody>'+
       lista.map(function(o,ix){
         var k='mx:'+o.id, falta=!nombreSirve(o.cli)?'nom':(!dirSirve(o.dir)?true:false);
         var _rv=REV[o.nivel]&&REV[o.nivel].fila?';background:'+REV[o.nivel].fila:'';
         return '<tr style="cursor:pointer'+_rv+'" onclick="verAprobMX('+ix+')"><td><b>'+esc(o.cli)+'</b>'+chipRev(o)+'<div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.fecha)+' · +'+esc(o.tel)+'</div>'+motivoRev(o)+
-          (esWebES(o)&&!/pago:\s*pre/i.test(o.nota||'')?(confirmadoMX(o)?'<div style="font-size:11.5px;color:#15803d;font-weight:700;margin-top:2px">✅ Confirmó</div>':'<div style="font-size:11.5px;color:#c62828;font-weight:700;margin-top:2px">⏳ Sin confirmar</div>')
+          (abonoPendMX(o)?'<div style="font-size:11.5px;color:#c62828;font-weight:800;margin-top:2px">🔴 Cliente riesgoso · esperando anticipo de $180</div>'
+            :esWebES(o)&&!/pago:\s*pre/i.test(o.nota||'')?(confirmadoMX(o)?'<div style="font-size:11.5px;color:#15803d;font-weight:700;margin-top:2px">✅ Confirmó</div>':'<div style="font-size:11.5px;color:#c62828;font-weight:700;margin-top:2px">⏳ Sin confirmar</div>')
             :(!esWebES(o)&&!/pago:\s*pre/i.test(o.nota||'')?'<div style="font-size:11.5px;color:#15803d;font-weight:700;margin-top:2px">✅ Confirmó en el chat</div>':''))+'</td>'+
           '<td><span class="flag flag-mx"></span> MX</td><td>'+esc(o.prod)+
           (/pago:\s*pre/i.test(o.nota)?pildoraPago(o):'')+
           (/canal:\s*whatsapp/i.test(o.nota)?'<div style="font-size:11px;color:var(--ink-3)">por WhatsApp (México)</div>':'')+'</td>'+
           '<td>'+esc(o.dir)+'<div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.zona)+(o.region&&o.region!=='—'?', '+esc(o.region):'')+'</div></td>'+
-          '<td>'+esc(o.cant)+'</td><td>'+fmtMXN(o.totalNum)+'</td><td onclick="event.stopPropagation()">'+(esPagoPend(o)
+          '<td>'+esc(o.cant)+'</td><td>'+fmtMXN(o.totalNum)+'</td><td onclick="event.stopPropagation()">'+(abonoPendMX(o)
+            ?'<span style="font-size:12px;color:#c62828;font-weight:700">Esperando el anticipo</span><div style="font-size:11px;color:var(--ink-3)">$180 por su enlace · al pagar pasa a Pendientes</div>'
+            :esPagoPend(o)
             ?'<span style="font-size:12px;color:#b45309;font-weight:700">Esperando el pago</span><div style="font-size:11px;color:var(--ink-3)">se aprueba cuando llegue el comprobante</div>'
             :celdaAprob(k,'',o.id,falta,'',false,dud(o),esperaES(o)))+'</td></tr>';
       }).join('')+'</tbody></table>'
