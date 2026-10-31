@@ -438,12 +438,16 @@ function enRangoDe(ts,rg,zona){
      Mientras en Bogotá sea 27, cada país muestra SU día 27 (00:00 a 24:00 de su hora): España no
      vuelve a 0 a las 6 p. m. de Bogotá, y lo que venda después (ya 28 en Madrid) sale mañana. */
   if(typeof fPais!=='undefined'&&fPais==='todos'&&zona){
-    const ini=off=>_iniDiaCal(off,z,ZONA_CO);
+    /* 30-10 (James): México va UNA HORA DETRÁS de Colombia. Con la fecha de Colombia, de 12 a 1 de la
+       madrugada de Bogotá México saltaba a un día que allá no había empezado (marcaba 0 y su última hora
+       se iba a "Ayer"). Para México la fecha la pone México: cierra a su medianoche (1 a. m. de Bogotá). */
+    const cal=(z===ZONA_MX)?ZONA_MX:ZONA_CO;
+    const ini=off=>_iniDiaCal(off,z,cal);
     if(rg.tipo==='hoy')  return ts>=ini(0)&&ts<ini(-1);
     if(rg.tipo==='ayer') return ts>=ini(1)&&ts<ini(0);
     if(rg.tipo==='7d')   return ts>=ini(6)&&ts<ini(-1);
     if(rg.tipo==='30d')  return ts>=ini(29)&&ts<ini(-1);
-    if(rg.tipo==='mes'){ const p=_ymdZona(Date.now(),ZONA_CO).split('-'); return ts>=_medianocheZona(+p[0],+p[1],1,z)&&ts<ini(-1); }
+    if(rg.tipo==='mes'){ const p=_ymdZona(Date.now(),cal).split('-'); return ts>=_medianocheZona(+p[0],+p[1],1,z)&&ts<ini(-1); }
     return true;
   }
   if(rg.tipo==='hoy')  return ts>=inicioDia(0,z);
@@ -5423,7 +5427,7 @@ function pintarCierre(C){
     {k:'CL',nom:'Chile',flag:'flag-cl',zona:ZONA_CL,reg:'LATAM',n:T.cl.n,vLoc:fmtCLP(T.cl.t)+' CLP',vCop:T.cl.t*TASAS.clp,caja:sumaCaja(C.CL,diasDelRango(ZONA_CO)),sin:C.CL?'':'la caja de Chile no respondió'},
     {k:'CO',nom:'Colombia',flag:'flag-co',zona:ZONA_CO,reg:'LATAM',n:T.co.n,vLoc:fmtCOP(T.co.t)+' COP',vCop:T.co.t,caja:sumaCaja([],[]),sin:'Colombia todavía no tiene caja'},
     /* 28-10: México como Rumanía, en LATAM; sin /caja-mexico va en 0 con "sin caja todavía" */
-    {k:'MX',nom:'México',flag:'flag-mx',zona:ZONA_MX,reg:'LATAM',n:T.mx.n,vLoc:fmtMXN(T.mx.t),vCop:TASAS.mxn?T.mx.t*TASAS.mxn:0,caja:sumaCaja(C.MX,diasDelRango(ZONA_CO)),sin:!TASAS.mxn?'sin tasa del peso mexicano':(window.CAJA_MX_ERROR?'México sin caja todavía':'')},
+    {k:'MX',nom:'México',flag:'flag-mx',zona:ZONA_MX,reg:'LATAM',n:T.mx.n,vLoc:fmtMXN(T.mx.t),vCop:TASAS.mxn?T.mx.t*TASAS.mxn:0,caja:sumaCaja(C.MX,diasDelRango(ZONA_MX)),/* 30-10: México con su propia fecha (va 1 h detrás de Colombia) */sin:!TASAS.mxn?'sin tasa del peso mexicano':(window.CAJA_MX_ERROR?'México sin caja todavía':'')},
     {k:'ES',nom:'España',flag:'flag-es',zona:ZONA_ES,reg:'EUROPA',n:T.es.n,vLoc:fmtEUR(T.es.t),vCop:T.es.t*TASAS.eur,caja:sumaCaja(C.ES,diasDelRango(ZONA_CO)),sin:''},
     {k:'PT',nom:'Portugal',flag:'flag-pt',zona:ZONA_PT,reg:'EUROPA',n:T.pt.n,vLoc:fmtEUR(T.pt.t),vCop:T.pt.t*TASAS.eur,caja:sumaCaja(C.PT,diasDelRango(ZONA_CO)),sin:''},
     {k:'RO',nom:'Rumanía',flag:'flag-ro',zona:ZONA_RO,reg:'EUROPA',n:T.ro.n,vLoc:fmtRON(T.ro.t),vCop:TASAS.ron?T.ro.t*TASAS.ron:0,caja:sumaCaja(C.RO,diasDelRango(ZONA_CO)),sin:!TASAS.ron?'sin tasa del leu':(window.CAJA_RO_ERROR?'la caja de Rumanía no está conectada':'')}
