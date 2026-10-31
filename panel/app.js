@@ -4432,7 +4432,9 @@ async function crmFicha(id){
    si no hay tasa no se suma nada: nunca se inventa una.
    ===================================================================== */
 var ventasES=[], fPais='todos', fPaisAprob='CL', TASAS=null;
-try{ fPais=localStorage.getItem('jaye_pais')||'todos'; }catch(e){}
+/* 30-10 (James): "que abra en resumen enseguida, no en otra página". Antes se abría en el último país
+   tocado (jaye_pais); ahora SIEMPRE arranca en el Resumen general. El país se sigue guardando por si se necesita. */
+fPais='todos';
 /* 20-10 (James): "Portugal aparte, no lo voy a mezclar". ventasEU guarda España y Portugal tal
    como llegan; ventasES es lo que ve la pestaña elegida: en España solo ES, en Portugal solo PT,
    y en Chile / Colombia / Resumen las dos (para los totales). Cada venta ya trae su país en o.sub. */
