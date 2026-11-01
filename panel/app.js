@@ -389,6 +389,41 @@ const ZONA_MX='America/Mexico_City';   /* 28-10: México como Rumanía, con la h
 function _esOscuro(){ return document.documentElement.getAttribute('data-theme')==='dark'; }
 function _colEje(){ return _esOscuro()?'#d5dce8':'#8a93a0'; }
 function _colEjeY(){ return _esOscuro()?'#e6ebf3':'#5a6470'; }
+/* 01-11 James ("estos botones no se ven bien", pastillas blancas en el modo oscuro): hay ~47 pastillas y
+   botones con el color escrito a mano (style="background:#fff…", "faltan N min", canal, Al recibir…).
+   En vez de tocar cada uno, un vigía arregla en oscuro todo lo que se pinte: fondo claro → fondo
+   translúcido oscuro, y letra oscura → la misma pero aclarada. Guarda el original y lo devuelve en claro. */
+(function(){
+  function lum(c){ var m=String(c||'').match(/\d+(\.\d+)?/g); if(!m||m.length<3) return null; if(m[3]!==undefined&&+m[3]<0.5) return null;
+    var v=m.slice(0,3).map(function(x){ x=+x/255; return x<=.03928?x/12.92:Math.pow((x+.055)/1.055,2.4); }); return .2126*v[0]+.7152*v[1]+.0722*v[2]; }
+  function aclarar(c){ var m=String(c).match(/\d+/g); if(!m) return c; var r=m.slice(0,3).map(function(x){ return Math.round(+x+(255-x)*.8); }); return 'rgb('+r.join(',')+')'; }   /* casi blanco: James quiere que resalten */
+  function arreglar(root){
+    if(!root||!root.querySelectorAll) return;
+    var lista=root.querySelectorAll('[style*="background"]'); if(root.matches&&root.matches('[style*="background"]')) lista=[root].concat(Array.prototype.slice.call(lista));
+    Array.prototype.forEach.call(lista,function(el){
+      if(el.dataset.oscOk) return;
+      var bg=el.style.backgroundColor, l=lum(bg); if(l===null||l<0.55) return;   /* solo fondos claros */
+      el.dataset.oscOk='1'; el.dataset.oscBg=bg; el.dataset.oscFg=el.style.color||''; el.dataset.oscBd=el.style.borderColor||'';
+      el.style.backgroundColor='rgba(255,255,255,.10)';
+      var lf=lum(el.style.color); if(lf!==null&&lf<0.5) el.style.color=aclarar(el.style.color);
+      if(el.style.borderColor&&lum(el.style.borderColor)>0.5) el.style.borderColor='rgba(255,255,255,.22)';
+    });
+  }
+  function deshacer(){
+    document.querySelectorAll('[data-osc-ok]').forEach(function(el){
+      el.style.backgroundColor=el.dataset.oscBg; el.style.color=el.dataset.oscFg; el.style.borderColor=el.dataset.oscBd;
+      delete el.dataset.oscOk; delete el.dataset.oscBg; delete el.dataset.oscFg; delete el.dataset.oscBd;
+    });
+  }
+  function listo(){
+    new MutationObserver(function(ms){ if(!_esOscuro()) return; ms.forEach(function(m){ m.addedNodes.forEach(function(n){ if(n.nodeType===1) arreglar(n); }); }); })
+      .observe(document.body,{childList:true,subtree:true});
+    new MutationObserver(function(){ if(_esOscuro()) arreglar(document.body); else deshacer(); })
+      .observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+    if(_esOscuro()) arreglar(document.body);
+  }
+  if(document.body) listo(); else document.addEventListener('DOMContentLoaded',listo);
+})();
 function zonaPanel(){ var p=(typeof fPais!=='undefined')?fPais:'todos'; return p==='ES'?ZONA_ES:p==='PT'?ZONA_PT:p==='RO'?ZONA_RO:p==='MX'?ZONA_MX:p==='CO'?ZONA_CO:ZONA_CL; }
 /* el país de una venta, para el Resumen general (en una pestaña de país manda la del país) */
 function zonaVenta(o){
