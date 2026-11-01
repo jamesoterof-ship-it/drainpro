@@ -243,9 +243,9 @@
       tooltip: { trigger: 'axis', valueFormatter: function (v) { return pes(v); } },
       xAxis: { type: 'category', data: d.map(function (x) { return corto(x.dia); }),
         axisLine: { lineStyle: { color: oscuro ? '#2a3344' : '#e9ebf0' } },
-        axisLabel: { color: oscuro ? '#6b768a' : '#98a1b0', fontSize: 11 } },
+        axisLabel: { color: oscuro ? '#d5dce8' : '#98a1b0', fontSize: 11 } },   /* 01-11: en oscuro, letras claras */
       yAxis: { type: 'value', splitLine: { lineStyle: { color: oscuro ? '#222a3b' : '#eef0f4' } },
-        axisLabel: { color: oscuro ? '#6b768a' : '#98a1b0', fontSize: 11,
+        axisLabel: { color: oscuro ? '#d5dce8' : '#98a1b0', fontSize: 11,
           formatter: function (v) { return v >= 1e6 ? (v / 1e6).toFixed(1) + 'M' : Math.round(v / 1000) + 'k'; } } },
       series: [
         { name: 'Entra', type: 'bar', data: d.map(function (x) { return num(x.entra); }),
