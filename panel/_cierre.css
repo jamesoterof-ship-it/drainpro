@@ -49,7 +49,9 @@
 .cp-minis.la,.cp-minis.eu{grid-template-columns:repeat(3,1fr)}   /* 02-11: 6 tarjetas por región (sin sueldo, con bots en las dos), 2 filas de 3 */
 /* 02-11 (James): pestañas Resumen Latinoamérica / Resumen Europa; la región elegida va sola, a todo el ancho, con sus 6 tarjetas en una fila */
 .cp-regtabs{display:inline-flex;margin-top:14px} .cp-regtabs button{font-size:13.5px;font-weight:700;padding:8px 16px}
-.cp-regiones.una{grid-template-columns:1fr} .cp-regiones.una .cp-minis.la,.cp-regiones.una .cp-minis.eu{grid-template-columns:repeat(6,1fr)}
+.cp-regiones.una{grid-template-columns:1fr} .cp-regiones.una .cp-minis.la,.cp-regiones.una .cp-minis.eu{grid-template-columns:repeat(4,1fr)}
+/* 02-11 (James): el resumen de cada pestaña (ventas, ganancia hoy, ganancia mes) va arriba dentro de su cuadro; sin fila de totales */
+.cp-region .cp-top{grid-template-columns:repeat(3,1fr);margin:2px 0 14px}
 .cp-mini{border:1px solid var(--border);border-radius:10px;padding:8px 10px;background:var(--surface-2);min-width:0}
 .cp-mini .lbl{font-size:11px;color:var(--ink-2);font-weight:600;line-height:1.25}
 .cp-mini .val{font-size:17px;font-weight:800;letter-spacing:-.02em;margin-top:3px;font-variant-numeric:tabular-nums;white-space:nowrap}
