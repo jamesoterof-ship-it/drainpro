@@ -4946,14 +4946,14 @@ function renderPaisTab(){
        y después las totalizas… tienes todo el espacio"): cinco tarjetas a lo ancho: ventas LATAM (borde azul), ventas EUROPA
        (borde verde), ventas TOTAL, ganancia del rango y ganancia del mes (doradas, las llena pintarCierre). El vendido en
        pesos queda chiquito debajo de cada número de ventas. */
-    var topCard=function(cls,l,v,m,m2){ return '<div class="cp-top-card '+cls+'"><div class="lbl">'+l+'</div><div class="val">'+v+'</div><div class="meta">'+m+(m2?'<br>'+m2:'')+'</div></div>'; };
+    var topCard=function(cls,l,v,m,m2){ return '<div class="cp-top-card '+cls+'"><div class="lbl">'+l+'</div><div class="fila"><span class="val">'+v+'</span><span class="meta">'+m+(m2?'<br>'+m2:'')+'</span></div></div>'; };
     var enCop=function(c){ return c===null?'sin tasa del día':'≈ '+fmtCOP(c)+' COP'; };
     box.innerHTML='<div class="rp-total"><div class="cp-top">'+
         topCard('la','🌎 Ventas '+lbl+' · LATAM',laN,enCop(laCop),'Chile · Colombia · México')+
         topCard('eu','🇪🇺 Ventas '+lbl+' · EUROPA',euN,enCop(euCop),'España · Portugal · Rumanía')+
         topCard('tt','Σ Ventas '+lbl+' · TOTAL',T.cl.n+T.es.n+T.pt.n+T.co.n+T.ro.n+T.mx.n,enCop(tot),'Latam + Europa')+
-        '<div class="cp-top-card oro"><div class="lbl">Ganancia '+lbl+' · Latam + Europa</div><div class="val" id="cpGanRango">…</div><div class="meta">COP · entregado − devoluciones − Meta − bots − sueldo</div></div>'+
-        '<div class="cp-top-card oro"><div class="lbl">Ganancia de <span id="cpGanMesNom">este mes</span></div><div class="val" id="cpGanMes">…</div><div class="meta">COP · del 1 a hoy, ya descontado todo</div></div>'+
+        '<div class="cp-top-card oro"><div class="lbl">Ganancia '+lbl+' · Latam + Europa</div><div class="fila"><span class="val" id="cpGanRango">…</span><span class="meta">COP</span></div></div>'+
+        '<div class="cp-top-card oro"><div class="lbl">Ganancia de <span id="cpGanMesNom">este mes</span></div><div class="fila"><span class="val" id="cpGanMes">…</span><span class="meta">COP · del 1 a hoy</span></div></div>'+
       '</div>'+
       '<div class="tasa">'+esc(tasaTxt())+'</div>'+
       '<div class="cp-regiones">'+
