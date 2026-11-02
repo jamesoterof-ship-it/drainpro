@@ -4949,9 +4949,10 @@ function renderPaisTab(){
     var topCard=function(cls,l,v,m,m2){ return '<div class="cp-top-card '+cls+'"><div class="lbl">'+l+'</div><div class="fila"><span class="val">'+v+'</span><span class="meta">'+m+(m2?'<br>'+m2:'')+'</span></div></div>'; };
     var enCop=function(c){ return c===null?'sin tasa del día':'≈ '+fmtCOP(c)+' COP'; };
     box.innerHTML='<div class="rp-total"><div class="cp-top">'+
-        topCard('la','🌎 Ventas '+lbl+' · LATAM',laN,enCop(laCop),'Chile · Colombia · México')+
-        topCard('eu','🇪🇺 Ventas '+lbl+' · EUROPA',euN,enCop(euCop),'España · Portugal · Rumanía')+
-        topCard('tt','Σ Ventas '+lbl+' · TOTAL',T.cl.n+T.es.n+T.pt.n+T.co.n+T.ro.n+T.mx.n,enCop(tot),'Latam + Europa')+
+        /* 02-11 James: "¿para qué pones España, Portugal, Rumanía, Chile si ya lo tenemos arriba?": sin lista de países */
+        topCard('la','🌎 Ventas '+lbl+' · LATAM',laN,enCop(laCop))+
+        topCard('eu','🇪🇺 Ventas '+lbl+' · EUROPA',euN,enCop(euCop))+
+        topCard('tt','Σ Ventas '+lbl+' · TOTAL',T.cl.n+T.es.n+T.pt.n+T.co.n+T.ro.n+T.mx.n,enCop(tot))+
         '<div class="cp-top-card oro"><div class="lbl">Ganancia '+lbl+' · Latam + Europa</div><div class="fila"><span class="val" id="cpGanRango">…</span><span class="meta">COP</span></div></div>'+
         '<div class="cp-top-card oro"><div class="lbl">Ganancia de <span id="cpGanMesNom">este mes</span></div><div class="fila"><span class="val" id="cpGanMes">…</span><span class="meta">COP</span></div></div>'+
       '</div>'+
