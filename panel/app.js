@@ -5543,7 +5543,8 @@ function pintarCierre(C){
      y arriba el totalizado"): tarjetas chicas (cp-mini) que se meten en los huecos que deja renderPaisTab:
      cpMiniTT arriba (total Latam + Europa), cpMiniLA dentro del cuadro LATAM y cpMiniEU dentro del cuadro EUROPA.
      Bots y sueldo solo existen en Chile (Latam y total). Las ventas de cada región ya van en su cabecera. */
-  var mini=function(l,v,m,cls,rojo){ return '<div class="cp-mini'+(cls?' '+cls:'')+'"><div class="lbl">'+l+'</div><div class="val"'+(rojo?' style="color:var(--red)"':'')+'>'+v+'</div>'+(m?'<div class="meta">'+m+'</div>':'')+'</div>'; };
+  /* 02-11 James: "las tarjetas no tienen el mismo tamaño": todas llevan la línea de detalle (vacía si no hay) con alto fijo de 2 renglones */
+  var mini=function(l,v,m,cls,rojo){ return '<div class="cp-mini'+(cls?' '+cls:'')+'"><div class="lbl">'+l+'</div><div class="val"'+(rojo?' style="color:var(--red)"':'')+'>'+v+'</div><div class="meta">'+(m||'')+'</div></div>'; };
   /* 02-11 (James): los bots se cobran en TODOS los países (33 COP por mensaje recibido, como Camila: Carmen, Inês e Ioana vienen
      en msgs de sus cajas); el sueldo ya no existe en ningún lado. */
   var minis=function(S,M,reg){
