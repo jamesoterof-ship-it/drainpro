@@ -4737,7 +4737,7 @@ function htmlOtroPais(v){
 var _mostrarVistaBase=mostrarVista;
 mostrarVista=function(v){ _mostrarVistaBase(v); pintarOtroPais(v); };
 /* 02-11 (James): pestañas Resumen Latinoamérica / Resumen Europa dentro del Resumen general */
-window.elegirRegion=function(r){ try{ localStorage.setItem('jaye_reg_res',r==='EUROPA'?'EUROPA':'LATAM'); }catch(e){} try{ renderPaisTab(); }catch(e){} };
+window.elegirRegion=function(r){ try{ localStorage.setItem('jaye_reg_res',(r==='EUROPA'||r==='TOTAL')?r:'LATAM'); }catch(e){} try{ renderPaisTab(); }catch(e){} };
 var NOM_PAIS={todos:'Resumen general',CL:'Resumen de Chile',ES:'Resumen de España',PT:'Resumen de Portugal',CO:'Resumen de Colombia',RO:'Resumen de Rumanía',MX:'Resumen de México'};
 function aplicarPaisMenu(){
   document.querySelectorAll('#paisNav button').forEach(function(b){ b.classList.toggle('act',b.dataset.p===fPais); });
@@ -4937,7 +4937,7 @@ function renderPaisTab(){
 
   if(fPais==='todos'){
     /* 02-11 (James): pestaña de región del Resumen general (Latinoamérica o Europa); se recuerda la última */
-    var REG='LATAM'; try{ if(localStorage.getItem('jaye_reg_res')==='EUROPA') REG='EUROPA'; }catch(e){}
+    var REG='LATAM'; try{ var _r=localStorage.getItem('jaye_reg_res'); if(_r==='EUROPA'||_r==='TOTAL') REG=_r; }catch(e){}
     /* 20-10: Rumanía en lei; si hay ventas rumanas y no hay tasa del leu, no se suma nada */
     /* 28-10: México como Rumanía, en pesos mexicanos; si hay ventas mexicanas y no hay tasa del peso mexicano, no se suma nada */
     var tot=TASAS&&(!T.ro.t||TASAS.ron)&&(!T.mx.t||TASAS.mxn)? T.cl.t*TASAS.clp+(T.es.t+T.pt.t)*TASAS.eur+T.co.t+(T.ro.t?T.ro.t*TASAS.ron:0)+(T.mx.t?T.mx.t*TASAS.mxn:0) : null;
@@ -4967,11 +4967,22 @@ function renderPaisTab(){
       '<div class="tasa">'+esc(tasaTxt())+'</div>'+
       /* 02-11 (James: "vamos a dividir los resúmenes: ponme arriba Resumen Latinoamérica y Resumen Europa, cada uno en una pestaña"):
          dos pestañas y se muestra SOLO la región elegida, a todo el ancho (se recuerda la última en jaye_reg_res) */
+      /* 02-11 (James): tres pestañas: Totalizado (todos los países), Latinoamérica y Europa */
       '<div class="seg cp-regtabs">'+
+        '<button class="'+(REG==='TOTAL'?'act':'')+'" onclick="elegirRegion(\'TOTAL\')">Σ Totalizado</button>'+
         '<button class="'+(REG==='LATAM'?'act':'')+'" onclick="elegirRegion(\'LATAM\')">🌎 Resumen Latinoamérica</button>'+
         '<button class="'+(REG==='EUROPA'?'act':'')+'" onclick="elegirRegion(\'EUROPA\')">🇪🇺 Resumen Europa</button></div>'+
       '<div class="cp-regiones una">'+
-        (REG==='LATAM'?
+        (REG==='TOTAL'?
+        '<div class="cp-region">'+resumenReg('tt','todos los países',T.cl.n+T.es.n+T.pt.n+T.co.n+T.ro.n+T.mx.n,tot)+'<div class="cp-rh"><span class="cp-rn">Σ TODOS LOS PAÍSES</span><span>Latinoamérica + Europa</span></div><div class="rp-paises cp-3">'+
+          card('CL','flag-cl','Chile',ZONA_CL,T.cl.n,fmtCLP(T.cl.t)+' CLP',cop(T.cl.t,TASAS&&TASAS.clp))+
+          card('CO','flag-co','Colombia',ZONA_CO,T.co.n,fmtCOP(T.co.t)+' COP',T.co.n?'':'todavía sin ventas')+
+          card('MX','flag-mx','México',ZONA_MX,T.mx.n,fmtMXN(T.mx.t),T.mx.n?(TASAS&&TASAS.mxn?cop(T.mx.t,TASAS.mxn):'sin tasa del peso mexicano'):'todavía sin ventas')+
+          card('ES','flag-es','España',ZONA_ES,T.es.n,fmtEUR(T.es.t),cop(T.es.t,TASAS&&TASAS.eur))+
+          card('PT','flag-pt','Portugal',ZONA_PT,T.pt.n,fmtEUR(T.pt.t),T.pt.n?cop(T.pt.t,TASAS&&TASAS.eur):'todavía sin ventas')+
+          card('RO','flag-ro','Rumanía',ZONA_RO,T.ro.n,fmtRON(T.ro.t),T.ro.n?(TASAS&&TASAS.ron?cop(T.ro.t,TASAS.ron):'sin tasa del leu'):'todavía sin ventas')+
+        '</div><div class="cp-minis tt" id="cpMiniTT"></div></div>'
+        : REG==='LATAM'?
         '<div class="cp-region">'+resumenReg('la','Latinoamérica',laN,laCop)+'<div class="cp-rh"><span class="cp-rn" style="color:var(--brand)">🌎 LATAM</span><span>'+sub(laN,laCop)+'</span></div><div class="rp-paises cp-3">'+
           card('CL','flag-cl','Chile',ZONA_CL,T.cl.n,fmtCLP(T.cl.t)+' CLP',cop(T.cl.t,TASAS&&TASAS.clp))+
           card('CO','flag-co','Colombia',ZONA_CO,T.co.n,fmtCOP(T.co.t)+' COP',T.co.n?'':'todavía sin ventas')+
@@ -5565,10 +5576,11 @@ function pintarCierre(C){
       mini('Bots',S.bots?'−'+pesos(S.bots):'—',det('camila',pesos,reg));
   };
   var pon=function(id,h){ var e=document.getElementById(id); if(e) e.innerHTML=h; };
-  pon('cpMiniLA',minis(LA,MES_LA,'LATAM')); pon('cpMiniEU',minis(EU,MES_EU,'EUROPA'));
+  pon('cpMiniLA',minis(LA,MES_LA,'LATAM')); pon('cpMiniEU',minis(EU,MES_EU,'EUROPA')); pon('cpMiniTT',minis(TT,MES,''));
   var gan=function(id,v){ var e=document.getElementById(id); if(e){ e.textContent=pesos(v); e.classList.toggle('neg',v<0); } };
-  var esEU=false; try{ esEU=localStorage.getItem('jaye_reg_res')==='EUROPA'; }catch(e){}
-  gan('cpGanRango',esEU?EU.queda:LA.queda); gan('cpGanMes',esEU?MES_EU.queda:MES_LA.queda); pon('cpGanMesNom',esc(_nomMes));
+  var regSel='LATAM'; try{ var _r=localStorage.getItem('jaye_reg_res'); if(_r==='EUROPA'||_r==='TOTAL') regSel=_r; }catch(e){}
+  var S_=regSel==='TOTAL'?TT:regSel==='EUROPA'?EU:LA, M_=regSel==='TOTAL'?MES:regSel==='EUROPA'?MES_EU:MES_LA;
+  gan('cpGanRango',S_.queda); gan('cpGanMes',M_.queda); pon('cpGanMesNom',esc(_nomMes));
   var html=
     '<div class="cp-card" style="padding-bottom:6px"><div class="tbl-head"><h2>Indicadores</h2><span class="s" id="cpGrafSub"></span></div>'+
       '<div class="cp-graf"><div><div class="tt">Te queda por día · Latam vs Europa</div><div class="g" id="cpG1"></div></div>'+
