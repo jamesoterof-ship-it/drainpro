@@ -66,3 +66,6 @@
 @media(max-width:1000px){.cp-regiones{grid-template-columns:1fr}.cp-kpis{grid-template-columns:repeat(2,1fr)}.cp-graf{grid-template-columns:1fr}.cp-minis.tt,.cp-minis.la,.cp-minis.eu,.cp-regiones.una .cp-minis.la,.cp-regiones.una .cp-minis.eu,.cp-regiones.una .cp-minis.tt{grid-template-columns:repeat(3,1fr)}}
 /* 28-10 James ("en el celular las tarjetas de los países se distorsionan toditas"): en pantalla chica cada país en su fila */
 @media(max-width:640px){.rp-paises.cp-3,.rp-paises.cp-2{grid-template-columns:1fr}.cp-region{padding:10px 10px}.cp-kpis{grid-template-columns:1fr}.cp-minis.tt,.cp-minis.la,.cp-minis.eu,.cp-regiones.una .cp-minis.la,.cp-regiones.una .cp-minis.eu,.cp-regiones.una .cp-minis.tt{grid-template-columns:repeat(2,1fr)}.cp-rh{font-size:12px}}
+/* 02-11 James ("en el celular las tarjetas de arriba del resumen se salen del recuadro"): en pantalla chica las 3 tarjetas
+   del resumen (ventas, ganancia hoy, ganancia mes) van una debajo de otra, el número puede partir línea y las pestañas se acomodan */
+@media(max-width:760px){.cp-region .cp-top,.cp-top{grid-template-columns:1fr;gap:10px}.cp-top-card .fila{flex-wrap:wrap;gap:4px 10px}.cp-top-card .val{white-space:normal;font-size:22px}.cp-regtabs{display:flex;flex-wrap:wrap}.cp-regtabs button{padding:7px 12px;font-size:13px}}
