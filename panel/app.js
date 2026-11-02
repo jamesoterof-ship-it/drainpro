@@ -2285,7 +2285,7 @@ const TITULOS={
   cancelar:['Cancelaciones','El cliente canceló y el pedido ya está montado · tú decides si se cancela en Dropi'],
   direcciones:['Direcciones incompletas','Pedidos que NO se aprueban hasta corregir la dirección — contáctalos tú de parte de logística'],
   crm:['CRM · Clientes','Novedades, garantías, avisos y seguimiento — todo en un solo lugar'],resumen:['Resumen general','Todos los canales · monedas separadas por país'],
-  ganancia:['Ganancia','Lo que entra de Dropi menos devoluciones, Meta, bots y tu sueldo · en pesos colombianos'],
+  ganancia:['Ganancia','Lo que entra de Dropi menos devoluciones, Meta y bots · en pesos colombianos'],
   finanzas:['Finanzas','P&L, costos, devoluciones y rentabilidad por producto · Chile · en COP'],
   dropi:['Dropi · Guías','Estado de cada guía actualizado con Dropi · seguimiento'],
   radar:['Radar de productos','Lo que se está vendiendo en Dropi, medido por el inventario que se mueve'],
@@ -4814,10 +4814,12 @@ function diasGananciaRO(cb){
       if(/entreg/i.test(v.dropi||'')){ var x=dia(k), cant=Number(v.cant)||1;
         x.entregas++; var cu=(C.producto_ron_por&&C.producto_ron_por[v.prod])||C.producto_ron||0;
         x.entra+=((Number(v.precio)||0)-cant*cu-(C.envio_ron||0))*t; }
-      else if(/devol|rechaz/i.test(v.dropi||'')){ var y=dia(k); y.devoluciones++; y.devol+=(C.devolucion_ron||0)*t; }
+      else if(/devol|rechaz|rehus/i.test(v.dropi||'')){ var y=dia(k); y.devoluciones++; y.devol+=(C.devolucion_ron||0)*t; }   /* 02-11: Dropi PRO dice "Rehusado" */
     });
     (CAJA_RO.pauta||[]).forEach(function(p){ dia(p.dia).meta+=Number(p.cop)||0; });
-    cb(Object.keys(por).map(function(k){ var x=por[k]; x.entra=Math.round(x.entra); x.devol=Math.round(x.devol); x.queda=x.entra-x.devol-x.meta; return x; })
+    /* 02-11 (James): bots como en Chile: 33 COP por mensaje recibido por Ioana (la caja los trae en msgs) */
+    (CAJA_RO.msgs||[]).forEach(function(m){ dia(m.dia).camila+=Math.round((Number(m.n)||0)*(C.bot_cop_msg||33)); });
+    cb(Object.keys(por).map(function(k){ var x=por[k]; x.entra=Math.round(x.entra); x.devol=Math.round(x.devol); x.queda=x.entra-x.devol-x.meta-x.camila; return x; })
       .sort(function(a,b){ return a.dia<b.dia?1:-1; }));
   };
   if(CAJA_RO) armar();
@@ -4863,16 +4865,20 @@ window.diasGananciaPais=function(P,cb){
     /* 20-10: cada pestaña con SUS ventas (la caja trae el país de cada una) */
     (CAJA_ES.ventas||[]).filter(function(v){ return (String(v.pais||'ES').toUpperCase()==='PT'?'PT':'ES')===P; }).forEach(function(v){
       if(!v.dropi_dia) return; var k=String(v.dropi_dia).slice(0,10);
+      /* Portugal: CTT 24 h 5,39 € + fulfillment 1 € + contra reembolso 1 € = 7,39 € (tarifa que mandó Dropi PRO el 24-09, IVA incluido) */
+      var env=P==='PT'?(C.envio_pt_eur||7.39):String(v.cp||'').indexOf('07')===0?(C.envio_baleares_eur||0):(C.envio_eur||0);
       if(/entreg/i.test(v.dropi||'')){ var x=dia(k), cant=Number(v.cant)||1;
-        /* Portugal: CTT 24 h 5,39 € + fulfillment 1 € + contra reembolso 1 € = 7,39 € (tarifa que mandó Dropi PRO el 24-09, IVA incluido) */
-        var env=P==='PT'?(C.envio_pt_eur||7.39):String(v.cp||'').indexOf('07')===0?(C.envio_baleares_eur||0):(C.envio_eur||0);
         x.entregas++; var cu=(C.producto_eur_por&&C.producto_eur_por[v.prod])||C.producto_eur||0; /* 29-09: coste de CADA producto (cabezal 4,22 · bálsamo 2,41) */
         x.entra+=((Number(v.precio)||0)-cant*cu-env)*t; }
-      else if(/devol|rechaz/i.test(v.dropi||'')){ var y=dia(k); y.devoluciones++; y.devol+=(C.devolucion_eur||0)*t; }
+      /* 02-11 (James: "claro que hay devoluciones, no las estás calculando"): Dropi PRO las marca "Rehusado" (antes solo se miraba
+         devol|rechaz y salían 0) y, visto en la billetera (pedido #3557559), cuestan la logística que cobró al confirmar: se resta el envío */
+      else if(/devol|rechaz|rehus/i.test(v.dropi||'')){ var y=dia(k); y.devoluciones++; y.devol+=(C.devolucion_eur||env)*t; }
     });
     /* 20-10: la caja separa la pauta: las campañas con PORTUGAL en el nombre van en pauta_pt (día de Lisboa) */
     ((P==='PT'?CAJA_ES.pauta_pt:CAJA_ES.pauta)||[]).forEach(function(p){ dia(p.dia).meta+=Number(p.cop)||0; });
-    cb(Object.keys(por).map(function(k){ var x=por[k]; x.entra=Math.round(x.entra); x.devol=Math.round(x.devol); x.queda=x.entra-x.devol-x.meta; return x; })
+    /* 02-11 (James): bots como en Chile: 33 COP por mensaje recibido (Carmen = +34, Inês = +351; la caja los trae en msgs) */
+    (CAJA_ES.msgs||[]).filter(function(m){ return m.pais===P; }).forEach(function(m){ dia(m.dia).camila+=Math.round((Number(m.n)||0)*(C.bot_cop_msg||33)); });
+    cb(Object.keys(por).map(function(k){ var x=por[k]; x.entra=Math.round(x.entra); x.devol=Math.round(x.devol); x.queda=x.entra-x.devol-x.meta-x.camila; return x; })
       .sort(function(a,b){ return a.dia<b.dia?1:-1; }));
   };
   /* 22-10: se pedía UNA vez al abrir el panel y nunca más: con el panel abierto desde la mañana, las entregas de
@@ -5461,8 +5467,9 @@ function diasDelRango(z){
 function sumaCaja(arr,keys){
   var s={entregas:0,entra:0,devoluciones:0,devol:0,meta:0,camila:0,sueldo:0,queda:0,hay:!!(arr&&arr.length)};
   (arr||[]).forEach(function(x){ if(keys.indexOf(String(x.dia).slice(0,10))<0) return;
-    ['entregas','entra','devoluciones','devol','meta','camila','sueldo'].forEach(function(k){ s[k]+=Number(x[k])||0; }); });
-  s.queda=s.entra-s.devol-s.meta-s.camila-s.sueldo; return s;
+    ['entregas','entra','devoluciones','devol','meta','camila'].forEach(function(k){ s[k]+=Number(x[k])||0; }); });
+  /* 02-11 (James): "mi sueldo quítalo, no lo calcules en ningún lado": ya no se resta */
+  s.queda=s.entra-s.devol-s.meta-s.camila; return s;
 }
 function porDiaCaja(arr){ var m={}; (arr||[]).forEach(function(x){ m[String(x.dia).slice(0,10)]=x; }); return m; }
 var _cierreSeq=0, _cajasCierre=null;
@@ -5509,28 +5516,27 @@ function pintarCierre(C){
         (c.devoluciones?cel(c.devoluciones,'−'+cop(c.devol),'neg'):vac('0'))+
         (c.meta?cel(cop(c.meta),''):vac('$0'))+
         (c.camila?cel('−'+cop(c.camila),''):vac('—'))+
-        (c.sueldo?cel('−'+cop(c.sueldo),''):vac('—'))+
         cel(cop(c.queda),'',c.queda>=0?'pos':'neg'))+
-      (vacio?'<td class="vacio">0</td><td class="vacio">$0</td><td class="vacio">—</td><td class="vacio">—</td><td class="vacio">$0</td>':'')+'</tr>';
+      (vacio?'<td class="vacio">0</td><td class="vacio">$0</td><td class="vacio">—</td><td class="vacio">$0</td>':'')+'</tr>';
   };
   var filaSub=function(nom,paises,s,cls){
     return '<tr class="sub '+cls+'"><td>'+nom+'</td><td style="font-size:12px;color:var(--ink-2)">'+paises+'</td>'+
       cel(s.n,cop(s.vCop))+cel(s.entregas,'entra '+cop(s.entra))+cel(s.devoluciones,'−'+cop(s.devol),s.devoluciones?'neg':'')+
-      cel(cop(s.meta),'')+cel(s.bots?'−'+cop(s.bots):'—','')+cel(s.sueldo?'−'+cop(s.sueldo):'—','')+cel(cop(s.queda),'',s.queda>=0?'pos':'neg')+'</tr>';
+      cel(cop(s.meta),'')+cel(s.bots?'−'+cop(s.bots):'—','')+cel(cop(s.queda),'',s.queda>=0?'pos':'neg')+'</tr>';
   };
-  var cab='<thead><tr><th>País</th><th>Fecha del país</th><th>Ventas</th><th>Entregas</th><th>Devoluciones</th><th>Gasto Meta</th><th>Bots</th><th>Sueldo</th><th>Te queda</th></tr></thead>';
+  var cab='<thead><tr><th>País</th><th>Fecha del país</th><th>Ventas</th><th>Entregas</th><th>Devoluciones</th><th>Gasto Meta</th><th>Bots</th><th>Te queda</th></tr></thead>';
   var pie=function(txt){ return '<tfoot><tr><td>TOTAL</td><td style="font-weight:500;color:var(--ink-3)">'+txt+'</td>'+
       '<td>'+TT.n+'<span class="cop">'+cop(TT.vCop)+'</span></td><td>'+TT.entregas+'<span class="cop">'+cop(TT.entra)+'</span></td>'+
       '<td style="color:var(--red)">'+TT.devoluciones+'<span class="cop">−'+cop(TT.devol)+'</span></td><td>'+cop(TT.meta)+'</td>'+
-      '<td>'+(TT.bots?'−'+cop(TT.bots):'—')+'</td><td>'+(TT.sueldo?'−'+cop(TT.sueldo):'—')+'</td><td class="oro">'+cop(TT.queda)+'<span class="cop">te queda '+lbl+'</span></td></tr></tfoot>'; };
+      '<td>'+(TT.bots?'−'+cop(TT.bots):'—')+'</td><td class="oro">'+cop(TT.queda)+'<span class="cop">te queda '+lbl+'</span></td></tr></tfoot>'; };
   /* 27-10 (James): una casilla con lo del MES (del 1 a hoy, fechas de Colombia), sin importar el rango elegido:
      cuánto llevas de sueldo y cuánto de ganancia (ya descontado todo: devoluciones, Meta, bots y sueldo) */
   var _hoyCO=_ymdZona(Date.now(),ZONA_CO), _diasMes=[];
   for(var _d=1;_d<=+_hoyCO.slice(8);_d++) _diasMes.push(_hoyCO.slice(0,8)+String(_d).padStart(2,'0'));
   /* 02-11 (James: "divídeme los números de Europa y los de Latinoamérica, y al final un total de todo"):
      el mes también se calcula por región (Latam = Chile + México con caja; Europa = España + Portugal + Rumanía) */
-  var mesDe=function(keys){ var m={sueldo:0,queda:0}; keys.forEach(function(k){ var s=sumaCaja(C[k],_diasMes); m.sueldo+=s.sueldo; m.queda+=s.queda; }); return m; };
-  var MES_LA=mesDe(['CL','MX']), MES_EU=mesDe(['ES','PT','RO']), MES={sueldo:MES_LA.sueldo+MES_EU.sueldo,queda:MES_LA.queda+MES_EU.queda};
+  var mesDe=function(keys){ var m={queda:0}; keys.forEach(function(k){ var s=sumaCaja(C[k],_diasMes); m.queda+=s.queda; }); return m; };
+  var MES_LA=mesDe(['CL','MX']), MES_EU=mesDe(['ES','PT','RO']), MES={queda:MES_LA.queda+MES_EU.queda};
   var _nomMes=new Date().toLocaleDateString('es-CO',{timeZone:ZONA_CO,month:'long'});
   var det=function(campo,fmt,reg){ return P.filter(function(p){return (!reg||p.reg===reg)&&p.caja[campo];}).map(function(p){ return p.nom+' '+(fmt?fmt(p.caja[campo]):p.caja[campo]); }).join(' · ')||'—'; };
   /* 02-11 (James: "tarjetas más pequeñas; el resumen de Latam ahí mismo en su cuadro, el de Europa abajo del suyo,
@@ -5538,15 +5544,15 @@ function pintarCierre(C){
      cpMiniTT arriba (total Latam + Europa), cpMiniLA dentro del cuadro LATAM y cpMiniEU dentro del cuadro EUROPA.
      Bots y sueldo solo existen en Chile (Latam y total). Las ventas de cada región ya van en su cabecera. */
   var mini=function(l,v,m,cls,rojo){ return '<div class="cp-mini'+(cls?' '+cls:'')+'"><div class="lbl">'+l+'</div><div class="val"'+(rojo?' style="color:var(--red)"':'')+'>'+v+'</div>'+(m?'<div class="meta">'+m+'</div>':'')+'</div>'; };
+  /* 02-11 (James): los bots se cobran en TODOS los países (33 COP por mensaje recibido, como Camila: Carmen, Inês e Ioana vienen
+     en msgs de sus cajas); el sueldo ya no existe en ningún lado. */
   var minis=function(S,M,reg){
-    var conChile=(reg!=='EUROPA');
     return mini('Entregas '+lbl,S.entregas,'entra '+cop(S.entra))+
       mini('Devoluciones '+lbl,S.devoluciones,'−'+cop(S.devol),'',true)+
       mini('Gasto Meta '+lbl,pesos(S.meta),reg?det('meta',pesos,reg):'COP · por campaña')+
-      (conChile?mini('Bots',S.bots?'−'+pesos(S.bots):'—','solo Chile')+mini('Tu sueldo',S.sueldo?'−'+pesos(S.sueldo):'—','solo Chile'):'')+
+      mini('Bots',S.bots?'−'+pesos(S.bots):'—',reg?det('camila',pesos,reg):'')+
       /* 02-11 James: "entregado − devoluciones − Meta… ya lo sabemos, ¿para qué lo pones?": sin explicaciones, solo la cifra */
       mini('TE QUEDA '+lbl,pesos(S.queda),'','oro',S.queda<0)+
-      (reg?'':mini('TU SUELDO · '+esc(_nomMes),pesos(M.sueldo),'','oro'))+
       mini('GANANCIA · '+esc(_nomMes),pesos(M.queda),'','oro',M.queda<0);
   };
   var pon=function(id,h){ var e=document.getElementById(id); if(e) e.innerHTML=h; };
@@ -5559,7 +5565,7 @@ function pintarCierre(C){
       '<div class="cp-graf"><div><div class="tt">Te queda por día · Latam vs Europa</div><div class="g" id="cpG1"></div></div>'+
       '<div><div class="tt">Entregado · gasto Meta · devoluciones</div><div class="g" id="cpG2"></div></div></div></div>'+
     '<div class="cp-card"><div class="tbl-head"><h2>Totalizador · Latam y Europa</h2><span class="s">Latam = Chile + Colombia + México · Europa = España + Portugal + Rumanía · todo en pesos colombianos</span></div>'+
-      '<table class="cp-tabla"><thead><tr><th>Región</th><th>Países</th><th>Ventas</th><th>Entregas</th><th>Devoluciones</th><th>Gasto Meta</th><th>Bots</th><th>Sueldo</th><th>Te queda</th></tr></thead><tbody>'+
+      '<table class="cp-tabla"><thead><tr><th>Región</th><th>Países</th><th>Ventas</th><th>Entregas</th><th>Devoluciones</th><th>Gasto Meta</th><th>Bots</th><th>Te queda</th></tr></thead><tbody>'+
       filaSub('🌎 LATAM','Chile · Colombia · México',LA,'latam')+filaSub('🇪🇺 EUROPA','España · Portugal · Rumanía',EU,'eu')+'</tbody>'+pie('Latam + Europa')+'</table></div>'+
     '<div class="cp-card"><div class="tbl-head"><h2>Cierre '+lbl+' por país</h2><span class="s">la fecha la pone Colombia y cada país muestra ese día con su hora · subtotal por región · total en pesos colombianos</span></div>'+
       '<table class="cp-tabla">'+cab+'<tbody>'+
@@ -5569,7 +5575,8 @@ function pintarCierre(C){
       '<div class="cp-nota"><b>Cómo se cuenta cada columna:</b> <b>Ventas</b> = pedidos de esas fechas (las pone Colombia), cada país de 00:00 a 24:00 de su hora. '+
       '<b>Entregas</b> y <b>Devoluciones</b> = lo que Dropi marcó en esos días (son pedidos de días anteriores; por eso no cuadran con las ventas del mismo día). '+
       '"Entra" es lo que liquida Dropi ya descontados costo del producto y flete. <b>Gasto Meta</b> = gasto de las campañas por día, repartido por país según el nombre de la campaña. '+
-      '<b>Te queda</b> = entra − devoluciones − Meta − bots − sueldo (bots y sueldo solo en Chile). Al cambiar el rango de arriba, todo esto cambia con él.</div></div>';
+      '<b>Bots</b> = 33 pesos por cada mensaje que recibe el bot de cada país (Camila, Carmen, Inês, Ioana). <b>Devoluciones</b> en Europa = la logística que Dropi PRO cobró al confirmar cada pedido rehusado. '+
+      '<b>Te queda</b> = entra − devoluciones − Meta − bots. Al cambiar el rango de arriba, todo esto cambia con él.</div></div>';
   box.innerHTML=html;
   pintarCierreGraf(C);
 }
@@ -5582,7 +5589,7 @@ function pintarCierreGraf(C){
   var sub=document.getElementById('cpGrafSub'); if(sub) sub.textContent=(corto?'últimos 14 días':rangoTxt())+' · por día · en millones de pesos colombianos';
   var m={CL:porDiaCaja(C.CL),ES:porDiaCaja(C.ES),PT:porDiaCaja(C.PT),RO:porDiaCaja(C.RO),MX:porDiaCaja(C.MX)};   /* 28-10: México (LATAM) */
   var v=function(k,d,campo){ var x=m[k][d]; return x?(Number(x[campo])||0):0; };
-  var q=function(k,d){ var x=m[k][d]; return x?(Number(x.entra)||0)-(Number(x.devol)||0)-(Number(x.meta)||0)-(Number(x.camila)||0)-(Number(x.sueldo)||0):0; };
+  var q=function(k,d){ var x=m[k][d]; return x?(Number(x.entra)||0)-(Number(x.devol)||0)-(Number(x.meta)||0)-(Number(x.camila)||0):0; };
   var M=function(n){ return Math.round(n/1e4)/100; };
   var latam=dias.map(function(d){ return M(q('CL',d)+q('MX',d)); }), europa=dias.map(function(d){ return M(q('ES',d)+q('PT',d)+q('RO',d)); });
   var total=latam.map(function(x,i){ return Math.round((x+europa[i])*100)/100; });

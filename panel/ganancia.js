@@ -10,7 +10,7 @@
    y `queda` ya viene con eso descontado. */
 (function () {
   var URL_CAJA = 'https://n8n-production-8a42.up.railway.app/webhook/caja-jaye';
-  var SUELDO_MES = 5000000;
+  var SUELDO_MES = 0;   /* 02-11 (James): "mi sueldo quítalo, no lo calcules en ningún lado" (antes 5.000.000) */
   var BOTS_DIA = 40000;   /* Camila, Carlos, el inspector, el de redes y el de seguimiento */
   /* La cuenta arranca el 1 de septiembre. Lo de agosto queda guardado en la
      base pero no se muestra: en esos dias no se llevaba asi y mezclarlos
@@ -108,8 +108,7 @@
       tar('Devoluciones', '−' + pes(t.d), t.dn + ' pedidos volvieron · ' + tasaDev + '% · flete perdido', t.d > 0 ? 'mal' : '') +
       tar('Meta', pes(t.m), pctMeta + '% de lo que queda de ' + MODO.dropi, pctMeta > 55 ? 'mal' : '') +
       tar('Bots', pes(t.c), MODO.botsTxt, '') +
-      tar('Tu sueldo', pes(t.s), MODO.sueldo ? 'de los $5.000.000 del mes' : 'se descuenta en Chile', '') +
-      tar('TE QUEDA', pes(t.q), MODO.sueldo ? 'ya con tu sueldo descontado' : 'después de devoluciones y Meta', t.q >= 0 ? 'ok' : 'mal') +
+      tar('TE QUEDA', pes(t.q), 'después de devoluciones, Meta y bots', t.q >= 0 ? 'ok' : 'mal') +
       tar('Cada entrega deja', pes(porEnt), 'ya descontadas las devoluciones', '');
 
     /* el mes contra el sueldo */
@@ -164,7 +163,6 @@
           + celDev(v.dv, v.dn)
           + '<td style="text-align:right;color:var(--ink-2)">−' + pes(v.m) + '</td>'
           + '<td style="text-align:right;color:var(--ink-2)">−' + pes(v.c) + '</td>'
-          + '<td style="text-align:right;color:var(--ink-2)">−' + pes(v.s) + '</td>'
           + '<td style="text-align:right;font-weight:800;font-size:15px;color:' + (q >= 0 ? 'var(--green)' : 'var(--red)') + '">' + pes(q) + '</td></tr>';
       }).join('');
       var tfm = document.querySelector('#tablaGan tfoot');
@@ -172,7 +170,6 @@
         + '<td style="text-align:right">' + t.e + '</td><td style="text-align:right">' + pes(t.en) + '</td>'
         + celDev(t.d, t.dn, true)
         + '<td style="text-align:right">−' + pes(t.m) + '</td><td style="text-align:right">−' + pes(t.c) + '</td>'
-        + '<td style="text-align:right">−' + pes(t.s) + '</td>'
         + '<td style="text-align:right;color:' + (t.q >= 0 ? 'var(--green)' : 'var(--red)') + '">' + pes(t.q) + '</td></tr>';
     }
     else if (tb) tb.innerHTML = arr.map(function (x) {
@@ -185,7 +182,6 @@
         + celDev(x.devol, x.devoluciones)
         + '<td style="text-align:right;color:var(--ink-2)">−' + pes(x.meta) + '</td>'
         + '<td style="text-align:right;color:var(--ink-2)">−' + pes(x.camila) + '</td>'
-        + '<td style="text-align:right;color:var(--ink-2)">−' + pes(x.sueldo) + '</td>'
         + '<td style="text-align:right;font-weight:700;color:' + (q >= 0 ? 'var(--green)' : 'var(--red)') + '">' + pes(q) + '</td></tr>';
     }).join('');
     var tf = document.querySelector('#tablaGan tfoot');
@@ -194,7 +190,6 @@
       + '<td style="text-align:right">' + t.e + '</td><td style="text-align:right">' + pes(t.en) + '</td>'
       + celDev(t.d, t.dn, true)
       + '<td style="text-align:right">−' + pes(t.m) + '</td><td style="text-align:right">−' + pes(t.c) + '</td>'
-      + '<td style="text-align:right">−' + pes(t.s) + '</td>'
       + '<td style="text-align:right;color:' + (t.q >= 0 ? 'var(--green)' : 'var(--red)') + '">' + pes(t.q) + '</td></tr>';
 
     var sub = document.getElementById('ganChartSub');
@@ -297,12 +292,11 @@
         + '<div style="font-size:13px;font-weight:800">' + x.n + '</div>'
         + '<div style="font-size:12px;color:var(--ink-2);margin-top:2px">' + x.e + ' entregas al día · ' + pes(x.m) + ' de pauta diaria</div>'
         + '<div style="font-size:21px;font-weight:800;color:var(--green);margin:9px 0 2px">' + pes(x.queda) + '</div>'
-        + '<div style="font-size:11.5px;color:var(--ink-3)">te queda al mes, ya con tu sueldo</div>'
+        + '<div style="font-size:11.5px;color:var(--ink-3)">te queda al mes</div>'
         + '<div style="font-size:12px;color:var(--ink-2);margin-top:9px;padding-top:9px;border-top:1px solid var(--border);line-height:1.9">'
         + 'Entra <b style="float:right;color:var(--ink)">' + pes(x.entra) + '</b><br>'
         + 'Meta <b style="float:right;color:var(--ink)">−' + pes(x.m * 30) + '</b><br>'
-        + 'Bots <b style="float:right;color:var(--ink)">−' + pes(MODO.bots * 30) + '</b><br>'
-        + 'Tu sueldo <b style="float:right;color:var(--ink)">−' + pes(MODO.sueldo) + '</b></div></div>';
+        + 'Bots <b style="float:right;color:var(--ink)">−' + pes(MODO.bots * 30) + '</b></div></div>';
     }).join('');
     var base = ESC[1];
     var techo = (base.entra - MODO.bots * 30 - MODO.sueldo) / 30;
@@ -310,7 +304,7 @@
       + '<div style="font-size:13px;font-weight:800">Hasta dónde aguanta la pauta</div>'
       + '<div style="font-size:13px;color:var(--ink-2);margin-top:6px;line-height:1.65">'
       + 'Con ' + base.e + ' entregas diarias puedes subir hasta <b style="color:var(--ink)">' + pes(techo)
-      + ' al día</b> antes de que no quede nada después de pagarte.<br>'
+      + ' al día</b> antes de que no quede nada.<br>'
       + '<b style="color:var(--ink)">Ojo con la caja:</b> la pauta se paga hoy y esa plata entra entre 4 y 14 días después. '
       + 'Para sostener ' + pes(700000) + ' diarios hay que aguantar cerca de ' + pes(7000000) + ' antes de ver el primer peso.'
       + '</div></div>';

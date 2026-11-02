@@ -46,7 +46,7 @@
 .cp-top-card.oro{border-color:rgba(216,165,46,.9)} .cp-top-card.oro .val{color:#8a6100}
 :root[data-theme="dark"] .cp-top-card.oro .val{color:#e8c877} .cp-top-card.oro .val.neg,:root[data-theme="dark"] .cp-top-card.oro .val.neg{color:var(--red)}
 .cp-minis{display:grid;gap:8px;margin-top:12px} .cp-minis:empty{display:none}
-.cp-minis.la{grid-template-columns:repeat(4,1fr)} .cp-minis.eu{grid-template-columns:repeat(3,1fr)}
+.cp-minis.la,.cp-minis.eu{grid-template-columns:repeat(3,1fr)}   /* 02-11: 6 tarjetas por región (sin sueldo, con bots en las dos), 2 filas de 3 */
 .cp-mini{border:1px solid var(--border);border-radius:10px;padding:8px 10px;background:var(--surface-2);min-width:0}
 .cp-mini .lbl{font-size:11px;color:var(--ink-2);font-weight:600;line-height:1.25}
 .cp-mini .val{font-size:17px;font-weight:800;letter-spacing:-.02em;margin-top:3px;font-variant-numeric:tabular-nums;white-space:nowrap}
