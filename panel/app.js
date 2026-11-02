@@ -4971,7 +4971,7 @@ function renderPaisTab(){
       '<div class="seg cp-regtabs">'+
         '<button class="'+(REG==='TOTAL'?'act':'')+'" onclick="elegirRegion(\'TOTAL\')">Σ Totalizado</button>'+
         '<button class="'+(REG==='LATAM'?'act':'')+'" onclick="elegirRegion(\'LATAM\')">🌎 Resumen Latinoamérica</button>'+
-        '<button class="'+(REG==='EUROPA'?'act':'')+'" onclick="elegirRegion(\'EUROPA\')">🇪🇺 Resumen Europa</button></div>'+
+        '<button class="'+(REG==='EUROPA'?'act':'')+'" onclick="elegirRegion(\'EUROPA\')">🌍 Resumen Europa</button></div>'+
       '<div class="cp-regiones una">'+
         (REG==='TOTAL'?
         '<div class="cp-region">'+resumenReg('tt','todos los países',T.cl.n+T.es.n+T.pt.n+T.co.n+T.ro.n+T.mx.n,tot)+'<div class="cp-rh"><span class="cp-rn">Σ TODOS LOS PAÍSES</span><span>Latinoamérica + Europa</span></div><div class="rp-paises cp-3">'+
@@ -4990,7 +4990,7 @@ function renderPaisTab(){
           card('MX','flag-mx','México',ZONA_MX,T.mx.n,fmtMXN(T.mx.t),T.mx.n?(TASAS&&TASAS.mxn?cop(T.mx.t,TASAS.mxn):'sin tasa del peso mexicano'):'todavía sin ventas')+
         '</div><div class="cp-minis la" id="cpMiniLA"></div></div>'   /* 02-11: resumen de Latam ahí mismo, debajo de sus países */
         :
-        '<div class="cp-region">'+resumenReg('eu','Europa',euN,euCop)+'<div class="cp-rh"><span class="cp-rn" style="color:var(--green)">🇪🇺 EUROPA</span><span>'+sub(euN,euCop)+'</span></div><div class="rp-paises cp-3">'+
+        '<div class="cp-region">'+resumenReg('eu','Europa',euN,euCop)+'<div class="cp-rh"><span class="cp-rn" style="color:var(--green)">🌍 EUROPA</span><span>'+sub(euN,euCop)+'</span></div><div class="rp-paises cp-3">'+
           card('ES','flag-es','España',ZONA_ES,T.es.n,fmtEUR(T.es.t),cop(T.es.t,TASAS&&TASAS.eur))+
           card('PT','flag-pt','Portugal',ZONA_PT,T.pt.n,fmtEUR(T.pt.t),T.pt.n?cop(T.pt.t,TASAS&&TASAS.eur):'todavía sin ventas')+
           card('RO','flag-ro','Rumanía',ZONA_RO,T.ro.n,fmtRON(T.ro.t),T.ro.n?(TASAS&&TASAS.ron?cop(T.ro.t,TASAS.ron):'sin tasa del leu'):'todavía sin ventas')+
@@ -5587,11 +5587,11 @@ function pintarCierre(C){
       '<div><div class="tt">Entregado · gasto Meta · devoluciones</div><div class="g" id="cpG2"></div></div></div></div>'+
     '<div class="cp-card"><div class="tbl-head"><h2>Totalizador · Latam y Europa</h2><span class="s">Latam = Chile + Colombia + México · Europa = España + Portugal + Rumanía · todo en pesos colombianos</span></div>'+
       '<table class="cp-tabla"><thead><tr><th>Región</th><th>Países</th><th>Ventas</th><th>Entregas</th><th>Devoluciones</th><th>Gasto Meta</th><th>Bots</th><th>Te queda</th></tr></thead><tbody>'+
-      filaSub('🌎 LATAM','Chile · Colombia · México',LA,'latam')+filaSub('🇪🇺 EUROPA','España · Portugal · Rumanía',EU,'eu')+'</tbody>'+pie('Latam + Europa')+'</table></div>'+
+      filaSub('🌎 LATAM','Chile · Colombia · México',LA,'latam')+filaSub('🌍 EUROPA','España · Portugal · Rumanía',EU,'eu')+'</tbody>'+pie('Latam + Europa')+'</table></div>'+
     '<div class="cp-card"><div class="tbl-head"><h2>Cierre '+lbl+' por país</h2><span class="s">la fecha la pone Colombia y cada país muestra ese día con su hora · subtotal por región · total en pesos colombianos</span></div>'+
       '<table class="cp-tabla">'+cab+'<tbody>'+
       P.filter(function(p){return p.reg==='LATAM';}).map(fila).join('')+filaSub('🌎 LATAM','Chile + Colombia + México',LA,'latam')+
-      P.filter(function(p){return p.reg==='EUROPA';}).map(fila).join('')+filaSub('🇪🇺 EUROPA','España + Portugal + Rumanía',EU,'eu')+
+      P.filter(function(p){return p.reg==='EUROPA';}).map(fila).join('')+filaSub('🌍 EUROPA','España + Portugal + Rumanía',EU,'eu')+
       '</tbody>'+pie('en pesos colombianos')+'</table>'+
       '<div class="cp-nota"><b>Cómo se cuenta cada columna:</b> <b>Ventas</b> = pedidos de esas fechas (las pone Colombia), cada país de 00:00 a 24:00 de su hora. '+
       '<b>Entregas</b> y <b>Devoluciones</b> = lo que Dropi marcó en esos días (son pedidos de días anteriores; por eso no cuadran con las ventas del mismo día). '+
