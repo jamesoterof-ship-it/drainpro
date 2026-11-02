@@ -4942,12 +4942,18 @@ function renderPaisTab(){
     var laN=T.cl.n+T.co.n+T.mx.n, laCop=TASAS&&(!T.mx.t||TASAS.mxn)?T.cl.t*TASAS.clp+T.co.t+(T.mx.t?T.mx.t*TASAS.mxn:0):null;
     var euN=T.es.n+T.pt.n+T.ro.n, euCop=TASAS&&(!T.ro.t||TASAS.ron)?(T.es.t+T.pt.t)*TASAS.eur+(T.ro.t?T.ro.t*TASAS.ron:0):null;
     var sub=function(n,c){ return '<b>'+n+' venta'+(n===1?'':'s')+'</b> · '+(c===null?'sin tasa del día':'≈ '+fmtCOP(c)+' COP'); };
-    box.innerHTML='<div class="rp-total"><div style="display:flex;gap:28px;flex-wrap:wrap">'+
-        '<div><div class="lbl">Ventas de '+lbl+' · todos los países</div><div class="big">'+(T.cl.n+T.es.n+T.pt.n+T.co.n+T.ro.n+T.mx.n)+'</div></div>'+
-        '<div><div class="lbl">Vendido '+lbl+' · en pesos colombianos</div><div class="big">'+(tot===null?'—':fmtCOP(tot)+' COP')+'</div></div>'+
-        /* 02-11 (James: "arriba un totalizado nada más de ganancia"): la ganancia del rango y la del mes, Latam + Europa; las llena pintarCierre */
-        '<div><div class="lbl">Ganancia '+lbl+' · Latam + Europa</div><div class="big oro" id="cpGanRango">…</div></div>'+
-        '<div><div class="lbl">Ganancia de <span id="cpGanMesNom">este mes</span> · del 1 a hoy</div><div class="big oro" id="cpGanMes">…</div></div>'+
+    /* 02-11 (James: "arriba quítame el vendido en plata, es irrelevante… una tarjeta de total de ventas Latam, otra de Europa
+       y después las totalizas… tienes todo el espacio"): cinco tarjetas a lo ancho: ventas LATAM (borde azul), ventas EUROPA
+       (borde verde), ventas TOTAL, ganancia del rango y ganancia del mes (doradas, las llena pintarCierre). El vendido en
+       pesos queda chiquito debajo de cada número de ventas. */
+    var topCard=function(cls,l,v,m,m2){ return '<div class="cp-top-card '+cls+'"><div class="lbl">'+l+'</div><div class="val">'+v+'</div><div class="meta">'+m+(m2?'<br>'+m2:'')+'</div></div>'; };
+    var enCop=function(c){ return c===null?'sin tasa del día':'≈ '+fmtCOP(c)+' COP'; };
+    box.innerHTML='<div class="rp-total"><div class="cp-top">'+
+        topCard('la','🌎 Ventas '+lbl+' · LATAM',laN,enCop(laCop),'Chile · Colombia · México')+
+        topCard('eu','🇪🇺 Ventas '+lbl+' · EUROPA',euN,enCop(euCop),'España · Portugal · Rumanía')+
+        topCard('tt','Σ Ventas '+lbl+' · TOTAL',T.cl.n+T.es.n+T.pt.n+T.co.n+T.ro.n+T.mx.n,enCop(tot),'Latam + Europa')+
+        '<div class="cp-top-card oro"><div class="lbl">Ganancia '+lbl+' · Latam + Europa</div><div class="val" id="cpGanRango">…</div><div class="meta">COP · entregado − devoluciones − Meta − bots − sueldo</div></div>'+
+        '<div class="cp-top-card oro"><div class="lbl">Ganancia de <span id="cpGanMesNom">este mes</span></div><div class="val" id="cpGanMes">…</div><div class="meta">COP · del 1 a hoy, ya descontado todo</div></div>'+
       '</div>'+
       '<div class="tasa">'+esc(tasaTxt())+'</div>'+
       '<div class="cp-regiones">'+
@@ -5544,7 +5550,7 @@ function pintarCierre(C){
   var pon=function(id,h){ var e=document.getElementById(id); if(e) e.innerHTML=h; };
   pon('cpMiniLA',minis(LA,MES_LA,'LATAM')); pon('cpMiniEU',minis(EU,MES_EU,'EUROPA'));
   /* arriba solo la ganancia total (del rango y del mes); en rojo si va negativa */
-  var gan=function(id,v){ var e=document.getElementById(id); if(e){ e.textContent=pesos(v)+' COP'; e.classList.toggle('neg',v<0); } };
+  var gan=function(id,v){ var e=document.getElementById(id); if(e){ e.textContent=pesos(v); e.classList.toggle('neg',v<0); } };
   gan('cpGanRango',TT.queda); gan('cpGanMes',MES.queda); pon('cpGanMesNom',esc(_nomMes));
   var html=
     '<div class="cp-card" style="padding-bottom:6px"><div class="tbl-head"><h2>Indicadores</h2><span class="s" id="cpGrafSub"></span></div>'+
