@@ -53,7 +53,7 @@
 .cp-mini{border:1px solid var(--border);border-radius:10px;padding:8px 10px;background:var(--surface-2);min-width:0}
 .cp-mini .lbl{font-size:11px;color:var(--ink-2);font-weight:600;line-height:1.25}
 .cp-mini .val{font-size:17px;font-weight:800;letter-spacing:-.02em;margin-top:3px;font-variant-numeric:tabular-nums;white-space:nowrap}
-.cp-mini .meta{font-size:10.5px;color:var(--ink-3);margin-top:3px;line-height:1.3;min-height:27px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}   /* 02-11: siempre 2 renglones, tarjetas parejas */
+.cp-mini .meta{font-size:10.5px;color:var(--ink-3);margin-top:3px;line-height:1.3;min-height:27px}   /* 02-11: mínimo 2 renglones (tarjetas parejas) y NUNCA se corta: James no veía Rumanía en el detalle de Meta */
 /* 02-11 (James: "que se vean más, un bordecito azul en Latam y verde en Europa") */
 .cp-minis.la .cp-mini{border:1.5px solid var(--brand)} .cp-minis.eu .cp-mini{border:1.5px solid var(--green)}
 .cp-mini.oro,.cp-minis.la .cp-mini.oro,.cp-minis.eu .cp-mini.oro{border:1.5px solid rgba(216,165,46,.75);background:linear-gradient(135deg,rgba(216,165,46,.12),rgba(216,165,46,.03))} .cp-mini.oro .val{color:#8a6100}
