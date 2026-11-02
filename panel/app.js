@@ -4942,9 +4942,12 @@ function renderPaisTab(){
     var laN=T.cl.n+T.co.n+T.mx.n, laCop=TASAS&&(!T.mx.t||TASAS.mxn)?T.cl.t*TASAS.clp+T.co.t+(T.mx.t?T.mx.t*TASAS.mxn:0):null;
     var euN=T.es.n+T.pt.n+T.ro.n, euCop=TASAS&&(!T.ro.t||TASAS.ron)?(T.es.t+T.pt.t)*TASAS.eur+(T.ro.t?T.ro.t*TASAS.ron:0):null;
     var sub=function(n,c){ return '<b>'+n+' venta'+(n===1?'':'s')+'</b> · '+(c===null?'sin tasa del día':'≈ '+fmtCOP(c)+' COP'); };
-    box.innerHTML='<div class="rp-total"><div style="display:flex;gap:40px;flex-wrap:wrap">'+
+    box.innerHTML='<div class="rp-total"><div style="display:flex;gap:28px;flex-wrap:wrap">'+
         '<div><div class="lbl">Ventas de '+lbl+' · todos los países</div><div class="big">'+(T.cl.n+T.es.n+T.pt.n+T.co.n+T.ro.n+T.mx.n)+'</div></div>'+
         '<div><div class="lbl">Vendido '+lbl+' · en pesos colombianos</div><div class="big">'+(tot===null?'—':fmtCOP(tot)+' COP')+'</div></div>'+
+        /* 02-11 (James: "arriba un totalizado nada más de ganancia"): la ganancia del rango y la del mes, Latam + Europa; las llena pintarCierre */
+        '<div><div class="lbl">Ganancia '+lbl+' · Latam + Europa</div><div class="big oro" id="cpGanRango">…</div></div>'+
+        '<div><div class="lbl">Ganancia de <span id="cpGanMesNom">este mes</span> · del 1 a hoy</div><div class="big oro" id="cpGanMes">…</div></div>'+
       '</div>'+
       '<div class="tasa">'+esc(tasaTxt())+'</div>'+
       '<div class="cp-regiones">'+
@@ -4953,12 +4956,12 @@ function renderPaisTab(){
           card('CO','flag-co','Colombia',ZONA_CO,T.co.n,fmtCOP(T.co.t)+' COP',T.co.n?'':'todavía sin ventas')+
           /* 28-10: México como Rumanía, en el grupo LATAM */
           card('MX','flag-mx','México',ZONA_MX,T.mx.n,fmtMXN(T.mx.t),T.mx.n?(TASAS&&TASAS.mxn?cop(T.mx.t,TASAS.mxn):'sin tasa del peso mexicano'):'todavía sin ventas')+
-        '</div></div>'+
+        '</div><div class="cp-minis la" id="cpMiniLA"></div></div>'+   /* 02-11: resumen de Latam ahí mismo, debajo de sus países */
         '<div class="cp-region"><div class="cp-rh"><span class="cp-rn" style="color:var(--green)">🇪🇺 EUROPA</span><span>'+sub(euN,euCop)+'</span></div><div class="rp-paises cp-3">'+
           card('ES','flag-es','España',ZONA_ES,T.es.n,fmtEUR(T.es.t),cop(T.es.t,TASAS&&TASAS.eur))+
           card('PT','flag-pt','Portugal',ZONA_PT,T.pt.n,fmtEUR(T.pt.t),T.pt.n?cop(T.pt.t,TASAS&&TASAS.eur):'todavía sin ventas')+
           card('RO','flag-ro','Rumanía',ZONA_RO,T.ro.n,fmtRON(T.ro.t),T.ro.n?(TASAS&&TASAS.ron?cop(T.ro.t,TASAS.ron):'sin tasa del leu'):'todavía sin ventas')+
-        '</div></div>'+
+        '</div><div class="cp-minis eu" id="cpMiniEU"></div></div>'+   /* 02-11: resumen de Europa debajo de sus países */
       '</div></div>'+
       '<div id="cierrePais"></div>';
     renderCierre();
@@ -5517,22 +5520,33 @@ function pintarCierre(C){
      cuánto llevas de sueldo y cuánto de ganancia (ya descontado todo: devoluciones, Meta, bots y sueldo) */
   var _hoyCO=_ymdZona(Date.now(),ZONA_CO), _diasMes=[];
   for(var _d=1;_d<=+_hoyCO.slice(8);_d++) _diasMes.push(_hoyCO.slice(0,8)+String(_d).padStart(2,'0'));
-  var MES={sueldo:0,queda:0}; ['CL','ES','PT','RO','MX'].forEach(function(k){ var s=sumaCaja(C[k],_diasMes); MES.sueldo+=s.sueldo; MES.queda+=s.queda; });
+  /* 02-11 (James: "divídeme los números de Europa y los de Latinoamérica, y al final un total de todo"):
+     el mes también se calcula por región (Latam = Chile + México con caja; Europa = España + Portugal + Rumanía) */
+  var mesDe=function(keys){ var m={sueldo:0,queda:0}; keys.forEach(function(k){ var s=sumaCaja(C[k],_diasMes); m.sueldo+=s.sueldo; m.queda+=s.queda; }); return m; };
+  var MES_LA=mesDe(['CL','MX']), MES_EU=mesDe(['ES','PT','RO']), MES={sueldo:MES_LA.sueldo+MES_EU.sueldo,queda:MES_LA.queda+MES_EU.queda};
   var _nomMes=new Date().toLocaleDateString('es-CO',{timeZone:ZONA_CO,month:'long'});
-  var det=function(campo,fmt){ return P.filter(function(p){return p.caja[campo];}).map(function(p){ return p.nom+' '+(fmt?fmt(p.caja[campo]):p.caja[campo]); }).join(' · ')||'—'; };
+  var det=function(campo,fmt,reg){ return P.filter(function(p){return (!reg||p.reg===reg)&&p.caja[campo];}).map(function(p){ return p.nom+' '+(fmt?fmt(p.caja[campo]):p.caja[campo]); }).join(' · ')||'—'; };
+  /* 02-11 (James: "tarjetas más pequeñas; el resumen de Latam ahí mismo en su cuadro, el de Europa abajo del suyo,
+     y arriba el totalizado"): tarjetas chicas (cp-mini) que se meten en los huecos que deja renderPaisTab:
+     cpMiniTT arriba (total Latam + Europa), cpMiniLA dentro del cuadro LATAM y cpMiniEU dentro del cuadro EUROPA.
+     Bots y sueldo solo existen en Chile (Latam y total). Las ventas de cada región ya van en su cabecera. */
+  var mini=function(l,v,m,cls,rojo){ return '<div class="cp-mini'+(cls?' '+cls:'')+'"><div class="lbl">'+l+'</div><div class="val"'+(rojo?' style="color:var(--red)"':'')+'>'+v+'</div>'+(m?'<div class="meta">'+m+'</div>':'')+'</div>'; };
+  var minis=function(S,M,reg){
+    var conChile=(reg!=='EUROPA');
+    return mini('Entregas '+lbl,S.entregas,'entra '+cop(S.entra))+
+      mini('Devoluciones '+lbl,S.devoluciones,'−'+cop(S.devol),'',true)+
+      mini('Gasto Meta '+lbl,pesos(S.meta),reg?det('meta',pesos,reg):'COP · por campaña')+
+      (conChile?mini('Bots',S.bots?'−'+pesos(S.bots):'—','solo Chile')+mini('Tu sueldo',S.sueldo?'−'+pesos(S.sueldo):'—','solo Chile'):'')+
+      mini('TE QUEDA '+lbl,pesos(S.queda),'entregado − devoluciones − Meta'+(conChile?' − bots − sueldo':''),'oro',S.queda<0)+
+      (reg?'':mini('TU SUELDO · '+esc(_nomMes),pesos(M.sueldo),'del 1 a hoy','oro'))+
+      mini('GANANCIA · '+esc(_nomMes),pesos(M.queda),'del 1 a hoy, ya descontado todo','oro',M.queda<0);
+  };
+  var pon=function(id,h){ var e=document.getElementById(id); if(e) e.innerHTML=h; };
+  pon('cpMiniLA',minis(LA,MES_LA,'LATAM')); pon('cpMiniEU',minis(EU,MES_EU,'EUROPA'));
+  /* arriba solo la ganancia total (del rango y del mes); en rojo si va negativa */
+  var gan=function(id,v){ var e=document.getElementById(id); if(e){ e.textContent=pesos(v)+' COP'; e.classList.toggle('neg',v<0); } };
+  gan('cpGanRango',TT.queda); gan('cpGanMes',MES.queda); pon('cpGanMesNom',esc(_nomMes));
   var html=
-    '<div class="cp-kpis">'+
-      '<div class="cp-kpi"><div class="lbl">Entregas '+lbl+'</div><div class="val">'+TT.entregas+'</div><div class="meta">'+det('entregas')+'</div></div>'+
-      '<div class="cp-kpi"><div class="lbl">Devoluciones '+lbl+'</div><div class="val" style="color:var(--red)">'+TT.devoluciones+'</div><div class="meta">−'+cop(TT.devol)+' · '+det('devoluciones')+'</div></div>'+
-      '<div class="cp-kpi"><div class="lbl">Gasto de Meta '+lbl+'</div><div class="val">'+pesos(TT.meta)+'</div><div class="meta">COP · '+det('meta',pesos)+'</div></div>'+
-      '<div class="cp-kpi"><div class="lbl">Bots</div><div class="val">'+(TT.bots?'−'+pesos(TT.bots):'—')+'</div><div class="meta">COP · Camila, Carlos y los demás · solo Chile</div></div>'+
-      '<div class="cp-kpi"><div class="lbl">Tu sueldo</div><div class="val">'+(TT.sueldo?'−'+pesos(TT.sueldo):'—')+'</div><div class="meta">COP · se descuenta una sola vez, en Chile</div></div>'+
-      '<div class="cp-kpi oro"><div class="lbl">TE QUEDA '+lbl+'</div><div class="val"'+(TT.queda<0?' style="color:var(--red)"':'')+'>'+pesos(TT.queda)+'</div><div class="meta">COP · entregado − devoluciones − Meta − bots − sueldo</div></div>'+
-      '<div class="cp-kpi oro"><div class="lbl">TU SUELDO · '+esc(_nomMes)+'</div><div class="val">'+pesos(MES.sueldo)+'</div>'+
-        '<div class="meta">COP · lo que llevas del 1 a hoy</div></div>'+
-      '<div class="cp-kpi oro"><div class="lbl">GANANCIA · '+esc(_nomMes)+'</div><div class="val"'+(MES.queda<0?' style="color:var(--red)"':'')+'>'+pesos(MES.queda)+'</div>'+
-        '<div class="meta">COP · del 1 a hoy, ya descontado todo (devoluciones, Meta, bots y sueldo)</div></div>'+
-    '</div>'+
     '<div class="cp-card" style="padding-bottom:6px"><div class="tbl-head"><h2>Indicadores</h2><span class="s" id="cpGrafSub"></span></div>'+
       '<div class="cp-graf"><div><div class="tt">Te queda por día · Latam vs Europa</div><div class="g" id="cpG1"></div></div>'+
       '<div><div class="tt">Entregado · gasto Meta · devoluciones</div><div class="g" id="cpG2"></div></div></div></div>'+
