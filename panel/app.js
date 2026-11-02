@@ -4953,7 +4953,7 @@ function renderPaisTab(){
         topCard('eu','🇪🇺 Ventas '+lbl+' · EUROPA',euN,enCop(euCop),'España · Portugal · Rumanía')+
         topCard('tt','Σ Ventas '+lbl+' · TOTAL',T.cl.n+T.es.n+T.pt.n+T.co.n+T.ro.n+T.mx.n,enCop(tot),'Latam + Europa')+
         '<div class="cp-top-card oro"><div class="lbl">Ganancia '+lbl+' · Latam + Europa</div><div class="fila"><span class="val" id="cpGanRango">…</span><span class="meta">COP</span></div></div>'+
-        '<div class="cp-top-card oro"><div class="lbl">Ganancia de <span id="cpGanMesNom">este mes</span></div><div class="fila"><span class="val" id="cpGanMes">…</span><span class="meta">COP · del 1 a hoy</span></div></div>'+
+        '<div class="cp-top-card oro"><div class="lbl">Ganancia de <span id="cpGanMesNom">este mes</span></div><div class="fila"><span class="val" id="cpGanMes">…</span><span class="meta">COP</span></div></div>'+
       '</div>'+
       '<div class="tasa">'+esc(tasaTxt())+'</div>'+
       '<div class="cp-regiones">'+
@@ -5543,9 +5543,10 @@ function pintarCierre(C){
       mini('Devoluciones '+lbl,S.devoluciones,'−'+cop(S.devol),'',true)+
       mini('Gasto Meta '+lbl,pesos(S.meta),reg?det('meta',pesos,reg):'COP · por campaña')+
       (conChile?mini('Bots',S.bots?'−'+pesos(S.bots):'—','solo Chile')+mini('Tu sueldo',S.sueldo?'−'+pesos(S.sueldo):'—','solo Chile'):'')+
-      mini('TE QUEDA '+lbl,pesos(S.queda),'entregado − devoluciones − Meta'+(conChile?' − bots − sueldo':''),'oro',S.queda<0)+
-      (reg?'':mini('TU SUELDO · '+esc(_nomMes),pesos(M.sueldo),'del 1 a hoy','oro'))+
-      mini('GANANCIA · '+esc(_nomMes),pesos(M.queda),'del 1 a hoy, ya descontado todo','oro',M.queda<0);
+      /* 02-11 James: "entregado − devoluciones − Meta… ya lo sabemos, ¿para qué lo pones?": sin explicaciones, solo la cifra */
+      mini('TE QUEDA '+lbl,pesos(S.queda),'','oro',S.queda<0)+
+      (reg?'':mini('TU SUELDO · '+esc(_nomMes),pesos(M.sueldo),'','oro'))+
+      mini('GANANCIA · '+esc(_nomMes),pesos(M.queda),'','oro',M.queda<0);
   };
   var pon=function(id,h){ var e=document.getElementById(id); if(e) e.innerHTML=h; };
   pon('cpMiniLA',minis(LA,MES_LA,'LATAM')); pon('cpMiniEU',minis(EU,MES_EU,'EUROPA'));
