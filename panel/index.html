@@ -188,6 +188,8 @@ nav{padding:0 12px;display:flex;flex-direction:column;gap:2px}
 .flag-ro{background:linear-gradient(90deg,#002B7F 0 33.3%,#FCD116 33.3% 66.6%,#CE1126 66.6% 100%)}
 /* 28-10: México como Rumanía */
 .flag-mx{background:linear-gradient(90deg,#006847 0 33.3%,#fff 33.3% 66.6%,#CE1126 66.6% 100%)}
+/* 03-11: Polonia */
+.flag-pl{background:linear-gradient(180deg,#fff 0 50%,#DC143C 50% 100%)}
 /* pestañas por país (28-09) */
 .paistabs{flex-wrap:wrap;margin:0 0 12px}
 .paistabs .minitab{font-size:13.5px;padding:8px 16px}
@@ -600,6 +602,8 @@ body:not([data-pais="CL"]) :is(#badgeCancelar,#badgeNovedades,#badgeListanegra,#
       <button data-p="ES"><span class="flag flag-es"></span>España <b class="pn-num" id="pnNumES"></b><b class="pn-num pn-verde" id="pnVerdeES" title="verificadas por el inspector: se pueden aprobar" onclick="irAprobarVerde(event,'ES')"></b></button>
       <button data-p="PT"><span class="flag flag-pt"></span>Portugal <b class="pn-num" id="pnNumPT"></b><b class="pn-num pn-verde" id="pnVerdePT" title="verificadas por el inspector: se pueden aprobar" onclick="irAprobarVerde(event,'PT')"></b></button>
       <button data-p="RO"><span class="flag flag-ro"></span>Rumanía <b class="pn-num" id="pnNumRO"></b><b class="pn-num pn-verde" id="pnVerdeRO" title="verificadas por el inspector: se pueden aprobar" onclick="irAprobarVerde(event,'RO')"></b></button>
+      <!-- 03-11: Polonia, en Europa -->
+      <button data-p="PL"><span class="flag flag-pl"></span>Polonia <b class="pn-num" id="pnNumPL"></b><b class="pn-num pn-verde" id="pnVerdePL" title="verificadas por el inspector: se pueden aprobar" onclick="irAprobarVerde(event,'PL')"></b></button>
     </div>
 
     <nav style="padding-top:4px">
@@ -612,6 +616,7 @@ body:not([data-pais="CL"]) :is(#badgeCancelar,#badgeNovedades,#badgeListanegra,#
         Aprobación de ventas
         <span id="badgeAprobarES" style="display:none;margin-left:auto;background:#3056c9;color:#fff;border-radius:999px;font-size:11px;font-weight:800;padding:1px 8px"></span>
         <span id="badgeAprobarRO" style="display:none;margin-left:auto;background:#3056c9;color:#fff;border-radius:999px;font-size:11px;font-weight:800;padding:1px 8px"></span>
+        <span id="badgeAprobarPL" style="display:none;margin-left:auto;background:#3056c9;color:#fff;border-radius:999px;font-size:11px;font-weight:800;padding:1px 8px"></span>
         <span id="badgeAprobarMX" style="display:none;margin-left:auto;background:#3056c9;color:#fff;border-radius:999px;font-size:11px;font-weight:800;padding:1px 8px"></span>
         <span id="badgeAprobar" style="display:none;margin-left:auto;background:#e1283c;color:#fff;border-radius:999px;font-size:11px;font-weight:800;padding:1px 8px"></span>
       </div>
@@ -682,6 +687,7 @@ body:not([data-pais="CL"]) :is(#badgeCancelar,#badgeNovedades,#badgeListanegra,#
       <div class="nav-i sub" data-view="conv" data-bot="Carmen"><span class="subdot" style="background:#aa151b"></span>Carmen · España</div>
       <div class="nav-i sub" data-view="conv" data-bot="Carmen" data-pt="1"><span class="subdot" style="background:#006600"></span>Inês · Portugal</div>
       <div class="nav-i sub" data-view="conv" data-bot="CarmenRO"><span class="subdot" style="background:#002B7F"></span>Ioana · Rumanía</div>
+      <div class="nav-i sub" data-view="conv" data-bot="BotPL"><span class="subdot" style="background:#DC143C"></span>Zofia · Polonia</div>
       <div class="nav-i sub" data-view="conv" data-bot="BotMX"><span class="subdot" style="background:#006847"></span>Lupita · México</div>
       <div class="nav-i sub" data-view="conv" data-bot="James"><span class="subdot" style="background:#3060ea"></span>James · Colombia</div>
     </nav>
@@ -764,6 +770,7 @@ body:not([data-pais="CL"]) :is(#badgeCancelar,#badgeNovedades,#badgeListanegra,#
         <button class="minitab" data-p="CO"><span class="flag flag-co"></span>Colombia</button>
         <button class="minitab" data-p="RO"><span class="flag flag-ro"></span>Rumanía</button>
         <button class="minitab" data-p="MX"><span class="flag flag-mx"></span>México</button>
+        <button class="minitab" data-p="PL"><span class="flag flag-pl"></span>Polonia</button>
       </div>
       <div class="filters">
         <div class="seg" id="segCanal">
@@ -936,6 +943,7 @@ body:not([data-pais="CL"]) :is(#badgeCancelar,#badgeNovedades,#badgeListanegra,#
         <button class="minitab" data-p="CO"><span class="flag flag-co"></span>Colombia</button>
         <button class="minitab" data-p="RO"><span class="flag flag-ro"></span>Rumanía <span id="numAprobRO" style="display:none;background:#3056c9;color:#fff;border-radius:999px;font-size:10.5px;font-weight:800;padding:0 6px;margin-left:4px"></span></button>
         <button class="minitab" data-p="MX"><span class="flag flag-mx"></span>México <span id="numAprobMX" style="display:none;background:#3056c9;color:#fff;border-radius:999px;font-size:10.5px;font-weight:800;padding:0 6px;margin-left:4px"></span></button>
+        <button class="minitab" data-p="PL"><span class="flag flag-pl"></span>Polonia <span id="numAprobPL" style="display:none;background:#3056c9;color:#fff;border-radius:999px;font-size:10.5px;font-weight:800;padding:0 6px;margin-left:4px"></span></button>
       </div>
       <div id="aprobOtro" hidden></div>
       <div class="panel" id="aprobChile">
@@ -1621,7 +1629,7 @@ body:not([data-pais="CL"]) :is(#badgeCancelar,#badgeNovedades,#badgeListanegra,#
      apagado. Para devolverlo: recuperar este bloque del commit anterior y activar el flujo. -->
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
-<script src="app.js?v=303"></script>
+<script src="app.js?v=305"></script>
 <script src="ganancia.js?v=132"></script>
 </body>
 </html>
