@@ -5740,15 +5740,17 @@ function pintarCierre(C){
   /* 03-11 (James): 'las entregas de Chile aparte y las de México aparte, con su valor': cada país con caja, aunque vaya en 0 */
   /* 03-11 James: "nunca una abajo de otra, horizontal, para que la tarjeta no se vea tan grande" (v=309): los países en una sola línea */
   var detPais=function(n,v,reg){ return P.filter(function(p){ return (!reg||p.reg===reg)&&p.caja.hay; }).map(function(p){ return '<b>'+p.nom+'</b> '+(Number(p.caja[n])||0)+' · '+cop(p.caja[v]||0); }).join(' &nbsp;·&nbsp; ')||'—'; };
-  var mini=function(l,v,m,cls,rojo){ return '<div class="cp-mini'+(cls?' '+cls:'')+'"><div class="lbl">'+l+'</div><div class="val"'+(rojo?' style="color:var(--red)"':'')+'>'+v+'</div><div class="meta">'+(m||'')+'</div></div>'; };
+  /* 03-11 James (v=310): "lo que entra de plata ponlo arriba, al lado del número, horizontal; y el detalle en letra clara que no lo alcanzo a ver":
+     lado = texto que va junto al número grande (el total en COP); m = la línea de países, ahora en letra clara (.cp-mini .meta) */
+  var mini=function(l,v,m,cls,rojo,lado){ return '<div class="cp-mini'+(cls?' '+cls:'')+'"><div class="lbl">'+l+'</div><div class="fila"><span class="val"'+(rojo?' style="color:var(--red)"':'')+'>'+v+'</span>'+(lado?'<span class="lado">'+lado+'</span>':'')+'</div><div class="meta">'+(m||'')+'</div></div>'; };
   /* 02-11 (James): los bots se cobran en TODOS los países (33 COP por mensaje recibido, como Camila: Carmen, Inês e Ioana vienen
      en msgs de sus cajas); el sueldo ya no existe en ningún lado. */
   /* 02-11 (James: "ya no me totalices los dos"): la ganancia de hoy y la del mes van ARRIBA de cada pestaña (cpGanRango/cpGanMes
      de la región elegida) y las tarjetas chicas quedan con lo operativo: entregas, devoluciones, Meta y bots */
   var minis=function(S,M,reg){
     /* 03-11 (James: 'no estás contando la entrega de México'): entregas y devoluciones dicen cuántas pone cada país, como Meta y bots */
-    return mini('Entregas '+lbl,S.entregas,'entra '+cop(S.entra)+'<br>'+detPais('entregas','entra',reg))+
-      mini('Devoluciones '+lbl,S.devoluciones,'−'+cop(S.devol)+'<br>'+detPais('devoluciones','devol',reg),'',true)+
+    return mini('Entregas '+lbl,S.entregas,detPais('entregas','entra',reg),'',false,'entra '+cop(S.entra))+
+      mini('Devoluciones '+lbl,S.devoluciones,detPais('devoluciones','devol',reg),'',true,'−'+cop(S.devol))+
       mini('Gasto Meta '+lbl,pesos(S.meta),det('meta',pesos,reg))+
       mini('Bots',S.bots?'−'+pesos(S.bots):'—',det('camila',pesos,reg));
   };
