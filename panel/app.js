@@ -5737,6 +5737,8 @@ function pintarCierre(C){
      cpMiniTT arriba (total Latam + Europa), cpMiniLA dentro del cuadro LATAM y cpMiniEU dentro del cuadro EUROPA.
      Bots y sueldo solo existen en Chile (Latam y total). Las ventas de cada región ya van en su cabecera. */
   /* 02-11 James: "las tarjetas no tienen el mismo tamaño": todas llevan la línea de detalle (vacía si no hay) con alto fijo de 2 renglones */
+  /* 03-11 (James): 'las entregas de Chile aparte y las de México aparte, con su valor': cada país con caja, aunque vaya en 0 */
+  var detPais=function(n,v,reg){ return P.filter(function(p){ return (!reg||p.reg===reg)&&p.caja.hay; }).map(function(p){ return '<b>'+p.nom+'</b> '+(Number(p.caja[n])||0)+' · '+cop(p.caja[v]||0); }).join('<br>')||'—'; };
   var mini=function(l,v,m,cls,rojo){ return '<div class="cp-mini'+(cls?' '+cls:'')+'"><div class="lbl">'+l+'</div><div class="val"'+(rojo?' style="color:var(--red)"':'')+'>'+v+'</div><div class="meta">'+(m||'')+'</div></div>'; };
   /* 02-11 (James): los bots se cobran en TODOS los países (33 COP por mensaje recibido, como Camila: Carmen, Inês e Ioana vienen
      en msgs de sus cajas); el sueldo ya no existe en ningún lado. */
@@ -5744,8 +5746,8 @@ function pintarCierre(C){
      de la región elegida) y las tarjetas chicas quedan con lo operativo: entregas, devoluciones, Meta y bots */
   var minis=function(S,M,reg){
     /* 03-11 (James: 'no estás contando la entrega de México'): entregas y devoluciones dicen cuántas pone cada país, como Meta y bots */
-    return mini('Entregas '+lbl,S.entregas,'entra '+cop(S.entra)+'<br>'+det('entregas',null,reg))+
-      mini('Devoluciones '+lbl,S.devoluciones,'−'+cop(S.devol)+'<br>'+det('devoluciones',null,reg),'',true)+
+    return mini('Entregas '+lbl,S.entregas,'entra '+cop(S.entra)+'<br>'+detPais('entregas','entra',reg))+
+      mini('Devoluciones '+lbl,S.devoluciones,'−'+cop(S.devol)+'<br>'+detPais('devoluciones','devol',reg),'',true)+
       mini('Gasto Meta '+lbl,pesos(S.meta),det('meta',pesos,reg))+
       mini('Bots',S.bots?'−'+pesos(S.bots):'—',det('camila',pesos,reg));
   };
