@@ -894,9 +894,9 @@ function renderTopProd(){
    canal de redes no se podia medir. El TOTAL va de primero y es la barra que
    se lee de un vistazo; las otras tres explican de donde salio. */
 const CH_SERIES=[
-  {k:'web', nom:'Página',   color:'#3060ea'},
-  {k:'wa',  nom:'WhatsApp', color:'#179f6b'},
-  {k:'red', nom:'Redes',    color:'#d8256b'}
+  {k:'web', nom:'Página',   color:'#4a6cf0'},   /* 03-11: colores de la leyenda a juego con los degradados de las barras */
+  {k:'wa',  nom:'WhatsApp', color:'#22b56e'},
+  {k:'red', nom:'Redes',    color:'#e83a7f'}
 ];
 /* los días del gráfico (mismo criterio de siempre: Hoy/Ayer = 7 días, 30 días, Este mes o el rango elegido) */
 function _diasChart(){
@@ -915,12 +915,16 @@ function _baseCurvas(ejeX,nD){
     xAxis:{type:'category',boundaryGap:false,data:ejeX,axisLine:{lineStyle:{color:oscuro?'#2a3344':'#e9ebf0'}},axisTick:{show:false},axisLabel:{color:oscuro?'#d5dce8':'#98a1b0',fontSize:11,interval:nD>10?4:0}},
     yAxis:{type:'value',minInterval:1,splitLine:{lineStyle:{color:oscuro?'#222a3b':'#eef0f4'}},axisLabel:{color:oscuro?'#d5dce8':'#98a1b0',fontSize:11}}};
 }
-function _curva(nombre,datos,color,ancho,conArea,conNumeros,oscuro){
-  var s={name:nombre,type:'line',data:datos,smooth:true,symbol:'circle',symbolSize:ancho>2?6:4,lineStyle:{width:ancho,color:color},itemStyle:{color:color},emphasis:{focus:'series'}};
-  if(conArea) s.areaStyle={color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[{offset:0,color:color+'55'},{offset:1,color:color+'05'}]}};
-  if(conNumeros) s.label={show:true,position:'top',fontSize:11,fontWeight:800,color:oscuro?'#ffffff':'#1b2230',formatter:function(p){ return p.value||''; }};
-  return s;
+/* 03-11 James ("no, el de curvas no lo conozco; deja la barra pero con mejores colores, más profesional"):
+   barras con degradado (claro arriba, oscuro abajo), puntas redondeadas y el número encima */
+function _barra(nombre,datos,c1,c2,conNumeros,oscuro,extra){
+  var s={name:nombre,type:'bar',data:datos,barMaxWidth:26,barGap:'18%',barCategoryGap:'32%',
+    itemStyle:{borderRadius:[5,5,0,0],color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[{offset:0,color:c1},{offset:1,color:c2}]}},emphasis:{focus:'series'}};
+  if(conNumeros) s.label={show:true,position:'top',fontSize:10.5,fontWeight:800,color:oscuro?'#ffffff':'#1b2230',formatter:function(p){ return p.value||''; }};
+  return Object.assign(s,extra||{});
 }
+/* los colores de cada barra: [claro, oscuro] */
+const CH_DEG={ tot:['#f0d58a','#b8860b'], web:['#6b8dff','#2d4fd6'], wa:['#3ddc84','#128c5c'], red:['#ff5c9a','#c2185b'] };
 function renderChart(){
   const cont=document.getElementById('chartReal'); if(!cont) return;
   const dc=_diasChart(), nD=dc.nD, dias=dc.dias;
@@ -939,12 +943,14 @@ function renderChart(){
   if(typeof echarts==='undefined'){ cont.innerHTML='<div class="vacio">Sin librería de gráficos.</div>'; return; }
   const oscuro=document.documentElement.getAttribute('data-theme')==='dark';
   const series=[];
-  if(conTotal) series.push(_curva('Total',dias.map(d=>d.tot),'#c9a227',3,true,nD<=10,oscuro));
-  vis.forEach(s=>series.push(_curva(s.nom,dias.map(d=>d[s.k]),s.color,conTotal?1.6:3,!conTotal,!conTotal&&nD<=10,oscuro)));
+  /* el número solo cuando cabe: siempre el del total, los canales con 7 días o menos */
+  if(conTotal) series.push(_barra('Total',dias.map(d=>d.tot),CH_DEG.tot[0],CH_DEG.tot[1],nD<=10,oscuro));
+  vis.forEach(s=>series.push(_barra(s.nom,dias.map(d=>d[s.k]),CH_DEG[s.k][0],CH_DEG[s.k][1],conTotal?nD<=7:nD<=10,oscuro)));
   cont.style.height='230px'; cont.style.padding='0 6px 4px';
   if(cont.querySelector('.vacio')) cont.innerHTML='';
   const inst=echarts.getInstanceByDom(cont)||echarts.init(cont);
-  inst.setOption(Object.assign(_baseCurvas(dias.map(d=>d.lbl),nD),{series:series}),true);
+  const opt=_baseCurvas(dias.map(d=>d.lbl),nD); opt.xAxis.boundaryGap=true; opt.tooltip.axisPointer={type:'shadow'};
+  inst.setOption(Object.assign(opt,{series:series}),true);
   setTimeout(function(){ try{ inst.resize(); }catch(e){} },50);
 }
 /* 03-11 James: "lo que no estoy calculando es las ventas del panel contra las ventas reales que se montan en Dropi".
@@ -967,13 +973,12 @@ function renderPanelDropi(){
   if(typeof echarts==='undefined'){ cont.innerHTML='<div class="vacio">Sin librería de gráficos.</div>'; return; }
   const oscuro=document.documentElement.getAttribute('data-theme')==='dark';
   const mont=dias.map(d=>d.mont), sin=dias.map(d=>d.tot-d.mont);
-  /* apiladas: verde (montadas) abajo y encima la franja roja (sin montar); el borde de arriba es el total del panel, en dorado */
-  const sMont={name:'Montadas en Dropi',type:'line',stack:'v',data:mont,smooth:true,symbol:'circle',symbolSize:5,lineStyle:{width:2,color:'#179f6b'},itemStyle:{color:'#179f6b'},
-    areaStyle:{color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[{offset:0,color:'#179f6b66'},{offset:1,color:'#179f6b0a'}]}}};
-  const sSin={name:'Sin montar',type:'line',stack:'v',data:sin,smooth:true,symbol:'circle',symbolSize:6,lineStyle:{width:3,color:'#c9a227'},itemStyle:{color:'#c9a227'},
-    areaStyle:{color:'#e0444b55'},
-    label:{show:nD<=10,position:'top',fontSize:11,fontWeight:800,color:oscuro?'#ffffff':'#1b2230',formatter:function(p){ return dias[p.dataIndex].tot||''; }}};
-  const opt=_baseCurvas(dias.map(d=>d.lbl),nD);
+  /* 03-11 James: barras, no curvas. Apiladas: verde (montadas en Dropi) abajo y encima el rojo (sin montar);
+     la barra entera es lo que registró el panel y lleva ese total encima */
+  const sMont=_barra('Montadas en Dropi',mont,CH_DEG.wa[0],CH_DEG.wa[1],false,oscuro,{stack:'v',itemStyle:{borderRadius:0,color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[{offset:0,color:CH_DEG.wa[0]},{offset:1,color:CH_DEG.wa[1]}]}}});
+  const sSin=_barra('Sin montar',sin,'#ff7a7f','#c62828',false,oscuro,{stack:'v',
+    label:{show:nD<=10,position:'top',fontSize:10.5,fontWeight:800,color:oscuro?'#ffffff':'#1b2230',formatter:function(p){ return dias[p.dataIndex].tot||''; }}});
+  const opt=_baseCurvas(dias.map(d=>d.lbl),nD); opt.xAxis.boundaryGap=true; opt.tooltip.axisPointer={type:'shadow'};
   opt.tooltip.formatter=function(ps){ const i=ps[0].dataIndex, d=dias[i];
     return '<b>'+d.lbl+'</b><br>Ventas del panel: <b>'+d.tot+'</b><br>Montadas en Dropi: <b style="color:#179f6b">'+d.mont+'</b><br>Sin montar: <b style="color:#e0444b">'+(d.tot-d.mont)+'</b>'; };
   cont.style.height='230px'; cont.style.padding='0 6px 4px';
