@@ -57,8 +57,11 @@
 .cp-mini{border:1px solid var(--border);border-radius:10px;padding:10px 12px;background:var(--surface-2);min-width:0}
 .cp-mini .lbl{font-size:12px;color:var(--ink-2);font-weight:700;line-height:1.25}
 .cp-mini .val{font-size:24px;font-weight:800;letter-spacing:-.02em;margin-top:4px;font-variant-numeric:tabular-nums;white-space:nowrap;line-height:1.15}
-.cp-mini .meta{font-size:12px;color:var(--ink);margin-top:4px;line-height:1.35;min-height:30px}   /* 02-11: mínimo 2 renglones (tarjetas parejas) y NUNCA se corta: James no veía Rumanía en el detalle de Meta · 03-11 James: "en letra clara, no lo alcanzo a ver" (v=310) · probé dorado (v=311) y rojo en salidas (v=312); James: "déjala como la primera foto" = blanco en las cuatro (v=313) */
+.cp-mini .meta{font-size:12px;color:#b08a2e;margin-top:4px;line-height:1.35;min-height:30px}   /* 02-11: mínimo 2 renglones (tarjetas parejas) y NUNCA se corta: James no veía Rumanía en el detalle de Meta · 03-11 James: "en letra clara, no lo alcanzo a ver" (v=310) · "cambia esas letras de color" (v=311): dorado Jaye · (v=313 las puse en blanco por entenderle mal; v=314 vuelve el dorado) */
 .cp-mini .meta b{color:inherit;font-weight:800}
+:root[data-theme="dark"] .cp-mini .meta{color:#e8c877}
+/* 03-11 James (v=312): "las salidas de plata en rojo": devoluciones, Meta y bots */
+.cp-mini.sale .meta,:root[data-theme="dark"] .cp-mini.sale .meta{color:var(--red)}
 /* 03-11 James (v=310): el total en plata va AL LADO del número grande, horizontal */
 .cp-mini .fila{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-top:4px}
 .cp-mini .fila .val{margin-top:0} .cp-mini .lado{font-size:12.5px;font-weight:600;color:var(--ink-2);white-space:nowrap}
