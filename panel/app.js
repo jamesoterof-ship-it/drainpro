@@ -5090,10 +5090,12 @@ function renderPaisTab(){
     var tot=TASAS&&(!T.ro.t||TASAS.ron)&&(!T.mx.t||TASAS.mxn)&&(!T.pl.t||TASAS.pln)? T.cl.t*TASAS.clp+(T.es.t+T.pt.t)*TASAS.eur+T.co.t+(T.ro.t?T.ro.t*TASAS.ron:0)+(T.mx.t?T.mx.t*TASAS.mxn:0)+(T.pl.t?T.pl.t*TASAS.pln:0) : null;
     /* 26-10 (James): cada país con SU fecha y hora, separados en LATAM (Chile, Colombia) y EUROPA
        (España, Portugal, Rumanía), cada región con su subtotal; debajo, el cierre del día por país. */
+    /* 03-11 James ("mira todo el espacio que se pierde; tarjetas compactas, cuatro por fila"): fecha y hora en una línea chica,
+       y las ventas con la plata al lado en la misma línea (estilos .rp-pais.cp-c en _cierre.css) */
     var card=function(p,flag,nom,zona,n,local,enCop){
-      return '<div class="rp-pais" onclick="irPais(\''+p+'\')"><div class="t"><span class="flag '+flag+'"></span>'+nom+'</div>'+
+      return '<div class="rp-pais cp-c" onclick="irPais(\''+p+'\')"><div class="t"><span class="flag '+flag+'"></span>'+nom+'</div>'+
         '<div class="cp-fecha">'+fechaPaisHtml(zona)+'</div>'+
-        '<div class="v">'+n+' venta'+(n===1?'':'s')+'</div><div class="c" style="font-size:14px;color:var(--ink-2);font-weight:700">'+local+'</div><div class="c">'+enCop+'</div></div>';
+        '<div class="v"><span class="n">'+n+' venta'+(n===1?'':'s')+'</span><span class="loc">'+local+'</span><span class="cop">'+enCop+'</span></div></div>';
     };
     /* 28-10: México va en LATAM (no en Europa) */
     var laN=T.cl.n+T.co.n+T.mx.n, laCop=TASAS&&(!T.mx.t||TASAS.mxn)?T.cl.t*TASAS.clp+T.co.t+(T.mx.t?T.mx.t*TASAS.mxn:0):null;
@@ -5121,7 +5123,7 @@ function renderPaisTab(){
         '<button class="'+(REG==='EUROPA'?'act':'')+'" onclick="elegirRegion(\'EUROPA\')">🌍 Resumen Europa</button></div>'+
       '<div class="cp-regiones una">'+
         (REG==='TOTAL'?
-        '<div class="cp-region">'+resumenReg('tt','todos los países',T.cl.n+T.es.n+T.pt.n+T.co.n+T.ro.n+T.mx.n+T.pl.n,tot)+'<div class="cp-rh"><span class="cp-rn">Σ TODOS LOS PAÍSES</span><span>Latinoamérica + Europa</span></div><div class="rp-paises cp-3">'+
+        '<div class="cp-region">'+resumenReg('tt','todos los países',T.cl.n+T.es.n+T.pt.n+T.co.n+T.ro.n+T.mx.n+T.pl.n,tot)+'<div class="cp-rh"><span class="cp-rn">Σ TODOS LOS PAÍSES</span><span>Latinoamérica + Europa</span></div><div class="rp-paises cp-4">'+
           card('CL','flag-cl','Chile',ZONA_CL,T.cl.n,fmtCLP(T.cl.t)+' CLP',cop(T.cl.t,TASAS&&TASAS.clp))+
           card('CO','flag-co','Colombia',ZONA_CO,T.co.n,fmtCOP(T.co.t)+' COP',T.co.n?'':'todavía sin ventas')+
           card('MX','flag-mx','México',ZONA_MX,T.mx.n,fmtMXN(T.mx.t),T.mx.n?(TASAS&&TASAS.mxn?cop(T.mx.t,TASAS.mxn):'sin tasa del peso mexicano'):'todavía sin ventas')+
