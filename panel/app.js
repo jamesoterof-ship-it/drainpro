@@ -260,7 +260,8 @@ function soltarYa(k,id){
   if(typeof confirm==='function' && !confirm('¿Soltar esta venta ya, sin esperar la hora?\n\nEl cliente ya confirmó y el inspector la dejó en verde. Se monta en Dropi en el próximo ciclo (≈5 min).')) return;
   /* 28-10 James: "ponme el botón de soltar en España igual que Chile". En España y Portugal el montador (n8n) no espera
      la hora: la espera es solo del panel. Soltar = aprobar ya (la llave es: va a pedidos_aprobados y el montador la toma en ≤3 min). */
-  if(/^(es|mx):/.test(String(k))){ aprobar(k);   /* 03-11: México igual que España (su montador no espera la hora) */ if(typeof toast==='function') toast('Soltada ✓ — se monta en '+(/^mx:/.test(String(k))?'Dropi México':'Dropi PRO')+' en el próximo ciclo'); return; }
+  /* 03-11: México NO va aquí: su montador espera la hora como Chile, así que pasa por el webhook soltar-ya (fin_soltar_ya) */
+  if(/^es:/.test(String(k))){ aprobar(k); if(typeof toast==='function') toast('Soltada ✓ — se monta en '+(/^mx:/.test(String(k))?'Dropi México':'Dropi PRO')+' en el próximo ciclo'); return; }
   fetch(BASE+'/soltar-ya',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({venta_id:String(id)})})
     .then(function(r){ return r.json(); })
     .then(function(j){
