@@ -5386,11 +5386,16 @@ function renderAprobarMX(ot){
      31-10 James: el ANTICIPO PENDIENTE del cliente riesgoso tampoco (salía en Pendientes como "Confirmó en el chat"):
      va a "Esperando pago" sin botón de aprobar; cuando paga pasa a ABONO PAGADO y vuelve a Pendientes. */
   var espPago=function(o){ return esPagoPend(o)||abonoPendMX(o); };
+  /* 04-11 James: "pon una pestaña revisar cobertura". Lupita ya no rechaza al cliente donde Dropi dice que no llega:
+     la registra como REVISAR COBERTURA (y aquí también caen las que Dropi rechazó por no tener paquetería al municipio).
+     No se aprueban desde aquí: primero se cotiza en Dropi por el municipio vecino. */
+  var cob=function(o){ return /revisar cobertura/i.test(o.estado||'')||(/error dropi/i.test(o.estado||'')&&/tarifa configurada|no tiene habilitado|no existe en el sistema|ciudad de operaci/i.test(o.nota||'')); };
   var gr={
-    pend:todas.filter(function(o){return !espPago(o)&&confirmadoMX(o)&&!dud(o);}),
-    conf:todas.filter(function(o){return !espPago(o)&&!confirmadoMX(o)&&!dud(o);}),
-    pago:todas.filter(function(o){return espPago(o);}),
-    dud:todas.filter(function(o){return !espPago(o)&&dud(o);}),
+    pend:todas.filter(function(o){return !cob(o)&&!espPago(o)&&confirmadoMX(o)&&!dud(o);}),
+    conf:todas.filter(function(o){return !cob(o)&&!espPago(o)&&!confirmadoMX(o)&&!dud(o);}),
+    pago:todas.filter(function(o){return !cob(o)&&espPago(o);}),
+    cob:todas.filter(cob),
+    dud:todas.filter(function(o){return !cob(o)&&!espPago(o)&&dud(o);}),
     todas:todas };
   var f=window._fAprobMX||'pend'; if(!gr[f]) f='pend';
   var lista=gr[f];
@@ -5398,8 +5403,8 @@ function renderAprobarMX(ot){
     return '<button class="minitab'+(f===id?' act':'')+'" onclick="window._fAprobMX=\''+id+'\';renderAprobarPais()">'+txt+
       (col&&n?' <span style="background:'+col+';color:#fff;border-radius:999px;font-size:10.5px;font-weight:800;padding:0 6px;margin-left:4px">'+n+'</span>':'')+'</button>'; };
   var tabs='<div class="minitabs" style="margin-top:8px">'+tab('pend','Pendientes','#15803d')+tab('conf','Esperando confirmación','#d97706')+
-    tab('pago','Esperando pago','#b45309')+tab('dud','Dudosas','#c62828')+tab('todas','Todas','')+'</div>';
-  var vacio={pend:'Nada por aprobar. 🎉',conf:'Nadie esperando confirmar.',pago:'Nadie esperando pagar.',dud:'Ninguna venta dudosa.',todas:'Sin ventas pendientes.'}[f];
+    tab('pago','Esperando pago','#b45309')+tab('cob','Revisar cobertura','#7c3aed')+tab('dud','Dudosas','#c62828')+tab('todas','Todas','')+'</div>';
+  var vacio={pend:'Nada por aprobar. 🎉',conf:'Nadie esperando confirmar.',pago:'Nadie esperando pagar.',cob:'Ninguna venta para revisar cobertura.',dud:'Ninguna venta dudosa.',todas:'Sin ventas pendientes.'}[f];
   window._aprobMX=lista.map(function(o){ var web=esWebES(o);
     return {esWeb:web, rid:o.id, cli:o.cli, tel:o.tel, prod:o.prod, cant:o.cant, precioNum:o.totalNum, precio:fmtMXN(o.totalNum),
       dir:o.dir, zona:o.zona, region:o.region, nota:o.nota||'', desde:'', revision:o.revision||'', nivel:o.nivel||'', fecha:o.fecha, hora:'', orden:o.creadoMs||o.orden||0,
@@ -5419,7 +5424,9 @@ function renderAprobarMX(ot){
           (/pago:\s*pre/i.test(o.nota)?pildoraPago(o):'')+
           (/canal:\s*whatsapp/i.test(o.nota)?'<div style="font-size:11px;color:var(--ink-3)">por WhatsApp (México)</div>':'')+'</td>'+
           '<td>'+esc(o.dir)+'<div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.zona)+(o.region&&o.region!=='—'?', '+esc(o.region):'')+'</div></td>'+
-          '<td>'+esc(o.cant)+'</td><td>'+fmtMXN(o.totalNum)+'</td><td onclick="event.stopPropagation()">'+(abonoPendMX(o)
+          '<td>'+esc(o.cant)+'</td><td>'+fmtMXN(o.totalNum)+'</td><td onclick="event.stopPropagation()">'+(cob(o)
+            ?'<span style="font-size:12px;color:#7c3aed;font-weight:700">Revisar cobertura</span><div style="font-size:11px;color:var(--ink-3)">'+(/error dropi/i.test(o.estado||'')?'Dropi la rechazó: ninguna paquetería llegó':'Dropi dice que no llega: se cotiza por el municipio vecino')+'</div>'
+            :abonoPendMX(o)
             ?'<span style="font-size:12px;color:#c62828;font-weight:700">Esperando el anticipo</span><div style="font-size:11px;color:var(--ink-3)">$180 por su enlace · al pagar pasa a Pendientes</div>'
             :esPagoPend(o)
             ?'<span style="font-size:12px;color:#b45309;font-weight:700">Esperando el pago</span><div style="font-size:11px;color:var(--ink-3)">se aprueba cuando llegue el comprobante</div>'
