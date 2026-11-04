@@ -5743,8 +5743,9 @@ function pintarCierre(C){
   /* 02-11 (James: "ya no me totalices los dos"): la ganancia de hoy y la del mes van ARRIBA de cada pestaña (cpGanRango/cpGanMes
      de la región elegida) y las tarjetas chicas quedan con lo operativo: entregas, devoluciones, Meta y bots */
   var minis=function(S,M,reg){
-    return mini('Entregas '+lbl,S.entregas,'entra '+cop(S.entra))+
-      mini('Devoluciones '+lbl,S.devoluciones,'−'+cop(S.devol),'',true)+
+    /* 03-11 (James: 'no estás contando la entrega de México'): entregas y devoluciones dicen cuántas pone cada país, como Meta y bots */
+    return mini('Entregas '+lbl,S.entregas,'entra '+cop(S.entra)+'<br>'+det('entregas',null,reg))+
+      mini('Devoluciones '+lbl,S.devoluciones,'−'+cop(S.devol)+'<br>'+det('devoluciones',null,reg),'',true)+
       mini('Gasto Meta '+lbl,pesos(S.meta),det('meta',pesos,reg))+
       mini('Bots',S.bots?'−'+pesos(S.bots):'—',det('camila',pesos,reg));
   };
