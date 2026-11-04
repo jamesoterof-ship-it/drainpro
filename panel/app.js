@@ -260,7 +260,7 @@ function soltarYa(k,id){
   if(typeof confirm==='function' && !confirm('¿Soltar esta venta ya, sin esperar la hora?\n\nEl cliente ya confirmó y el inspector la dejó en verde. Se monta en Dropi en el próximo ciclo (≈5 min).')) return;
   /* 28-10 James: "ponme el botón de soltar en España igual que Chile". En España y Portugal el montador (n8n) no espera
      la hora: la espera es solo del panel. Soltar = aprobar ya (la llave es: va a pedidos_aprobados y el montador la toma en ≤3 min). */
-  if(/^es:/.test(String(k))){ aprobar(k); if(typeof toast==='function') toast('Soltada ✓ — se monta en Dropi PRO en el próximo ciclo'); return; }
+  if(/^(es|mx):/.test(String(k))){ aprobar(k);   /* 03-11: México igual que España (su montador no espera la hora) */ if(typeof toast==='function') toast('Soltada ✓ — se monta en '+(/^mx:/.test(String(k))?'Dropi México':'Dropi PRO')+' en el próximo ciclo'); return; }
   fetch(BASE+'/soltar-ya',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({venta_id:String(id)})})
     .then(function(r){ return r.json(); })
     .then(function(j){
@@ -5308,6 +5308,9 @@ function confirmadoMX(o){
   if(/pago:\s*pre/i.test(o.nota||'')) return true;   /* pago anticipado: lo confirma el pago */
   var f=CONF_MX&&CONF_MX[String(o.id)]; return !!(f&&f.estado==='CONFIRMO');
 }
+/* 03-11 (James: 'el inspector tiene un botón de soltar ya, igual que Chile y los demás países'): id para '⚡ Soltar ya' en México:
+   inspector México (uN6nJknrvitkd45F) en VERDE + cliente confirmó + sin pago ni anticipo pendiente + nombre y dirección que sirven */
+function soltarIdMX(o){ return (String(o.nivel||'').toUpperCase()==='VERDE'&&confirmadoMX(o)&&!esPagoPend(o)&&!abonoPendMX(o)&&nombreSirve(o.cli)&&dirSirve(o.dir))?String(o.id):''; }
 function abonoPendMX(o){ return /abono\s*pendiente/i.test(o.estado||''); }   /* 31-10: cliente riesgoso que no ha pagado el anticipo */
 function verAprobMX(i){ window._ventasF=window._aprobMX||[]; verVenta(i); }
 function renderAprobarMX(ot){
@@ -5355,7 +5358,7 @@ function renderAprobarMX(ot){
             ?'<span style="font-size:12px;color:#c62828;font-weight:700">Esperando el anticipo</span><div style="font-size:11px;color:var(--ink-3)">$180 por su enlace · al pagar pasa a Pendientes</div>'
             :esPagoPend(o)
             ?'<span style="font-size:12px;color:#b45309;font-weight:700">Esperando el pago</span><div style="font-size:11px;color:var(--ink-3)">se aprueba cuando llegue el comprobante</div>'
-            :celdaAprob(k,'',o.id,falta,'',false,dud(o),esperaES(o)))+'</td></tr>';
+            :celdaAprob(k,'',o.id,falta,'',false,dud(o),esperaES(o),soltarIdMX(o)))+'</td></tr>';
       }).join('')+'</tbody></table>'
       :'<div class="vacio" style="padding:22px">'+(CONF_MX?vacio:'Cargando…')+'</div>')+'</div>';
 }
@@ -5481,7 +5484,7 @@ function renderAprobarPais(){
   /* 28-10 (5ª vuelta, James: "Rumanía se puso para aprobar y no estaba en verde"): VERDE = la fila muestra "✓ Aprobar" o
      "⚡ Soltar ya" (sePuedeActuar, misma lógica que la celda). El inspector solo corre en Chile y España: en Portugal y Rumanía
      la venta queda verde cuando cumple la hora y se puede aprobar. ROJA = las pendientes que todavía no tienen botón. */
-  var verdes=function(arr,pre){ return arr.filter(function(o){ return sePuedeActuar(pre+o.id,faltaEU(o),'',esperaES(o),pre==='es:'?soltarIdES(o):''); }).length; };
+  var verdes=function(arr,pre){ return arr.filter(function(o){ return sePuedeActuar(pre+o.id,faltaEU(o),'',esperaES(o),pre==='es:'?soltarIdES(o):(pre==='mx:'?soltarIdMX(o):'')); }).length; };
   var rojas=function(arr,pre){ return arr.length-verdes(arr,pre); };
   var pnES=document.getElementById('pnNumES'); if(pnES) pnES.textContent=rojas(pend,'es:')||'';
   var pnPT=document.getElementById('pnNumPT'); if(pnPT) pnPT.textContent=rojas(pendPT,'es:')||'';
@@ -5749,10 +5752,11 @@ function pintarCierre(C){
      de la región elegida) y las tarjetas chicas quedan con lo operativo: entregas, devoluciones, Meta y bots */
   var minis=function(S,M,reg){
     /* 03-11 (James: 'no estás contando la entrega de México'): entregas y devoluciones dicen cuántas pone cada país, como Meta y bots */
+    /* 03-11 James (v=312): "las salidas de plata en rojo": la línea de países va dorada en Entregas (entra) y roja en devoluciones, Meta y bots (sale) */
     return mini('Entregas '+lbl,S.entregas,detPais('entregas','entra',reg),'',false,'entra '+cop(S.entra))+
-      mini('Devoluciones '+lbl,S.devoluciones,detPais('devoluciones','devol',reg),'',true,'−'+cop(S.devol))+
-      mini('Gasto Meta '+lbl,pesos(S.meta),det('meta',pesos,reg))+
-      mini('Bots',S.bots?'−'+pesos(S.bots):'—',det('camila',pesos,reg));
+      mini('Devoluciones '+lbl,S.devoluciones,detPais('devoluciones','devol',reg),'sale',true,'−'+cop(S.devol))+
+      mini('Gasto Meta '+lbl,pesos(S.meta),det('meta',pesos,reg),'sale')+
+      mini('Bots',S.bots?'−'+pesos(S.bots):'—',det('camila',pesos,reg),'sale');
   };
   var pon=function(id,h){ var e=document.getElementById(id); if(e) e.innerHTML=h; };
   pon('cpMiniLA',minis(LA,MES_LA,'LATAM')); pon('cpMiniEU',minis(EU,MES_EU,'EUROPA')); pon('cpMiniTT',minis(TT,MES,''));
