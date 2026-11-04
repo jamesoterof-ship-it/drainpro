@@ -833,9 +833,13 @@ body:not([data-pais="CL"]) :is(#badgeCancelar,#badgeNovedades,#badgeListanegra,#
           </div>
           <div class="chartwrap" id="chartReal"><div class="vacio">Cargando…</div></div>
         </div>
+        <!-- 03-11 James: "Ventas por país" ya no se necesita; en su lugar, ventas del panel contra las montadas en Dropi -->
         <div class="panel">
-          <div class="ph"><div><h2>Ventas por país</h2><div class="sm" id="paisesSub">…</div></div></div>
-          <div class="paislist" id="paisesReal"><div class="vacio">Cargando…</div></div>
+          <div class="ph">
+            <div><h2>Panel vs Dropi</h2><div class="sm" id="pdSub">…</div></div>
+            <div class="legend" style="flex-wrap:wrap;gap:8px 14px"><span><i style="background:var(--gold)"></i>Ventas del panel</span><span><i style="background:#179f6b"></i>Montadas en Dropi</span><span><i style="background:#e0444b"></i>Sin montar</span></div>
+          </div>
+          <div class="chartwrap" id="chartDropi"><div class="vacio">Cargando…</div></div>
         </div>
       </div>
 
@@ -1629,7 +1633,7 @@ body:not([data-pais="CL"]) :is(#badgeCancelar,#badgeNovedades,#badgeListanegra,#
      apagado. Para devolverlo: recuperar este bloque del commit anterior y activar el flujo. -->
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
-<script src="app.js?v=318"></script>
+<script src="app.js?v=319"></script>
 <script src="ganancia.js?v=132"></script>
 </body>
 </html>

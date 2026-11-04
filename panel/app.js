@@ -851,7 +851,7 @@ function renderResumen(){
       '<div class="mm"><span class="flag '+(FLAG[fPais]||'flag-cl')+'"></span>'+num+'<small>'+MON+'</small></div>'+
       (fPais==='CO'?'':'<div class="mm" style="font-size:13.5px;color:var(--ink-2)">≈ '+(tasa?fmtCOP(tLoc*tasa):'sin tasa')+'<small>COP</small></div>');
   }
-  renderChart(); renderPaises(); renderActividad(); renderTopProd();
+  renderChart(); renderPaises(); renderPanelDropi(); renderActividad(); renderTopProd();
   renderPaisTab();
 }
 function renderActividad(){
@@ -898,48 +898,89 @@ const CH_SERIES=[
   {k:'wa',  nom:'WhatsApp', color:'#179f6b'},
   {k:'red', nom:'Redes',    color:'#d8256b'}
 ];
-function renderChart(){
-  const cont=document.getElementById('chartReal'); if(!cont) return;
+/* los días del gráfico (mismo criterio de siempre: Hoy/Ayer = 7 días, 30 días, Este mes o el rango elegido) */
+function _diasChart(){
   const nD = R.tipo==='30d' ? 30 : R.tipo==='mes' ? +claveDia(Date.now()).slice(8) : (R.tipo==='fechas'&&R.desde&&R.hasta ? Math.min(31,Math.round((R.hasta-R.desde)/864e5)+1) : 7);
   const base = R.tipo==='fechas'&&R.desde ? R.desde : inicioDia(nD-1);
   const dias=[];
   /* +12 h: el mediodía de cada día, para que el cambio de hora nunca lo corra de fecha */
-  for(let i=0;i<nD;i++){const t=base+i*864e5+432e5,k=claveDia(t);dias.push({key:k,lbl:nD>10?diaNumero(t):(k===claveDia(Date.now())?'Hoy':diaSemCorto(t)),wa:0,web:0,red:0});}
+  for(let i=0;i<nD;i++){const t=base+i*864e5+432e5,k=claveDia(t);dias.push({key:k,lbl:nD>10?diaNumero(t):(k===claveDia(Date.now())?'Hoy':diaSemCorto(t)),wa:0,web:0,red:0,mont:0,tot:0});}
+  return {nD:nD,dias:dias};
+}
+/* 03-11 James ("ese gráfico de barras se ve muy básico y feo"): base común de los gráficos de curvas del Resumen (echarts, como Indicadores) */
+function _baseCurvas(ejeX,nD){
+  const oscuro=document.documentElement.getAttribute('data-theme')==='dark';
+  return {grid:{left:34,right:14,top:14,bottom:26},textStyle:{fontFamily:'Inter'},animationDuration:400,
+    tooltip:{trigger:'axis',backgroundColor:oscuro?'#131824':'#ffffff',borderColor:oscuro?'#2a3344':'#e9ebf0',textStyle:{color:oscuro?'#ffffff':'#1b2230',fontSize:12}},
+    xAxis:{type:'category',boundaryGap:false,data:ejeX,axisLine:{lineStyle:{color:oscuro?'#2a3344':'#e9ebf0'}},axisTick:{show:false},axisLabel:{color:oscuro?'#d5dce8':'#98a1b0',fontSize:11,interval:nD>10?4:0}},
+    yAxis:{type:'value',minInterval:1,splitLine:{lineStyle:{color:oscuro?'#222a3b':'#eef0f4'}},axisLabel:{color:oscuro?'#d5dce8':'#98a1b0',fontSize:11}}};
+}
+function _curva(nombre,datos,color,ancho,conArea,conNumeros,oscuro){
+  var s={name:nombre,type:'line',data:datos,smooth:true,symbol:'circle',symbolSize:ancho>2?6:4,lineStyle:{width:ancho,color:color},itemStyle:{color:color},emphasis:{focus:'series'}};
+  if(conArea) s.areaStyle={color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[{offset:0,color:color+'55'},{offset:1,color:color+'05'}]}};
+  if(conNumeros) s.label={show:true,position:'top',fontSize:11,fontWeight:800,color:oscuro?'#ffffff':'#1b2230',formatter:function(p){ return p.value||''; }};
+  return s;
+}
+function renderChart(){
+  const cont=document.getElementById('chartReal'); if(!cont) return;
+  const dc=_diasChart(), nD=dc.nD, dias=dc.dias;
   /* las de redes vienen dentro de `ordenes` marcadas bot==='Redes' (mismo criterio
      que usan la lista de actividad y el contador del menu) */
   _ordP().forEach(o=>{if(!o.orden)return;const d=dias.find(x=>x.key===claveDia(o.orden));if(!d)return;if(o.bot==='Redes')d.red++;else d.wa++;});
   _webP().forEach(o=>{if(!o.orden)return;const d=dias.find(x=>x.key===claveDia(o.orden));if(d)d.web++;});
   /* el filtro de canal decide QUE series se dibujan; el total es la suma de las
-     que se ven, para que el numero de arriba siempre cuadre con las barras */
+     que se ven, para que el numero de arriba siempre cuadre con las curvas */
   const vis = fCanal==='todos' ? CH_SERIES : CH_SERIES.filter(s=>s.k===(fCanal==='web'?'web':fCanal==='redes'?'red':'wa'));
   dias.forEach(d=>{ d.tot=vis.reduce((s,x)=>s+d[x.k],0); });
-  const conTotal = vis.length>1;                     /* con un solo canal el total seria la misma barra */
-  const cols = (conTotal?1:0)+vis.length;
-  const max=Math.max(4,...dias.map(d=>d.tot));
-  const W=620, m=40, slot=(W-m-10)/nD, gap=2;
-  const bw=Math.max(3,Math.min(13,(slot*0.80-gap*(cols-1))/cols));
-  const ancho=bw*cols+gap*(cols-1);
-  const alto=v=>Math.round(v/max*150);
-  let bars='',labels='';
-  dias.forEach((d,i)=>{
-    const x0=m+10+i*slot+(slot-ancho)/2;
-    let c=0;
-    const pone=(v,color,fuerte)=>{
-      const h=alto(v), x=x0+c*(bw+gap); c++;
-      bars+=`<rect x="${x}" y="${186-h}" width="${bw}" height="${h||2}" rx="2.5" fill="${color}"/>`;
-      /* el numero solo cuando cabe: siempre el del total, los canales con 7 dias o menos */
-      if(v&&(fuerte?nD<=10:nD<=7))bars+=`<text x="${x+bw/2}" y="${179-h}" text-anchor="middle" font-size="${fuerte?10.5:8.5}" font-weight="${fuerte?800:700}" fill="var(--ink)">${v}</text>`;
-    };
-    if(conTotal) pone(d.tot,'var(--gold)',true);
-    vis.forEach(s=>pone(d[s.k],s.color,false));
-    if(nD<=10||i%5===0||i===nD-1)labels+=`<text x="${x0+ancho/2}" y="205" text-anchor="middle" font-size="11" fill="var(--ink-3)">${d.lbl}</text>`;
-  });
-  cont.innerHTML=`<svg viewBox="0 0 620 220" width="100%" height="210" preserveAspectRatio="none" font-family="Inter">
-    <g stroke="var(--grid)" stroke-width="1"><line x1="40" y1="20" x2="610" y2="20"/><line x1="40" y1="65" x2="610" y2="65"/><line x1="40" y1="110" x2="610" y2="110"/><line x1="40" y1="155" x2="610" y2="155"/><line x1="40" y1="186" x2="610" y2="186"/></g>
-    ${bars}${labels}</svg>`;
+  const conTotal = vis.length>1;                     /* con un solo canal el total seria la misma curva */
   const lg=document.getElementById('chartLeyenda');
   if(lg) lg.innerHTML=(conTotal?'<span><i style="background:var(--gold)"></i>Total</span>':'')+
     vis.map(s=>`<span><i style="background:${s.color}"></i>${s.nom}</span>`).join('');
+  if(typeof echarts==='undefined'){ cont.innerHTML='<div class="vacio">Sin librería de gráficos.</div>'; return; }
+  const oscuro=document.documentElement.getAttribute('data-theme')==='dark';
+  const series=[];
+  if(conTotal) series.push(_curva('Total',dias.map(d=>d.tot),'#c9a227',3,true,nD<=10,oscuro));
+  vis.forEach(s=>series.push(_curva(s.nom,dias.map(d=>d[s.k]),s.color,conTotal?1.6:3,!conTotal,!conTotal&&nD<=10,oscuro)));
+  cont.style.height='230px'; cont.style.padding='0 6px 4px';
+  if(cont.querySelector('.vacio')) cont.innerHTML='';
+  const inst=echarts.getInstanceByDom(cont)||echarts.init(cont);
+  inst.setOption(Object.assign(_baseCurvas(dias.map(d=>d.lbl),nD),{series:series}),true);
+  setTimeout(function(){ try{ inst.resize(); }catch(e){} },50);
+}
+/* 03-11 James: "lo que no estoy calculando es las ventas del panel contra las ventas reales que se montan en Dropi".
+   Va en el lugar de "Ventas por país" (ya no la necesita). Curva dorada = ventas registradas en el panel; curva verde =
+   las que ya están MONTADAS en Dropi (estado "MONTADA DROPI #…" / "DROPI PRO #…"); la franja roja entre las dos = sin montar
+   (por aprobar, anticipo sin pagar, anuladas). Respeta el rango y el canal elegidos, como el gráfico de al lado. */
+function renderPanelDropi(){
+  const cont=document.getElementById('chartDropi'); if(!cont) return;
+  const dc=_diasChart(), nD=dc.nD, dias=dc.dias;
+  const pon=o=>{ if(!o.orden) return; const d=dias.find(x=>x.key===claveDia(o.orden)); if(!d) return; d.tot++; if(o.montado) d.mont++; };
+  if(fCanal!=='web') _ordP().forEach(o=>{ if(fCanal==='redes'&&o.bot!=='Redes') return; if(fCanal==='wa'&&o.bot==='Redes') return; pon(o); });
+  if(fCanal==='todos'||fCanal==='web') _webP().forEach(pon);
+  /* el resumen de arriba es del RANGO elegido (Hoy = solo hoy), aunque la curva muestre 7 días */
+  let rT=0,rM=0;
+  const enR=o=>{ if(!enRangoO(o)) return; rT++; if(o.montado) rM++; };
+  if(fCanal!=='web') _ordP().forEach(o=>{ if(fCanal==='redes'&&o.bot!=='Redes') return; if(fCanal==='wa'&&o.bot==='Redes') return; enR(o); });
+  if(fCanal==='todos'||fCanal==='web') _webP().forEach(enR);
+  const sub=document.getElementById('pdSub');
+  if(sub) sub.innerHTML=rangoTxt()+' · <b>'+rT+'</b> ventas · <b style="color:#179f6b">'+rM+'</b> montadas · <b style="color:var(--red)">'+(rT-rM)+'</b> sin montar'+(rT?' · '+Math.round(rM/rT*100)+' %':'');
+  if(typeof echarts==='undefined'){ cont.innerHTML='<div class="vacio">Sin librería de gráficos.</div>'; return; }
+  const oscuro=document.documentElement.getAttribute('data-theme')==='dark';
+  const mont=dias.map(d=>d.mont), sin=dias.map(d=>d.tot-d.mont);
+  /* apiladas: verde (montadas) abajo y encima la franja roja (sin montar); el borde de arriba es el total del panel, en dorado */
+  const sMont={name:'Montadas en Dropi',type:'line',stack:'v',data:mont,smooth:true,symbol:'circle',symbolSize:5,lineStyle:{width:2,color:'#179f6b'},itemStyle:{color:'#179f6b'},
+    areaStyle:{color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[{offset:0,color:'#179f6b66'},{offset:1,color:'#179f6b0a'}]}}};
+  const sSin={name:'Sin montar',type:'line',stack:'v',data:sin,smooth:true,symbol:'circle',symbolSize:6,lineStyle:{width:3,color:'#c9a227'},itemStyle:{color:'#c9a227'},
+    areaStyle:{color:'#e0444b55'},
+    label:{show:nD<=10,position:'top',fontSize:11,fontWeight:800,color:oscuro?'#ffffff':'#1b2230',formatter:function(p){ return dias[p.dataIndex].tot||''; }}};
+  const opt=_baseCurvas(dias.map(d=>d.lbl),nD);
+  opt.tooltip.formatter=function(ps){ const i=ps[0].dataIndex, d=dias[i];
+    return '<b>'+d.lbl+'</b><br>Ventas del panel: <b>'+d.tot+'</b><br>Montadas en Dropi: <b style="color:#179f6b">'+d.mont+'</b><br>Sin montar: <b style="color:#e0444b">'+(d.tot-d.mont)+'</b>'; };
+  cont.style.height='230px'; cont.style.padding='0 6px 4px';
+  if(cont.querySelector('.vacio')) cont.innerHTML='';
+  const inst=echarts.getInstanceByDom(cont)||echarts.init(cont);
+  inst.setOption(Object.assign(opt,{series:[sMont,sSin]}),true);
+  setTimeout(function(){ try{ inst.resize(); }catch(e){} },50);
 }
 function renderPaises(){
   const cont=document.getElementById('paisesReal'); if(!cont) return;
@@ -4666,27 +4707,28 @@ function _ordP(){
   var loc=fPais==='CO'?'CO':'CL';
   return ordenes.filter(function(o){return o.loc===loc;});
 }
+/* 03-11: `montado` viaja en todas (James: gráfico "Panel vs Dropi" = ventas del panel contra las montadas en Dropi) */
 function _webES(){
-  return ventasES.map(function(o){return {orden:o.orden,totalNum:o.totalNum,prod:o.prod,cli:o.cli,fecha:o.fecha,
+  return ventasES.map(function(o){return {orden:o.orden,totalNum:o.totalNum,prod:o.prod,cli:o.cli,fecha:o.fecha,montado:!!o.montado,
     color:o.sub==='PT'?'#006600':'#aa151b',total:fmtEUR(o.totalNum),sub:o.sub};});
 }
 function _webCO(){
-  return ventasCO.map(function(o){return {orden:o.orden,totalNum:o.totalNum,prod:o.prod,cli:o.cli,fecha:o.fecha,
+  return ventasCO.map(function(o){return {orden:o.orden,totalNum:o.totalNum,prod:o.prod,cli:o.cli,fecha:o.fecha,montado:!!o.montado,
     color:'#A16207',total:fmtCOP(o.totalNum)+' COP',loc:'CO'};});
 }
 /* 20-10: Rumanía, igual que España (todas sus ventas en una lista, en lei) */
 function _webRO(){
-  return ventasRO.map(function(o){return {orden:o.orden,totalNum:o.totalNum,prod:o.prod,cli:o.cli,fecha:o.fecha,
+  return ventasRO.map(function(o){return {orden:o.orden,totalNum:o.totalNum,prod:o.prod,cli:o.cli,fecha:o.fecha,montado:!!o.montado,
     color:'#002B7F',total:fmtRON(o.totalNum),sub:'RO'};});
 }
 /* 28-10: México como Rumanía (todas sus ventas en una lista, en pesos mexicanos) */
 function _webMX(){
-  return ventasMX.map(function(o){return {orden:o.orden,totalNum:o.totalNum,prod:o.prod,cli:o.cli,fecha:o.fecha,
+  return ventasMX.map(function(o){return {orden:o.orden,totalNum:o.totalNum,prod:o.prod,cli:o.cli,fecha:o.fecha,montado:!!o.montado,
     color:'#006847',total:fmtMXN(o.totalNum),sub:'MX'};});
 }
 /* 03-11: Polonia como Rumanía (todas sus ventas en una lista, en eslotis) */
 function _webPL(){
-  return ventasPL.map(function(o){return {orden:o.orden,totalNum:o.totalNum,prod:o.prod,cli:o.cli,fecha:o.fecha,
+  return ventasPL.map(function(o){return {orden:o.orden,totalNum:o.totalNum,prod:o.prod,cli:o.cli,fecha:o.fecha,montado:!!o.montado,
     color:'#DC143C',total:fmtPLN(o.totalNum),sub:'PL'};});
 }
 function _webP(){
