@@ -980,15 +980,17 @@ function renderPanelDropi(){
   const oscuro=document.documentElement.getAttribute('data-theme')==='dark';
   /* 03-11 James: "el de Panel vs Dropi ponlo con unas donas": una dona del RANGO elegido. Verde = montadas en Dropi,
      rojo = sin montar; en el centro, las ventas del panel y el % montado. */
-  const pct=rT?Math.round(rM/rT*100):0, txt=oscuro?'#ffffff':'#1b2230', sub2=oscuro?'#d5dce8':'#6b7482';
+  /* 03-11 James: "esos números se ven opacos, no se notan": todo en blanco puro y más grande */
+  const pct=rT?Math.round(rM/rT*100):0, txt=oscuro?'#ffffff':'#1b2230', sub2=oscuro?'#ffffff':'#3b4452';
   const opt={textStyle:{fontFamily:'Inter'},animationDuration:500,
     tooltip:{trigger:'item',backgroundColor:oscuro?'#131824':'#ffffff',borderColor:oscuro?'#2a3344':'#e9ebf0',textStyle:{color:txt,fontSize:12},formatter:function(p){ return p.name+': <b>'+p.value+'</b> ('+p.percent+' %)'; }},
-    title:[{text:String(rT),left:'center',top:'40%',textStyle:{fontSize:30,fontWeight:800,color:txt}},
-           {text:'ventas · '+pct+' % montadas',left:'center',top:'56%',textStyle:{fontSize:11.5,fontWeight:600,color:sub2}}],
+    title:[{text:String(rT),left:'center',top:'37%',textStyle:{fontSize:36,fontWeight:900,color:txt}},
+           {text:'ventas · '+pct+' % montadas',left:'center',top:'58%',textStyle:{fontSize:13,fontWeight:700,color:sub2}}],
     series:[{type:'pie',radius:['60%','84%'],center:['50%','50%'],avoidLabelOverlap:true,padAngle:2,
       itemStyle:{borderRadius:8,borderColor:oscuro?'#131824':'#ffffff',borderWidth:2},
-      label:{show:true,position:'outside',fontSize:11.5,fontWeight:700,color:txt,formatter:function(p){ return p.name+'\n'+p.value+' · '+p.percent+' %'; },lineHeight:15},
-      labelLine:{length:12,length2:10,lineStyle:{color:oscuro?'#4a5568':'#c5cbd6'}},
+      label:{show:true,position:'outside',fontSize:13.5,fontWeight:800,color:txt,formatter:function(p){ return p.name+'\n'+p.value+' · '+p.percent+' %'; },lineHeight:18},
+      labelLine:{length:12,length2:10,lineStyle:{color:oscuro?'#8a95a8':'#c5cbd6',width:1.5}},
+      emphasis:{label:{fontSize:14}}, blur:{label:{opacity:1},itemStyle:{opacity:1}},
       data:[{name:'Montadas en Dropi',value:rM,itemStyle:{color:{type:'linear',x:0,y:0,x2:1,y2:1,colorStops:[{offset:0,color:CH_DEG.wa[0]},{offset:1,color:CH_DEG.wa[1]}]}}},
             {name:'Sin montar',value:rT-rM,itemStyle:{color:{type:'linear',x:0,y:0,x2:1,y2:1,colorStops:[{offset:0,color:'#ff7a7f'},{offset:1,color:'#c62828'}]}}}]}]};
   if(!rT){ opt.series[0].data=[{name:'Sin ventas',value:1,itemStyle:{color:oscuro?'#2a3344':'#e9ebf0'}}]; opt.series[0].label.show=false; opt.tooltip.show=false; }
