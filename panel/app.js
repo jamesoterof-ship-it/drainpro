@@ -4899,32 +4899,16 @@ function diasGananciaRO(cb){
     .then(function(j){ if(!j||typeof j!=='object') throw 0; CAJA_RO=j; window.CAJA_RO_ERROR=false; armar(); })
     .catch(function(){ window.CAJA_RO_ERROR=true; cb([]); });
 }
-/* 28-10: MÉXICO como Rumanía, con SU caja (/caja-mexico, misma forma que /caja-rumania pero en pesos mexicanos:
-   envio_mxn, producto_mxn_por, producto_mxn, devolucion_mxn; pauta en COP de las campañas con "MEXICO" en el nombre).
-   PENDIENTE: ese webhook todavía NO existe en n8n. Si falla, México va en 0 con "sin caja todavía" y no se inventa nada.
-   Para no pedirle a n8n un webhook que no existe en cada repintada, después de un fallo se espera 5 min. */
-var CAJA_MX=null, _cajaMXfallo=0; window.CAJA_MX_ERROR=false;
+/* 03-11 (James: "igualito a Chile"): MÉXICO lee SU caja como Chile (/caja-mexico = copia de /caja-jaye).
+   n8n: Sync Pedidos Dropi México AwL2a72pjp4rJaFe → Caja diaria México 4CVSKwg5SJQaZ5fY (fin_caja_diaria_mx) → webhook lhd6S7ZhFoCpneVv.
+   Llegan los días ya hechos (entregas, entra, devoluciones, devol, meta, camila, queda en COP), igual que Chile. */
+var CAJA_MX=null; window.CAJA_MX_ERROR=false;
 function diasGananciaMX(cb){
-  var armar=function(){
-    var C=CAJA_MX.costos||{}, t=TASAS&&TASAS.mxn, por={};
-    if(!t){ cb([]); return; }
-    var dia=function(k){ return por[k]||(por[k]={dia:k,entregas:0,entra:0,devol:0,devoluciones:0,meta:0,camila:0,sueldo:0,queda:0}); };
-    (CAJA_MX.ventas||[]).forEach(function(v){
-      if(!v.dropi_dia) return; var k=String(v.dropi_dia).slice(0,10);
-      if(/entreg/i.test(v.dropi||'')){ var x=dia(k), cant=Number(v.cant)||1;
-        x.entregas++; var cu=(C.producto_mxn_por&&C.producto_mxn_por[v.prod])||C.producto_mxn||0;
-        x.entra+=((Number(v.precio)||0)-cant*cu-(C.envio_mxn||0))*t; }
-      else if(/devol|rechaz/i.test(v.dropi||'')){ var y=dia(k); y.devoluciones++; y.devol+=(C.devolucion_mxn||0)*t; }
-    });
-    (CAJA_MX.pauta||[]).forEach(function(p){ dia(p.dia).meta+=Number(p.cop)||0; });
-    cb(Object.keys(por).map(function(k){ var x=por[k]; x.entra=Math.round(x.entra); x.devol=Math.round(x.devol); x.queda=x.entra-x.devol-x.meta; return x; })
-      .sort(function(a,b){ return a.dia<b.dia?1:-1; }));
-  };
-  if(CAJA_MX) armar();
-  else if(window.CAJA_MX_ERROR&&Date.now()-_cajaMXfallo<300000) cb([]);
-  else fetch(BASE+'/caja-mexico',{cache:'no-store'}).then(function(r){ if(!r.ok) throw 0; return r.json(); })
-    .then(function(j){ if(!j||typeof j!=='object') throw 0; CAJA_MX=j; window.CAJA_MX_ERROR=false; armar(); })
-    .catch(function(){ window.CAJA_MX_ERROR=true; _cajaMXfallo=Date.now(); cb([]); });
+  if(CAJA_MX&&Date.now()-CAJA_MX._pedido<120000){ cb(CAJA_MX.dias); return; }
+  fetch(BASE+'/caja-mexico',{cache:'no-store'}).then(function(r){ if(!r.ok) throw 0; return r.json(); }).then(function(j){
+    var arr=(Array.isArray(j)?j:[j]).filter(function(x){ return x&&x.dia; });
+    CAJA_MX={dias:arr,_pedido:Date.now()}; window.CAJA_MX_ERROR=false; cb(arr);
+  }).catch(function(){ window.CAJA_MX_ERROR=true; cb(CAJA_MX?CAJA_MX.dias:[]); });
 }
 /* 03-11: POLONIA como Rumanía, con SU caja (/caja-polonia, misma forma que /caja-rumania pero en eslotis:
    envio_pln, producto_pln_por, producto_pln, devolucion_pln; pauta en COP de las campañas con "POLONIA" en el nombre).
@@ -4955,7 +4939,7 @@ function diasGananciaPL(cb){
 }
 window.diasGananciaPais=function(P,cb){
   if(P==='RO'){ diasGananciaRO(cb); return; }
-  if(P==='MX'){ diasGananciaMX(cb); return; }   /* 28-10: México como Rumanía */
+  if(P==='MX'){ diasGananciaMX(cb); return; }   /* 03-11: México como Chile */
   if(P==='PL'){ diasGananciaPL(cb); return; }   /* 03-11: Polonia */
   if(!esEU(P)){ cb([]); return; }
   var armar=function(){
