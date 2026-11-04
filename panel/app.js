@@ -949,12 +949,14 @@ function renderChart(){
   /* (03-11, v=322) James: "solo quería que el NÚMERO del total se viera mejor": cuatro barras iguales como antes;
      el número del total va más grande y en dorado, los de los canales más chicos */
   if(conTotal) series.push(_barra('Total',dias.map(d=>d.tot),CH_DEG.tot[0],CH_DEG.tot[1],nD<=10,oscuro,
-    {label:{show:nD<=10,position:'top',fontSize:14,fontWeight:900,color:oscuro?'#f0d58a':'#8a6100',formatter:function(p){ return p.value||''; }}}));
+    {label:{show:nD<=10,position:'top',fontSize:16,fontWeight:900,color:oscuro?'#ffd666':'#8a6100',formatter:function(p){ return p.value||''; }}}));
+  /* 03-11 James ("esos números se ven opacos, no se notan"): los de los canales en blanco puro y más grandes, y el gráfico en SVG
+     para que el texto salga nítido (en canvas se veía borroso) */
   vis.forEach(s=>series.push(_barra(s.nom,dias.map(d=>d[s.k]),CH_DEG[s.k][0],CH_DEG[s.k][1],conTotal?nD<=7:nD<=10,oscuro,
-    conTotal?{label:{show:nD<=7,position:'top',fontSize:9.5,fontWeight:700,color:oscuro?'#d5dce8':'#5b6573',formatter:function(p){ return p.value||''; }}}:{})));
+    conTotal?{label:{show:nD<=7,position:'top',fontSize:12.5,fontWeight:800,color:oscuro?'#ffffff':'#1b2230',formatter:function(p){ return p.value||''; }}}:{})));
   cont.style.height='230px'; cont.style.padding='0 6px 4px';
   if(cont.querySelector('.vacio')) cont.innerHTML='';
-  const inst=echarts.getInstanceByDom(cont)||echarts.init(cont);
+  const inst=echarts.getInstanceByDom(cont)||echarts.init(cont,null,{renderer:'svg'});
   const opt=_baseCurvas(dias.map(d=>d.lbl),nD); opt.xAxis.boundaryGap=true; opt.tooltip.axisPointer={type:'shadow'};
   inst.setOption(Object.assign(opt,{series:series}),true);
   setTimeout(function(){ try{ inst.resize(); }catch(e){} },50);
@@ -991,7 +993,7 @@ function renderPanelDropi(){
       label:{show:true,position:'outside',fontSize:13.5,fontWeight:800,color:txt,formatter:function(p){ return p.name+'\n'+p.value+' · '+p.percent+' %'; },lineHeight:18},
       labelLine:{length:12,length2:10,lineStyle:{color:oscuro?'#8a95a8':'#c5cbd6',width:1.5}},
       emphasis:{label:{fontSize:14}}, blur:{label:{opacity:1},itemStyle:{opacity:1}},
-      data:[{name:'Montadas en Dropi',value:rM,itemStyle:{color:{type:'linear',x:0,y:0,x2:1,y2:1,colorStops:[{offset:0,color:CH_DEG.wa[0]},{offset:1,color:CH_DEG.wa[1]}]}}},
+      data:[{name:'Montadas',value:rM,itemStyle:{color:{type:'linear',x:0,y:0,x2:1,y2:1,colorStops:[{offset:0,color:CH_DEG.wa[0]},{offset:1,color:CH_DEG.wa[1]}]}}},
             {name:'Sin montar',value:rT-rM,itemStyle:{color:{type:'linear',x:0,y:0,x2:1,y2:1,colorStops:[{offset:0,color:'#ff7a7f'},{offset:1,color:'#c62828'}]}}}]}]};
   if(!rT){ opt.series[0].data=[{name:'Sin ventas',value:1,itemStyle:{color:oscuro?'#2a3344':'#e9ebf0'}}]; opt.series[0].label.show=false; opt.tooltip.show=false; }
   cont.style.height='230px'; cont.style.padding='0 6px 4px';
