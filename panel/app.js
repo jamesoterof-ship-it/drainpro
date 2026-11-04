@@ -5738,7 +5738,8 @@ function pintarCierre(C){
      Bots y sueldo solo existen en Chile (Latam y total). Las ventas de cada región ya van en su cabecera. */
   /* 02-11 James: "las tarjetas no tienen el mismo tamaño": todas llevan la línea de detalle (vacía si no hay) con alto fijo de 2 renglones */
   /* 03-11 (James): 'las entregas de Chile aparte y las de México aparte, con su valor': cada país con caja, aunque vaya en 0 */
-  var detPais=function(n,v,reg){ return P.filter(function(p){ return (!reg||p.reg===reg)&&p.caja.hay; }).map(function(p){ return '<b>'+p.nom+'</b> '+(Number(p.caja[n])||0)+' · '+cop(p.caja[v]||0); }).join('<br>')||'—'; };
+  /* 03-11 James: "nunca una abajo de otra, horizontal, para que la tarjeta no se vea tan grande" (v=309): los países en una sola línea */
+  var detPais=function(n,v,reg){ return P.filter(function(p){ return (!reg||p.reg===reg)&&p.caja.hay; }).map(function(p){ return '<b>'+p.nom+'</b> '+(Number(p.caja[n])||0)+' · '+cop(p.caja[v]||0); }).join(' &nbsp;·&nbsp; ')||'—'; };
   var mini=function(l,v,m,cls,rojo){ return '<div class="cp-mini'+(cls?' '+cls:'')+'"><div class="lbl">'+l+'</div><div class="val"'+(rojo?' style="color:var(--red)"':'')+'>'+v+'</div><div class="meta">'+(m||'')+'</div></div>'; };
   /* 02-11 (James): los bots se cobran en TODOS los países (33 COP por mensaje recibido, como Camila: Carmen, Inês e Ioana vienen
      en msgs de sus cajas); el sueldo ya no existe en ningún lado. */
