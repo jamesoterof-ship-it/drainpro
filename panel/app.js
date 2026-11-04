@@ -946,16 +946,16 @@ function renderChart(){
   /* 03-11 James ("el totalizado no se ve, no lo logro visualizar"): el TOTAL es una barra dorada ANCHA de fondo en cada día
      (en su propio eje para que no comparta el ancho con los canales), con el número grande encima; los canales van adelante,
      más finos, dentro de ella. El número de los canales solo con 7 días o menos. */
+  /* (03-11, v=322) James: "solo quería que el NÚMERO del total se viera mejor": cuatro barras iguales como antes;
+     el número del total va más grande y en dorado, los de los canales más chicos */
   if(conTotal) series.push(_barra('Total',dias.map(d=>d.tot),CH_DEG.tot[0],CH_DEG.tot[1],nD<=10,oscuro,
-    {xAxisIndex:1,barMaxWidth:1000,barWidth:'72%',z:1,itemStyle:{borderRadius:[6,6,0,0],opacity:0.92,color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[{offset:0,color:CH_DEG.tot[0]},{offset:1,color:CH_DEG.tot[1]}]}},
-     label:{show:nD<=10,position:'top',fontSize:12.5,fontWeight:800,color:oscuro?'#ffffff':'#1b2230',formatter:function(p){ return p.value||''; }}}));
+    {label:{show:nD<=10,position:'top',fontSize:14,fontWeight:900,color:oscuro?'#f0d58a':'#8a6100',formatter:function(p){ return p.value||''; }}}));
   vis.forEach(s=>series.push(_barra(s.nom,dias.map(d=>d[s.k]),CH_DEG[s.k][0],CH_DEG[s.k][1],conTotal?nD<=7:nD<=10,oscuro,
-    conTotal?{z:3,barMaxWidth:16,barGap:'25%',barCategoryGap:'46%',label:{show:nD<=7,position:'top',fontSize:9.5,fontWeight:700,color:oscuro?'#ffffff':'#1b2230',formatter:function(p){ return p.value||''; }}}:{})));
+    conTotal?{label:{show:nD<=7,position:'top',fontSize:9.5,fontWeight:700,color:oscuro?'#d5dce8':'#5b6573',formatter:function(p){ return p.value||''; }}}:{})));
   cont.style.height='230px'; cont.style.padding='0 6px 4px';
   if(cont.querySelector('.vacio')) cont.innerHTML='';
   const inst=echarts.getInstanceByDom(cont)||echarts.init(cont);
   const opt=_baseCurvas(dias.map(d=>d.lbl),nD); opt.xAxis.boundaryGap=true; opt.tooltip.axisPointer={type:'shadow'};
-  if(conTotal) opt.xAxis=[opt.xAxis,{type:'category',data:dias.map(d=>d.lbl),boundaryGap:true,show:false}];
   inst.setOption(Object.assign(opt,{series:series}),true);
   setTimeout(function(){ try{ inst.resize(); }catch(e){} },50);
 }
