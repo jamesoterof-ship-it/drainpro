@@ -5094,7 +5094,7 @@ function renderPaisTab(){
        y las ventas con la plata al lado en la misma línea (estilos .rp-pais.cp-c en _cierre.css) */
     var card=function(p,flag,nom,zona,n,local,enCop){
       return '<div class="rp-pais cp-c" onclick="irPais(\''+p+'\')"><div class="t"><span class="flag '+flag+'"></span>'+nom+'</div>'+
-        '<div class="cp-fecha">'+fechaPaisHtml(zona)+'</div>'+
+        '<div class="cp-fecha">'+fechaPaisCorta(zona)+'</div>'+
         '<div class="v"><span class="n">'+n+' venta'+(n===1?'':'s')+'</span><span class="loc">'+local+'</span><span class="cop">'+enCop+'</span></div></div>';
     };
     /* 28-10: México va en LATAM (no en Europa) */
@@ -5696,6 +5696,12 @@ function renderAprobarPais(){
    la tasa del día; sin tasa no se suma nada. Las entregas son de pedidos de días anteriores: no cuadran con
    las ventas del mismo día, y así se explica abajo de la tabla. */
 var CIUDAD_ZONA={'America/Santiago':'Chile','America/Bogota':'Bogotá','Europe/Madrid':'Madrid','Europe/Lisbon':'Lisboa','Europe/Bucharest':'Bucarest','America/Mexico_City':'Ciudad de México','Europe/Warsaw':'Varsovia'};   /* 28-10: México */
+/* 03-11: versión corta para las tarjetas compactas ("mié 4 nov · 00:02 Chile"): la larga se cortaba con puntos suspensivos */
+function fechaPaisCorta(z){
+  var d=new Date();
+  return esc(d.toLocaleDateString('es-CL',{timeZone:z,weekday:'short',day:'numeric',month:'short'}).replace(/\./g,''))+' · <b>'+
+    esc(d.toLocaleTimeString('es-CL',{timeZone:z,hour:'2-digit',minute:'2-digit',hourCycle:'h23'}))+'</b> '+(CIUDAD_ZONA[z]||'');
+}
 function fechaPaisHtml(z){
   var d=new Date();
   return esc(d.toLocaleDateString('es-CL',{timeZone:z,weekday:'long',day:'numeric',month:'long'}))+' · <b>'+
