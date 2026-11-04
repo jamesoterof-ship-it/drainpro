@@ -62,6 +62,12 @@
 :root[data-theme="dark"] .cp-mini .meta{color:#e8c877}
 /* 03-11 James (v=312): "las salidas de plata en rojo": devoluciones, Meta y bots */
 .cp-mini.sale .meta,:root[data-theme="dark"] .cp-mini.sale .meta{color:var(--red)}
+/* 03-11 James ("esa línea blanca que divide el menú de la pantalla, déjala como en Resumen general"): en Chile el menú es más largo
+   y le sale la barra de desplazamiento de Windows, blanca. Se pinta fina y oscura, y el tema oscuro avisa al navegador (color-scheme). */
+.side{scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.side::-webkit-scrollbar{width:6px} .side::-webkit-scrollbar-track{background:transparent} .side::-webkit-scrollbar-thumb{background:var(--border);border-radius:6px}
+:root[data-theme="dark"]{color-scheme:dark}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){color-scheme:dark} }
 /* 03-11 James (v=310): el total en plata va AL LADO del número grande, horizontal */
 .cp-mini .fila{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-top:4px}
 .cp-mini .fila .val{margin-top:0} .cp-mini .lado{font-size:12.5px;font-weight:600;color:var(--ink-2);white-space:nowrap}
