@@ -1257,7 +1257,8 @@ function pedsVis(){
 /* 20-10: la página de visitas de una venta de Rumanía (prefijo "ro-") */
 function pagVisRO(o){
   var k=nrmNomPag(o.prod);
-  var v=(visitasWeb||[]).find(function(x){ return x&&x.pagina&&npV(x.pagina).indexOf('ro-')===0&&nrmNomPag(String(x.producto||'').replace(/ · Rumanía$/,''))===k; });
+  /* 04-11: la ficha de Rumanía manda "… · România" (en rumano): se aceptan las dos formas */
+  var v=(visitasWeb||[]).find(function(x){ return x&&x.pagina&&npV(x.pagina).indexOf('ro-')===0&&nrmNomPag(String(x.producto||'').replace(/ · (Rumanía|România)$/,''))===k; });
   return v?npV(v.pagina):'ro-otro';
 }
 /* 28-10: la página de visitas de una venta de México (prefijo "mx-"), como Rumanía */
@@ -1266,10 +1267,11 @@ function pagVisMX(o){
   var v=(visitasWeb||[]).find(function(x){ return x&&x.pagina&&npV(x.pagina).indexOf('mx-')===0&&nrmNomPag(String(x.producto||'').replace(/ · México$/,''))===k; });
   return v?npV(v.pagina):'mx-otro';
 }
-/* 03-11: la página de visitas de una venta de Polonia (prefijo "mx-"), como Rumanía */
+/* 03-11: la página de visitas de una venta de Polonia (prefijo "pl-"), como Rumanía.
+   04-11: la ficha de Polonia manda "… · Polska" (en polaco): se aceptan las dos formas */
 function pagVisPL(o){
   var k=nrmNomPag(o.prod);
-  var v=(visitasWeb||[]).find(function(x){ return x&&x.pagina&&npV(x.pagina).indexOf('pl-')===0&&nrmNomPag(String(x.producto||'').replace(/ · Polonia$/,''))===k; });
+  var v=(visitasWeb||[]).find(function(x){ return x&&x.pagina&&npV(x.pagina).indexOf('pl-')===0&&nrmNomPag(String(x.producto||'').replace(/ · (Polonia|Polska)$/,''))===k; });
   return v?npV(v.pagina):'pl-otro';
 }
 function pagVisES(o){
