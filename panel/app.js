@@ -961,7 +961,18 @@ function renderChart(){
   const inst=echarts.getInstanceByDom(cont)||echarts.init(cont,null,{renderer:'svg'});
   const opt=_baseCurvas(dias.map(d=>d.lbl),nD); opt.xAxis.boundaryGap=true; opt.tooltip.axisPointer={type:'shadow'};
   inst.setOption(Object.assign(opt,{series:series}),true);
-  setTimeout(function(){ try{ inst.resize(); }catch(e){} },50);
+  _vigilarTamano(cont);
+}
+/* 06-11 (James: "los indicadores de Chile quedaron en blanco"): el gráfico se pintaba mientras la pestaña estaba oculta (ancho 0)
+   y nadie le avisaba después que ya tenía espacio. Un vigilante de tamaño lo redibuja solo cada vez que el cuadro cambia de ancho
+   (al mostrarse la pestaña, al achicar la ventana, en el celular). Vale para todos los gráficos echarts del panel. */
+function _vigilarTamano(cont){
+  try{
+    var inst=echarts.getInstanceByDom(cont); if(inst) setTimeout(function(){ try{ inst.resize(); }catch(e){} },50);
+    if(cont._vigia||typeof ResizeObserver==='undefined') return;
+    cont._vigia=new ResizeObserver(function(){ var i=echarts.getInstanceByDom(cont); if(i&&cont.clientWidth>0) i.resize(); });
+    cont._vigia.observe(cont);
+  }catch(e){}
 }
 /* 03-11 James: "lo que no estoy calculando es las ventas del panel contra las ventas reales que se montan en Dropi".
    Va en el lugar de "Ventas por país" (ya no la necesita). Curva dorada = ventas registradas en el panel; curva verde =
@@ -1002,7 +1013,7 @@ function renderPanelDropi(){
   if(cont.querySelector('.vacio')) cont.innerHTML='';
   const inst=echarts.getInstanceByDom(cont)||echarts.init(cont);
   inst.setOption(opt,true);
-  setTimeout(function(){ try{ inst.resize(); }catch(e){} },50);
+  _vigilarTamano(cont);
 }
 function renderPaises(){
   const cont=document.getElementById('paisesReal'); if(!cont) return;
@@ -5904,7 +5915,7 @@ function pintarCierreGraf(C){
   var i1=echarts.getInstanceByDom(g1)||echarts.init(g1), i2=echarts.getInstanceByDom(g2)||echarts.init(g2);
   i1.setOption(Object.assign({},base,{series:[linea('Total',total,'#c9a227',3),linea('Latam',latam,'#3056c9'),linea('Europa',europa,'#179f6b')]}),true);
   i2.setOption(Object.assign({},base,{series:[linea('Entregado',sumD('entra'),'#179f6b'),linea('Gasto Meta',sumD('meta'),'#7c4dd8'),linea('Devoluciones',sumD('devol'),'#e0444b')]}),true);
-  setTimeout(function(){ try{ i1.resize(); i2.resize(); }catch(e){} },50);
+  _vigilarTamano(g1); _vigilarTamano(g2);   /* 06-11: redibujar solos cuando el cuadro cambie de ancho */
 }
 
 (function(){
