@@ -4725,15 +4725,23 @@ function kpiHtml(lbl,val,meta){
 /* ---- qué ventas mira el tablero según la pestaña ----
    Resumen: todos los países juntos (sin Paraguay). Chile / Colombia: su WhatsApp,
    redes y páginas. España y Portugal: sus pedidos de página, en euros. */
+/* 06-11 James ("indicadores nooo"): en las pestañas de España y Portugal las ventas de WhatsApp (Carmen / Inês) y las de
+   redes (Inês Redes FB/IG/Com) se contaban como Página. Ahora van por su canal, como en Chile. */
+function _ordEU(){
+  return ventasES.filter(function(o){return !/p[aá]gina/i.test(o.bot);}).map(function(o){ var red=redDeBot(o.bot);
+    return {orden:o.orden,cli:o.cli,prod:o.prod,loc:o.sub,sub:o.sub,bot:red?'Redes':'Carmen',red:red==='na'?'':red,
+      precio:fmtEUR(o.totalNum),precioNum:o.totalNum,fecha:o.fecha,hora:'',montado:!!o.montado}; });
+}
 function _ordP(){
-  if(esEU()||fPais==='RO'||fPais==='MX'||fPais==='PL') return [];   /* 28-10: México como Rumanía (no usa las ventas de Chile) */
+  if(esEU()) return _ordEU();
+  if(fPais==='RO'||fPais==='MX'||fPais==='PL') return [];   /* 28-10: México como Rumanía (no usa las ventas de Chile) */
   if(fPais==='todos') return ordenes.filter(function(o){return o.loc==='CL'||o.loc==='CO';});
   var loc=fPais==='CO'?'CO':'CL';
   return ordenes.filter(function(o){return o.loc===loc;});
 }
 /* 03-11: `montado` viaja en todas (James: gráfico "Panel vs Dropi" = ventas del panel contra las montadas en Dropi) */
-function _webES(){
-  return ventasES.map(function(o){return {orden:o.orden,totalNum:o.totalNum,prod:o.prod,cli:o.cli,fecha:o.fecha,montado:!!o.montado,
+function _webES(soloPag){
+  return ventasES.filter(function(o){return !soloPag||/p[aá]gina/i.test(o.bot);}).map(function(o){return {orden:o.orden,totalNum:o.totalNum,prod:o.prod,cli:o.cli,fecha:o.fecha,montado:!!o.montado,
     color:o.sub==='PT'?'#006600':'#aa151b',total:fmtEUR(o.totalNum),sub:o.sub};});
 }
 function _webCO(){
@@ -4756,7 +4764,7 @@ function _webPL(){
     color:'#DC143C',total:fmtPLN(o.totalNum),sub:'PL'};});
 }
 function _webP(){
-  if(esEU()) return _webES();
+  if(esEU()) return _webES(true);   /* 06-11: WhatsApp y redes van por _ordEU() */
   if(fPais==='RO') return _webRO();
   if(fPais==='MX') return _webMX();
   if(fPais==='PL') return _webPL();
