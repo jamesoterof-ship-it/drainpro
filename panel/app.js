@@ -5399,9 +5399,11 @@ function renderAprobarMX(ot){
   var gr={
     pend:todas.filter(function(o){return !cob(o)&&!espPago(o)&&confirmadoMX(o)&&!dud(o);}),
     conf:todas.filter(function(o){return !cob(o)&&!espPago(o)&&!confirmadoMX(o)&&!dud(o);}),
-    pago:todas.filter(function(o){return !cob(o)&&espPago(o);}),
-    cob:todas.filter(cob),
-    dud:todas.filter(function(o){return !cob(o)&&!espPago(o)&&dud(o);}),
+    /* 06-11 James: "esas ventas así deberías dejármelas pasar a dudoso, así como hago con Chile, que yo las pueda pasar manualmente":
+       la que él pasa a Dudosas va a Dudosas aunque espere anticipo, pago o cobertura */
+    pago:todas.filter(function(o){return !cob(o)&&espPago(o)&&!dud(o);}),
+    cob:todas.filter(function(o){return cob(o)&&!dud(o);}),
+    dud:todas.filter(dud),
     todas:todas };
   var f=window._fAprobMX||'pend'; if(!gr[f]) f='pend';
   var lista=gr[f];
@@ -5431,11 +5433,11 @@ function renderAprobarMX(ot){
           (/canal:\s*whatsapp/i.test(o.nota)?'<div style="font-size:11px;color:var(--ink-3)">por WhatsApp (México)</div>':'')+'</td>'+
           '<td>'+esc(o.dir)+'<div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.zona)+(o.region&&o.region!=='—'?', '+esc(o.region):'')+'</div></td>'+
           '<td>'+esc(o.cant)+'</td><td>'+fmtMXN(o.totalNum)+'</td><td onclick="event.stopPropagation()">'+(cob(o)
-            ?'<span style="font-size:12px;color:#7c3aed;font-weight:700">Revisar cobertura</span><div style="font-size:11px;color:var(--ink-3)">'+(/error dropi/i.test(o.estado||'')?'Dropi la rechazó: ninguna paquetería llegó':'Dropi dice que no llega: se cotiza por el municipio vecino')+'</div>'
+            ?'<span style="font-size:12px;color:#7c3aed;font-weight:700">Revisar cobertura</span><div style="font-size:11px;color:var(--ink-3)">'+(/error dropi/i.test(o.estado||'')?'Dropi la rechazó: ninguna paquetería llegó':'Dropi dice que no llega: se cotiza por el municipio vecino')+'</div>'+btnDud(k,dud(o))
             :abonoPendMX(o)
-            ?'<span style="font-size:12px;color:#c62828;font-weight:700">Esperando el anticipo</span><div style="font-size:11px;color:var(--ink-3)">$180 por su enlace · al pagar pasa a Pendientes</div>'
+            ?'<span style="font-size:12px;color:#c62828;font-weight:700">Esperando el anticipo</span><div style="font-size:11px;color:var(--ink-3)">$180 por su enlace · al pagar pasa a Pendientes</div>'+btnDud(k,dud(o))
             :esPagoPend(o)
-            ?'<span style="font-size:12px;color:#b45309;font-weight:700">Esperando el pago</span><div style="font-size:11px;color:var(--ink-3)">se aprueba cuando llegue el comprobante</div>'
+            ?'<span style="font-size:12px;color:#b45309;font-weight:700">Esperando el pago</span><div style="font-size:11px;color:var(--ink-3)">se aprueba cuando llegue el comprobante</div>'+btnDud(k,dud(o))
             :celdaAprob(k,'',o.id,falta,'',false,dud(o),esperaES(o),soltarIdMX(o)))+'</td></tr>';
       }).join('')+'</tbody></table>'
       :'<div class="vacio" style="padding:22px">'+(CONF_MX?vacio:'Cargando…')+'</div>')+'</div>';
