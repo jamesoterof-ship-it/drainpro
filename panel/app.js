@@ -5168,7 +5168,7 @@ function renderPaisTab(){
   /* 28-10: MÉXICO como Rumanía: su hora (Ciudad de México), sus montos en pesos mexicanos y lo que hay por aprobar */
   if(fPais==='MX'){
     var _dudMX=dudSet();
-    var pendMX=ventasMX.filter(function(o){return !o.montado&&!esPagoPend(o)&&!cobMX(o)&&!esAprobado('mx:'+o.id)&&!esRechazado('mx:'+o.id)&&confirmadoMX(o)&&!_dudMX.has('mx:'+o.id);}).length;
+    var pendMX=ventasMX.filter(function(o){return !o.montado&&!esPagoPend(o)&&!abonoPendMX(o)&&!cobMX(o)&&!esAprobado('mx:'+o.id)&&!esRechazado('mx:'+o.id)&&confirmadoMX(o)&&!_dudMX.has('mx:'+o.id);}).length;
     box.innerHTML='<div class="rp-aviso" style="margin-bottom:8px"><b>🕐 Hora de México: <span id="relojMX">'+horaMX()+'</span></b> · aquí el día va de 00:00 a 24:00 de Ciudad de México (ventas, gráficas, ganancia y el gasto de Meta).</div>'+
       '<div class="rp-aviso"><span class="flag flag-mx"></span> <b>México</b> · montos en pesos mexicanos ('+esc(TASAS&&TASAS.mxn?'1 peso mexicano = '+TASAS.mxn.toLocaleString('es-CO',{maximumFractionDigits:2})+' COP':'sin tasa del día')+'). '+
       'Por aprobar: <b>'+pendMX+'</b> · <a href="#" onclick="verAprobarPais(\'MX\');return false">ir a aprobar →</a> · '+
@@ -5575,7 +5575,7 @@ function renderAprobarPais(){
   var pvRO=document.getElementById('pnVerdeRO'); if(pvRO) pvRO.textContent=verdes(pendRO,'ro:')||'';
   var bRO=document.getElementById('badgeAprobarRO'); if(bRO){ bRO.textContent=pendRO.length; bRO.style.display=(pendRO.length&&fPais==='RO')?'':'none'; }
   /* 28-10: el contador de México, aparte (llave mx:), como Rumanía. PAGO PENDIENTE no cuenta: va a "Esperando pago" */
-  var pendMX=ventasMX.filter(function(o){return !o.montado&&!esPagoPend(o)&&!cobMX(o)&&!esAprobado('mx:'+o.id)&&!esRechazado('mx:'+o.id)&&confirmadoMX(o)&&!_dudC.has('mx:'+o.id);});
+  var pendMX=ventasMX.filter(function(o){return !o.montado&&!esPagoPend(o)&&!abonoPendMX(o)&&!cobMX(o)&&!esAprobado('mx:'+o.id)&&!esRechazado('mx:'+o.id)&&confirmadoMX(o)&&!_dudC.has('mx:'+o.id);});
   var nbMX=document.getElementById('numAprobMX'); if(nbMX){ nbMX.textContent=pendMX.length; nbMX.style.display=pendMX.length?'':'none'; }
   var pnMX=document.getElementById('pnNumMX'); if(pnMX) pnMX.textContent=rojas(pendMX,'mx:')||'';
   var pvMX=document.getElementById('pnVerdeMX'); if(pvMX) pvMX.textContent=verdes(pendMX,'mx:')||'';
