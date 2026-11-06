@@ -343,8 +343,10 @@ const BOTCOLOR={Carmen:'linear-gradient(135deg,#aa151b,#e0a800)',CarmenRO:'linea
    cruza por el chat y llega aca dentro del nombre del bot. Sin sufijo = venta
    vieja, de antes del cruce: se muestra "Redes" a secas y no se inventa cual fue. */
 const redNombre=r=>r==='ig'?'Instagram':r==='fb'?'Facebook':r==='com'?'Comentario':'Redes';
+/* 06-11 James ("que muestre en venta de qué canal, así como Chile"): las ventas de redes de Portugal vienen con bot "Inês Redes FB/IG/Com" */
+const redDeBot=b=>!/redes/i.test(b||'')?'':/\big\b|insta/i.test(b)?'ig':/\bfb\b|face|messen/i.test(b)?'fb':/\bcom\b|coment/i.test(b)?'com':'na';
 /* la etiqueta solo aparece en las ventas de redes; en las de WhatsApp estorbaria */
-const redBadge=o=>(o&&o.bot==='Redes')?'<span class="redchip red-'+(o.red||'na')+'">'+redNombre(o.red)+'</span>':'';
+const redBadge=o=>(o&&(o.bot==='Redes'||o.red))?'<span class="redchip red-'+(o.red||'na')+'">'+redNombre(o.red)+'</span>':'';
 /* Logística no es otro bot con otra memoria: es el MISMO chat del cliente visto por
    el lado de Carlos. La conversación es una sola (Camila sigue leyendo todo); lo que
    cambia es qué se muestra en pantalla. */
@@ -1493,7 +1495,7 @@ function ventasCarmen(){
   return ventasES.filter(function(o){return /^(carmen|in[eê]s)/i.test(o.bot);}).map(function(o){ return {rid:o.id,cli:o.cli,tel:o.tel,prod:o.prod,cant:o.cant,
     precioNum:o.totalNum,precio:fmtEUR(o.totalNum),dir:o.dir,zona:o.zona,region:o.region,nota:o.nota,desde:'',revision:'',nivel:'',fecha:o.fecha,hora:'',
     orden:o.orden,conf:!/pago\s*pendiente|falta/i.test(o.estado),abono:false,montado:o.montado,ordenDropi:(String(o.estado).match(/#(\d+)/)||[])[1]||'',
-    estado:o.estado,bot:'Carmen',loc:o.sub,red:'',llave:'es:'+o.id,creadoMs:o.creadoMs,eur:true}; });
+    estado:o.estado,bot:'Carmen',loc:o.sub,red:redDeBot(o.bot),llave:'es:'+o.id,creadoMs:o.creadoMs,eur:true}; });
 }
 /* 20-10: las ventas de Carmen Rumanía, en lei y con llave "ro:" */
 function ventasCarmenRO(){
@@ -1905,7 +1907,7 @@ function verVenta(i){
   document.getElementById('mTitulo').textContent=o.cli;
   document.getElementById('mBody').innerHTML=
     bloqueNota(o.nota)+bloqueEspera(o.nota,o.montado)+bloqueSinUbicar(o.dir,o.montado,o.nota)+
-    fila('Canal',o.esWeb?'Página · '+o.prod:'WhatsApp · '+(o.bot==='BotMX'?'México':o.bot==='BotPL'?'Polonia':BOTNOM[o.bot]))+fila('País',{CL:'Chile',CO:'Colombia',PY:'Paraguay',ES:'España',PT:'Portugal',RO:'Rumanía',MX:'México',PL:'Polonia'}[o.loc])+
+    fila('Canal',o.esWeb?'Página · '+o.prod:o.red?'Redes · '+redNombre(o.red)+(o.loc==='PT'?' · Inês · Portugal':''):'WhatsApp · '+(o.bot==='BotMX'?'México':o.bot==='BotPL'?'Polonia':BOTNOM[o.bot]))+fila('País',{CL:'Chile',CO:'Colombia',PY:'Paraguay',ES:'España',PT:'Portugal',RO:'Rumanía',MX:'México',PL:'Polonia'}[o.loc])+
     fila('Producto',o.prod)+fila('Cantidad',o.cant+' unidades')+(regalosDG(o)?fila('Regalos',regalosDG(o)):'')+fila('Teléfono','+'+o.tel)+
     fila('Dirección',o.dir)+fila('Comuna / Ciudad',o.zona)+fila('Región / Depto.',o.region)+
     filaRotulo(o.nota)+
@@ -5690,7 +5692,9 @@ function renderAprobarPais(){
           '<td><span class="flag flag-'+o.sub.toLowerCase()+'"></span> '+o.sub+'</td><td>'+esc(o.prod)+
           /* pago anticipado: Carmen manda el botón de PayPal y lee el comprobante; la página todavía no cobra */
           (/pago:\s*pre/i.test(o.nota)?pildoraPago(o):'')+pildoraMontaje(o,k)+
-          (/canal:\s*whatsapp/i.test(o.nota)?'<div style="font-size:11px;color:var(--ink-3)">por WhatsApp (Carmen)</div>':'')+'</td>'+
+          (/canal:\s*whatsapp/i.test(o.nota)?'<div style="font-size:11px;color:var(--ink-3)">por WhatsApp (Carmen)</div>':'')+
+          /* 06-11 James: la venta de redes dice de qué red vino, como en Chile */
+          (redDeBot(o.bot)?' <span class="redchip red-'+redDeBot(o.bot)+'">'+redNombre(redDeBot(o.bot))+'</span>':'')+'</td>'+
           '<td>'+esc(o.dir)+'<div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.zona)+(o.region&&o.region!=='—'?', '+esc(o.region):'')+'</div></td>'+
           '<td>'+esc(o.cant)+'</td><td>'+fmtEUR(o.totalNum)+'</td><td onclick="event.stopPropagation()">'+(esPagoPend(o)
             ?'<span style="font-size:12px;color:#b45309;font-weight:700">Esperando el pago</span><div style="font-size:11px;color:var(--ink-3)">se aprueba cuando llegue el comprobante</div>'
