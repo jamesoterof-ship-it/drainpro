@@ -4743,9 +4743,17 @@ function _ordEU(){
     return {orden:o.orden,cli:o.cli,prod:o.prod,loc:o.sub,sub:o.sub,bot:red?'Redes':'Carmen',red:red==='na'?'':red,
       precio:fmtEUR(o.totalNum),precioNum:o.totalNum,fecha:o.fecha,hora:'',montado:!!o.montado}; });
 }
+/* 06-11 James ("hazlo igualito como Portugal, España y Chile… que marque de qué canal es, en los indicadores también"):
+   en la pestaña de México las ventas de WhatsApp (Lupita MX) y las de redes (Lupita Redes FB/IG/Com) van por su canal; Página = solo la página. */
+function _ordMX(){
+  return ventasMX.filter(function(o){return !/p[aá]gina/i.test(o.bot);}).map(function(o){ var red=redDeBot(o.bot);
+    return {orden:o.orden,cli:o.cli,prod:o.prod,loc:'MX',sub:'MX',bot:red?'Redes':'BotMX',red:red==='na'?'':red,
+      precio:fmtMXN(o.totalNum),precioNum:o.totalNum,fecha:o.fecha,hora:'',montado:!!o.montado}; });
+}
 function _ordP(){
   if(esEU()) return _ordEU();
-  if(fPais==='RO'||fPais==='MX'||fPais==='PL') return [];   /* 28-10: México como Rumanía (no usa las ventas de Chile) */
+  if(fPais==='MX') return _ordMX();
+  if(fPais==='RO'||fPais==='PL') return [];   /* 28-10: Rumanía y Polonia no usan las ventas de Chile */
   if(fPais==='todos') return ordenes.filter(function(o){return o.loc==='CL'||o.loc==='CO';});
   var loc=fPais==='CO'?'CO':'CL';
   return ordenes.filter(function(o){return o.loc===loc;});
@@ -4765,8 +4773,8 @@ function _webRO(){
     color:'#002B7F',total:fmtRON(o.totalNum),sub:'RO'};});
 }
 /* 28-10: México como Rumanía (todas sus ventas en una lista, en pesos mexicanos) */
-function _webMX(){
-  return ventasMX.map(function(o){return {orden:o.orden,totalNum:o.totalNum,prod:o.prod,cli:o.cli,fecha:o.fecha,montado:!!o.montado,
+function _webMX(soloPag){
+  return ventasMX.filter(function(o){return !soloPag||/p[aá]gina/i.test(o.bot);}).map(function(o){return {orden:o.orden,totalNum:o.totalNum,prod:o.prod,cli:o.cli,fecha:o.fecha,montado:!!o.montado,
     color:'#006847',total:fmtMXN(o.totalNum),sub:'MX'};});
 }
 /* 03-11: Polonia como Rumanía (todas sus ventas en una lista, en eslotis) */
@@ -4777,7 +4785,7 @@ function _webPL(){
 function _webP(){
   if(esEU()) return _webES(true);   /* 06-11: WhatsApp y redes van por _ordEU() */
   if(fPais==='RO') return _webRO();
-  if(fPais==='MX') return _webMX();
+  if(fPais==='MX') return _webMX(true);   /* 06-11: WhatsApp y redes de México van por _ordMX() */
   if(fPais==='PL') return _webPL();
   if(fPais==='CO') return _webCO();
   if(fPais==='todos') return pedidosWeb.concat(_webES(),_webCO(),_webRO(),_webMX(),_webPL());
