@@ -28,7 +28,8 @@ const URL_CONV_ZOFIA=BASE+'/zofia-pl-conversaciones', URL_HIST_ZOFIA=BASE+'/zofi
 /* 09-11: PERÚ no tiene bot propio. Sus clientes escriben al bot James de Colombia (+57): los chats y las ventas
    de James con teléfono +51 van a la pestaña PERÚ (bot "JamesPE"); los +57 siguen en Colombia. Historial,
    respuesta, foto y pausa salen por los webhooks de siempre de James, con pais='CO' (es el número de Colombia). */
-function paisBotWA(c){ return c&&c.bot==='JamesPE'?'CO':((c&&c.loc)||'CL'); }
+/* 10-11: el +57 es SOLO PERÚ y lo atiende María (historial en contactos_peru): la pestaña PERÚ usa la llave "JamesPE" pero es María */
+function paisBotWA(c){ return c&&c.bot==='JamesPE'?'PE':((c&&c.loc)||'CL'); }
 /* 28-10: México como Rumanía. PENDIENTE: México todavía no tiene bot de WhatsApp (nombre por definir con James):
    cuando exista se agregan aquí sus 4 webhooks (/<bot>-mx-conversaciones, -historial, -responder, -pausar). */
 const URL_VENTAS=BASE+'/ventas';
@@ -340,7 +341,7 @@ const FLAG={CL:'flag-cl',CO:'flag-co',PY:'flag-py',ES:'flag-es',PT:'flag-pt',RO:
    no habia forma de saber cual estabas mirando, y una regla que faltaba en uno se
    buscaba en el otro. La CLAVE interna sigue siendo Carlos (la usan los filtros);
    lo que cambia es solo el nombre que se ve. */
-const BOTNOM={Carmen:'Carmen · España',CarmenRO:'Ioana · Rumanía',BotMX:'Lupita · México',BotPL:'Zofia · Polonia',JamesPE:'James · Perú',Carlos:'Camila · Chile',Logistica:'Laura · Logística',James:'James · Colombia',Ramon:'Ramón · Paraguay',Redes:'Camila Redes · Chile'};
+const BOTNOM={Carmen:'Carmen · España',CarmenRO:'Ioana · Rumanía',BotMX:'Lupita · México',BotPL:'Zofia · Polonia',JamesPE:'María · Perú',Carlos:'Camila · Chile',Logistica:'Laura · Logística',James:'James · Colombia',Ramon:'Ramón · Paraguay',Redes:'Camila Redes · Chile'};
 const BOTLOC={Carmen:'ES',CarmenRO:'RO',BotMX:'MX',BotPL:'PL',JamesPE:'PE',Carlos:'CL',Logistica:'CL',James:'CO',Ramon:'PY',Redes:'CL'};
 const BOTCOLOR={Carmen:'linear-gradient(135deg,#aa151b,#e0a800)',CarmenRO:'linear-gradient(135deg,#002B7F,#FCD116)',BotMX:'linear-gradient(135deg,#006847,#CE1126)',BotPL:'linear-gradient(135deg,#DC143C,#8a0d26)',JamesPE:'linear-gradient(135deg,#D91023,#8f0a17)',Carlos:'linear-gradient(135deg,#0e8074,#3aa897)',Logistica:'linear-gradient(135deg,#d97706,#f0a94a)',James:'linear-gradient(135deg,#3060ea,#6a92f5)',Ramon:'linear-gradient(135deg,#7c4dd8,#a98aec)',Redes:'linear-gradient(135deg,#d8256b,#f0699b)'};
 /* Konecta marca TODO pedido como canal "whatsapp", asi que el canal de verdad se
@@ -531,9 +532,10 @@ function normConv(r){
   const esC=bot.includes('carmen')&&!esCR;
   const esL=bot.includes('lupita');   /* 28-10: Lupita = México, nunca Chile */
   const esZ=bot.includes('zofia');    /* 03-11: Zofia = Polonia, nunca Chile */
-  const esPE=esJ&&/^51\d{9}$/.test(tel);   /* 09-11: cliente +51 que le escribe a James (+57) = Perú, no Colombia */
+  const esMa=bot.includes('maria');   /* 10-11: María = Perú */
+  const esPE=esMa||(esJ&&/^51\d{9}$/.test(tel));   /* 09-11: cliente +51 que le escribe a James (+57) = Perú, no Colombia */
   return {n:r.NOMBRE||tel||'Sin nombre',tel,ultimo:r.ULTIMO_MENSAJE||'',hora:r.HORA||'',fecha:r.FECHA||'',
-    orden:fechaOrden(r.FECHA,r.HORA),bot:esZ?'BotPL':esL?'BotMX':esCR?'CarmenRO':esC?'Carmen':esR?'Ramon':esJ?(esPE?'JamesPE':'James'):'Carlos',loc:esZ?'PL':esL?'MX':esCR?'RO':esC?'ES':esR?'PY':esJ?(esPE?'PE':'CO'):'CL',
+    orden:fechaOrden(r.FECHA,r.HORA),bot:esZ?'BotPL':esL?'BotMX':esCR?'CarmenRO':esC?'Carmen':esR?'Ramon':esMa?'JamesPE':esJ?(esPE?'JamesPE':'James'):'Carlos',loc:esZ?'PL':esL?'MX':esCR?'RO':esC?'ES':esR?'PY':esMa?'PE':esJ?(esPE?'PE':'CO'):'CL',
     estado:modo==='agente'?'pausada':'activa',msgs:[],loaded:false,
     /* 24-10: país GUARDADO del chat de Carmen/Inês (Inês guarda PT aunque el teléfono sea +57 o +34) */
     sub:esC?(String(r.PAIS||'').toUpperCase()==='PT'||/^351/.test(tel)?'PT':'ES'):'',
@@ -1961,7 +1963,7 @@ function verVenta(i){
   document.getElementById('mTitulo').textContent=o.cli;
   document.getElementById('mBody').innerHTML=
     bloqueNota(o.nota)+bloqueEspera(o.nota,o.montado)+bloqueSinUbicar(o.dir,o.montado,o.nota)+
-    fila('Canal',o.esWeb?'Página · '+o.prod:o.red?'Redes · '+redNombre(o.red)+(o.loc==='PT'?' · Inês · Portugal':''):'WhatsApp · '+(o.bot==='BotMX'?'México':o.bot==='BotPL'?'Polonia':o.bot==='JamesPE'?'James · Perú (bot de Colombia, +57)':BOTNOM[o.bot]))+fila('País',{CL:'Chile',CO:'Colombia',PY:'Paraguay',ES:'España',PT:'Portugal',RO:'Rumanía',MX:'México',PL:'Polonia',PE:'Perú'}[o.loc])+
+    fila('Canal',o.esWeb?'Página · '+o.prod:o.red?'Redes · '+redNombre(o.red)+(o.loc==='PT'?' · Inês · Portugal':''):'WhatsApp · '+(o.bot==='BotMX'?'México':o.bot==='BotPL'?'Polonia':o.bot==='JamesPE'?'María · Perú':BOTNOM[o.bot]))+fila('País',{CL:'Chile',CO:'Colombia',PY:'Paraguay',ES:'España',PT:'Portugal',RO:'Rumanía',MX:'México',PL:'Polonia',PE:'Perú'}[o.loc])+
     fila('Producto',o.prod)+fila('Cantidad',o.cant+' unidades')+(regalosDG(o)?fila('Regalos',regalosDG(o)):'')+fila('Teléfono','+'+o.tel)+
     fila('Dirección',o.dir)+fila('Comuna / Ciudad',o.zona)+fila('Región / Depto.',o.region)+
     filaRotulo(o.nota)+
@@ -4707,7 +4709,7 @@ function filaPL(r){
 var ventasPE=[];
 function esFilaPE(r){
   var p=String(r.PAIS||'').toUpperCase(), b=String(r.BOT||'');
-  if(p==='PE'||/p[aá]gina\s+pe\b/i.test(b)) return true;
+  if(p==='PE'||/p[aá]gina\s+pe\b/i.test(b)||/^mar[ií]a\s+pe\b/i.test(b)) return true;   /* 10-11: 'María PE' = ventas del chat de Perú */
   var bn=b.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
   return bn.indexOf('james')>=0&&/^51\d{9}$/.test(soloNum(r.TELEFONO));
 }
