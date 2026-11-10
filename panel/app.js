@@ -267,7 +267,7 @@ function soltarYa(k,id){
   /* 28-10 James: "ponme el botón de soltar en España igual que Chile". En España y Portugal el montador (n8n) no espera
      la hora: la espera es solo del panel. Soltar = aprobar ya (la llave es: va a pedidos_aprobados y el montador la toma en ≤3 min). */
   /* 03-11: México NO va aquí: su montador espera la hora como Chile, así que pasa por el webhook soltar-ya (fin_soltar_ya) */
-  if(/^es:/.test(String(k))){ aprobar(k); if(typeof toast==='function') toast('Soltada ✓ — se monta en '+(/^mx:/.test(String(k))?'Dropi México':'Dropi PRO')+' en el próximo ciclo'); return; }
+  if(/^(es|pe):/.test(String(k))){ aprobar(k); if(typeof toast==='function') toast('Soltada ✓ — se monta en '+(/^pe:/.test(String(k))?'Dropi Perú':'Dropi PRO')+' en el próximo ciclo'); return; }
   fetch(BASE+'/soltar-ya',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({venta_id:String(id)})})
     .then(function(r){ return r.json(); })
     .then(function(j){
@@ -5698,6 +5698,9 @@ function confirmadoPE(o){
   var f=CONF_PE&&CONF_PE[String(o.id)]; return !!(f&&f.estado==='CONFIRMO');
 }
 function abonoPendPE(o){ return /abono\s*pendiente/i.test(o.estado||''); }   /* cliente riesgoso que no ha pagado el anticipo */
+/* 10-11 James: "pon un botón de soltar ya como las demás". Perú: confirmó + sin pago/anticipo pendiente + nombre y dirección sirven.
+   El montador de Perú no espera la hora (la espera es solo del panel): soltar = aprobar ya, y apretarlo es la aprobación de James. */
+function soltarIdPE(o){ return (confirmadoPE(o)&&!esPagoPend(o)&&!abonoPendPE(o)&&nombreSirve(o.cli)&&dirSirve(o.dir))?String(o.id):''; }
 function verAprobPE(i){ window._ventasF=window._aprobPE||[]; verVenta(i); }
 function renderAprobarPE(ot){
   cargarConfPE();
@@ -5724,7 +5727,7 @@ function renderAprobarPE(ot){
       conf:true, abono:/abono pendiente/i.test(o.estado||''), montado:o.montado, ordenDropi:(String(o.estado||'').match(/#(\d+)/)||[])[1]||'',
       estado:o.estado||'', bot:web?'Página':'JamesPE', loc:'PE', red:'', llave:'pe:'+o.id, creadoMs:o.creadoMs, eur:true }; });
   ot.innerHTML='<div class="panel"><div class="tbl-head"><h2>Perú · por aprobar</h2>'+
-    '<span style="font-size:12px;color:#8a93a0">Van a Dropi Perú, nunca a Dropi Colombia ni a Dropi Chile (llave pe:). Todavía no hay montador de Perú: aprobar NO crea nada en Dropi.</span>'+tabs+'</div>'+
+    '<span style="font-size:12px;color:#8a93a0">Van a Dropi Perú, nunca a Dropi Colombia ni a Dropi Chile (llave pe:). Al aprobar o soltar, el montador la crea en Dropi Perú en el próximo ciclo.</span>'+tabs+'</div>'+
     (lista.length?'<table><thead><tr><th>Cliente</th><th>País</th><th>Producto</th><th>Dirección</th><th>Cant.</th><th>Total</th><th>Aprobación</th></tr></thead><tbody>'+
       lista.map(function(o,ix){
         var k='pe:'+o.id, falta=!nombreSirve(o.cli)?'nom':(!dirSirve(o.dir)?true:false);
@@ -5741,7 +5744,7 @@ function renderAprobarPE(ot){
             ?'<span style="font-size:12px;color:#c62828;font-weight:700">Esperando el anticipo</span><div style="font-size:11px;color:var(--ink-3)">por su enlace · al pagar pasa a Pendientes</div>'
             :esPagoPend(o)
             ?'<span style="font-size:12px;color:#b45309;font-weight:700">Esperando el pago</span><div style="font-size:11px;color:var(--ink-3)">se aprueba cuando llegue el comprobante</div>'
-            :celdaAprob(k,'',o.id,falta,'',false,dud(o),esperaES(o)))+'</td></tr>';
+            :celdaAprob(k,'',o.id,falta,'',false,dud(o),esperaES(o),soltarIdPE(o)))+'</td></tr>';
       }).join('')+'</tbody></table>'
       :'<div class="vacio" style="padding:22px">'+(CONF_PE?vacio:'Cargando…')+'</div>')+'</div>';
 }
@@ -5802,7 +5805,7 @@ function renderAprobarPais(){
   /* 28-10 (5ª vuelta, James: "Rumanía se puso para aprobar y no estaba en verde"): VERDE = la fila muestra "✓ Aprobar" o
      "⚡ Soltar ya" (sePuedeActuar, misma lógica que la celda). El inspector solo corre en Chile y España: en Portugal y Rumanía
      la venta queda verde cuando cumple la hora y se puede aprobar. ROJA = las pendientes que todavía no tienen botón. */
-  var verdes=function(arr,pre){ return arr.filter(function(o){ return sePuedeActuar(pre+o.id,faltaEU(o),'',esperaES(o),pre==='es:'?soltarIdES(o):(pre==='mx:'?soltarIdMX(o):'')); }).length; };
+  var verdes=function(arr,pre){ return arr.filter(function(o){ return sePuedeActuar(pre+o.id,faltaEU(o),'',esperaES(o),pre==='es:'?soltarIdES(o):(pre==='mx:'?soltarIdMX(o):(pre==='pe:'?soltarIdPE(o):''))); }).length; };
   var rojas=function(arr,pre){ return arr.length-verdes(arr,pre); };
   var pnES=document.getElementById('pnNumES'); if(pnES) pnES.textContent=rojas(pend,'es:')||'';
   var pnPT=document.getElementById('pnNumPT'); if(pnPT) pnPT.textContent=rojas(pendPT,'es:')||'';
