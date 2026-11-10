@@ -4629,6 +4629,37 @@ async function crmFicha(id){
   setInterval(cargarAlertas,300000);
 })();
 
+/* ALARMA WHATSAPP SIN MENSAJES (10-11, James: "Banner en el panel"). El 10-11 de 8:21 a 8:50 MX Meta dejo de
+   entregar los mensajes de los 3 numeros y se perdieron confirmaciones (Guillermo #9175). n8n iyYnaygOkxxMd3F9
+   (/wa-silencio) mira el ultimo mensaje que entro: de 8 a 22 h MX, 12+ min sin ninguno => franja roja en todos los paises.
+   No va al WhatsApp de James (regla 23-10: ningun aviso a su numero). */
+(function(){
+  var oculta='';
+  try{ oculta=sessionStorage.getItem('jaye_wa_silencio_oculta')||''; }catch(e){}
+  function caja(){
+    var b=document.getElementById('alertaWa'); if(b) return b;
+    b=document.createElement('div'); b.id='alertaWa'; b.className='alertasCamp'; b.setAttribute('role','alert'); b.hidden=true;
+    var ref=document.getElementById('alertasCamp');
+    if(ref&&ref.parentNode) ref.parentNode.insertBefore(b,ref); else document.body.insertBefore(b,document.body.firstChild);
+    return b;
+  }
+  function pintar(d){
+    var b=caja();
+    if(!d||!d.alerta||oculta===d.desde){ b.hidden=true; b.innerHTML=''; return; }
+    b.innerHTML='<div class="acHead"><b>⚠️ WhatsApp no está entregando mensajes</b><button type="button" class="acX">Ocultar</button></div>'+
+      '<div class="acItem">No entra ningún mensaje de clientes desde las <b>'+String(d.desde||'?')+'</b> (hace '+Number(d.minutos||0)+' min). '+
+      'Revisa WhatsApp Business: lo que escriban o confirmen ahora no está llegando al sistema ni al panel.</div>';
+    b.hidden=false;
+    b.querySelector('.acX').onclick=function(){ oculta=d.desde; try{ sessionStorage.setItem('jaye_wa_silencio_oculta',oculta); }catch(e){} b.hidden=true; };
+  }
+  function mirar(){
+    if(document.hidden) return;
+    fetch(BASE+'/wa-silencio',{cache:'no-store'}).then(function(r){ return r.json(); }).then(pintar).catch(function(){});
+  }
+  setTimeout(mirar,4000);
+  setInterval(mirar,60000);
+})();
+
 /* =====================================================================
    PANEL POR PAÍS (28-09-2026, pedido por James)
    Pestañas: Resumen (todo sumado en PESOS COLOMBIANOS, "es donde me va a entrar
