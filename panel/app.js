@@ -5325,8 +5325,8 @@ function renderPaisTab(){
     box.innerHTML='<div class="rp-aviso" style="margin-bottom:8px"><b>🕐 Hora de Perú: <span id="relojPE">'+horaPE()+'</span></b> · aquí el día va de 00:00 a 24:00 de Lima (ventas, gráficas, ganancia y el gasto de Meta). Lima tiene la misma hora que Bogotá.</div>'+
       '<div class="rp-aviso"><span class="flag flag-pe"></span> <b>Perú</b> · montos en soles ('+esc(TASAS&&TASAS.pen?'1 sol = '+TASAS.pen.toLocaleString('es-CO',{maximumFractionDigits:2})+' COP':'sin tasa del día')+'). '+
       'Por aprobar: <b>'+pendPE+'</b> · <a href="#" onclick="verAprobarPais(\'PE\');return false">ir a aprobar →</a> · '+
-      'Perú no tiene bot propio: sus clientes escriben al bot James (+57) y aquí salen los que tienen teléfono +51. '+
-      'Todavía no hay montador de Dropi Perú: aprobar NO crea nada en Dropi todavía.</div>';
+      'El WhatsApp +57 314 502 1958 es solo de Perú y lo atiende María. '+
+      'El montador de Dropi Perú está apagado: aprobar NO crea nada en Dropi todavía.</div>';
     return;
   }
 
