@@ -131,6 +131,7 @@ function noDudSet(){ try{ return new Set(JSON.parse(localStorage.getItem('jaye_n
 function marcarDudosa(k){
   var d=dudSet(); d.add(k); guardarSet('jaye_dud',d);
   var n=noDudSet(); if(n.delete(k)) guardarSet('jaye_nodud',n);
+  var a=aprobSet(); if(a.delete(k)) guardarSet('jaye_aprob',a);   // 10-11: si estaba aprobada, deja de estarlo (el servidor también la quita)
   if(typeof toast==='function') toast('Pasó a Dudosas');
   refrescarAprob();
   fetch(URL_APROBAR,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:k,accion:'dudosa'})}).catch(function(){});
@@ -287,7 +288,8 @@ function motivoTrab(x){
 }
 function celdaAprob(k,montadoHtml,rid,faltaDir,prog,enRevision,dud,creadoMs,soltarId){
   if(montadoHtml) return montadoHtml;
-  if(esAprobado(k)) return '<span class="st st-rec"><i></i>Aprobado ⏳</span>';
+  /* 10-11 James: "dame botón dudoso" también en lo aprobado que aún no se monta: al pasarla a Dudosa se le quita la aprobación (no se monta) */
+  if(esAprobado(k)) return '<span class="st st-rec"><i></i>Aprobado ⏳</span>'+btnDud(k,false);
   /* 25-09 James: "bloquea la aprobacion por una hora". Hasta ahora el reloj de
      espera era solo un letrero: el boton Aprobar estaba igual y se aprobaba a los
      pocos minutos. Ahora, antes de la hora, en vez del boton va el reloj, y al
