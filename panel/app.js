@@ -343,7 +343,7 @@ const FLAG={CL:'flag-cl',CO:'flag-co',PY:'flag-py',ES:'flag-es',PT:'flag-pt',RO:
    no habia forma de saber cual estabas mirando, y una regla que faltaba en uno se
    buscaba en el otro. La CLAVE interna sigue siendo Carlos (la usan los filtros);
    lo que cambia es solo el nombre que se ve. */
-const BOTNOM={Carmen:'Carmen · España',CarmenRO:'Ioana · Rumanía',BotMX:'Lupita · México',BotPL:'Zofia · Polonia',JamesPE:'María · Perú',Carlos:'Camila · Chile',Logistica:'Laura · Logística',James:'James · Colombia',Ramon:'Ramón · Paraguay',Redes:'Camila Redes · Chile'};
+const BOTNOM={Carmen:'Carmen · España',CarmenRO:'Ioana · Rumanía',BotMX:'Lupita · México',BotPL:'Zofia · Polonia',JamesPE:'María · Perú',Carlos:'Camila · Chile',Logistica:'Laura · Logística',James:'Valentina · Colombia',Ramon:'Ramón · Paraguay',Redes:'Camila Redes · Chile'};
 const BOTLOC={Carmen:'ES',CarmenRO:'RO',BotMX:'MX',BotPL:'PL',JamesPE:'PE',Carlos:'CL',Logistica:'CL',James:'CO',Ramon:'PY',Redes:'CL'};
 const BOTCOLOR={Carmen:'linear-gradient(135deg,#aa151b,#e0a800)',CarmenRO:'linear-gradient(135deg,#002B7F,#FCD116)',BotMX:'linear-gradient(135deg,#006847,#CE1126)',BotPL:'linear-gradient(135deg,#DC143C,#8a0d26)',JamesPE:'linear-gradient(135deg,#D91023,#8f0a17)',Carlos:'linear-gradient(135deg,#0e8074,#3aa897)',Logistica:'linear-gradient(135deg,#d97706,#f0a94a)',James:'linear-gradient(135deg,#3060ea,#6a92f5)',Ramon:'linear-gradient(135deg,#7c4dd8,#a98aec)',Redes:'linear-gradient(135deg,#d8256b,#f0699b)'};
 /* Konecta marca TODO pedido como canal "whatsapp", asi que el canal de verdad se
@@ -4776,15 +4776,21 @@ function filaES(r){
    salían para aprobar en Chile, con riesgo de montarse en Dropi Chile. Su llave de
    aprobación es "co:<id>", que ningún montador reconoce: Colombia se monta a mano. */
 var ventasCO=[];
-function esFilaCO(r){ return /p[aá]gina\s+co\b/i.test(String(r.BOT||'')); }
+/* 10-11: Valentina (WhatsApp +57 322) registra por pedido-tienda-co con pagina "co-valentina": es venta de Colombia,
+   nunca de Chile. Si algún día el bot se guarda como "Valentina", también entra aquí. */
+function esFilaCO(r){ return /p[aá]gina\s+co\b/i.test(String(r.BOT||''))||/^valentina\b/i.test(String(r.BOT||'')); }
 function filaCO(r){
   var est=String(r.ESTADO||''), cms=Number(r.CREADO_MS)||0;
   return {id:String(r.row_number||''),cli:r.NOMBRE||'—',tel:soloNum(r.TELEFONO),prod:r.PRODUCTO||'—',
     cant:numero(r.CANTIDAD)||1,totalNum:numero(r.PRECIO),dir:r.DIRECCION||'—',zona:r.COMUNA||'—',region:r.REGION||'—',
     estado:est||'—',nota:String(r.NOTA||''),creadoMs:cms,montado:/montad|#\d/i.test(est),
-    fecha:r.FECHA||'',orden:cms||fechaOrden(r.FECHA,''),bot:String(r.BOT||''),loc:'CO'};
+    fecha:r.FECHA||'',orden:cms||fechaOrden(r.FECHA,''),
+    bot:(/co-valentina/.test(String(r.NOTA||''))||/^valentina\b/i.test(String(r.BOT||'')))?'Valentina':String(r.BOT||''),loc:'CO'};
 }
-function pagCO(o){ return /gafa|lente|aumento/i.test(String(o.prod||''))?'co-gafas':'co-otro'; }
+/* 10-11: cada venta cuenta en SU página (las visitas llegan como co-protector, co-chao, co-gafas);
+   las de Valentina son de WhatsApp y no suman como conversión de ninguna página */
+function pagCO(o){ var p=String(o.prod||''); if(o.bot==='Valentina') return 'co-valentina';
+  return /protector|colch/i.test(p)?'co-protector':/chao|cana/i.test(p)?'co-chao':/gafa|lente|aumento/i.test(p)?'co-gafas':'co-otro'; }
 
 function cargarTasas(){
   try{ var c=JSON.parse(localStorage.getItem('jaye_tasas')||'null');
@@ -4993,7 +4999,7 @@ function htmlOtroPais(v){
       '<div style="font-size:12px;color:var(--ink-3);padding:8px 4px">Conversión = pedidos ÷ visitas. Desde el 28-09 cada visita llega marcada con su país (es- / pt-); antes de esa fecha España y Portugal salen juntas como ES.</div>';
   }
   if(v==='bots'||v==='conv'){
-    if(!ES) return vacioPais('Colombia todavía no tiene bot de ventas. Sus chats están en "James · Colombia".');
+    if(!ES) return vacioPais('Los chats de Colombia (WhatsApp +57 322 608 7847) están en "Valentina · Colombia".');
     var car=ventasES.filter(function(o){return /^(carmen|in[eê]s)/i.test(o.bot);});
     /* 24-10: Portugal tiene su número y su bot (Inês, +351 918 470 538) */
     return (v==='conv'&&fBot==='Redes'?vacioPais(nom+' todavía no vende por redes (Facebook e Instagram).'):
@@ -5849,7 +5855,7 @@ function renderAprobarPais(){
     cargarLlamCO();
     /* 30-09: página (jayegroupshop.com) + WhatsApp de James. Llave "co:<id>": ningún
        montador la toma, Colombia se crea A MANO en Dropi Colombia. */
-    var listaCO=ventasCO.filter(function(o){return !o.montado;}).map(function(o){return {o:o,canal:'Página',id:o.id,zona:o.zona};})
+    var listaCO=ventasCO.filter(function(o){return !o.montado;}).map(function(o){return {o:o,canal:o.bot==='Valentina'?'WhatsApp · Valentina':'Página',id:o.id,zona:o.zona};})
       .concat((ordenes||[]).filter(function(o){return o.loc==='CO'&&!o.montado;}).map(function(o){
         return {o:{cli:o.cli,tel:o.tel,fecha:o.fecha,prod:o.prod,dir:o.dir,zona:o.zona,region:o.region,cant:o.cant,totalNum:o.precioNum,estado:o.estado,nota:o.nota,creadoMs:o.creadoMs},canal:'WhatsApp (James)',id:String(o.rid||'')};}))
       /* 30-09 James: a aprobación SOLO llega lo que el cliente ya confirmó: por mensaje (botón Confirmar)
