@@ -267,7 +267,7 @@ function soltarYa(k,id){
   /* 28-10 James: "ponme el botón de soltar en España igual que Chile". En España y Portugal el montador (n8n) no espera
      la hora: la espera es solo del panel. Soltar = aprobar ya (la llave es: va a pedidos_aprobados y el montador la toma en ≤3 min). */
   /* 03-11: México NO va aquí: su montador espera la hora como Chile, así que pasa por el webhook soltar-ya (fin_soltar_ya) */
-  if(/^(es|pe):/.test(String(k))){ aprobar(k); if(typeof toast==='function') toast('Soltada ✓ — se monta en '+(/^pe:/.test(String(k))?'Dropi Perú':'Dropi PRO')+' en el próximo ciclo'); return; }
+  if(/^(es|pe|co):/.test(String(k))){ aprobar(k); if(typeof toast==='function') toast('Soltada ✓ — se monta en '+(/^pe:/.test(String(k))?'Dropi Perú':(/^co:/.test(String(k))?'Dropi Colombia':'Dropi PRO'))+' en el próximo ciclo'); return; }
   fetch(BASE+'/soltar-ya',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({venta_id:String(id)})})
     .then(function(r){ return r.json(); })
     .then(function(j){
@@ -5754,6 +5754,9 @@ function renderAprobarPE(ot){
       }).join('')+'</tbody></table>'
       :'<div class="vacio" style="padding:22px">'+(CONF_PE?vacio:'Cargando…')+'</div>')+'</div>';
 }
+/* 11-11 James: "el botón de soltarlo ya, como aparecen las demás": Colombia también lo tiene, como Perú. Sale solo si el
+   cliente ya confirmó, no espera pago ni anticipo y tiene nombre y dirección. Soltar = aprobar ya (lo aprueba James al apretarlo). */
+function soltarIdCO(x,o){ return (x&&x.id&&confirmadoCO(x.id,o)&&!esPagoPend(o)&&!/abono pendiente/i.test((o&&o.estado)||'')&&nombreSirve(o.cli)&&dirSirve(o.dir))?String(x.id):''; }
 function confirmadoCO(id,o){
   var wa=LLAM_CO.some(function(l){return l.tipo==='wa'&&String(l.ref)===String(id)&&l.resultado==='CONFIRMO_WA';})||/CONFIRMADO/.test((o&&o.nota)||'');
   return wa||llamadaOkCO(id);
@@ -5887,7 +5890,7 @@ function renderAprobarPais(){
               ?'<span style="font-size:12px;color:#b45309;font-weight:700">Esperando el pago</span><div style="font-size:11px;color:var(--ink-3)">se aprueba cuando Wompi lo marque pagado</div>'
               :(/abono pendiente/i.test(o.estado||'')&&/anticipo_link/.test(o.nota||''))
               ?'<span style="font-size:12px;color:#b45309;font-weight:700">Esperando el anticipo</span><div style="font-size:11px;color:var(--ink-3)">se aprueba cuando Wompi confirme los $20.000</div>'
-              :celdaAprob(k,'',x.id,falta,'',false,false,llamadaOkCO(x.id)?0:o.creadoMs))+'</td></tr>';
+              :celdaAprob(k,'',x.id,falta,'',false,false,llamadaOkCO(x.id)?0:o.creadoMs,soltarIdCO(x,o)))+'</td></tr>';
         }).join('')+'</tbody></table>'
         :'<div class="vacio" style="padding:22px">Sin ventas de Colombia confirmadas por aprobar.</div>')+
       (sinConfCO?'<div style="padding:10px 16px;font-size:12px;color:var(--ink-3);border-top:1px solid var(--grid)">'+sinConfCO+(sinConfCO>1?' ventas esperan':' venta espera')+' que el cliente confirme por mensaje o por llamada. Están en Pedidos y en la página del equipo.</div>':'')+'</div>';
