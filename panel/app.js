@@ -4790,7 +4790,8 @@ function filaCO(r){
 /* 10-11: cada venta cuenta en SU página (las visitas llegan como co-protector, co-chao, co-gafas);
    las de Valentina son de WhatsApp y no suman como conversión de ninguna página */
 function pagCO(o){ var p=String(o.prod||''); if(o.bot==='Valentina') return 'co-valentina';
-  return /protector|colch/i.test(p)?'co-protector':/chao|cana/i.test(p)?'co-chao':/gafa|lente|aumento/i.test(p)?'co-gafas':'co-otro'; }
+  /* 11-11: funda navideña de puerta (co-funda) y fundas de silla (co-sillas) cuentan en su página */
+  return /protector|colch/i.test(p)?'co-protector':/puerta/i.test(p)?'co-funda':/silla/i.test(p)?'co-sillas':/chao|cana/i.test(p)?'co-chao':/gafa|lente|aumento/i.test(p)?'co-gafas':'co-otro'; }
 
 function cargarTasas(){
   try{ var c=JSON.parse(localStorage.getItem('jaye_tasas')||'null');
