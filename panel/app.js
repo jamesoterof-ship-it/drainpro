@@ -27,10 +27,15 @@ const URL_CONV_ZOFIA=BASE+'/zofia-pl-conversaciones', URL_HIST_ZOFIA=BASE+'/zofi
       URL_RESP_ZOFIA=BASE+'/zofia-pl-responder', URL_PAUSA_ZOFIA=BASE+'/zofia-pl-pausar';
 /* 11-11: la pestaña PERÚ pasó a ser GUATEMALA (James: "reemplaza Perú por Guatemala"). La llave interna "JamesPE"
    ahora es Ana Lucía (WhatsApp +502 3814 9621, historial en contactos_guatemala).
-   PENDIENTE: los webhooks del chat (leer-conversaciones, historial, responder, pausar-activar) todavía NO conocen
-   Guatemala (con pais='GT' responder saldría por el número viejo de Perú): por eso el panel NO responde, ni manda fotos,
-   ni pausa a Ana Lucía (ver enviarRespuesta / sendImg / togglePausa). */
+   11-11 (James: "si"): el chat de Ana Lucía va por SUS webhooks (flujo n8n zPg5diRD6oh71XwU), nunca por los de
+   Chile/Colombia: lee contactos_guatemala, responde y manda fotos por el +502 y pausa en fin_contactos (lo que mira Ana Lucía). */
+const URL_CONV_ANA=BASE+'/ana-gt-conversaciones', URL_HIST_ANA=BASE+'/ana-gt-historial',
+      URL_RESP_ANA=BASE+'/ana-gt-responder', URL_PAUSA_ANA=BASE+'/ana-gt-pausar', URL_IMG_ANA=BASE+'/ana-gt-imagen';
 function paisBotWA(c){ return c&&c.bot==='JamesPE'?'GT':((c&&c.loc)||'CL'); }
+/* 11-11: un mismo teléfono puede tener chat en Chile/Colombia y con Ana Lucía (el de James): en la pestaña Guatemala se toma
+   el de Ana Lucía; en las demás, el que no es de Ana Lucía (igual que antes). */
+function convDeTel(tel){ const gt=(typeof fBot!=='undefined'&&fBot==='JamesPE');
+  return convos.find(x=>x.tel===tel&&((x.bot==='JamesPE')===gt))||convos.find(x=>x.tel===tel); }
 /* 28-10: México como Rumanía. PENDIENTE: México todavía no tiene bot de WhatsApp (nombre por definir con James):
    cuando exista se agregan aquí sus 4 webhooks (/<bot>-mx-conversaciones, -historial, -responder, -pausar). */
 const URL_VENTAS=BASE+'/ventas';
@@ -594,12 +599,15 @@ async function cargarConvos(){
     /* 03-11: Zofia Polonia (si el webhook todavía no existe, no pasa nada) */
     try{ const rz=await fetch(URL_CONV_ZOFIA,{cache:'no-store'}); if(rz.ok){ const dz=await rz.json();
       rows=rows.concat((Array.isArray(dz)?dz:(dz.body||[])).map(x=>Object.assign({},x,{BOT:'Zofia PL'}))); } }catch(e){}
-    const previo={}; convos.forEach(c=>{previo[c.tel]={msgs:c.msgs,loaded:c.loaded,sig:c.sig};});
+    /* 11-11: Ana Lucía Guatemala (si el webhook falla, no pasa nada) */
+    try{ const ra=await fetch(URL_CONV_ANA+'?t='+Date.now(),{cache:'no-store'}); if(ra.ok){ const da=await ra.json();
+      rows=rows.concat((Array.isArray(da)?da:(da.body||[])).map(x=>Object.assign({},x,{BOT:'Ana Lucia GT'}))); } }catch(e){}
+    const previo={}; convos.forEach(c=>{previo[c.bot+'|'+c.tel]={msgs:c.msgs,loaded:c.loaded,sig:c.sig};});   /* 11-11: por bot, por si el teléfono está en dos países */
     convos=rows.filter(r=>r&&r.TELEFONO).map(normConv).filter(c=>!c.vieja).sort((a,b)=>b.orden-a.orden);   /* 11-11: sin los chats viejos de Perú */
     // solo reusamos lo cacheado si el último mensaje es el mismo; si llegó uno nuevo, se recarga
-    convos.forEach(c=>{const p=previo[c.tel];if(p&&p.loaded&&p.sig===c.sig){c.msgs=p.msgs;c.loaded=true;}});
+    convos.forEach(c=>{const p=previo[c.bot+'|'+c.tel];if(p&&p.loaded&&p.sig===c.sig){c.msgs=p.msgs;c.loaded=true;}});
     renderConvList(); renderBots(); renderResumen();
-    if(selTel){const c=convos.find(x=>x.tel===selTel); if(c){ pintarChatHead(c); if(!c.loaded) refrescarChat(c); }}
+    if(selTel){const c=convDeTel(selTel); if(c){ pintarChatHead(c); if(!c.loaded) refrescarChat(c); }}
   }catch(e){
     const el=document.getElementById('clist');
     if(el && !convos.length) el.innerHTML='<div class="vacio">No pude cargar conversaciones. Reintento…</div>';
@@ -1610,7 +1618,7 @@ function pintarChatHead(c){
 }
 async function abrirChat(tel){
   selTel=tel; renderConvList();
-  var c=convos.find(x=>x.tel===tel);
+  var c=convDeTel(tel);
   if(!c) c=convos.find(x=>soloNum(x.tel).slice(-8)===soloNum(tel).slice(-8));
   if(!c){ var _p=pedWebDe(tel); if(_p){ c={tel:soloNum(tel), n:_p.cli||tel, bot:'Carlos', estado:'activa', loc:'chile', loaded:true, msgs:[{from:'bot', time:'', text:'📦 Pedido web: '+_p.cant+'x '+_p.prod+' · '+_p.total+' · '+(_p.comuna||'')+'\n'+(_p.conf?'✅ El cliente CONFIRMÓ su pedido.':'⏳ Esperando que el cliente confirme (se le envió la plantilla con botones Confirmar / Modificar).')}]}; } }
   if(!c){
@@ -1643,7 +1651,7 @@ async function abrirChat(tel){
 // trae el historial de verdad desde n8n. Devuelve true si pudo.
 async function traerHist(c){
   try{
-    const res=await fetch(c.bot==='BotPL'?URL_HIST_ZOFIA+'?telefono='+soloNum(c.tel)+'&t='+Date.now():c.bot==='BotMX'?URL_HIST_LUPITA+'?telefono='+soloNum(c.tel)+'&t='+Date.now():c.bot==='CarmenRO'?URL_HIST_CARMEN_RO+'?telefono='+soloNum(c.tel)+'&t='+Date.now():c.bot==='Carmen'?URL_HIST_CARMEN+'?telefono='+soloNum(c.tel)+'&t='+Date.now():URL_HIST+'?telefono='+soloNum(c.tel)+'&pais='+paisBotWA(c)+'&t='+Date.now());   /* 09-11: Perú (JamesPE) lee el historial de James con pais=CO */
+    const res=await fetch(c.bot==='JamesPE'?URL_HIST_ANA+'?telefono='+soloNum(c.tel)+'&t='+Date.now():c.bot==='BotPL'?URL_HIST_ZOFIA+'?telefono='+soloNum(c.tel)+'&t='+Date.now():c.bot==='BotMX'?URL_HIST_LUPITA+'?telefono='+soloNum(c.tel)+'&t='+Date.now():c.bot==='CarmenRO'?URL_HIST_CARMEN_RO+'?telefono='+soloNum(c.tel)+'&t='+Date.now():c.bot==='Carmen'?URL_HIST_CARMEN+'?telefono='+soloNum(c.tel)+'&t='+Date.now():URL_HIST+'?telefono='+soloNum(c.tel)+'&pais='+paisBotWA(c)+'&t='+Date.now());   /* 09-11: Perú (JamesPE) lee el historial de James con pais=CO */
     const data=await res.json();
     const arr=Array.isArray(data)?data:(data?[data]:[]);
     const row=arr.find(r=>r&&r.historial&&soloNum(r.telefono)===soloNum(c.tel))||arr.find(r=>r&&r.historial);
@@ -1735,9 +1743,16 @@ function ampliarImg(el){
   ov.classList.add('open');
 }
 async function togglePausa(){
-  const c=convos.find(x=>x.tel===selTel); if(!c) return;
+  const c=convDeTel(selTel); if(!c) return;
   const nuevo=c.estado==='pausada'?'bot':'agente';
-  if(c.bot==='JamesPE'){ toast('Pausar a Ana Lucía (Guatemala) desde el panel todavía no está conectado','err'); return; }   /* 11-11 */
+  if(c.bot==='JamesPE'){   /* 11-11: Ana Lucía, por SU webhook (fin_contactos.modo es lo que ella mira antes de contestar) */
+    try{ const r=await fetch(URL_PAUSA_ANA,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({telefono:soloNum(c.tel),modo:nuevo})});
+      const j=await r.json().catch(()=>({})); if(!j||j.ok!==true) throw new Error((j&&j.error)||'No se pudo cambiar el modo');
+      c.estado=nuevo==='agente'?'pausada':'activa';
+      pintarChatHead(c); renderConvList(); toast(nuevo==='agente'?'Ana Lucía pausada: tú atiendes esta conversación':'Ana Lucía reactivada');
+    }catch(e){ toast(String(e.message||'No se pudo cambiar el modo'),'err'); }
+    return;
+  }
   try{
     await fetch(c.bot==='BotPL'?URL_PAUSA_ZOFIA:c.bot==='BotMX'?URL_PAUSA_LUPITA:c.bot==='CarmenRO'?URL_PAUSA_CARMEN_RO:c.bot==='Carmen'?URL_PAUSA_CARMEN:URL_PAUSA,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({telefono:soloNum(c.tel),modo:nuevo})});
     c.estado=nuevo==='agente'?'pausada':'activa';
@@ -1746,16 +1761,15 @@ async function togglePausa(){
 }
 async function enviarRespuesta(){
   const inp=document.getElementById('chInput'); const t=inp.value.trim(); if(!t||!selTel) return;
-  const c=convos.find(x=>x.tel===selTel); if(!c) return;
-  /* 11-11: Guatemala no tiene todavía webhook de respuesta: con pais='GT' saldría por el número viejo de Perú */
-  if(c.bot==='JamesPE'){ toast('Responder a Guatemala desde el panel todavía no está conectado','err'); return; }
+  const c=convDeTel(selTel); if(!c) return;
   inp.value=''; c.msgs.push({from:'agente',text:t}); renderBubbles(c);
-  if(c.bot==='Carmen'||c.bot==='CarmenRO'||c.bot==='BotMX'||c.bot==='BotPL'){
+  /* 11-11: Guatemala (Ana Lucía) sale por el +502 con SU webhook, que además la deja en pausa */
+  if(c.bot==='Carmen'||c.bot==='CarmenRO'||c.bot==='BotMX'||c.bot==='BotPL'||c.bot==='JamesPE'){
 /* sale por el WhatsApp de España (+34, también para Rumanía); si WhatsApp no lo acepta se avisa y se quita el globo.
        20-10: Carmen Rumanía por SU webhook; nunca por el de Chile */
     try{
       /* 24-10: un chat +351 es de Portugal: se responde por el número de Portugal (+351, Inês), nunca por el +34 */
-      const r=await fetch(c.bot==='BotPL'?URL_RESP_ZOFIA:c.bot==='BotMX'?URL_RESP_LUPITA:c.bot==='CarmenRO'?URL_RESP_CARMEN_RO:(c.sub||subDeTel(c.tel))==='PT'?URL_RESP_INES:URL_RESP_CARMEN,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({telefono:soloNum(c.tel),mensaje:t})});
+      const r=await fetch(c.bot==='JamesPE'?URL_RESP_ANA:c.bot==='BotPL'?URL_RESP_ZOFIA:c.bot==='BotMX'?URL_RESP_LUPITA:c.bot==='CarmenRO'?URL_RESP_CARMEN_RO:(c.sub||subDeTel(c.tel))==='PT'?URL_RESP_INES:URL_RESP_CARMEN,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({telefono:soloNum(c.tel),mensaje:t})});
       const j=await r.json().catch(()=>({}));
       if(!j||j.ok!==true) throw new Error((j&&j.error)||'No se pudo enviar');
       c.estado='pausada'; pintarChatHead(c); renderConvList(); refrescarChat(c);
@@ -1774,8 +1788,8 @@ const quickReply=txt=>{const i=document.getElementById('chInput');i.value=txt;i.
 /* (1) enviar imagen como agente */
 function sendImg(input){
   const f=input.files&&input.files[0]; input.value=''; if(!f||!selTel) return;
-  const c=convos.find(x=>x.tel===selTel); if(!c) return;
-  if(c.bot==='Carmen'||c.bot==='CarmenRO'||c.bot==='BotMX'||c.bot==='BotPL'||c.bot==='JamesPE'){ toast('Las fotos a clientes de '+(c.bot==='JamesPE'?'Guatemala':c.bot==='BotPL'?'Polonia':c.bot==='BotMX'?'México':c.bot==='CarmenRO'?'Rumanía':(c.sub||subDeTel(c.tel))==='PT'?'Portugal':'España')+' todavía no se mandan desde el panel','err'); return; }
+  const c=convDeTel(selTel); if(!c) return;
+  if(c.bot==='Carmen'||c.bot==='CarmenRO'||c.bot==='BotMX'||c.bot==='BotPL'){ toast('Las fotos a clientes de '+(c.bot==='BotPL'?'Polonia':c.bot==='BotMX'?'México':c.bot==='CarmenRO'?'Rumanía':(c.sub||subDeTel(c.tel))==='PT'?'Portugal':'España')+' todavía no se mandan desde el panel','err'); return; }
   const rd=new FileReader();
   rd.onload=()=>{
     const img=new Image();
@@ -1786,6 +1800,13 @@ function sendImg(input){
       cv.getContext('2d').drawImage(img,0,0,w,h);
       const dataUrl=cv.toDataURL('image/jpeg',0.85);
       const msgImg={from:'agente',img:dataUrl}; c.msgs.push(msgImg); renderBubbles(c); toast('Enviando imagen…');
+      if(c.bot==='JamesPE'){   /* 11-11: Guatemala, por el +502 con SU webhook (ya la deja en pausa) */
+        try{ const r=await fetch(URL_IMG_ANA,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({telefono:soloNum(c.tel),imagen:dataUrl,caption:''})});
+          const j=await r.json().catch(()=>({})); if(!j||j.ok!==true) throw new Error((j&&j.error)||'No se pudo enviar la imagen');
+          c.estado='pausada'; pintarChatHead(c); renderConvList(); toast('Imagen enviada ✓');
+        }catch(e){ c.msgs.pop(); renderBubbles(c); toast(String(e.message||'No se pudo enviar la imagen'),'err'); }
+        return;
+      }
       try{
         const r=await fetch(URL_IMG,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pais:paisBotWA(c),telefono:soloNum(c.tel),imagen:dataUrl,caption:''})});
         if(!r.ok) throw 0;
@@ -5380,7 +5401,7 @@ function renderPaisTab(){
     box.innerHTML='<div class="rp-aviso" style="margin-bottom:8px"><b>🕐 Hora de Guatemala: <span id="relojPE">'+horaPE()+'</span></b> · aquí el día va de 00:00 a 24:00 de Guatemala (ventas, gráficas, ganancia y el gasto de Meta). Guatemala va una hora menos que Bogotá.</div>'+
       '<div class="rp-aviso"><span class="flag flag-gt"></span> <b>Guatemala</b> · montos en quetzales ('+esc(TASAS&&TASAS.gtq?'1 quetzal = '+TASAS.gtq.toLocaleString('es-CO',{maximumFractionDigits:2})+' COP':'sin tasa del día')+'). '+
       'Por aprobar: <b>'+pendPE+'</b> · <a href="#" onclick="verAprobarPais(\'GT\');return false">ir a aprobar →</a> · '+
-      'El WhatsApp +502 3814 9621 lo atiende Ana Lucía (el chat todavía no se ve ni se responde desde el panel). '+
+      'El WhatsApp +502 3814 9621 lo atiende Ana Lucía (su chat se ve, se responde y se pausa en Conversaciones → Ana Lucía · Guatemala). '+
       'El montador de Dropi Guatemala está apagado: aprobar NO crea nada en Dropi todavía.</div>';
     return;
   }
