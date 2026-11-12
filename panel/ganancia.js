@@ -23,7 +23,7 @@
      ya se descuenta una sola vez, en Chile). */
   var MODO = { pais: 'CL', sueldo: SUELDO_MES, bots: BOTS_DIA, botsTxt: 'Camila, Carlos y 3 más', dropi: 'Dropi' };
   /* 28-10: México como Rumanía (sin esto la pestaña de México mostraba la caja de Chile) */
-  function paisGan() { return (window.fPais === 'ES' || window.fPais === 'PT' || window.fPais === 'CO' || window.fPais === 'RO' || window.fPais === 'MX' || window.fPais === 'PL' || window.fPais === 'PE') ? window.fPais : 'CL'; }   /* 04-11: + Polonia (antes caía en Chile) · 09-11: + Perú */
+  function paisGan() { return (window.fPais === 'ES' || window.fPais === 'PT' || window.fPais === 'CO' || window.fPais === 'RO' || window.fPais === 'MX' || window.fPais === 'PL' || window.fPais === 'GT') ? window.fPais : 'CL'; }   /* 04-11: + Polonia (antes caía en Chile) · 11-11: Guatemala en el lugar de Perú */
 
   var pes = function (n) { return '$' + Math.round(Number(n) || 0).toLocaleString('es-CO'); };
   var num = function (n) { return Math.round(Number(n) || 0); };
@@ -35,7 +35,7 @@
      Se recalcula en cada pintada: el país se cambia sin recargar la página. */
   function hoyGan() {
     /* 20-10: Portugal con la hora de Lisboa */
-    var d = new Date(new Date().toLocaleString('en-US', { timeZone: paisGan() === 'ES' ? 'Europe/Madrid' : paisGan() === 'PT' ? 'Europe/Lisbon' : paisGan() === 'RO' ? 'Europe/Bucharest' : paisGan() === 'PL' ? 'Europe/Warsaw' : paisGan() === 'MX' ? 'America/Mexico_City' : paisGan() === 'PE' ? 'America/Lima' : 'America/Bogota' }));   /* 28-10: México · 09-11: Perú (Lima) */
+    var d = new Date(new Date().toLocaleString('en-US', { timeZone: paisGan() === 'ES' ? 'Europe/Madrid' : paisGan() === 'PT' ? 'Europe/Lisbon' : paisGan() === 'RO' ? 'Europe/Bucharest' : paisGan() === 'PL' ? 'Europe/Warsaw' : paisGan() === 'MX' ? 'America/Mexico_City' : paisGan() === 'GT' ? 'America/Guatemala' : 'America/Bogota' }));   /* 28-10: México · 11-11: Guatemala (antes Perú/Lima) */
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   }
   var HOY = hoyGan();
@@ -80,7 +80,7 @@
           : MODO.pais === 'RO' ? (window.CAJA_RO_ERROR ? 'Caja de Rumanía todavía no conectada.' : 'Rumanía todavía no tiene entregas de Dropi PRO.')
           : MODO.pais === 'MX' ? (window.CAJA_MX_ERROR ? 'México sin caja todavía.' : 'México todavía no tiene entregas de Dropi.')
           : MODO.pais === 'PL' ? (window.CAJA_PL_ERROR ? 'Polonia sin caja todavía.' : 'Polonia todavía no tiene entregas de Dropi PRO.')
-          : MODO.pais === 'PE' ? (window.CAJA_PE_ERROR ? 'Perú sin caja todavía.' : 'Perú todavía no tiene entregas de Dropi Perú.')   /* 09-11: Perú */
+          : MODO.pais === 'GT' ? (window.CAJA_PE_ERROR ? 'Guatemala sin caja todavía.' : 'Guatemala todavía no tiene entregas de Dropi Guatemala.')   /* 11-11: Guatemala */
           : (MODO.pais === 'PT' ? 'Portugal' : 'España') + ' todavía no tiene entregas de Dropi PRO.') : '') + '</td></tr>';
       var tfv = document.querySelector('#tablaGan tfoot'); if (tfv) tfv.innerHTML = '';
       var kv = document.getElementById('ganKpis'); if (kv) kv.innerHTML = '';
@@ -316,7 +316,7 @@
   window.cargarGanancia = function () {
     var P = paisGan();
     if (P !== 'CL') {
-      MODO = { pais: P, sueldo: 0, bots: 0, botsTxt: 'sin costo asignado aquí', dropi: (P === 'ES' || P === 'PT') ? 'Dropi PRO' : P === 'RO' ? 'Dropi PRO Rumanía' : P === 'PL' ? 'Dropi PRO Polonia' : P === 'PE' ? 'Dropi Perú' : P === 'MX' ? 'Dropi México' : 'Dropi' };
+      MODO = { pais: P, sueldo: 0, bots: 0, botsTxt: 'sin costo asignado aquí', dropi: (P === 'ES' || P === 'PT') ? 'Dropi PRO' : P === 'RO' ? 'Dropi PRO Rumanía' : P === 'PL' ? 'Dropi PRO Polonia' : P === 'GT' ? 'Dropi Guatemala' : P === 'MX' ? 'Dropi México' : 'Dropi' };
       dias = [];
       if (typeof window.diasGananciaPais === 'function') window.diasGananciaPais(P, function (arr) { if (paisGan() !== P) return; dias = arr; pintarGanancia(); });
       pintarGanancia();
