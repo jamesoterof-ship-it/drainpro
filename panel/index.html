@@ -597,7 +597,8 @@ body:not([data-pais="CL"]) :is(#badgeCancelar,#badgeNovedades,#badgeListanegra,#
       <div class="pn-grupo">Latinoamérica</div>
       <!-- 28-10 James: bolita ROJA = por aprobar · bolita VERDE = de esas, las que el inspector ya marcó "se puede aprobar" (tocarla abre Aprobar) -->
       <button data-p="CL"><span class="flag flag-cl"></span>Chile <b class="pn-num" id="pnNumCL"></b><b class="pn-num pn-verde" id="pnVerdeCL" title="verificadas por el inspector: se pueden aprobar" onclick="irAprobarVerde(event,'CL')"></b></button>
-      <button data-p="CO"><span class="flag flag-co"></span>Colombia</button>
+      <!-- 12-11 James: Colombia con las dos bolitas como los demás países -->
+      <button data-p="CO"><span class="flag flag-co"></span>Colombia <b class="pn-num" id="pnNumCO"></b><b class="pn-num pn-verde" id="pnVerdeCO" title="confirmadas por el cliente: se pueden aprobar" onclick="irAprobarVerde(event,'CO')"></b></button>
       <!-- 28-10: México como Rumanía, en Latinoamérica -->
       <button data-p="MX"><span class="flag flag-mx"></span>México <b class="pn-num" id="pnNumMX"></b><b class="pn-num pn-verde" id="pnVerdeMX" title="verificadas por el inspector: se pueden aprobar" onclick="irAprobarVerde(event,'MX')"></b></button>
       <!-- 11-11: GUATEMALA en el lugar de Perú (James: "no agregues más pestañas, reemplaza Perú por Guatemala") -->
@@ -1642,7 +1643,7 @@ body:not([data-pais="CL"]) :is(#badgeCancelar,#badgeNovedades,#badgeListanegra,#
      apagado. Para devolverlo: recuperar este bloque del commit anterior y activar el flujo. -->
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
-<script src="app.js?v=348"></script>
+<script src="app.js?v=349"></script>
 <script src="ganancia.js?v=135"></script>
 </body>
 </html>

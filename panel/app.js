@@ -5837,6 +5837,9 @@ function renderAprobarPais(){
   document.querySelectorAll('#paisAprob .minitab').forEach(function(b){ b.classList.toggle('act',b.dataset.p===fPaisAprob); });
   /* PAGO PENDIENTE (anticipado sin comprobante todavía) no cuenta ni se puede aprobar */
   cargarConfES();
+  /* 12-11 James: las bolitas de México, Rumanía, Polonia, Guatemala y Colombia se quedaban en blanco desde el Resumen porque sus
+     confirmaciones solo se consultaban al abrir la pestaña del país. Ahora se consultan desde cualquier vista, como España (cada 10 s). */
+  cargarConfRO(); cargarConfMX(); cargarConfPL(); cargarConfPE(); cargarLlamCO();
   /* 15-10 James: "si ya la pasé a Dudosa no debe contar como por aprobar, como en Chile": el número cuenta lo mismo que la pestaña Pendientes */
   var _dudC=dudSet();
   /* 20-10: cada país europeo con su contador (España y Portugal ya no se suman) */
@@ -5883,6 +5886,14 @@ function renderAprobarPais(){
   var pnPE=document.getElementById('pnNumPE'); if(pnPE) pnPE.textContent=rojas(pendPE,'gt:')||'';
   var pvPE=document.getElementById('pnVerdePE'); if(pvPE) pvPE.textContent=verdes(pendPE,'gt:')||'';
   var bPE=document.getElementById('badgeAprobarPE'); if(bPE){ bPE.textContent=pendPE.length; bPE.style.display=(pendPE.length&&fPais==='GT')?'':'none'; }
+  /* 12-11 James: bolitas de COLOMBIA (llave co:). Misma lista que la pestaña Aprobación: página confirmada por el cliente
+     (mensaje o llamada) o ventas del chat (Valentina / James), sin montar, sin pago ni abono pendiente, ni aprobadas, ni dudosas.
+     VERDE = ya tiene botón Aprobar (sePuedeActuar, igual que la celda); ROJA = las que todavía no. */
+  var pendCO=ventasCO.filter(function(o){ return !o.montado&&!esPagoPend(o)&&!/abono\s*pendiente/i.test(o.estado||'')&&!esAprobado('co:'+o.id)&&!esRechazado('co:'+o.id)&&!_dudC.has('co:'+o.id)&&(o.bot==='Valentina'||confirmadoCO(o.id,o)); })
+    .concat((ordenes||[]).filter(function(o){ return o.loc==='CO'&&!o.montado&&o.rid&&!esAprobado('co:'+o.rid)&&!esRechazado('co:'+o.rid)&&!_dudC.has('co:'+o.rid); }).map(function(o){ return {id:String(o.rid),cli:o.cli,dir:o.dir,creadoMs:o.creadoMs,chat:true}; }));
+  var verdesCO=pendCO.filter(function(o){ var falta=!nombreSirve(o.cli)?'nom':(!dirSirve(o.dir)?true:false); return sePuedeActuar('co:'+o.id,falta,'',(o.chat||llamadaOkCO(o.id))?0:o.creadoMs,''); }).length;
+  var pnCO=document.getElementById('pnNumCO'); if(pnCO) pnCO.textContent=(pendCO.length-verdesCO)||'';
+  var pvCO=document.getElementById('pnVerdeCO'); if(pvCO) pvCO.textContent=verdesCO||'';
   if(fPaisAprob==='CL'){ ch.hidden=false; ot.hidden=true; return; }
   ch.hidden=true; ot.hidden=false;
   /* 20-10: Rumanía tiene SU rama; nunca cae en la de España */
