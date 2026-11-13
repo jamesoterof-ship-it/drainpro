@@ -5886,7 +5886,8 @@ function renderAprobarPE(ot){
 }
 /* 11-11 James: "el botón de soltarlo ya, como aparecen las demás": Colombia también lo tiene, como Perú. Sale solo si el
    cliente ya confirmó, no espera pago ni anticipo y tiene nombre y dirección. Soltar = aprobar ya (lo aprueba James al apretarlo). */
-function soltarIdCO(x,o){ return (x&&x.id&&confirmadoCO(x.id,o)&&!esPagoPend(o)&&!/abono pendiente/i.test((o&&o.estado)||'')&&nombreSirve(o.cli)&&dirSirve(o.dir))?String(x.id):''; }
+/* 13-11 James: "igual que Chile: cuando el inspector ya la revisó y la tiene en VERDE, ahí sí el botón" (antes salía apenas confirmaba) */
+function soltarIdCO(x,o){ return (x&&x.id&&o&&o.nivel==='VERDE'&&confirmadoCO(x.id,o)&&!esPagoPend(o)&&!/abono pendiente/i.test((o&&o.estado)||'')&&nombreSirve(o.cli)&&dirSirve(o.dir))?String(x.id):''; }
 function confirmadoCO(id,o){
   var wa=LLAM_CO.some(function(l){return l.tipo==='wa'&&String(l.ref)===String(id)&&l.resultado==='CONFIRMO_WA';})||/CONFIRMADO/.test((o&&o.nota)||'');
   return wa||llamadaOkCO(id);
