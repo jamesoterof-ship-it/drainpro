@@ -4829,6 +4829,8 @@ function filaCO(r){
     cant:numero(r.CANTIDAD)||1,totalNum:numero(r.PRECIO),dir:r.DIRECCION||'—',zona:r.COMUNA||'—',region:r.REGION||'—',
     estado:est||'—',nota:String(r.NOTA||''),creadoMs:cms,montado:/montad|#\d/i.test(est),
     fecha:r.FECHA||'',orden:cms||fechaOrden(r.FECHA,''),
+    /* 13-11: veredicto del inspector de Colombia (cuando exista), como Chile */
+    revision:String(r.REVISION||'').trim(), nivel:String(r.REVISION_NIVEL||'').trim().toUpperCase(),
     bot:(/co-valentina/.test(String(r.NOTA||''))||/^valentina\b/i.test(String(r.BOT||'')))?'Valentina':String(r.BOT||''),loc:'CO'};
 }
 /* 10-11: cada venta cuenta en SU página (las visitas llegan como co-protector, co-chao, co-gafas);
@@ -5506,6 +5508,69 @@ function pildoraMontajeCO(o){
   return '';
 }
 function verAprobCO(i){ window._ventasF=window._aprobCO||[]; verVenta(i); }
+/* 13-11 James ("la pestaña de aprobaciones la quiero como Chile, donde pueda moverla a dudosa"): Colombia con las mismas
+   pestañas que Chile y México: Pendientes · Esperando confirmación · Esperando pago · Dudosas · Todas, el botón ⚠ Dudosa /
+   ↩ Pendiente (misma lista jaye_dud, llave co:<id>), el chip y el motivo del inspector, y la píldora de pago con Wompi.
+   Antes Colombia era una sola tabla con solo lo confirmado: lo demás no se veía y no había dónde mover una venta. */
+function confirmadoFilaCO(o){
+  if(o.chat||o.bot==='Valentina') return true;                                   /* WhatsApp: el cliente confirmó en el chat */
+  if(/pago:\s*pre/i.test(o.nota||'')&&/PAGADO wompi/.test(o.nota||'')) return true; /* pago anticipado: lo confirma el pago */
+  return confirmadoCO(o.id,o);                                                     /* página: botón Confirmar o llamada */
+}
+function espPagoCO(o){ return esPagoPend(o)||/abono\s*pendiente/i.test(o.estado||''); }
+function renderAprobarCO(ot){
+  cargarLlamCO();
+  var todas=ventasCO.filter(function(o){return !o.montado;})
+    .concat((ordenes||[]).filter(function(o){return o.loc==='CO'&&!o.montado&&o.rid;}).map(function(o){
+      return {id:String(o.rid),cli:o.cli,tel:o.tel,prod:o.prod,cant:o.cant,totalNum:o.precioNum,dir:o.dir,zona:o.zona,region:o.region,
+        estado:o.estado||'',nota:o.nota||'',creadoMs:o.creadoMs,fecha:o.fecha,orden:o.creadoMs||o.orden||0,bot:'James',loc:'CO',montado:false,chat:true,
+        revision:o.revision||'',nivel:o.nivel||''}; }))
+    .sort(function(a,b){return (b.creadoMs||b.orden||0)-(a.creadoMs||a.orden||0);});
+  var _d=dudSet(), dud=function(o){ return _d.has('co:'+o.id); };
+  var gr={
+    pend:todas.filter(function(o){return !espPagoCO(o)&&confirmadoFilaCO(o)&&!dud(o);}),
+    conf:todas.filter(function(o){return !espPagoCO(o)&&!confirmadoFilaCO(o)&&!dud(o);}),
+    pago:todas.filter(function(o){return espPagoCO(o);}),
+    dud:todas.filter(function(o){return !espPagoCO(o)&&dud(o);}),
+    todas:todas };
+  var f=window._fAprobCO||'pend'; if(!gr[f]) f='pend';
+  var lista=gr[f];
+  var tab=function(id,txt,col){ var n=gr[id].length;
+    return '<button class="minitab'+(f===id?' act':'')+'" onclick="window._fAprobCO=\''+id+'\';renderAprobarPais()">'+txt+
+      (col&&n?' <span style="background:'+col+';color:#fff;border-radius:999px;font-size:10.5px;font-weight:800;padding:0 6px;margin-left:4px">'+n+'</span>':'')+'</button>'; };
+  var tabs='<div class="minitabs" style="margin-top:8px">'+tab('pend','Pendientes','#15803d')+tab('conf','Esperando confirmación','#d97706')+
+    tab('pago','Esperando pago','#b45309')+tab('dud','Dudosas','#c62828')+tab('todas','Todas','')+'</div>';
+  var vacio={pend:'Nada por aprobar. 🎉',conf:'Nadie esperando confirmar.',pago:'Nadie esperando pagar.',dud:'Ninguna venta dudosa.',todas:'Sin ventas pendientes.'}[f];
+  window._aprobCO=lista.map(function(o){ var web=!o.chat&&o.bot!=='Valentina';
+    return {esWeb:web, rid:o.id, cli:o.cli, tel:o.tel, prod:o.prod, cant:o.cant, precioNum:o.totalNum, precio:fmtCOP(o.totalNum)+' COP',
+      dir:o.dir, zona:o.zona, region:o.region, nota:o.nota||'', desde:'', revision:o.revision||'', nivel:o.nivel||'', fecha:o.fecha, hora:'', orden:o.creadoMs||o.orden||0,
+      conf:true, abono:/abono pendiente/i.test(o.estado||''), montado:/montad|#\d/i.test(o.estado||''), ordenDropi:(String(o.estado||'').match(/#(\d+)/)||[])[1]||'',
+      estado:o.estado||'', bot:o.chat?'James':(o.bot==='Valentina'?'Valentina':'Página'), loc:'CO', red:'', llave:'co:'+o.id, creadoMs:o.creadoMs }; });
+  ot.innerHTML='<div class="panel"><div class="tbl-head"><h2>Colombia · por aprobar</h2>'+
+    '<span style="font-size:12px;color:#8a93a0">Igual que Chile: lo que apruebes se crea solo en Dropi Colombia en máximo 5 minutos (contra entrega con cobro; pagado por Wompi sin cobro; anticipo de $20.000 descontado).</span>'+tabs+'</div>'+
+    (lista.length?'<table><thead><tr><th>Cliente</th><th>Canal</th><th>Producto</th><th>Dirección</th><th>Cant.</th><th>Total</th><th>Aprobación</th></tr></thead><tbody>'+
+      lista.map(function(o,ix){
+        var k='co:'+o.id, falta=!nombreSirve(o.cli)?'nom':(!dirSirve(o.dir)?true:false), x={id:o.id};
+        var pre=/pago:\s*pre/i.test(o.nota||''), web=!o.chat&&o.bot!=='Valentina';
+        var _rv=REV[o.nivel]&&REV[o.nivel].fila?';background:'+REV[o.nivel].fila:'';
+        return '<tr style="cursor:pointer'+_rv+'" onclick="verAprobCO('+ix+')"><td><b>'+esc(o.cli)+'</b>'+huellaBadge(o.tel)+chipRev(o)+'<div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.fecha)+' · +'+esc(o.tel)+'</div>'+motivoRev(o)+alertaHuellaCO(o.tel)+
+          (web&&!pre?(confirmadoCO(o.id,o)?'<div style="font-size:11.5px;color:#15803d;font-weight:700;margin-top:2px">✅ Confirmó</div>':'<div style="font-size:11.5px;color:#c62828;font-weight:700;margin-top:2px">⏳ Sin confirmar</div>')
+            :(!web&&!pre?'<div style="font-size:11.5px;color:#15803d;font-weight:700;margin-top:2px">✅ Confirmó en el chat</div>':''))+estadoLlamadaCO(x,o,pre)+'</td>'+
+          '<td>'+(o.chat?'WhatsApp (James)':o.bot==='Valentina'?'WhatsApp · Valentina':'Página')+'</td><td>'+esc(o.prod)+
+          '<div style="margin-top:4px;display:inline-block;border-radius:6px;padding:2px 7px;font-size:11.5px;font-weight:700;background:'+(pre&&/PAGADO wompi/.test(o.nota||'')?'#e3f6ea;color:#15803d">💳 PAGADO con Wompi · verificado · va SIN RECAUDO':pre?'#fff3e2;color:#b45309">💳 Pago anticipado · esperando el pago':'#eef2f7;color:#475569">💵 Al recibir')+'</div>'+
+          (/ANTICIPO PAGADO/.test(o.nota||'')?'<div style="font-size:11.5px;color:#15803d;font-weight:800;margin-top:3px">💳 Anticipo $20.000 PAGADO · en Dropi cobrar al recibir '+fmtCOP(Math.max(0,(o.totalNum||0)-20000))+'</div>'
+            :/abono pendiente/i.test(o.estado||'')?'<div style="font-size:11.5px;color:#c62828;font-weight:800;margin-top:3px">🔴 Cliente riesgoso · '+(/anticipo_link/.test(o.nota||'')?'💳 anticipo $20.000 enviado, esperando pago':'llamar antes de aprobar')+'</div>':'')+pildoraMontajeCO(o)+
+          (/grad:[^·]*POR DEFINIR/i.test(o.nota||'')?'<div style="font-size:11.5px;color:#c62828;font-weight:800;margin-top:3px">⚠️ Graduación por definir · escribirle por WhatsApp</div>'
+            :/grad:/i.test(o.nota||'')?'<div style="font-size:11px;color:var(--ink-3)">'+esc((String(o.nota).match(/grad:[^·]*/i)||[''])[0])+'</div>':'')+'</td>'+
+          '<td>'+esc(o.dir)+'<div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.zona)+(o.region&&o.region!=='—'?', '+esc(o.region):'')+'</div></td>'+
+          '<td>'+esc(o.cant)+'</td><td>'+fmtCOP(o.totalNum)+' COP</td><td onclick="event.stopPropagation()">'+(esPagoPend(o)
+            ?'<span style="font-size:12px;color:#b45309;font-weight:700">Esperando el pago</span><div style="font-size:11px;color:var(--ink-3)">se aprueba cuando Wompi lo marque pagado</div>'+btnDud(k,dud(o))
+            :(/abono pendiente/i.test(o.estado||'')&&/anticipo_link/.test(o.nota||''))
+            ?'<span style="font-size:12px;color:#b45309;font-weight:700">Esperando el anticipo</span><div style="font-size:11px;color:var(--ink-3)">se aprueba cuando Wompi confirme los $20.000</div>'+btnDud(k,dud(o))
+            :celdaAprob(k,'',o.id,falta,'',false,dud(o),(o.chat||llamadaOkCO(o.id))?0:o.creadoMs,o.chat?'':soltarIdCO(x,o)))+'</td></tr>';
+      }).join('')+'</tbody></table>'
+      :'<div class="vacio" style="padding:22px">'+vacio+'</div>')+'</div>';
+}
 function verAprobES(i){ window._ventasF=window._aprobES||[]; verVenta(i); }
 /* 04-10 James: "acá solo me debe aparecer el pedido que el cliente ya confirmó". Igual que Colombia:
    las ventas de la PÁGINA de España salen en Aprobación solo cuando el cliente confirmó (botón Confirmar /
@@ -5916,49 +5981,7 @@ function renderAprobarPais(){
   if(fPaisAprob==='MX'){ renderAprobarMX(ot); return; }
   if(fPaisAprob==='PL'){ renderAprobarPL(ot); return; }   /* 03-11: Polonia, su propia rama */
   if(fPaisAprob==='GT'){ renderAprobarPE(ot); return; }   /* 09-11: Perú, su propia rama (nunca cae en la de Colombia) */
-  if(fPaisAprob==='CO'){
-    cargarLlamCO();
-    /* 30-09: página (jayegroupshop.com) + WhatsApp de James. Llave "co:<id>": ningún
-       montador la toma, Colombia se crea A MANO en Dropi Colombia. */
-    var listaCO=ventasCO.filter(function(o){return !o.montado;}).map(function(o){return {o:o,canal:o.bot==='Valentina'?'WhatsApp · Valentina':'Página',id:o.id,zona:o.zona};})
-      .concat((ordenes||[]).filter(function(o){return o.loc==='CO'&&!o.montado;}).map(function(o){
-        return {o:{cli:o.cli,tel:o.tel,fecha:o.fecha,prod:o.prod,dir:o.dir,zona:o.zona,region:o.region,cant:o.cant,totalNum:o.precioNum,estado:o.estado,nota:o.nota,creadoMs:o.creadoMs},canal:'WhatsApp (James)',id:String(o.rid||'')};}))
-      /* 30-09 James: a aprobación SOLO llega lo que el cliente ya confirmó: por mensaje (botón Confirmar)
-         o por llamada (el equipo marcó Confirmó / Cambió datos). Lo demás queda registrado pero no se muestra. */
-      .filter(function(x){return x.id&&(x.canal!=='Página'||confirmadoCO(x.id,x.o));})   /* la venta del chat de James ya la confirmó el cliente en el chat */.sort(function(a,b){return (b.o.creadoMs||0)-(a.o.creadoMs||0);});
-    window._aprobCO=listaCO.map(function(x){ var o=x.o, web=x.canal==='Página';
-      return {esWeb:web, rid:x.id, cli:o.cli, tel:o.tel, prod:o.prod, cant:o.cant, precioNum:o.totalNum, precio:fmtCOP(o.totalNum)+' COP',
-        dir:o.dir, zona:o.zona, region:o.region, nota:o.nota||'', desde:'', revision:'', nivel:'', fecha:o.fecha, hora:'', orden:o.creadoMs||0,
-        conf:true, abono:/abono pendiente/i.test(o.estado||''), montado:/montad|#\d/i.test(o.estado||''), ordenDropi:(String(o.estado||'').match(/#(\d+)/)||[])[1]||'',
-        estado:o.estado||'', bot:'James', loc:'CO', red:'', llave:'co:'+x.id, creadoMs:o.creadoMs }; });
-    var sinConfCO=ventasCO.filter(function(o){return !o.montado&&!confirmadoCO(o.id,o);}).length
-;
-    ot.innerHTML='<div class="panel"><div class="tbl-head"><h2>Colombia · por aprobar</h2>'+
-      '<span style="font-size:12px;color:#8a93a0">Solo salen las ventas que el cliente ya confirmó (mensaje, llamada o chat de James). Lo que apruebes se crea solo en Dropi Colombia en máximo 5 minutos.</span></div>'+
-      (listaCO.length?'<table><thead><tr><th>Cliente</th><th>Canal</th><th>Producto</th><th>Dirección</th><th>Cant.</th><th>Total</th><th>Aprobación</th></tr></thead><tbody>'+
-        listaCO.map(function(x,ix){
-          var o=x.o, k='co:'+x.id, falta=!nombreSirve(o.cli)?'nom':(!dirSirve(o.dir)?true:false);
-          var pre=/pago:\s*pre/i.test(o.nota||'');
-          return '<tr style="cursor:pointer" onclick="verAprobCO('+ix+')"><td><b>'+esc(o.cli)+'</b>'+huellaBadge(o.tel)+'<div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.fecha)+' · +'+esc(o.tel)+'</div>'+alertaHuellaCO(o.tel)+'</td>'+
-            '<td>'+esc(x.canal)+'</td><td>'+esc(o.prod)+
-            /* 13-11 James "como Chile": PAGADO solo si el sistema verificó el cobro (Wompi escribe "PAGADO wompi"); antes decía pagado a todo "pago: pre" */
-            '<div style="margin-top:4px;display:inline-block;border-radius:6px;padding:2px 7px;font-size:11.5px;font-weight:700;background:'+(pre&&/PAGADO wompi/.test(o.nota||'')?'#e3f6ea;color:#15803d">💳 PAGADO con Wompi · verificado · va SIN RECAUDO':pre?'#fff3e2;color:#b45309">💳 Pago anticipado · esperando el pago':'#eef2f7;color:#475569">💵 Al recibir')+'</div>'+
-            /* 30-09 James: anticipo de $20.000 a los riesgosos (se descuenta del total) */
-            (/ANTICIPO PAGADO/.test(o.nota||'')?'<div style="font-size:11.5px;color:#15803d;font-weight:800;margin-top:3px">💳 Anticipo $20.000 PAGADO · en Dropi cobrar al recibir '+fmtCOP(Math.max(0,(o.totalNum||0)-20000))+'</div>'
-              :/abono pendiente/i.test(o.estado||'')?'<div style="font-size:11.5px;color:#c62828;font-weight:800;margin-top:3px">🔴 Cliente riesgoso · '+(/anticipo_link/.test(o.nota||'')?'💳 anticipo $20.000 enviado, esperando pago':'llamar antes de aprobar')+'</div>':'')+estadoLlamadaCO(x,o,pre)+pildoraMontajeCO(o)+
-            (/grad:[^·]*POR DEFINIR/i.test(o.nota||'')?'<div style="font-size:11.5px;color:#c62828;font-weight:800;margin-top:3px">⚠️ Graduación por definir · escribirle por WhatsApp</div>'
-              :/grad:/i.test(o.nota||'')?'<div style="font-size:11px;color:var(--ink-3)">'+esc((String(o.nota).match(/grad:[^·]*/i)||[''])[0])+'</div>':'')+'</td>'+
-            '<td>'+esc(o.dir)+'<div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.zona)+(o.region&&o.region!=='—'?', '+esc(o.region):'')+'</div></td>'+
-            '<td>'+esc(o.cant)+'</td><td>'+fmtCOP(o.totalNum)+' COP</td><td onclick="event.stopPropagation()">'+(esPagoPend(o)
-              ?'<span style="font-size:12px;color:#b45309;font-weight:700">Esperando el pago</span><div style="font-size:11px;color:var(--ink-3)">se aprueba cuando Wompi lo marque pagado</div>'
-              :(/abono pendiente/i.test(o.estado||'')&&/anticipo_link/.test(o.nota||''))
-              ?'<span style="font-size:12px;color:#b45309;font-weight:700">Esperando el anticipo</span><div style="font-size:11px;color:var(--ink-3)">se aprueba cuando Wompi confirme los $20.000</div>'
-              :celdaAprob(k,'',x.id,falta,'',false,false,llamadaOkCO(x.id)?0:o.creadoMs,soltarIdCO(x,o)))+'</td></tr>';
-        }).join('')+'</tbody></table>'
-        :'<div class="vacio" style="padding:22px">Sin ventas de Colombia confirmadas por aprobar.</div>')+
-      (sinConfCO?'<div style="padding:10px 16px;font-size:12px;color:var(--ink-3);border-top:1px solid var(--grid)">'+sinConfCO+(sinConfCO>1?' ventas esperan':' venta espera')+' que el cliente confirme por mensaje o por llamada. Están en Pedidos y en la página del equipo.</div>':'')+'</div>';
-    return;
-  }
+  if(fPaisAprob==='CO'){ renderAprobarCO(ot); return; }   /* 13-11: Colombia con las pestañas de Chile (renderAprobarCO) */
   /* 07-10 James: "que sea igual que Chile": pestañas Pendientes · Esperando confirmación · Esperando pago · Dudosas · Todas,
      y el botón ⚠ Dudosa / ↩ Pendiente para moverlas a mano (misma lista jaye_dud que Chile, con llave es:<id>). */
   var todasES=listaEU(fPaisAprob).filter(function(o){return !o.montado;});   /* 20-10: solo el país europeo elegido */
