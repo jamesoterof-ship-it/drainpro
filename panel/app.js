@@ -1495,6 +1495,10 @@ function renderConvList(){
      ningun bot y el cliente de pagina que no habia escrito por WhatsApp no
      aparecia en ninguna lista. 9-sep: James no veia las ventas del Organizador. */
   (pedidosWeb||[]).forEach(function(p){ var t=soloNum(p.tel); if(t && !_seen[t]){ _seen[t]=1; _base.push({tel:t, n:p.cli||t, bot:'Carlos', estado:'activa', ultimo:'📦 Pedido web · '+(p.conf?'confirmado ✅':'esperando confirmación ⏳'), hora:'', fecha:p.fecha||'', orden:p.orden||0}); } });
+  /* 12-11 James: los pedidos de la PÁGINA de Colombia que todavía no tienen chat también salen en Valentina · Colombia,
+     con si confirmó o no (como los de Chile en Camila) */
+  (typeof ventasCO!=='undefined'?ventasCO:[]).forEach(function(o){ if(o.montado||o.bot==='Valentina') return; var t=soloNum(o.tel); if(t.length===10) t='57'+t; if(!t||_seen[t]) return; _seen[t]=1;
+    var conf=/CONFIRMADO/i.test(o.nota||''); _base.push({tel:t, n:o.cli||t, bot:'James', loc:'CO', estado:'activa', ultimo:'📦 Pedido página · '+(conf?'confirmó':'esperando confirmación')+' · '+(o.prod||''), hora:'', fecha:o.fecha||'', orden:o.orden||0}); });
   let arr=_base.filter(c=>(esVistaLog()?c.log:c.bot===fBot&&(fBot!=='Carmen'||!esEU()||(c.sub||subDeTel(c.tel))===fPais)) && enRangoDe(c.orden,Rconv));
   if(fEst!=='todas') arr=arr.filter(c=>c.estado===fEst);
   if(q) arr=arr.filter(c=>(c.n+' '+c.tel).toLowerCase().includes(q));
@@ -1620,7 +1624,7 @@ async function abrirChat(tel){
   selTel=tel; renderConvList();
   var c=convDeTel(tel);
   if(!c) c=convos.find(x=>soloNum(x.tel).slice(-8)===soloNum(tel).slice(-8));
-  if(!c){ var _p=pedWebDe(tel); if(_p){ c={tel:soloNum(tel), n:_p.cli||tel, bot:'Carlos', estado:'activa', loc:'chile', loaded:true, msgs:[{from:'bot', time:'', text:'📦 Pedido web: '+_p.cant+'x '+_p.prod+' · '+_p.total+' · '+(_p.comuna||'')+'\n'+(_p.conf?'✅ El cliente CONFIRMÓ su pedido.':'⏳ Esperando que el cliente confirme (se le envió la plantilla con botones Confirmar / Modificar).')}]}; } }
+  if(!c&&!/^57\d{10}$/.test(soloNum(tel))){ var _p=pedWebDe(tel); if(_p){ c={tel:soloNum(tel), n:_p.cli||tel, bot:'Carlos', estado:'activa', loc:'chile', loaded:true, msgs:[{from:'bot', time:'', text:'📦 Pedido web: '+_p.cant+'x '+_p.prod+' · '+_p.total+' · '+(_p.comuna||'')+'\n'+(_p.conf?'✅ El cliente CONFIRMÓ su pedido.':'⏳ Esperando que el cliente confirme (se le envió la plantilla con botones Confirmar / Modificar).')}]}; } }
   if(!c){
     /* La lista de la izquierda solo trae las conversaciones mas recientes, y
        hay muchas mas ventas que eso: al abrir una de hace unos dias no estaba
@@ -1628,8 +1632,12 @@ async function abrirChat(tel){
        conversacion". El historial NO depende de la lista -se pide por
        telefono-, asi que la conversacion se arma aca y se carga igual. */
     var _o=(typeof ordenes!=='undefined')?ordenes.find(x=>soloNum(x.tel)===soloNum(tel)):null;
-    c={tel:soloNum(tel), n:(_o&&_o.cli)||soloNum(tel), bot:(_o&&_o.bot)||'Carlos',
-       estado:'activa', loc:(_o&&_o.loc)||'CL', loaded:false, msgs:[]};
+    /* 12-11 James: un cliente de Colombia (+57) que solo compró en la página abría como "Camila · Chile" y buscaba
+       el historial en Chile ("No pude cargar el historial"). Un +57 es SIEMPRE de Valentina · Colombia. */
+    var _co=/^57\d{10}$/.test(soloNum(tel));
+    var _vco=_co&&typeof ventasCO!=='undefined'?ventasCO.find(x=>soloNum(x.tel).slice(-10)===soloNum(tel).slice(-10)):null;
+    c={tel:soloNum(tel), n:(_o&&_o.cli)||(_vco&&_vco.cli)||soloNum(tel), bot:_co?'James':((_o&&_o.bot)||'Carlos'),
+       estado:'activa', loc:_co?'CO':((_o&&_o.loc)||'CL'), loaded:false, msgs:[]};
     convos.unshift(c);
   }
   if(!c) return;
@@ -5098,6 +5106,9 @@ function elegirPais(p){
   fPais=p; try{ localStorage.setItem('jaye_pais',p); }catch(e){}
   filtrarEU();
   fPaisAprob=(p==='todos')?'CL':p;
+  /* 12-11 James: al elegir Colombia, las Conversaciones son las de Valentina (no las de Camila de Chile) */
+  if(p==='CO') fBot='James'; else if(fBot==='James') fBot='Carlos';
+  try{ document.getElementById('tabVentasLbl').textContent='Ventas de '+nomCorto(fBot); }catch(e){}
   aplicarPaisMenu();
   var v=vistaActual(), n=document.querySelector('.side .nav-i[data-view="'+v+'"]');
   if(v!=='conv'&&(!n||n.style.display==='none')) v='resumen';
