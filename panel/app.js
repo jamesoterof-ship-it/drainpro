@@ -29,6 +29,9 @@ const URL_CONV_ZOFIA=BASE+'/zofia-pl-conversaciones', URL_HIST_ZOFIA=BASE+'/zofi
    ahora es Ana Lucía (WhatsApp +502 3814 9621, historial en contactos_guatemala).
    11-11 (James: "si"): el chat de Ana Lucía va por SUS webhooks (flujo n8n zPg5diRD6oh71XwU), nunca por los de
    Chile/Colombia: lee contactos_guatemala, responde y manda fotos por el +502 y pausa en fin_contactos (lo que mira Ana Lucía). */
+/* 13-11 James: el +57 322 es de API; el chat de Colombia tiene que salir COMPLETO. /co-historial devuelve el historial de Valentina
+   más todo lo que escribió el cliente (fin_mensajes_in), lo haya procesado el bot o no, con una nota "Sistema" cuando no lo contestó. */
+const URL_HIST_CO=BASE+'/co-historial';
 const URL_CONV_ANA=BASE+'/ana-gt-conversaciones', URL_HIST_ANA=BASE+'/ana-gt-historial',
       URL_RESP_ANA=BASE+'/ana-gt-responder', URL_PAUSA_ANA=BASE+'/ana-gt-pausar', URL_IMG_ANA=BASE+'/ana-gt-imagen';
 function paisBotWA(c){ return c&&c.bot==='JamesPE'?'GT':((c&&c.loc)||'CL'); }
@@ -1659,7 +1662,7 @@ async function abrirChat(tel){
 // trae el historial de verdad desde n8n. Devuelve true si pudo.
 async function traerHist(c){
   try{
-    const res=await fetch(c.bot==='JamesPE'?URL_HIST_ANA+'?telefono='+soloNum(c.tel)+'&t='+Date.now():c.bot==='BotPL'?URL_HIST_ZOFIA+'?telefono='+soloNum(c.tel)+'&t='+Date.now():c.bot==='BotMX'?URL_HIST_LUPITA+'?telefono='+soloNum(c.tel)+'&t='+Date.now():c.bot==='CarmenRO'?URL_HIST_CARMEN_RO+'?telefono='+soloNum(c.tel)+'&t='+Date.now():c.bot==='Carmen'?URL_HIST_CARMEN+'?telefono='+soloNum(c.tel)+'&t='+Date.now():URL_HIST+'?telefono='+soloNum(c.tel)+'&pais='+paisBotWA(c)+'&t='+Date.now());   /* 09-11: Perú (JamesPE) lee el historial de James con pais=CO */
+    const res=await fetch(c.bot==='JamesPE'?URL_HIST_ANA+'?telefono='+soloNum(c.tel)+'&t='+Date.now():c.bot==='BotPL'?URL_HIST_ZOFIA+'?telefono='+soloNum(c.tel)+'&t='+Date.now():c.bot==='BotMX'?URL_HIST_LUPITA+'?telefono='+soloNum(c.tel)+'&t='+Date.now():c.bot==='CarmenRO'?URL_HIST_CARMEN_RO+'?telefono='+soloNum(c.tel)+'&t='+Date.now():c.bot==='Carmen'?URL_HIST_CARMEN+'?telefono='+soloNum(c.tel)+'&t='+Date.now():(c.bot==='James'&&/^57\d{10}$/.test(soloNum(c.tel)))?URL_HIST_CO+'?telefono='+soloNum(c.tel)+'&t='+Date.now():URL_HIST+'?telefono='+soloNum(c.tel)+'&pais='+paisBotWA(c)+'&t='+Date.now());   /* 09-11: Perú (JamesPE) lee el historial de James con pais=CO */
     const data=await res.json();
     const arr=Array.isArray(data)?data:(data?[data]:[]);
     const row=arr.find(r=>r&&r.historial&&soloNum(r.telefono)===soloNum(c.tel))||arr.find(r=>r&&r.historial);
