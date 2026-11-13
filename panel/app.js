@@ -5477,6 +5477,8 @@ function pildoraMontaje(o,k){
   if(/^MONTANDO/i.test(e)) return '<div style="'+st+'background:#e8eefc;color:#3056c9">⏳ Creando en Dropi PRO…</div>';
   if(/^ERROR DROPI PRO/i.test(e)) return '<div style="'+st+'background:#fde8e8;color:#b91c1c">⚠️ No se creó en Dropi PRO: '+esc(det)+'</div>';
   if(/^REVISAR DROPI PRO/i.test(e)) return '<div style="'+st+'background:#fde8e8;color:#b91c1c">⚠️ Revisar en Dropi PRO si quedó creado (no se reintenta solo)'+(det?': '+esc(det):'')+'</div>';
+  /* 13-11 James (huella propia): el montador no monta contra entrega a quien ya nos devolvió; la venta queda en REVISAR y aquí se dice */
+  if(/^REVISAR: devolvi/i.test(e)) return '<div style="'+st+'background:#fde8e8;color:#b91c1c">⛔ Ya nos devolvió un pedido: solo con PAGO ANTICIPADO o anticipo. Contra entrega no se monta.</div>';
   if(/pago:\s*pre/i.test(o.nota)&&esAprobado(k)&&!o.montado) return '<div style="'+st+'background:#fff3e2;color:#b45309">✋ Aprobado · crear A MANO en Dropi PRO (pago anticipado)</div>';
   return '';
 }
@@ -5511,6 +5513,8 @@ function pildoraMontajeCO(o){
   var st='margin-top:4px;display:inline-block;border-radius:6px;padding:2px 7px;font-size:11.5px;font-weight:700;', e=String((o&&o.estado)||'');
   if(/^MONTANDO DROPI/i.test(e)) return '<div style="'+st+'background:#e8eefc;color:#3056c9">⏳ Creando en Dropi Colombia…</div>';
   if(/^ERROR DROPI/i.test(e)) return '<div style="'+st+'background:#fde8e8;color:#b91c1c">⚠️ No se creó en Dropi: '+esc(e.replace(/^ERROR DROPI:s*/i,'').slice(0,160))+'</div>';
+  /* 13-11 James (huella propia Colombia): el montador no monta contra entrega a quien ya nos devolvió */
+  if(/^REVISAR: devolvi/i.test(e)) return '<div style="'+st+'background:#fde8e8;color:#b91c1c">⛔ Ya nos devolvió un pedido: solo con PAGO ANTICIPADO o anticipo de $20.000. Contra entrega no se monta.</div>';
   return '';
 }
 function verAprobCO(i){ window._ventasF=window._aprobCO||[]; verVenta(i); }
