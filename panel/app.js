@@ -5902,7 +5902,10 @@ function renderAprobarPais(){
      VERDE = ya tiene botón Aprobar (sePuedeActuar, igual que la celda); ROJA = las que todavía no. */
   var pendCO=ventasCO.filter(function(o){ return !o.montado&&!esPagoPend(o)&&!/abono\s*pendiente/i.test(o.estado||'')&&!esAprobado('co:'+o.id)&&!esRechazado('co:'+o.id)&&!_dudC.has('co:'+o.id)&&(o.bot==='Valentina'||confirmadoCO(o.id,o)); })
     .concat((ordenes||[]).filter(function(o){ return o.loc==='CO'&&!o.montado&&o.rid&&!esAprobado('co:'+o.rid)&&!esRechazado('co:'+o.rid)&&!_dudC.has('co:'+o.rid); }).map(function(o){ return {id:String(o.rid),cli:o.cli,dir:o.dir,creadoMs:o.creadoMs,chat:true}; }));
-  var verdesCO=pendCO.filter(function(o){ var falta=!nombreSirve(o.cli)?'nom':(!dirSirve(o.dir)?true:false); return sePuedeActuar('co:'+o.id,falta,'',(o.chat||llamadaOkCO(o.id))?0:o.creadoMs,''); }).length;
+  /* 13-11 James: "Colombia no marca el círculo verde cuando una venta ya se puede aprobar". La bolita mandaba soltarId vacío,
+     así que dentro de la hora de espera salía roja aunque la celda ya mostraba "Aprobar" (el cliente confirmó por WhatsApp).
+     Ahora usa soltarIdCO, igual que la celda y que España/México. */
+  var verdesCO=pendCO.filter(function(o){ var falta=!nombreSirve(o.cli)?'nom':(!dirSirve(o.dir)?true:false); return sePuedeActuar('co:'+o.id,falta,'',(o.chat||llamadaOkCO(o.id))?0:o.creadoMs,o.chat?'':soltarIdCO({id:o.id},o)); }).length;
   var pnCO=document.getElementById('pnNumCO'); if(pnCO) pnCO.textContent=(pendCO.length-verdesCO)||'';
   var pvCO=document.getElementById('pnVerdeCO'); if(pvCO) pvCO.textContent=verdesCO||'';
   if(fPaisAprob==='CL'){ ch.hidden=false; ot.hidden=true; return; }
