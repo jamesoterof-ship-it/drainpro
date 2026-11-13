@@ -32,6 +32,31 @@ const URL_CONV_ZOFIA=BASE+'/zofia-pl-conversaciones', URL_HIST_ZOFIA=BASE+'/zofi
 /* 13-11 James: el +57 322 es de API; el chat de Colombia tiene que salir COMPLETO. /co-historial devuelve el historial de Valentina
    más todo lo que escribió el cliente (fin_mensajes_in), lo haya procesado el bot o no, con una nota "Sistema" cuando no lo contestó. */
 const URL_HIST_CO=BASE+'/co-historial';
+/* ===== 13-11 James: NOTIFICACIONES DEL PANEL COMO APP (iPhone/Android/PC), una por cada venta nueva, sin WhatsApp =====
+   El panel instalado en pantalla de inicio registra _sw.js (receptor; con guion bajo porque es un ayudante, no diseño) y guarda la suscripción del aparato en n8n (push-suscribir).
+   El flujo "Avisos push · venta nueva" manda la notificación por Web Push. La llave pública VAPID es la de fin_push_config. */
+const PUSH_VAPID='BO1VXYkg2s5ctkSwXuTO2HHdNBiEVvcTcIPAb36y-M5vYna2MHYvFr6ploeXhKDn-535WNPPcl9pW4Q5rNvkulc';
+function _pushB64(s){ var p='='.repeat((4-s.length%4)%4), b=atob((s+p).replace(/-/g,'+').replace(/_/g,'/')), a=new Uint8Array(b.length); for(var i=0;i<b.length;i++) a[i]=b.charCodeAt(i); return a; }
+function pushSoportado(){ return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window; }
+function pushPintar(){ var b=document.getElementById('btnPush'); if(!b) return;
+  var est=!pushSoportado()?'no':(Notification.permission==='granted'&&localStorage.getItem('jaye_push_ok')==='1')?'si':(Notification.permission==='denied'?'bloq':'pend');
+  b.style.color=est==='si'?'#22c55e':(est==='bloq'?'#ef4444':'');
+  b.title=est==='si'?'Avisos de ventas ACTIVOS en este aparato (toca para probar)':est==='bloq'?'Avisos bloqueados: habilítalos en los ajustes del navegador':est==='no'?'Este navegador no permite avisos. En iPhone: instala el panel en la pantalla de inicio (iOS 16.4+)':'Activar avisos de ventas en este aparato'; }
+async function pushRegistrar(){ if(!('serviceWorker' in navigator)) return null; try{ var r=await navigator.serviceWorker.register('_sw.js',{scope:'./'}); await navigator.serviceWorker.ready; return r; }catch(e){ return null; } }
+async function pushActivar(){
+  if(!pushSoportado()){ toast(/iPhone|iPad/.test(navigator.userAgent)?'En iPhone: abre el panel desde el ícono de la pantalla de inicio (iOS 16.4 o más) y vuelve a tocar la campana.':'Este navegador no permite avisos.'); return; }
+  try{
+    var perm=await Notification.requestPermission(); if(perm!=='granted'){ pushPintar(); toast('No se dio permiso para avisos.'); return; }
+    var reg=await pushRegistrar(); if(!reg){ toast('No pude registrar el receptor de avisos (_sw.js).'); return; }
+    var sub=await reg.pushManager.getSubscription(); if(!sub) sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:_pushB64(PUSH_VAPID)});
+    var et=(localStorage.getItem('jaye_push_etq')||''); if(!et){ et=prompt('¿Cómo llamo a este aparato? (ej. iPhone James)','iPhone James')||'aparato'; localStorage.setItem('jaye_push_etq',et); }
+    var r=await fetch(BASE+'/push-suscribir',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sub:sub.toJSON(),etiqueta:et,agente:navigator.userAgent.slice(0,200)})});
+    var j=await r.json().catch(function(){return {};});
+    if(j&&j.ok){ localStorage.setItem('jaye_push_ok','1'); pushPintar(); toast('Avisos activados en "'+et+'". Te llega uno por cada venta nueva.'); }
+    else { toast('No se pudo guardar la suscripción. Inténtalo otra vez.'); }
+  }catch(e){ toast('No se pudo activar: '+String(e&&e.message||e).slice(0,80)); }
+}
+document.addEventListener('DOMContentLoaded',function(){ pushPintar(); if(pushSoportado()&&localStorage.getItem('jaye_push_ok')==='1'){ pushRegistrar().then(function(reg){ if(!reg) return; reg.pushManager.getSubscription().then(function(s){ if(!s){ localStorage.removeItem('jaye_push_ok'); pushPintar(); } }); }); } });
 const URL_CONV_ANA=BASE+'/ana-gt-conversaciones', URL_HIST_ANA=BASE+'/ana-gt-historial',
       URL_RESP_ANA=BASE+'/ana-gt-responder', URL_PAUSA_ANA=BASE+'/ana-gt-pausar', URL_IMG_ANA=BASE+'/ana-gt-imagen';
 function paisBotWA(c){ return c&&c.bot==='JamesPE'?'GT':((c&&c.loc)||'CL'); }
