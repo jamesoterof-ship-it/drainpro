@@ -5567,6 +5567,10 @@ function renderAprobarCO(ot){
             ?'<span style="font-size:12px;color:#b45309;font-weight:700">Esperando el pago</span><div style="font-size:11px;color:var(--ink-3)">se aprueba cuando Wompi lo marque pagado</div>'+btnDud(k,dud(o))
             :(/abono pendiente/i.test(o.estado||'')&&/anticipo_link/.test(o.nota||''))
             ?'<span style="font-size:12px;color:#b45309;font-weight:700">Esperando el anticipo</span><div style="font-size:11px;color:var(--ink-3)">se aprueba cuando Wompi confirme los $20.000</div>'+btnDud(k,dud(o))
+            /* 05-11 James: NINGUNA venta sale sin confirmación del cliente. Sin confirmar no hay botón Aprobar: se mueve a
+               Dudosas o se elimina; cuando el cliente toca Confirmar (o el equipo anota la llamada) pasa sola a Pendientes. */
+            :(!confirmadoFilaCO(o)&&!esAprobado(k)&&!esRechazado(k))
+            ?'<span class="st st-ab" style="background:#fff3e2;color:#b45309"><i style="background:#d97706"></i>⏳ Esperando que confirme</span>'+btnDud(k,dud(o))+'<button class="b-rech" title="Eliminar — sale de la lista y no se monta en Dropi" onclick="eliminar(&quot;'+k+'&quot;,&quot;'+o.id+'&quot;)">🗑</button>'
             :celdaAprob(k,'',o.id,falta,'',false,dud(o),(o.chat||llamadaOkCO(o.id))?0:o.creadoMs,o.chat?'':soltarIdCO(x,o)))+'</td></tr>';
       }).join('')+'</tbody></table>'
       :'<div class="vacio" style="padding:22px">'+vacio+'</div>')+'</div>';
