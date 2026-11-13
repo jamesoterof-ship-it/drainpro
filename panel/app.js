@@ -59,7 +59,14 @@ async function pushActivar(){
     else { pushDiag('n8n no guardó: '+JSON.stringify(j).slice(0,150)); toast('No se pudo guardar la suscripción. Inténtalo otra vez.'); }
   }catch(e){ pushDiag('error: '+String(e&&e.message||e).slice(0,200)); toast('No se pudo activar: '+String(e&&e.message||e).slice(0,80)); }
 }
-document.addEventListener('DOMContentLoaded',function(){ pushPintar(); if(pushSoportado()&&localStorage.getItem('jaye_push_ok')==='1'){ pushRegistrar().then(function(reg){ if(!reg) return; reg.pushManager.getSubscription().then(function(s){ if(!s){ localStorage.removeItem('jaye_push_ok'); pushPintar(); } }); }); } });
+/* 13-11 (James: "3 ventas entraron, nada de aviso"): al abrir el panel se manda un PULSO con el estado real del aparato
+   (permiso, instalado o no, suscripción viva y a qué buzón apunta) para poder diagnosticar sin tener el celular a la mano. */
+document.addEventListener('DOMContentLoaded',function(){ pushPintar();
+  if(!pushSoportado()){ if(/iPhone|iPad/.test(navigator.userAgent)) pushDiag('pulso: iPhone sin soporte (no instalado o iOS viejo)'); return; }
+  pushRegistrar().then(function(reg){ if(!reg){ pushDiag('pulso: sin service worker'); return; }
+    reg.pushManager.getSubscription().then(function(s){
+      pushDiag('pulso: '+(s?'suscrito · buzón …'+String(s.endpoint).slice(-24):'SIN suscripción')+' · permiso '+Notification.permission+' · ok='+(localStorage.getItem('jaye_push_ok')||'0'));
+      if(!s&&localStorage.getItem('jaye_push_ok')==='1'){ localStorage.removeItem('jaye_push_ok'); pushPintar(); } }); }); });
 const URL_CONV_ANA=BASE+'/ana-gt-conversaciones', URL_HIST_ANA=BASE+'/ana-gt-historial',
       URL_RESP_ANA=BASE+'/ana-gt-responder', URL_PAUSA_ANA=BASE+'/ana-gt-pausar', URL_IMG_ANA=BASE+'/ana-gt-imagen';
 function paisBotWA(c){ return c&&c.bot==='JamesPE'?'GT':((c&&c.loc)||'CL'); }
