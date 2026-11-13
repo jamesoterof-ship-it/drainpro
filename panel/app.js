@@ -1670,6 +1670,8 @@ async function traerHist(c){
 // refresca en segundo plano el chat abierto cuando entra un mensaje nuevo
 async function refrescarChat(c){ if(await traerHist(c) && selTel===c.tel) renderBubbles(c); }
 const RE_IMG=/(data:image\/[^\s)]+|https?:\/\/[^\s)]+\.(?:png|jpe?g|webp|gif)(?:\?[^\s)]*)?|https?:\/\/[^\s)]*(?:lookaside|fbcdn|googleusercontent|cloudfront|githubusercontent|jaye-bots\/fotos)[^\s)]*)/ig;
+/* 13-11: notas de voz guardadas por el bot (media-wa/<id>.ogg) o cualquier enlace a audio */
+const RE_AUD=/(https?:\/\/[^\s)]+\.(?:ogg|oga|opus|mp3|m4a)(?:\?[^\s)]*)?)/ig;
 /* Las plantillas se anotan en el historial con una línea "[BOTONES] Confirmar · Modificar".
    Aquí se saca esa línea del texto y se pinta como los botones que ve el cliente. */
 function _sacaBotones(t){
@@ -1686,12 +1688,16 @@ function cuerpoMensaje(m){
     return cuerpo+'<div class="wabtns">'+_b.botones.map(x=>'<span class="wabtn">'+esc(x)+'</span>').join('')+'</div>';
   }
   let t=String(m.text||''); const imgs=t.match(RE_IMG)||[];
+  /* 13-11 James ("el número de Colombia es de API: quiero ver todo, audios e imágenes"): las notas de voz que guarda el bot
+     en fin_media_wa llegan como enlace .ogg/.mp3 (media-wa) y aquí se pintan con un reproductor; el texto es la transcripción */
+  const auds=t.match(RE_AUD)||[];
   /* *negrita* y _cursiva_ como las muestra WhatsApp (se aplica DESPUÉS de escapar) */
-  let texto=esc(t.replace(RE_IMG,'').replace(/📷\s*\[imagen[^\]]*\]/gi,'').trim())
+  let texto=esc(t.replace(RE_IMG,'').replace(RE_AUD,'').replace(/📷\s*\[imagen[^\]]*\]/gi,'').trim())
     .replace(/(^|[\s(])\*([^*\n]{1,120})\*(?=[\s).,!?:]|$)/g,'$1<b>$2</b>')
     .replace(/(^|[\s(])_([^_\n]{1,120})_(?=[\s).,!?:]|$)/g,'$1<i>$2</i>');
   const fotos=imgs.map(u=>'<img class="msgimg" src="'+u+'" onclick="ampliarImg(this)" alt="imagen">').join('');
-  return (texto?texto:'')+(fotos?(texto?'<br>':'')+fotos:'')||'—';
+  const audios=auds.map(u=>'<audio class="msgaud" controls preload="none" src="'+u+'" style="display:block;max-width:260px;margin-top:6px"></audio>').join('');
+  return (audios?audios+(texto?'<br>':''):'')+(texto?texto:'')+(fotos?(texto?'<br>':'')+fotos:'')||'—';
 }
 /* El historial guarda la marca de tiempo como "DD-MM HH:MM" entre corchetes.
    Antes el chat pintaba ese texto crudo abajo del globo y el dia no se leia por
