@@ -5938,7 +5938,8 @@ function renderAprobarPais(){
           var pre=/pago:\s*pre/i.test(o.nota||'');
           return '<tr style="cursor:pointer" onclick="verAprobCO('+ix+')"><td><b>'+esc(o.cli)+'</b>'+huellaBadge(o.tel)+'<div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.fecha)+' · +'+esc(o.tel)+'</div>'+alertaHuellaCO(o.tel)+'</td>'+
             '<td>'+esc(x.canal)+'</td><td>'+esc(o.prod)+
-            (pre?'<div style="margin-top:4px;display:inline-block;border-radius:6px;padding:2px 7px;font-size:11.5px;font-weight:700;background:'+(esPagoPend(o)?'#fff3e2;color:#b45309">💳 Pago anticipado · esperando Wompi':'#e3f6ea;color:#15803d">💳 Pago anticipado · pagado')+'</div>':'')+
+            /* 13-11 James "como Chile": PAGADO solo si el sistema verificó el cobro (Wompi escribe "PAGADO wompi"); antes decía pagado a todo "pago: pre" */
+            '<div style="margin-top:4px;display:inline-block;border-radius:6px;padding:2px 7px;font-size:11.5px;font-weight:700;background:'+(pre&&/PAGADO wompi/.test(o.nota||'')?'#e3f6ea;color:#15803d">💳 PAGADO con Wompi · verificado · va SIN RECAUDO':pre?'#fff3e2;color:#b45309">💳 Pago anticipado · esperando el pago':'#eef2f7;color:#475569">💵 Al recibir')+'</div>'+
             /* 30-09 James: anticipo de $20.000 a los riesgosos (se descuenta del total) */
             (/ANTICIPO PAGADO/.test(o.nota||'')?'<div style="font-size:11.5px;color:#15803d;font-weight:800;margin-top:3px">💳 Anticipo $20.000 PAGADO · en Dropi cobrar al recibir '+fmtCOP(Math.max(0,(o.totalNum||0)-20000))+'</div>'
               :/abono pendiente/i.test(o.estado||'')?'<div style="font-size:11.5px;color:#c62828;font-weight:800;margin-top:3px">🔴 Cliente riesgoso · '+(/anticipo_link/.test(o.nota||'')?'💳 anticipo $20.000 enviado, esperando pago':'llamar antes de aprobar')+'</div>':'')+estadoLlamadaCO(x,o,pre)+pildoraMontajeCO(o)+
