@@ -102,6 +102,9 @@ async function cargarHuellas(){
     /* 28-10 James: huella de ESPAÑA aparte (flujo VRYF9q29O7p9VhXo, vista huella_es): clave 'es'+9 dígitos, no se mezcla con Chile */
     try{ const re=await fetch(BASE+'/leer-huellas-es?t='+Date.now(),{cache:'no-store'}); const je=await re.json();
       ((je&&je.huellas)||[]).forEach(h=>{ if(h&&h.tel9) m['es'+h.tel9]=Object.assign({es:1},h); }); }catch(e){}
+    /* 13-11 James: "en el panel de aprobación no me aparece la huella" (México). Flujo 4O6hZjMBVlFm4uTe, clave 'mx'+10 dígitos */
+    try{ const rm=await fetch(BASE+'/leer-huellas-mx?t='+Date.now(),{cache:'no-store'}); const jm=await rm.json();
+      ((jm&&jm.huellas)||[]).forEach(h=>{ if(h&&h.tel10) m['mx'+h.tel10]=h; }); }catch(e){}
     window.huellaMap=m;
     if(typeof refrescarAprob==='function') refrescarAprob();
     else if(typeof renderAprobar==='function') renderAprobar();
@@ -110,7 +113,8 @@ async function cargarHuellas(){
 function huellaBadge(tel){
   var _d=String(tel||'').replace(/\D/g,'');
   var _es=(_d.length===11&&_d.indexOf('34')===0)||(_d.length===9&&/^[67]/.test(_d));
-  var k=(_d.length===12&&_d.indexOf('57')===0)?'co'+_d.slice(-10):_es?'es'+_d.slice(-9):_d.slice(-8); if(!k) return '';
+  var _mx=(_d.length===12&&_d.indexOf('52')===0)||(_d.length===13&&_d.indexOf('521')===0);
+  var k=(_d.length===12&&_d.indexOf('57')===0)?'co'+_d.slice(-10):_mx?'mx'+_d.slice(-10):_es?'es'+_d.slice(-9):_d.slice(-8); if(!k) return '';
   var h=(window.huellaMap||{})[k];
   var rc, sym, t;
   if(!h || (h.es && h.risk_label==='Sin historial')){ rc='#9aa4b2'; sym='+'; t='Cliente nuevo (sin historial)'; }
@@ -5727,6 +5731,15 @@ function confirmadoMX(o){
 function soltarIdMX(o){ return (String(o.nivel||'').toUpperCase()==='VERDE'&&confirmadoMX(o)&&!esPagoPend(o)&&!abonoPendMX(o)&&nombreSirve(o.cli)&&dirSirve(o.dir))?String(o.id):''; }
 function abonoPendMX(o){ return /abono\s*pendiente/i.test(o.estado||''); }   /* 31-10: cliente riesgoso que no ha pagado el anticipo */
 function verAprobMX(i){ window._ventasF=window._aprobMX||[]; verVenta(i); }
+/* 13-11 James: la huella de México se ve en la fila, y si es Riesgosa/Crítica o ya nos devolvió, se avisa en rojo */
+function alertaHuellaMX(tel){
+  var d=String(tel||'').replace(/\D/g,''); var h=(window.huellaMap||{})['mx'+d.slice(-10)];
+  if(!h) return '';
+  var nd=+h.n_dev||0, dd=+h.dropi_dev||0, dt=+h.dropi_total||0;
+  if(nd>0) return '<div style="font-size:11.5px;color:#b71c1c;font-weight:800;margin-top:3px">🔴 Ya nos devolvió '+nd+' pedido'+(nd>1?'s':'')+' · solo con anticipo o pago</div>';
+  if(!/Riesgosa|Crítica/.test(h.risk_label||'')) return '';
+  return '<div style="font-size:11.5px;color:#b71c1c;font-weight:800;margin-top:3px">🔴 Huella '+esc(h.risk_label)+' en Dropi: '+dd+' devoluciones de '+dt+' pedidos · solo con anticipo</div>';
+}
 /* 04-11 James ("Sí, corrígelo"): los contadores del menú no suman las de Revisar cobertura (misma regla que la pestaña) */
 function cobMX(o){ return /revisar cobertura/i.test(o.estado||'')||(/error dropi/i.test(o.estado||'')&&/tarifa configurada|no tiene habilitado|no existe en el sistema|ciudad de operaci/i.test(o.nota||'')); }
 function renderAprobarMX(ot){
@@ -5769,7 +5782,7 @@ function renderAprobarMX(ot){
       lista.map(function(o,ix){
         var k='mx:'+o.id, falta=!nombreSirve(o.cli)?'nom':(!dirSirve(o.dir)?true:false);
         var _rv=REV[o.nivel]&&REV[o.nivel].fila?';background:'+REV[o.nivel].fila:'';
-        return '<tr style="cursor:pointer'+_rv+'" onclick="verAprobMX('+ix+')"><td><b>'+esc(o.cli)+'</b>'+chipRev(o)+'<div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.fecha)+' · +'+esc(o.tel)+'</div>'+motivoRev(o)+
+        return '<tr style="cursor:pointer'+_rv+'" onclick="verAprobMX('+ix+')"><td><b>'+esc(o.cli)+'</b>'+huellaBadge(o.tel)+chipRev(o)+'<div style="font-size:11.5px;color:var(--ink-3)">'+esc(o.fecha)+' · +'+esc(o.tel)+'</div>'+motivoRev(o)+alertaHuellaMX(o.tel)+
           (abonoPendMX(o)?'<div style="font-size:11.5px;color:#c62828;font-weight:800;margin-top:2px">🔴 Cliente riesgoso · esperando anticipo de $180</div>'
             :esWebES(o)&&!/pago:\s*pre/i.test(o.nota||'')?(confirmadoMX(o)?'<div style="font-size:11.5px;color:#15803d;font-weight:700;margin-top:2px">✅ Confirmó</div>':'<div style="font-size:11.5px;color:#c62828;font-weight:700;margin-top:2px">⏳ Sin confirmar</div>')
             :(!esWebES(o)&&!/pago:\s*pre/i.test(o.nota||'')?'<div style="font-size:11.5px;color:#15803d;font-weight:700;margin-top:2px">✅ Confirmó en el chat</div>':''))+'</td>'+
