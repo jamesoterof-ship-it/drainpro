@@ -5262,7 +5262,20 @@ function diasGananciaPE(cb){
     CAJA_PE={dias:arr,_pedido:Date.now()}; window.CAJA_PE_ERROR=false; cb(arr);
   }).catch(function(){ window.CAJA_PE_ERROR=true; _cajaPEfallo=Date.now(); cb(CAJA_PE?CAJA_PE.dias:[]); });
 }
+/* 16-11 (James: "las entregas de Guatemala y Colombia no se están registrando"): COLOMBIA lee SU caja en /caja-colombia
+   (n8n, solo lee fin_caja_diaria_co, misma forma que /caja-guatemala: días con entregas, entra, devoluciones, devol, meta,
+   camila, queda en COP). Si falla, Colombia va en 0 con "sin caja todavía" y no se inventa nada; tras un fallo se espera 5 min. */
+var CAJA_CO=null, _cajaCOfallo=0; window.CAJA_CO_ERROR=false;
+function diasGananciaCO(cb){
+  if(CAJA_CO&&Date.now()-CAJA_CO._pedido<120000){ cb(CAJA_CO.dias); return; }
+  if(window.CAJA_CO_ERROR&&Date.now()-_cajaCOfallo<300000){ cb(CAJA_CO?CAJA_CO.dias:[]); return; }
+  fetch(BASE+'/caja-colombia',{cache:'no-store'}).then(function(r){ if(!r.ok) throw 0; return r.json(); }).then(function(j){
+    var arr=(Array.isArray(j)?j:[j]).filter(function(x){ return x&&x.dia; });
+    CAJA_CO={dias:arr,_pedido:Date.now()}; window.CAJA_CO_ERROR=false; cb(arr);
+  }).catch(function(){ window.CAJA_CO_ERROR=true; _cajaCOfallo=Date.now(); cb(CAJA_CO?CAJA_CO.dias:[]); });
+}
 window.diasGananciaPais=function(P,cb){
+  if(P==='CO'){ diasGananciaCO(cb); return; }   /* 16-11: Colombia con su caja */
   if(P==='RO'){ diasGananciaRO(cb); return; }
   if(P==='MX'){ diasGananciaMX(cb); return; }   /* 03-11: México como Chile */
   if(P==='PL'){ diasGananciaPL(cb); return; }   /* 03-11: Polonia */
@@ -6177,14 +6190,17 @@ function renderCierre(){
             /* 03-11: Polonia (si /caja-polonia no existe todavía, llega vacía) */
             diasGananciaPais('PL',function(pl){ C.PL=pl;
               /* 09-11: Perú (si /caja-peru no existe todavía, llega vacía) */
-              diasGananciaPais('GT',function(pe){ C.GT=pe; _cajasCierre=C; if(seq===_cierreSeq) pintarCierre(C); }); }); }); }); }); }); });
+              diasGananciaPais('GT',function(pe){ C.GT=pe;
+                /* 16-11: Colombia con su caja (/caja-colombia); si no responde, llega vacía */
+                diasGananciaPais('CO',function(co){ C.CO=co; _cajasCierre=C; if(seq===_cierreSeq) pintarCierre(C); }); }); }); }); }); }); }); });
 }
 function pintarCierre(C){
   var box=document.getElementById('cierrePais'); if(!box||fPais!=='todos'||!TASAS) return;
   var T=totalesPais(), lbl=rangoTxt();
   var P=[
     {k:'CL',nom:'Chile',flag:'flag-cl',zona:ZONA_CL,reg:'LATAM',n:T.cl.n,vLoc:fmtCLP(T.cl.t)+' CLP',vCop:T.cl.t*TASAS.clp,caja:sumaCaja(C.CL,diasDelRango(ZONA_CO)),sin:C.CL?'':'la caja de Chile no respondió'},
-    {k:'CO',nom:'Colombia',flag:'flag-co',zona:ZONA_CO,reg:'LATAM',n:T.co.n,vLoc:fmtCOP(T.co.t)+' COP',vCop:T.co.t,caja:sumaCaja([],[]),sin:'Colombia todavía no tiene caja'},
+    /* 16-11: Colombia con SU caja (/caja-colombia); sin respuesta va en 0 con "sin caja todavía" */
+    {k:'CO',nom:'Colombia',flag:'flag-co',zona:ZONA_CO,reg:'LATAM',n:T.co.n,vLoc:fmtCOP(T.co.t)+' COP',vCop:T.co.t,caja:sumaCaja(C.CO,diasDelRango(ZONA_CO)),sin:(window.CAJA_CO_ERROR?'Colombia sin caja todavía':'')},
     /* 28-10: México como Rumanía, en LATAM; sin /caja-mexico va en 0 con "sin caja todavía" */
     {k:'MX',nom:'México',flag:'flag-mx',zona:ZONA_MX,reg:'LATAM',n:T.mx.n,vLoc:fmtMXN(T.mx.t),vCop:TASAS.mxn?T.mx.t*TASAS.mxn:0,caja:sumaCaja(C.MX,diasDelRango(ZONA_MX)),/* 30-10: México con su propia fecha (va 1 h detrás de Colombia) */sin:!TASAS.mxn?'sin tasa del peso mexicano':(window.CAJA_MX_ERROR?'México sin caja todavía':'')},
     /* 09-11: Perú en LATAM, con su fecha de Lima; sin /caja-peru va en 0 con "sin caja todavía" */
