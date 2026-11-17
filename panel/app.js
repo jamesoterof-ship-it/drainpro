@@ -286,6 +286,9 @@ function dirSirve(d){
      cartero sabe quien es cada quien y las casas no tienen numero. Carlos
      Villarroel, 08-09: "Carlos Condell s/n, en el centro del pueblo" en San
      Jose de la Mariquina — se trababa por no traer numero. */
+  /* 16-11 James (Guatemala): en el campo GT las casas no tienen número; "Aldea X, a orilla del campo" ES la dirección.
+     Alex (El Camán), Isabel (Cabañas), Feliciano (San Vicente Buenabaj) quedaban en "Corregir dirección". */
+  if(/\b(aldea|caser[ií]o|cant[oó]n|auxiliatura|orilla|trocha|finca|parcelamiento)\b/i.test(t)) return true;
   return /(color|frente|cerca|al lado|contiguo|pasaje|esquina|porton|portón|reja|negocio|tienda|local|almacen|almacén|escuela|colegio|liceo|sede|iglesia|plaza|cancha|km|kilometro|kilómetro|camino|entrada|subida|bajada|puente|referencia|centro del|pleno centro|azul|verde|roja|rojo|amarill|blanca|blanco|cafe|café|gris|celeste|naranja|beige)/i.test(t);
 }
 /* Sin nombre la transportadora no entrega y Dropi ni siquiera acepta el pedido.
