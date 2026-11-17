@@ -6170,8 +6170,11 @@ function diasDelRango(z){
   return [hoy];
 }
 function sumaCaja(arr,keys){
-  var s={entregas:0,entra:0,devoluciones:0,devol:0,meta:0,camila:0,sueldo:0,queda:0,hay:!!(arr&&arr.length)};
+  var s={entregas:0,entra:0,devoluciones:0,devol:0,meta:0,camila:0,sueldo:0,queda:0,hay:!!(arr&&arr.length),sinMeta:false};
   (arr||[]).forEach(function(x){ if(keys.indexOf(String(x.dia).slice(0,10))<0) return;
+    /* 17-11 (James: "nunca me puedo confiar de sus números"): si la caja no pudo leer Meta ese día, llega meta=null
+       (meta_sin_dato=true). Eso NO es un 0: se marca sinMeta y el resumen lo pinta en rojo "sin leer". */
+    if(x.meta===null||x.meta_sin_dato===true) s.sinMeta=true;
     ['entregas','entra','devoluciones','devol','meta','camila'].forEach(function(k){ s[k]+=Number(x[k])||0; }); });
   /* 02-11 (James): "mi sueldo quítalo, no lo calcules en ningún lado": ya no se resta */
   s.queda=s.entra-s.devol-s.meta-s.camila; return s;
@@ -6223,14 +6226,15 @@ function pintarCierre(C){
   var cel=function(n,txt,cls){ return '<td'+(cls?' class="'+cls+'"':'')+'><span class="n">'+n+'</span>'+(txt?'<span class="cop">'+txt+'</span>':'')+'</td>'; };
   var vac=function(t){ return '<td class="vacio">'+t+'</td>'; };
   var fila=function(p){
-    var c=p.caja, vacio=!c.entregas&&!c.devoluciones&&!c.meta;
+    var c=p.caja, vacio=!c.entregas&&!c.devoluciones&&!c.meta&&!c.sinMeta;
     var fecha='<span class="fecha">'+fechaPaisHtml(p.zona).replace(' hora de ','<small>hora de ')+'</small></span>';
     return '<tr><td><span class="pais"><span class="flag '+p.flag+'"></span>'+p.nom+'</span></td><td>'+fecha+'</td>'+
       (p.n?cel(p.n,p.vLoc+' · ≈ '+cop(p.vCop)):vac('0 · todavía sin ventas'))+
       (vacio?vac(p.sin||'0 · Dropi no marcó nada ('+lbl+')'):
         cel(c.entregas,'entra '+cop(c.entra))+
         (c.devoluciones?cel(c.devoluciones,'−'+cop(c.devol),'neg'):vac('0'))+
-        (c.meta?cel(cop(c.meta),''):vac('$0'))+
+        /* 17-11: Meta sin leer va en ROJO, nunca como $0 */
+        (c.sinMeta?cel('<span style="color:var(--red)">⚠ sin leer</span>','Meta no respondió','neg'):c.meta?cel(cop(c.meta),''):vac('$0'))+
         (c.camila?cel('−'+cop(c.camila),''):vac('—'))+
         cel(cop(c.queda),'',c.queda>=0?'pos':'neg'))+
       (vacio?'<td class="vacio">0</td><td class="vacio">$0</td><td class="vacio">—</td><td class="vacio">$0</td>':'')+'</tr>';
@@ -6254,7 +6258,8 @@ function pintarCierre(C){
   var mesDe=function(keys){ var m={queda:0}; keys.forEach(function(k){ var s=sumaCaja(C[k],_diasMes); m.queda+=s.queda; }); return m; };
   var MES_LA=mesDe(['CL','MX','GT']), MES_EU=mesDe(['ES','PT','RO','PL']), MES={queda:MES_LA.queda+MES_EU.queda};
   var _nomMes=new Date().toLocaleDateString('es-CO',{timeZone:ZONA_CO,month:'long'});
-  var det=function(campo,fmt,reg){ return P.filter(function(p){return (!reg||p.reg===reg)&&p.caja[campo];}).map(function(p){ return p.nom+' '+(fmt?fmt(p.caja[campo]):p.caja[campo]); }).join(' · ')||'—'; };
+  /* 17-11: en "Gasto Meta" un país cuya caja no pudo leer Meta sale en rojo "⚠ sin leer" en vez de desaparecer de la lista */
+  var det=function(campo,fmt,reg){ return P.filter(function(p){return (!reg||p.reg===reg)&&(p.caja[campo]||(campo==='meta'&&p.caja.sinMeta));}).map(function(p){ if(campo==='meta'&&p.caja.sinMeta) return '<span style="color:var(--red)">'+p.nom+' ⚠ sin leer</span>'; return p.nom+' '+(fmt?fmt(p.caja[campo]):p.caja[campo]); }).join(' · ')||'—'; };
   /* 02-11 (James: "tarjetas más pequeñas; el resumen de Latam ahí mismo en su cuadro, el de Europa abajo del suyo,
      y arriba el totalizado"): tarjetas chicas (cp-mini) que se meten en los huecos que deja renderPaisTab:
      cpMiniTT arriba (total Latam + Europa), cpMiniLA dentro del cuadro LATAM y cpMiniEU dentro del cuadro EUROPA.
