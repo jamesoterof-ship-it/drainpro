@@ -6247,7 +6247,7 @@ function pintarCierre(C){
     var fecha='<span class="fecha">'+fechaPaisHtml(p.zona).replace(' hora de ','<small>hora de ')+'</small></span>';
     return '<tr><td><span class="pais"><span class="flag '+p.flag+'"></span>'+p.nom+'</span></td><td>'+fecha+'</td>'+
       (p.n?cel(p.n,p.vLoc+' · ≈ '+cop(p.vCop)):vac('0 · todavía sin ventas'))+
-      (vacio?vac(p.sin||'0 · Dropi no marcó nada ('+lbl+')'):
+      (vacio?vac(p.sin||(p.k==='MX'?'0 · todavía sin pagos ('+lbl+')':'0 · Dropi no marcó nada ('+lbl+')')):   /* 20-11: México no es de Dropi */
         /* 20-11 México pago anticipado: la casilla cuenta PAGOS (no entregas de Dropi); sin costo de AliExpress se avisa en rojo */
         cel(c.entregas,(p.k==='MX'?'pagados · ':'')+'entra '+cop(c.entra)+(c.sinCosto?' <span style="color:var(--red)">· sin costo AliExpress</span>':''))+
         (c.devoluciones?cel(c.devoluciones,'−'+cop(c.devol),'neg'):vac('0'))+
