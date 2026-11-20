@@ -1310,7 +1310,12 @@ function renderAbandonadosWeb(){
   const tb=document.getElementById('tbodyAband'); if(!tb) return;
   if(!PAGINAS.some(p=>p.url)){tb.innerHTML='<tr><td colspan="7" class="vacio">Esperando conexión de las planillas…</td></tr>';return;}
   /* 28-09: aquí solo Chile; los de España/Colombia salen en su país */
-  const abCL=abandonadosWeb.filter(o=>(o.pais||paisDeTel(o.tel))===visPaisSel());
+  /* 20-11 James: «si no ha pagado no es venta, es carrito abandonado; cuando paga, ahí sí pasa a venta».
+     Los pedidos de pago anticipado SIN PAGAR de México salen aquí (arriba), no en ventas. */
+  const sinPagar=(visPaisSel()==='MX'?ventasMX:[]).filter(o=>esPagoPend(o)&&o.orden>Date.now()-7*864e5).map(o=>({fecha:o.fecha,cli:o.cli,tel:o.tel,pais:'MX',prod:o.prod,color:'#006847',
+    estado:'SIN PAGAR',comuna:o.zona,dir:o.dir,ref:'',region:o.region,correo:'',cant:o.cant,total:fmtMXN(o.totalNum),totRaw:String(o.totalNum),
+    contactado:false,contactadoFecha:'',orden:o.orden,sinPagar:true,pedido:o.id}));
+  const abCL=sinPagar.concat(abandonadosWeb.filter(o=>(o.pais||paisDeTel(o.tel))===visPaisSel())).sort((a,b)=>b.orden-a.orden);
   if(!abCL.length){tb.innerHTML='<tr><td colspan="7" class="vacio">'+(visPaisSel()==='CL'?'Sin abandonados pendientes. 🎉':'Sin carritos abandonados de '+(NOM_EU[visPaisSel()]||(visPaisSel()==='RO'?'Rumanía':visPaisSel()==='MX'?'México':visPaisSel()==='PL'?'Polonia':visPaisSel()==='GT'?'Guatemala':'Colombia'))+' todavía. A estos clientes no les escribe ningún flujo de Chile.')+'</td></tr>';return;}
   tb.innerHTML=abCL.slice(0,100).map((o,i)=>`
     <tr onclick="verAbandonado(${i})" style="cursor:pointer">
@@ -1319,7 +1324,7 @@ function renderAbandonadosWeb(){
       <td>${esc(o.comuna)}</td>
       <td>${o.cant}</td>
       <td class="money">${paisDeTel(o.tel)==='CL'?o.total:paisDeTel(o.tel)==='MX'?fmtMXN(numEUR(o.totRaw)):paisDeTel(o.tel)==='PL'?fmtPLN(numEUR(o.totRaw)):paisDeTel(o.tel)==='GT'?fmtPEN(numEUR(o.totRaw)):fmtEUR(numEUR(o.totRaw))}</td>
-      <td>${o.contactado?'<span class="st st-ok"><i></i>✓ Mensaje enviado</span>'+(o.contactadoFecha?'<small style="display:block;color:var(--ink-3)">'+esc(o.contactadoFecha)+'</small>':''):'<span class="st st-ab"><i></i>Sin contactar</span>'}</td>
+      <td>${o.sinPagar?'<span class="st st-ab"><i></i>Falta pagar</span><small style="display:block;color:var(--ink-3)">pedido #'+esc(o.pedido)+' · enlace enviado</small>':o.contactado?'<span class="st st-ok"><i></i>✓ Mensaje enviado</span>'+(o.contactadoFecha?'<small style="display:block;color:var(--ink-3)">'+esc(o.contactadoFecha)+'</small>':''):'<span class="st st-ab"><i></i>Sin contactar</span>'}</td>
       <td onclick="event.stopPropagation()"><a class="qr" style="text-decoration:none;cursor:pointer" onclick="crmAbrir('${o.tel}')">WhatsApp</a></td>
     </tr>`).join('');
   window._abandF=abCL.slice(0,100);
@@ -1334,7 +1339,7 @@ function verAbandonado(i){
     fila('Dirección',o.dir||'— (no la alcanzó a completar)')+
     (o.ref?fila('Referencia',o.ref):'')+fila('Comuna',o.comuna)+
     (o.region?fila('Región',o.region):'')+
-    fila('Estado',o.contactado?('Mensaje de recuperación enviado'+(o.contactadoFecha?' · '+o.contactadoFecha:'')):'Sin contactar')+
+    fila('Estado',o.sinPagar?('Llenó todo y falta pagar · pedido #'+o.pedido+' · cuando pague pasa a ventas'):o.contactado?('Mensaje de recuperación enviado'+(o.contactadoFecha?' · '+o.contactadoFecha:'')):'Sin contactar')+
     fila('Fecha',o.fecha);
   document.getElementById('mTotal').textContent=paisDeTel(o.tel)==='CL'?o.total+' CLP':paisDeTel(o.tel)==='RO'?fmtRON(numEUR(o.totRaw)):paisDeTel(o.tel)==='MX'?fmtMXN(numEUR(o.totRaw)):paisDeTel(o.tel)==='PL'?fmtPLN(numEUR(o.totRaw)):paisDeTel(o.tel)==='GT'?fmtPEN(numEUR(o.totRaw)):fmtEUR(numEUR(o.totRaw));
   window._ventaAbierta={cli:o.cli,dir:(o.dir||'')+(o.ref?' - '+o.ref:''),region:o.region,tel:o.tel,prod:o.prod,cant:o.cant,precio:o.total};
@@ -4948,7 +4953,7 @@ function _ordEU(){
 /* 06-11 James ("hazlo igualito como Portugal, España y Chile… que marque de qué canal es, en los indicadores también"):
    en la pestaña de México las ventas de WhatsApp (Lupita MX) y las de redes (Lupita Redes FB/IG/Com) van por su canal; Página = solo la página. */
 function _ordMX(){
-  return ventasMX.filter(function(o){return !/p[aá]gina/i.test(o.bot);}).map(function(o){ var red=redDeBot(o.bot);
+  return ventasMX.filter(function(o){return !/p[aá]gina/i.test(o.bot)&&!esPagoPend(o);}).map(function(o){ var red=redDeBot(o.bot);   /* 20-11 James: sin pagar no es venta */
     return {orden:o.orden,cli:o.cli,prod:o.prod,loc:'MX',sub:'MX',bot:red?'Redes':'BotMX',red:red==='na'?'':red,
       precio:fmtMXN(o.totalNum),precioNum:o.totalNum,fecha:o.fecha,hora:'',montado:!!o.montado}; });
 }
@@ -4983,7 +4988,7 @@ function _webRO(){
 }
 /* 28-10: México como Rumanía (todas sus ventas en una lista, en pesos mexicanos) */
 function _webMX(soloPag){
-  return ventasMX.filter(function(o){return !soloPag||/p[aá]gina/i.test(o.bot);}).map(function(o){return {orden:o.orden,totalNum:o.totalNum,prod:o.prod,cli:o.cli,fecha:o.fecha,montado:!!o.montado,
+  return ventasMX.filter(function(o){return (!soloPag||/p[aá]gina/i.test(o.bot))&&!esPagoPend(o);}).map(   /* 20-11 James: «¿por qué se registra la venta si no ha pagado?» */function(o){return {orden:o.orden,totalNum:o.totalNum,prod:o.prod,cli:o.cli,fecha:o.fecha,montado:!!o.montado,
     color:'#006847',total:fmtMXN(o.totalNum),sub:'MX'};});
 }
 /* 03-11: Polonia como Rumanía (todas sus ventas en una lista, en eslotis) */
