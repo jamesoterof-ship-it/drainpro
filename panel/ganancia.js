@@ -78,7 +78,7 @@
                  : 'No hay entregas en esa fecha.')
         + (MODO.pais !== 'CL' ? ' ' + (MODO.pais === 'CO' ? 'Colombia todavía no vende.'
           : MODO.pais === 'RO' ? (window.CAJA_RO_ERROR ? 'Caja de Rumanía todavía no conectada.' : 'Rumanía todavía no tiene entregas de Dropi PRO.')
-          : MODO.pais === 'MX' ? (window.CAJA_MX_ERROR ? 'México sin caja todavía.' : 'México todavía no tiene entregas de Dropi.')
+          : MODO.pais === 'MX' ? (window.CAJA_MX_ERROR ? 'México sin caja de pago anticipado todavía.' : 'México (pago anticipado) todavía no tiene pagos ese día.')   /* 20-11: México solo mide el pago anticipado */
           : MODO.pais === 'PL' ? (window.CAJA_PL_ERROR ? 'Polonia sin caja todavía.' : 'Polonia todavía no tiene entregas de Dropi PRO.')
           : MODO.pais === 'GT' ? (window.CAJA_PE_ERROR ? 'Guatemala sin caja todavía.' : 'Guatemala todavía no tiene entregas de Dropi Guatemala.')   /* 11-11: Guatemala */
           : (MODO.pais === 'PT' ? 'Portugal' : 'España') + ' todavía no tiene entregas de Dropi PRO.') : '') + '</td></tr>';
