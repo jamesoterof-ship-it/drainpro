@@ -5222,16 +5222,11 @@ function diasGananciaRO(cb){
 }
 /* 03-11 (James: "igualito a Chile"): MÉXICO lee SU caja como Chile (/caja-mexico = copia de /caja-jaye).
    n8n: Sync Pedidos Dropi México AwL2a72pjp4rJaFe → Caja diaria México 4CVSKwg5SJQaZ5fY (fin_caja_diaria_mx) → webhook lhd6S7ZhFoCpneVv.
-   Llegan los días ya hechos (entregas, entra, devoluciones, devol, meta, camila, queda en COP), igual que Chile.
-   20-11 (James: "solo vas a medir lo nuevo y desde hoy quitas México… solo una campaña con pago anticipado"): México contra
-   entrega quedó pausado el 19-11. El panel ya NO lee /caja-mexico (Dropi): lee /caja-mexico-anticipado (n8n SW81pHol7YHKdz3z →
-   fin_caja_diaria_mx_ant → webhook qysxGjXa032RCAFq): entregas = pagos por PayPal, entra = pagado − costo AliExpress (null = "sin
-   costo" en rojo hasta que James lo dé), meta = solo campañas con ALIEXPRESS, camila = mensajes de Lupita. La caja de Dropi
-   (/caja-mexico) sigue calculando escondida para mirar el cierre del mes; para volver a ella basta cambiar la ruta aquí. */
+   Llegan los días ya hechos (entregas, entra, devoluciones, devol, meta, camila, queda en COP), igual que Chile. */
 var CAJA_MX=null; window.CAJA_MX_ERROR=false;
 function diasGananciaMX(cb){
   if(CAJA_MX&&Date.now()-CAJA_MX._pedido<120000){ cb(CAJA_MX.dias); return; }
-  fetch(BASE+'/caja-mexico-anticipado',{cache:'no-store'}).then(function(r){ if(!r.ok) throw 0; return r.json(); }).then(function(j){
+  fetch(BASE+'/caja-mexico',{cache:'no-store'}).then(function(r){ if(!r.ok) throw 0; return r.json(); }).then(function(j){
     var arr=(Array.isArray(j)?j:[j]).filter(function(x){ return x&&x.dia; });
     CAJA_MX={dias:arr,_pedido:Date.now()}; window.CAJA_MX_ERROR=false; cb(arr);
   }).catch(function(){ window.CAJA_MX_ERROR=true; cb(CAJA_MX?CAJA_MX.dias:[]); });
@@ -6180,14 +6175,12 @@ function diasDelRango(z){
   return [hoy];
 }
 function sumaCaja(arr,keys){
-  var s={entregas:0,entra:0,devoluciones:0,devol:0,meta:0,camila:0,sueldo:0,queda:0,pagado_mxn:0,hay:!!(arr&&arr.length),sinMeta:false,sinCosto:false};
+  var s={entregas:0,entra:0,devoluciones:0,devol:0,meta:0,camila:0,sueldo:0,queda:0,hay:!!(arr&&arr.length),sinMeta:false};
   (arr||[]).forEach(function(x){ if(keys.indexOf(String(x.dia).slice(0,10))<0) return;
     /* 17-11 (James: "nunca me puedo confiar de sus números"): si la caja no pudo leer Meta ese día, llega meta=null
        (meta_sin_dato=true). Eso NO es un 0: se marca sinMeta y el resumen lo pinta en rojo "sin leer". */
     if(x.meta===null||x.meta_sin_dato===true) s.sinMeta=true;
-    /* 20-11 México pago anticipado: si la caja no tiene el costo de AliExpress (costo_sin_dato), no es 0: se marca y sale en rojo */
-    if(x.costo_sin_dato===true) s.sinCosto=true;
-    ['entregas','entra','devoluciones','devol','meta','camila','pagado_mxn'].forEach(function(k){ s[k]+=Number(x[k])||0; }); });
+    ['entregas','entra','devoluciones','devol','meta','camila'].forEach(function(k){ s[k]+=Number(x[k])||0; }); });
   /* 02-11 (James): "mi sueldo quítalo, no lo calcules en ningún lado": ya no se resta */
   s.queda=s.entra-s.devol-s.meta-s.camila; return s;
 }
@@ -6215,17 +6208,12 @@ function renderCierre(){
 function pintarCierre(C){
   var box=document.getElementById('cierrePais'); if(!box||fPais!=='todos'||!TASAS) return;
   var T=totalesPais(), lbl=rangoTxt();
-  /* 20-11 (James: "solo vas a medir lo nuevo y desde hoy quitas México"): México = su caja de PAGO ANTICIPADO (ventas pagadas por
-     PayPal, Meta de las campañas ALIEXPRESS, bots de Lupita). Las ventas de la fila salen de la misma caja (pagos y MXN pagados),
-     no de T.mx, que todavía trae las contra entrega viejas del rango. */
-  var cMX=sumaCaja(C.MX,diasDelRango(ZONA_MX));
   var P=[
     {k:'CL',nom:'Chile',flag:'flag-cl',zona:ZONA_CL,reg:'LATAM',n:T.cl.n,vLoc:fmtCLP(T.cl.t)+' CLP',vCop:T.cl.t*TASAS.clp,caja:sumaCaja(C.CL,diasDelRango(ZONA_CO)),sin:C.CL?'':'la caja de Chile no respondió'},
     /* 16-11: Colombia con SU caja (/caja-colombia); sin respuesta va en 0 con "sin caja todavía" */
     {k:'CO',nom:'Colombia',flag:'flag-co',zona:ZONA_CO,reg:'LATAM',n:T.co.n,vLoc:fmtCOP(T.co.t)+' COP',vCop:T.co.t,caja:sumaCaja(C.CO,diasDelRango(ZONA_CO)),sin:(window.CAJA_CO_ERROR?'Colombia sin caja todavía':'')},
-    /* 20-11: México · PAGO ANTICIPADO (la caja de Dropi /caja-mexico ya no se muestra ni se suma; sigue calculando escondida).
-       30-10: México con su propia fecha (va 1 h detrás de Colombia). Sin webhook va en 0 con "sin caja todavía". */
-    {k:'MX',nom:'México · pago anticipado',flag:'flag-mx',zona:ZONA_MX,reg:'LATAM',n:cMX.entregas,vLoc:fmtMXN(cMX.pagado_mxn),vCop:TASAS.mxn?cMX.pagado_mxn*TASAS.mxn:0,caja:cMX,sin:!TASAS.mxn?'sin tasa del peso mexicano':(window.CAJA_MX_ERROR?'México sin caja de pago anticipado todavía':'')},
+    /* 28-10: México como Rumanía, en LATAM; sin /caja-mexico va en 0 con "sin caja todavía" */
+    {k:'MX',nom:'México',flag:'flag-mx',zona:ZONA_MX,reg:'LATAM',n:T.mx.n,vLoc:fmtMXN(T.mx.t),vCop:TASAS.mxn?T.mx.t*TASAS.mxn:0,caja:sumaCaja(C.MX,diasDelRango(ZONA_MX)),/* 30-10: México con su propia fecha (va 1 h detrás de Colombia) */sin:!TASAS.mxn?'sin tasa del peso mexicano':(window.CAJA_MX_ERROR?'México sin caja todavía':'')},
     /* 09-11: Perú en LATAM, con su fecha de Lima; sin /caja-peru va en 0 con "sin caja todavía" */
     {k:'GT',nom:'Guatemala',flag:'flag-gt',zona:ZONA_PE,reg:'LATAM',n:T.pe.n,vLoc:fmtPEN(T.pe.t),vCop:TASAS.gtq?T.pe.t*TASAS.gtq:0,caja:sumaCaja(C.GT,diasDelRango(ZONA_PE)),sin:!TASAS.gtq?'sin tasa del quetzal':(window.CAJA_PE_ERROR?'Guatemala sin caja todavía':'')},
     {k:'ES',nom:'España',flag:'flag-es',zona:ZONA_ES,reg:'EUROPA',n:T.es.n,vLoc:fmtEUR(T.es.t),vCop:T.es.t*TASAS.eur,caja:sumaCaja(C.ES,diasDelRango(ZONA_CO)),sin:''},
@@ -6247,9 +6235,8 @@ function pintarCierre(C){
     var fecha='<span class="fecha">'+fechaPaisHtml(p.zona).replace(' hora de ','<small>hora de ')+'</small></span>';
     return '<tr><td><span class="pais"><span class="flag '+p.flag+'"></span>'+p.nom+'</span></td><td>'+fecha+'</td>'+
       (p.n?cel(p.n,p.vLoc+' · ≈ '+cop(p.vCop)):vac('0 · todavía sin ventas'))+
-      (vacio?vac(p.sin||(p.k==='MX'?'0 · todavía sin pagos ('+lbl+')':'0 · Dropi no marcó nada ('+lbl+')')):   /* 20-11: México no es de Dropi */
-        /* 20-11 México pago anticipado: la casilla cuenta PAGOS (no entregas de Dropi); sin costo de AliExpress se avisa en rojo */
-        cel(c.entregas,(p.k==='MX'?'pagados · ':'')+'entra '+cop(c.entra)+(c.sinCosto?' <span style="color:var(--red)">· sin costo AliExpress</span>':''))+
+      (vacio?vac(p.sin||'0 · Dropi no marcó nada ('+lbl+')'):
+        cel(c.entregas,'entra '+cop(c.entra))+
         (c.devoluciones?cel(c.devoluciones,'−'+cop(c.devol),'neg'):vac('0'))+
         /* 17-11: Meta sin leer va en ROJO, nunca como $0 */
         (c.sinMeta?cel('<span style="color:var(--red)">⚠ sin leer</span>','Meta no respondió','neg'):c.meta?cel(cop(c.meta),''):vac('$0'))+
@@ -6311,9 +6298,9 @@ function pintarCierre(C){
     '<div class="cp-card" style="padding-bottom:6px"><div class="tbl-head"><h2>Indicadores</h2><span class="s" id="cpGrafSub"></span></div>'+
       '<div class="cp-graf"><div><div class="tt">Te queda por día · Latam vs Europa</div><div class="g" id="cpG1"></div></div>'+
       '<div><div class="tt">Entregado · gasto Meta · devoluciones</div><div class="g" id="cpG2"></div></div></div></div>'+
-    '<div class="cp-card"><div class="tbl-head"><h2>Totalizador · Latam y Europa</h2><span class="s">Latam = Chile + Colombia + México (solo pago anticipado) + Guatemala · Europa = España + Portugal + Rumanía + Polonia · todo en pesos colombianos</span></div>'+
+    '<div class="cp-card"><div class="tbl-head"><h2>Totalizador · Latam y Europa</h2><span class="s">Latam = Chile + Colombia + México + Guatemala · Europa = España + Portugal + Rumanía + Polonia · todo en pesos colombianos</span></div>'+
       '<table class="cp-tabla"><thead><tr><th>Región</th><th>Países</th><th>Ventas</th><th>Entregas</th><th>Devoluciones</th><th>Gasto Meta</th><th>Bots</th><th>Te queda</th></tr></thead><tbody>'+
-      filaSub('🌎 LATAM','Chile · Colombia · México (anticipado) · Guatemala',LA,'latam')+filaSub('🌍 EUROPA','España · Portugal · Rumanía · Polonia',EU,'eu')+'</tbody>'+pie('Latam + Europa')+'</table></div>'+
+      filaSub('🌎 LATAM','Chile · Colombia · México · Guatemala',LA,'latam')+filaSub('🌍 EUROPA','España · Portugal · Rumanía · Polonia',EU,'eu')+'</tbody>'+pie('Latam + Europa')+'</table></div>'+
     '<div class="cp-card"><div class="tbl-head"><h2>Cierre '+lbl+' por país</h2><span class="s">la fecha la pone Colombia y cada país muestra ese día con su hora · subtotal por región · total en pesos colombianos</span></div>'+
       '<table class="cp-tabla">'+cab+'<tbody>'+
       P.filter(function(p){return p.reg==='LATAM';}).map(fila).join('')+filaSub('🌎 LATAM','Chile + Colombia + México + Guatemala',LA,'latam')+
