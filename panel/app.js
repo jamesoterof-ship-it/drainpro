@@ -390,6 +390,10 @@ const anticipoPagado=o=>/abono pagado/i.test(String((o&&o.estado)||''));
 const cobroCLP=(o,txt)=>{ if(!anticipoPagado(o)) return txt; const n=numero(txt); return n>ANTICIPO_CLP?fmtCLP(n-ANTICIPO_CLP):txt; };
 const filaAnticipo=(o,txt)=>anticipoPagado(o)?'<div class="dl"><span class="k">Anticipo</span><span class="v" style="color:#1b7f3b;font-weight:800">PAGADO · se descuentan $5.000 del precio '+esc(String(txt))+'</span></div>':'';
 const FLAG={CL:'flag-cl',CO:'flag-co',PY:'flag-py',ES:'flag-es',PT:'flag-pt',RO:'flag-ro',MX:'flag-mx',PL:'flag-pl',GT:'flag-gt'};   /* 28-10: México como Rumanía */
+/* 26-11 James: México cerrado y FUERA del panel ("que no marque nada, lo vemos nosotros internos"): se esconden su pestaña,
+   sus botones y la conversación de Lupita. Los datos siguen en la base para la auditoría interna. Para volverlo a mostrar, borrar estas líneas. */
+window.MX_FUERA_DEL_PANEL=true;
+document.querySelectorAll('[data-p="MX"],[data-bot="BotMX"]').forEach(function(e){ e.style.display='none'; });
 /* El bot del numero chileno se mostraba como 'Carlos' y el de logistica tambien:
    no habia forma de saber cual estabas mirando, y una regla que faltaba en uno se
    buscaba en el otro. La CLAVE interna sigue siendo Carlos (la usan los filtros);
@@ -1143,7 +1147,7 @@ function renderPaises(){
   const tot=g.CL.n+g.CO.n+g.ES.n+g.PT.n+g.RO.n+g.MX.n+g.PL.n+g.GT.n||1;
   const fila=(loc,nom,color,fmt)=>{const p=Math.round(g[loc].n/tot*100);
     return `<div class="pais"><span class="flag ${FLAG[loc]}"></span>${nom}<div class="track"><i style="width:${p}%;background:${color}"></i></div><b>${g[loc].n} · ${fmt(g[loc].t)}</b><span class="pct">${p}%</span></div>`;};
-  cont.innerHTML=fila('CL','Chile','#0e8074',fmtCLP)+fila('ES','España','#aa151b',fmtEUR)+fila('PT','Portugal','#006600',fmtEUR)+fila('CO','Colombia','var(--blue)',fmtCOP)+(g.RO.n?fila('RO','Rumanía','#002B7F',fmtRON):'')+(g.MX.n?fila('MX','México','#006847',fmtMXN):'')+(g.PL.n?fila('PL','Polonia','#DC143C',fmtPLN):'')+(g.GT.n?fila('GT','Guatemala','#4997D0',fmtPEN):'');
+  cont.innerHTML=fila('CL','Chile','#0e8074',fmtCLP)+fila('ES','España','#aa151b',fmtEUR)+fila('PT','Portugal','#006600',fmtEUR)+fila('CO','Colombia','var(--blue)',fmtCOP)+(g.RO.n?fila('RO','Rumanía','#002B7F',fmtRON):'')+''/* 26-11 James: México FUERA del panel (se mira por dentro) */+(g.PL.n?fila('PL','Polonia','#DC143C',fmtPLN):'')+(g.GT.n?fila('GT','Guatemala','#4997D0',fmtPEN):'');
   const ps=document.getElementById('paisesSub'); if(ps) ps.textContent=rangoTxt()+' · '+(fCanal==='todos'?'todos los canales':fCanal==='wa'?'WhatsApp':'páginas');
 }
 
@@ -6222,6 +6226,8 @@ function pintarCierre(C){
     /* 03-11: Polonia en EUROPA; sin /caja-polonia va en 0 con "sin caja todavía" */
     {k:'PL',nom:'Polonia',flag:'flag-pl',zona:ZONA_PL,reg:'EUROPA',n:T.pl.n,vLoc:fmtPLN(T.pl.t),vCop:TASAS.pln?T.pl.t*TASAS.pln:0,caja:sumaCaja(C.PL,diasDelRango(ZONA_CO)),sin:!TASAS.pln?'sin tasa del esloti':(window.CAJA_PL_ERROR?'Polonia sin caja todavía':'')}
   ];
+  /* 26-11 James ("que no marque nada en el panel, lo vemos nosotros internos"): México FUERA del cierre, el resumen y las entregas */
+  P=P.filter(function(p){ return p.k!=='MX'; });
   /* los negativos con el signo adelante del $ (fmtCOP daría "$-1.393.658") */
   var pesos=function(v){ return (v<0?'−':'')+fmtCOP(Math.abs(v)); };
   var cop=function(v){ return pesos(v)+' COP'; };
