@@ -5240,8 +5240,10 @@ function diasGananciaRO(cb){
       if(!v.dropi_dia) return; var k=String(v.dropi_dia).slice(0,10);
       if(/entreg/i.test(v.dropi||'')){ var x=dia(k), cant=Number(v.cant)||1;
         x.entregas++; var cu=(C.producto_ron_por&&C.producto_ron_por[v.prod])||C.producto_ron||0;
-        x.entra+=((Number(v.precio)||0)-cant*cu-(C.envio_ron||0))*tasaDia(k,'ron',t); }   /* 27-11: tasa del día de la entrega */
-      else if(/devol|rechaz|rehus/i.test(v.dropi||'')){ var y=dia(k); y.devoluciones++; y.devol+=(C.devolucion_ron||0)*tasaDia(k,'ron',t); }   /* 02-11: Dropi PRO dice "Rehusado" */
+        /* 27-11 (auditoría): si la billetera de Dropi PRO ya movió el pedido, se usa lo real (bill_neto); la fórmula fija solo si aún no pagó */
+        var realRO=(Number(v.bill_reemb)>0)?Number(v.bill_neto):(v.pago==='pre'&&v.bill_neto!=null)?(Number(v.precio)||0)+Number(v.bill_neto):null;
+        x.entra+=(realRO!=null?realRO:((Number(v.precio)||0)-cant*cu-(C.envio_ron||0)))*tasaDia(k,'ron',t); }   /* 27-11: tasa del día de la entrega */
+      else if(/devol|rechaz|rehus/i.test(v.dropi||'')){ var y=dia(k); y.devoluciones++; y.devol+=(v.bill_neto!=null?Math.max(0,-Number(v.bill_neto)):(C.devolucion_ron||0))*tasaDia(k,'ron',t); }   /* 02-11: Dropi PRO dice "Rehusado" · 27-11: lo que cobró de verdad */
     });
     (CAJA_RO.pauta||[]).forEach(function(p){ dia(p.dia).meta+=Number(p.cop)||0; });
     /* 02-11 (James): bots como en Chile: 33 COP por mensaje recibido por Ioana (la caja los trae en msgs) */
@@ -5280,8 +5282,10 @@ function diasGananciaPL(cb){
       if(!v.dropi_dia) return; var k=String(v.dropi_dia).slice(0,10);
       if(/entreg/i.test(v.dropi||'')){ var x=dia(k), cant=Number(v.cant)||1;
         x.entregas++; var cu=(C.producto_pln_por&&C.producto_pln_por[v.prod])||C.producto_pln||0;
-        x.entra+=((Number(v.precio)||0)-cant*cu-(C.envio_pln||0))*tasaDia(k,'pln',t); }   /* 27-11: tasa del día de la entrega */
-      else if(/devol|rechaz/i.test(v.dropi||'')){ var y=dia(k); y.devoluciones++; y.devol+=(C.devolucion_pln||0)*tasaDia(k,'pln',t); }
+        /* 27-11 (auditoría): si la billetera de Dropi PRO ya movió el pedido, se usa lo real (bill_neto); la fórmula fija solo si aún no pagó */
+        var realPL=(Number(v.bill_reemb)>0)?Number(v.bill_neto):(v.pago==='pre'&&v.bill_neto!=null)?(Number(v.precio)||0)+Number(v.bill_neto):null;
+        x.entra+=(realPL!=null?realPL:((Number(v.precio)||0)-cant*cu-(C.envio_pln||0)))*tasaDia(k,'pln',t); }   /* 27-11: tasa del día de la entrega */
+      else if(/devol|rechaz|rehus/i.test(v.dropi||'')){ var y=dia(k); y.devoluciones++; y.devol+=(v.bill_neto!=null?Math.max(0,-Number(v.bill_neto)):(C.devolucion_pln||0))*tasaDia(k,'pln',t); }   /* 27-11: "Rehusado" también cuenta; lo que cobró de verdad */
     });
     (CAJA_PL.pauta||[]).forEach(function(p){ dia(p.dia).meta+=Number(p.cop)||0; });
     cb(Object.keys(por).map(function(k){ var x=por[k]; x.entra=Math.round(x.entra); x.devol=Math.round(x.devol); x.queda=x.entra-x.devol-x.meta; return x; })
