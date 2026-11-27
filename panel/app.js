@@ -5336,10 +5336,16 @@ window.diasGananciaPais=function(P,cb){
       var env=P==='PT'?(C.envio_pt_eur||7.39):String(v.cp||'').indexOf('07')===0?(C.envio_baleares_eur||0):(C.envio_eur||0);
       if(/entreg/i.test(v.dropi||'')){ var x=dia(k), cant=Number(v.cant)||1;
         x.entregas++; var cu=(C.producto_eur_por&&C.producto_eur_por[v.prod])||C.producto_eur||0; /* 29-09: coste de CADA producto (cabezal 4,22 · bálsamo 2,41) */
-        x.entra+=((Number(v.precio)||0)-cant*cu-env)*tasaDia(k,'eur',t); }   /* 27-11: tasa del día de la entrega, no la de hoy */
+        /* 27-11 (auditoría, James: "estamos hablando de dinero"): si la billetera de Dropi PRO ya movió este pedido (bill_neto = suma de
+           reembolso − producto − logística; en pago anticipado el precio nos llegó por el link y la billetera solo cobra), se usa LO REAL.
+           La fórmula fija (precio − cant×costo − envío) queda solo para lo que Dropi PRO aún no pagó (entregas de hoy: paga al día siguiente). */
+        var real=(Number(v.bill_reemb)>0)?Number(v.bill_neto):(v.pago==='pre'&&v.bill_neto!=null)?(Number(v.precio)||0)+Number(v.bill_neto):null;
+        x.entra+=(real!=null?real:((Number(v.precio)||0)-cant*cu-env))*tasaDia(k,'eur',t); }   /* 27-11: tasa del día de la entrega, no la de hoy */
       /* 02-11 (James: "claro que hay devoluciones, no las estás calculando"): Dropi PRO las marca "Rehusado" (antes solo se miraba
          devol|rechaz y salían 0) y, visto en la billetera (pedido #3557559), cuestan la logística que cobró al confirmar: se resta el envío */
-      else if(/devol|rechaz|rehus/i.test(v.dropi||'')){ var y=dia(k); y.devoluciones++; y.devol+=(C.devolucion_eur||env)*tasaDia(k,'eur',t); }
+      else if(/devol|rechaz|rehus/i.test(v.dropi||'')){ var y=dia(k); y.devoluciones++;
+        /* 27-11: la devolución cuesta lo que la billetera cobró de verdad (logística real 5,75–9,04 €, menos lo que Dropi devolvió); el envío fijo solo si no hay movimiento */
+        y.devol+=(v.bill_neto!=null?Math.max(0,-Number(v.bill_neto)):(C.devolucion_eur||env))*tasaDia(k,'eur',t); }
     });
     /* 20-10: la caja separa la pauta: las campañas con PORTUGAL en el nombre van en pauta_pt (día de Lisboa) */
     ((P==='PT'?CAJA_ES.pauta_pt:CAJA_ES.pauta)||[]).forEach(function(p){ dia(p.dia).meta+=Number(p.cop)||0; });
