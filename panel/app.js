@@ -4904,7 +4904,11 @@ function cargarTasasDia(){
   fetch(BASE+'/tasas-dia',{cache:'no-store'}).then(function(r){ return r.json(); }).then(function(j){
     if(j&&j.tasas&&j.dias>0){ window.TASAS_DIA=j.tasas; renderPaisTab(); } }).catch(function(){});
 }
-function tasaDia(k,m,f){ var r=window.TASAS_DIA&&window.TASAS_DIA[String(k).slice(0,10)]; var v=r&&Number(r[m]); return v>0?v:f; }
+/* 27-11 (James, al ver que el mes bajaba de 33,4 a 31,1 M con la tasa de cada día): "si el euro subió, tiene que subir la ganancia".
+   Los euros se pasan a pesos cuando se retiran, así que Europa se valora con el euro de HOY. La tabla fin_tasa_dia queda guardada
+   (sirve para comparar meses sin el efecto del dólar) pero NO entra en el número: TASA_POR_DIA=false. */
+var TASA_POR_DIA=false;
+function tasaDia(k,m,f){ if(!TASA_POR_DIA) return f; var r=window.TASAS_DIA&&window.TASAS_DIA[String(k).slice(0,10)]; var v=r&&Number(r[m]); return v>0?v:f; }
 function tasaVieja(){ return !!(TASAS&&TASAS.dia!==new Date().toDateString()); }
 function refrescarTasas(){
   var ahora=Date.now(); if(ahora-_ultimoIntentoTasas<10*60*1000) return; _ultimoIntentoTasas=ahora;
@@ -4929,7 +4933,7 @@ function tasaTxt(){
   /* la fecha de la fuente viene en UTC ("Mon, 28 Sep 2026 00:02"): en hora de Bogotá
      caería el día anterior, así que se muestra en UTC, que es la fecha de la tasa */
   var f=TASAS.fecha?new Date(TASAS.fecha).toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric',timeZone:'UTC'}):'';
-  return (tasaVieja()?'⚠ TASA DE OTRO DÍA, actualizando… · ':'')+(window.TASAS_DIA?'Europa convertida con la tasa de cada día · ':'')+'Tasa del '+f+' (open.er-api.com): 1 CLP = '+TASAS.clp.toLocaleString('es-CO',{maximumFractionDigits:4})+
+  return (tasaVieja()?'⚠ TASA DE OTRO DÍA, actualizando… · ':'')+(TASA_POR_DIA&&window.TASAS_DIA?'Europa convertida con la tasa de cada día · ':'')+'Tasa del '+f+' (open.er-api.com): 1 CLP = '+TASAS.clp.toLocaleString('es-CO',{maximumFractionDigits:4})+
     ' COP · 1 € = '+TASAS.eur.toLocaleString('es-CO',{maximumFractionDigits:2})+' COP'+
     (TASAS.ron?' · 1 leu = '+TASAS.ron.toLocaleString('es-CO',{maximumFractionDigits:2})+' COP':'')+
     (TASAS.mxn?' · 1 peso mexicano = '+TASAS.mxn.toLocaleString('es-CO',{maximumFractionDigits:2})+' COP':'')+   /* 28-10: México */
