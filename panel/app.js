@@ -4896,6 +4896,22 @@ function pagCO(o){ var p=String(o.prod||''); if(o.bot==='Valentina') return 'co-
   /* 11-11: funda navideña de puerta (co-funda) y fundas de silla (co-sillas) cuentan en su página */
   return /protector|colch/i.test(p)?'co-protector':/puerta/i.test(p)?'co-funda':/silla/i.test(p)?'co-sillas':/chao|cana/i.test(p)?'co-chao':/gafa|lente|aumento/i.test(p)?'co-gafas':'co-otro'; }
 
+/* 27-11 (James: "en el computador 33,46 M y en el celular 32,6 M"): cada aparato convertía TODO el mes con la tasa del día en que
+   abrió el panel. Ahora: a) la tasa se vuelve a pedir al cambiar el día o al volver a la app, y si es de otro día sale en rojo;
+   b) Europa convierte cada día con la tasa de SU día (fin_tasa_dia vía /tasas-dia: TRM BanRep × BCE para el histórico, open.er-api para hoy). */
+window.TASAS_DIA=null; var _ultimoIntentoTasas=0;
+function cargarTasasDia(){
+  fetch(BASE+'/tasas-dia',{cache:'no-store'}).then(function(r){ return r.json(); }).then(function(j){
+    if(j&&j.tasas&&j.dias>0){ window.TASAS_DIA=j.tasas; renderPaisTab(); } }).catch(function(){});
+}
+function tasaDia(k,m,f){ var r=window.TASAS_DIA&&window.TASAS_DIA[String(k).slice(0,10)]; var v=r&&Number(r[m]); return v>0?v:f; }
+function tasaVieja(){ return !!(TASAS&&TASAS.dia!==new Date().toDateString()); }
+function refrescarTasas(){
+  var ahora=Date.now(); if(ahora-_ultimoIntentoTasas<10*60*1000) return; _ultimoIntentoTasas=ahora;
+  try{ localStorage.removeItem('jaye_tasas'); }catch(e){}
+  cargarTasas(); cargarTasasDia();
+}
+document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible'&&tasaVieja()) refrescarTasas(); });
 function cargarTasas(){
   try{ var c=JSON.parse(localStorage.getItem('jaye_tasas')||'null');
     if(c&&c.dia===new Date().toDateString()&&c.clp&&c.eur&&('ron' in c)&&('mxn' in c)&&('pln' in c)&&('gtq' in c)){ TASAS=c; return; } }catch(e){}   /* 11-11: el caché sin quetzal se vuelve a pedir */   /* 28-10: el caché viejo sin peso mexicano se vuelve a pedir */
@@ -4913,7 +4929,7 @@ function tasaTxt(){
   /* la fecha de la fuente viene en UTC ("Mon, 28 Sep 2026 00:02"): en hora de Bogotá
      caería el día anterior, así que se muestra en UTC, que es la fecha de la tasa */
   var f=TASAS.fecha?new Date(TASAS.fecha).toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric',timeZone:'UTC'}):'';
-  return 'Tasa del '+f+' (open.er-api.com): 1 CLP = '+TASAS.clp.toLocaleString('es-CO',{maximumFractionDigits:4})+
+  return (tasaVieja()?'⚠ TASA DE OTRO DÍA, actualizando… · ':'')+(window.TASAS_DIA?'Europa convertida con la tasa de cada día · ':'')+'Tasa del '+f+' (open.er-api.com): 1 CLP = '+TASAS.clp.toLocaleString('es-CO',{maximumFractionDigits:4})+
     ' COP · 1 € = '+TASAS.eur.toLocaleString('es-CO',{maximumFractionDigits:2})+' COP'+
     (TASAS.ron?' · 1 leu = '+TASAS.ron.toLocaleString('es-CO',{maximumFractionDigits:2})+' COP':'')+
     (TASAS.mxn?' · 1 peso mexicano = '+TASAS.mxn.toLocaleString('es-CO',{maximumFractionDigits:2})+' COP':'')+   /* 28-10: México */
@@ -5207,8 +5223,8 @@ function diasGananciaRO(cb){
       if(!v.dropi_dia) return; var k=String(v.dropi_dia).slice(0,10);
       if(/entreg/i.test(v.dropi||'')){ var x=dia(k), cant=Number(v.cant)||1;
         x.entregas++; var cu=(C.producto_ron_por&&C.producto_ron_por[v.prod])||C.producto_ron||0;
-        x.entra+=((Number(v.precio)||0)-cant*cu-(C.envio_ron||0))*t; }
-      else if(/devol|rechaz|rehus/i.test(v.dropi||'')){ var y=dia(k); y.devoluciones++; y.devol+=(C.devolucion_ron||0)*t; }   /* 02-11: Dropi PRO dice "Rehusado" */
+        x.entra+=((Number(v.precio)||0)-cant*cu-(C.envio_ron||0))*tasaDia(k,'ron',t); }   /* 27-11: tasa del día de la entrega */
+      else if(/devol|rechaz|rehus/i.test(v.dropi||'')){ var y=dia(k); y.devoluciones++; y.devol+=(C.devolucion_ron||0)*tasaDia(k,'ron',t); }   /* 02-11: Dropi PRO dice "Rehusado" */
     });
     (CAJA_RO.pauta||[]).forEach(function(p){ dia(p.dia).meta+=Number(p.cop)||0; });
     /* 02-11 (James): bots como en Chile: 33 COP por mensaje recibido por Ioana (la caja los trae en msgs) */
@@ -5246,8 +5262,8 @@ function diasGananciaPL(cb){
       if(!v.dropi_dia) return; var k=String(v.dropi_dia).slice(0,10);
       if(/entreg/i.test(v.dropi||'')){ var x=dia(k), cant=Number(v.cant)||1;
         x.entregas++; var cu=(C.producto_pln_por&&C.producto_pln_por[v.prod])||C.producto_pln||0;
-        x.entra+=((Number(v.precio)||0)-cant*cu-(C.envio_pln||0))*t; }
-      else if(/devol|rechaz/i.test(v.dropi||'')){ var y=dia(k); y.devoluciones++; y.devol+=(C.devolucion_pln||0)*t; }
+        x.entra+=((Number(v.precio)||0)-cant*cu-(C.envio_pln||0))*tasaDia(k,'pln',t); }   /* 27-11: tasa del día de la entrega */
+      else if(/devol|rechaz/i.test(v.dropi||'')){ var y=dia(k); y.devoluciones++; y.devol+=(C.devolucion_pln||0)*tasaDia(k,'pln',t); }
     });
     (CAJA_PL.pauta||[]).forEach(function(p){ dia(p.dia).meta+=Number(p.cop)||0; });
     cb(Object.keys(por).map(function(k){ var x=por[k]; x.entra=Math.round(x.entra); x.devol=Math.round(x.devol); x.queda=x.entra-x.devol-x.meta; return x; })
@@ -5301,10 +5317,10 @@ window.diasGananciaPais=function(P,cb){
       var env=P==='PT'?(C.envio_pt_eur||7.39):String(v.cp||'').indexOf('07')===0?(C.envio_baleares_eur||0):(C.envio_eur||0);
       if(/entreg/i.test(v.dropi||'')){ var x=dia(k), cant=Number(v.cant)||1;
         x.entregas++; var cu=(C.producto_eur_por&&C.producto_eur_por[v.prod])||C.producto_eur||0; /* 29-09: coste de CADA producto (cabezal 4,22 · bálsamo 2,41) */
-        x.entra+=((Number(v.precio)||0)-cant*cu-env)*t; }
+        x.entra+=((Number(v.precio)||0)-cant*cu-env)*tasaDia(k,'eur',t); }   /* 27-11: tasa del día de la entrega, no la de hoy */
       /* 02-11 (James: "claro que hay devoluciones, no las estás calculando"): Dropi PRO las marca "Rehusado" (antes solo se miraba
          devol|rechaz y salían 0) y, visto en la billetera (pedido #3557559), cuestan la logística que cobró al confirmar: se resta el envío */
-      else if(/devol|rechaz|rehus/i.test(v.dropi||'')){ var y=dia(k); y.devoluciones++; y.devol+=(C.devolucion_eur||env)*t; }
+      else if(/devol|rechaz|rehus/i.test(v.dropi||'')){ var y=dia(k); y.devoluciones++; y.devol+=(C.devolucion_eur||env)*tasaDia(k,'eur',t); }
     });
     /* 20-10: la caja separa la pauta: las campañas con PORTUGAL en el nombre van en pauta_pt (día de Lisboa) */
     ((P==='PT'?CAJA_ES.pauta_pt:CAJA_ES.pauta)||[]).forEach(function(p){ dia(p.dia).meta+=Number(p.cop)||0; });
@@ -5347,7 +5363,8 @@ setInterval(function(){
   var rpe=document.getElementById('relojPE'); if(rpe) rpe.textContent=horaPE();   /* 09-11: Perú */
   fechaCabecera();
   var hoy=[ZONA_ES,ZONA_PT,ZONA_CL,ZONA_CO,ZONA_RO,ZONA_MX,ZONA_PL,ZONA_PE].map(function(z){return _ymdZona(Date.now(),z);}).join('|');
-  if(hoy!==_diasPais){ _diasPais=hoy; try{ renderResumen(); }catch(e){} }
+  if(hoy!==_diasPais){ _diasPais=hoy; refrescarTasas(); try{ renderResumen(); }catch(e){} }
+  if(tasaVieja()) refrescarTasas();   /* 27-11: nunca convertir con la tasa de otro día */
 },20000);
 function renderPaisTab(){
   fechaCabecera();
@@ -5402,7 +5419,7 @@ function renderPaisTab(){
         '<div class="cp-top-card oro"><div class="lbl">Ganancia '+lbl+' · '+nom+'</div><div class="fila"><span class="val" id="cpGanRango">…</span><span class="meta">COP</span></div></div>'+
         '<div class="cp-top-card oro"><div class="lbl">Ganancia de <span id="cpGanMesNom">este mes</span> · '+nom+'</div><div class="fila"><span class="val" id="cpGanMes">…</span><span class="meta">COP</span></div></div></div>'; };
     box.innerHTML='<div class="rp-total">'+
-      '<div class="tasa">'+esc(tasaTxt())+'</div>'+
+      '<div class="tasa"'+(tasaVieja()?' style="color:#e5484d;font-weight:600"':'')+'>'+esc(tasaTxt())+'</div>'+
       /* 02-11 (James: "vamos a dividir los resúmenes: ponme arriba Resumen Latinoamérica y Resumen Europa, cada uno en una pestaña"):
          dos pestañas y se muestra SOLO la región elegida, a todo el ancho (se recuerda la última en jaye_reg_res) */
       /* 02-11 (James): tres pestañas: Totalizado (todos los países), Latinoamérica y Europa */
@@ -6346,6 +6363,6 @@ function pintarCierreGraf(C){
   document.querySelectorAll('#segPais .minitab').forEach(function(b){ b.addEventListener('click',function(){ irPais(b.dataset.p); }); });
   document.querySelectorAll('#paisAprob .minitab').forEach(function(b){ b.addEventListener('click',function(){ fPaisAprob=b.dataset.p; renderAprobarPais(); }); });
   fPaisAprob=(fPais==='todos')?'CL':fPais;
-  aplicarPaisMenu(); cargarTasas(); renderPaisTab(); renderAprobarPais();
+  aplicarPaisMenu(); cargarTasas(); cargarTasasDia(); renderPaisTab(); renderAprobarPais();
   if(vistaActual()==='resumen'){ var vt=document.getElementById('vtitle'); if(vt) vt.textContent=NOM_PAIS[fPais]||NOM_PAIS.todos; }
 })();
