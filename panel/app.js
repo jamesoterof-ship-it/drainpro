@@ -6300,7 +6300,8 @@ function pintarCierre(C){
   /* 02-11 (James: "divídeme los números de Europa y los de Latinoamérica, y al final un total de todo"):
      el mes también se calcula por región (Latam = Chile + México con caja; Europa = España + Portugal + Rumanía + Polonia) */
   var mesDe=function(keys){ var m={queda:0}; keys.forEach(function(k){ var s=sumaCaja(C[k],_diasMes); m.queda+=s.queda; }); return m; };
-  var MES_LA=mesDe(['CL','MX','GT']), MES_EU=mesDe(['ES','PT','RO','PL']), MES={queda:MES_LA.queda+MES_EU.queda};
+  /* 27-11 (James): Colombia contaba en "ganancia hoy" pero NO en "ganancia del mes": faltaba 'CO' en esta lista */
+  var MES_LA=mesDe(['CL','CO','MX','GT']), MES_EU=mesDe(['ES','PT','RO','PL']), MES={queda:MES_LA.queda+MES_EU.queda};
   var _nomMes=new Date().toLocaleDateString('es-CO',{timeZone:ZONA_CO,month:'long'});
   /* 17-11: en "Gasto Meta" un país cuya caja no pudo leer Meta sale en rojo "⚠ sin leer" en vez de desaparecer de la lista */
   var det=function(campo,fmt,reg){ return P.filter(function(p){return (!reg||p.reg===reg)&&(p.caja[campo]||(campo==='meta'&&p.caja.sinMeta));}).map(function(p){ if(campo==='meta'&&p.caja.sinMeta) return '<span style="color:var(--red)">'+p.nom+' ⚠ sin leer</span>'; return p.nom+' '+(fmt?fmt(p.caja[campo]):p.caja[campo]); }).join(' · ')||'—'; };
