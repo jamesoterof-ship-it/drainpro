@@ -4910,6 +4910,19 @@ function cargarTasasDia(){
 var TASA_POR_DIA=false;
 function tasaDia(k,m,f){ if(!TASA_POR_DIA) return f; var r=window.TASAS_DIA&&window.TASAS_DIA[String(k).slice(0,10)]; var v=r&&Number(r[m]); return v>0?v:f; }
 function tasaVieja(){ return !!(TASAS&&TASAS.dia!==new Date().toDateString()); }
+/* 27-11 (James: "la cartera también se valora con el cambio de hoy; si el euro y el dólar están más altos, tiene que ser así"):
+   Chile, México y Guatemala llegan en COP convertidos con la tasa del día de la entrega (k.tasa, que ahora manda el webhook).
+   Aquí se llevan a la tasa de HOY: factor = tasa de hoy / tasa de ese día. Meta y bots ya son COP y no se tocan. Es idempotente:
+   guarda los valores originales en _o y recalcula desde ahí cada vez (sirve aunque la tasa llegue después que la caja). */
+function aplicarTasaHoy(arr,mon){
+  (arr||[]).forEach(function(x){ if(!x||!x.dia) return;
+    if(!x._o) x._o={entra:Number(x.entra)||0,devol:Number(x.devol)||0,pagaron:Number(x.pagaron)||0,flete:Number(x.flete)||0,costo:Number(x.costo)||0,tasa:Number(x.tasa)||0};
+    if(mon) x._mon=mon;
+    var th=TASAS&&x._mon&&TASAS[x._mon], f=(th>0&&x._o.tasa>0)?th/x._o.tasa:1;
+    x.entra=Math.round(x._o.entra*f); x.devol=Math.round(x._o.devol*f); x.pagaron=Math.round(x._o.pagaron*f); x.flete=Math.round(x._o.flete*f); x.costo=Math.round(x._o.costo*f);
+    x.queda=x.entra-x.devol-(Number(x.meta)||0)-(Number(x.camila)||0); });
+  return arr;
+}
 function refrescarTasas(){
   var ahora=Date.now(); if(ahora-_ultimoIntentoTasas<10*60*1000) return; _ultimoIntentoTasas=ahora;
   try{ localStorage.removeItem('jaye_tasas'); }catch(e){}
@@ -5249,6 +5262,7 @@ function diasGananciaMX(cb){
   if(CAJA_MX&&Date.now()-CAJA_MX._pedido<120000){ cb(CAJA_MX.dias); return; }
   fetch(BASE+'/caja-mexico',{cache:'no-store'}).then(function(r){ if(!r.ok) throw 0; return r.json(); }).then(function(j){
     var arr=(Array.isArray(j)?j:[j]).filter(function(x){ return x&&x.dia; });
+    aplicarTasaHoy(arr,'mxn');   /* 27-11: pesos mexicanos a la tasa de hoy */
     CAJA_MX={dias:arr,_pedido:Date.now()}; window.CAJA_MX_ERROR=false; cb(arr);
   }).catch(function(){ window.CAJA_MX_ERROR=true; cb(CAJA_MX?CAJA_MX.dias:[]); });
 }
@@ -5288,6 +5302,7 @@ function diasGananciaPE(cb){
   if(window.CAJA_PE_ERROR&&Date.now()-_cajaPEfallo<300000){ cb(CAJA_PE?CAJA_PE.dias:[]); return; }
   fetch(BASE+'/caja-guatemala',{cache:'no-store'}).then(function(r){ if(!r.ok) throw 0; return r.json(); }).then(function(j){
     var arr=(Array.isArray(j)?j:[j]).filter(function(x){ return x&&x.dia; });
+    aplicarTasaHoy(arr,'gtq');   /* 27-11: quetzales a la tasa de hoy */
     CAJA_PE={dias:arr,_pedido:Date.now()}; window.CAJA_PE_ERROR=false; cb(arr);
   }).catch(function(){ window.CAJA_PE_ERROR=true; _cajaPEfallo=Date.now(); cb(CAJA_PE?CAJA_PE.dias:[]); });
 }
@@ -6181,6 +6196,7 @@ function cajaChile(cb){
   if(CAJA_CL&&Date.now()-CAJA_CL._pedido<120000){ cb(CAJA_CL.dias); return; }
   fetch(BASE+'/caja-jaye',{cache:'no-store'}).then(function(r){ if(!r.ok) throw 0; return r.json(); }).then(function(j){
     var arr=(Array.isArray(j)?j:[j]).filter(function(x){ return x&&x.dia; });
+    aplicarTasaHoy(arr,'clp');   /* 27-11: pesos chilenos a la tasa de hoy */
     CAJA_CL={dias:arr,_pedido:Date.now()}; cb(arr);
   }).catch(function(){ cb(CAJA_CL?CAJA_CL.dias:null); });
 }
@@ -6197,6 +6213,7 @@ function diasDelRango(z){
   return [hoy];
 }
 function sumaCaja(arr,keys){
+  aplicarTasaHoy(arr);   /* 27-11: Chile/México/Guatemala a la tasa de hoy */
   var s={entregas:0,entra:0,devoluciones:0,devol:0,meta:0,camila:0,sueldo:0,queda:0,hay:!!(arr&&arr.length),sinMeta:false};
   (arr||[]).forEach(function(x){ if(keys.indexOf(String(x.dia).slice(0,10))<0) return;
     /* 17-11 (James: "nunca me puedo confiar de sus números"): si la caja no pudo leer Meta ese día, llega meta=null
@@ -6206,7 +6223,7 @@ function sumaCaja(arr,keys){
   /* 02-11 (James): "mi sueldo quítalo, no lo calcules en ningún lado": ya no se resta */
   s.queda=s.entra-s.devol-s.meta-s.camila; return s;
 }
-function porDiaCaja(arr){ var m={}; (arr||[]).forEach(function(x){ m[String(x.dia).slice(0,10)]=x; }); return m; }
+function porDiaCaja(arr){ aplicarTasaHoy(arr); var m={}; (arr||[]).forEach(function(x){ m[String(x.dia).slice(0,10)]=x; }); return m; }
 var _cierreSeq=0, _cajasCierre=null;
 function renderCierre(){
   var box=document.getElementById('cierrePais'); if(!box||fPais!=='todos') return;
