@@ -4931,12 +4931,25 @@ function refrescarTasas(){
 document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible'&&tasaVieja()) refrescarTasas(); });
 function cargarTasas(){
   try{ var c=JSON.parse(localStorage.getItem('jaye_tasas')||'null');
-    if(c&&c.dia===new Date().toDateString()&&c.clp&&c.eur&&('ron' in c)&&('mxn' in c)&&('pln' in c)&&('gtq' in c)){ TASAS=c; return; } }catch(e){}   /* 11-11: el caché sin quetzal se vuelve a pedir */   /* 28-10: el caché viejo sin peso mexicano se vuelve a pedir */
+    /* 27-11: el caché vale 2 h (antes todo el día): la tasa oficial se renueva cada 2 h en n8n */
+    if(c&&c.dia===new Date().toDateString()&&c.clp&&c.eur&&('ron' in c)&&('mxn' in c)&&('pln' in c)&&('gtq' in c)&&c._t&&Date.now()-c._t<2*60*60*1000){ TASAS=c; return; } }catch(e){}   /* 11-11: el caché sin quetzal se vuelve a pedir */   /* 28-10: el caché viejo sin peso mexicano se vuelve a pedir */
+  /* 27-11 (James, "sí"): PRIMERO la tasa OFICIAL que guarda n8n cada 2 h en fin_tasa_dia (/tasas-hoy): TRM del Banco de la República ×
+     dólar observado del Banco Central de Chile × BCE (euro, peso mexicano, esloti, leu). open.er-api se actualizaba una vez al día y el 27-11
+     quedó 2 % arriba cuando el peso se fortaleció. Si /tasas-hoy no responde o trae otro día, se cae a open.er-api como antes. */
+  var hoyUTC=new Date().toISOString().slice(0,10);
+  fetch(BASE+'/tasas-hoy',{cache:'no-store'}).then(function(r){ return r.json(); }).then(function(j){
+    if(!j||!j.ok||j.dia!==hoyUTC||!(j.clp>0)||!(j.eur>0)) throw 0;
+    TASAS={dia:new Date().toDateString(),clp:j.clp,eur:j.eur,ron:j.ron>0?j.ron:null,mxn:j.mxn>0?j.mxn:null,pln:j.pln>0?j.pln:null,gtq:j.gtq>0?j.gtq:null,fecha:j.actualizado||'',fuente:j.fuente||'oficial',_t:Date.now()};
+    try{ localStorage.setItem('jaye_tasas',JSON.stringify(TASAS)); }catch(e){}
+    renderPaisTab();
+  }).catch(function(){ cargarTasasErApi(); });
+}
+function cargarTasasErApi(){
   fetch('https://open.er-api.com/v6/latest/COP').then(function(r){return r.json();}).then(function(j){
     if(!j||j.result!=='success'||!j.rates||!j.rates.CLP||!j.rates.EUR) return;
     /* 20-10: el leu (RON) de la MISMA fuente; si no viene, Rumanía no se suma (nunca una cifra inventada) */
     /* 28-10: el peso mexicano (MXN) de la MISMA fuente, como el leu; si no viene, México no se suma */
-    TASAS={dia:new Date().toDateString(),clp:1/j.rates.CLP,eur:1/j.rates.EUR,ron:j.rates.RON?1/j.rates.RON:null,mxn:j.rates.MXN?1/j.rates.MXN:null,pln:j.rates.PLN?1/j.rates.PLN:null,gtq:j.rates.GTQ?1/j.rates.GTQ:null,fecha:j.time_last_update_utc||''};
+    TASAS={dia:new Date().toDateString(),clp:1/j.rates.CLP,eur:1/j.rates.EUR,ron:j.rates.RON?1/j.rates.RON:null,mxn:j.rates.MXN?1/j.rates.MXN:null,pln:j.rates.PLN?1/j.rates.PLN:null,gtq:j.rates.GTQ?1/j.rates.GTQ:null,fecha:j.time_last_update_utc||'',fuente:'open.er-api.com (respaldo, se actualiza una vez al día)',_t:Date.now()};
     try{ localStorage.setItem('jaye_tasas',JSON.stringify(TASAS)); }catch(e){}
     renderPaisTab();
   }).catch(function(){});
@@ -4946,7 +4959,8 @@ function tasaTxt(){
   /* la fecha de la fuente viene en UTC ("Mon, 28 Sep 2026 00:02"): en hora de Bogotá
      caería el día anterior, así que se muestra en UTC, que es la fecha de la tasa */
   var f=TASAS.fecha?new Date(TASAS.fecha).toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric',timeZone:'UTC'}):'';
-  return (tasaVieja()?'⚠ TASA DE OTRO DÍA, actualizando… · ':'')+(TASA_POR_DIA&&window.TASAS_DIA?'Europa convertida con la tasa de cada día · ':'')+'Tasa del '+f+' (open.er-api.com): 1 CLP = '+TASAS.clp.toLocaleString('es-CO',{maximumFractionDigits:4})+
+  /* 27-11: se dice de dónde salió la tasa (oficial: TRM × BCCh × BCE, o el respaldo open.er-api) */
+  return (tasaVieja()?'⚠ TASA DE OTRO DÍA, actualizando… · ':'')+(TASA_POR_DIA&&window.TASAS_DIA?'Europa convertida con la tasa de cada día · ':'')+'Tasa del '+f+' ('+(TASAS.fuente||'open.er-api.com')+'): 1 CLP = '+TASAS.clp.toLocaleString('es-CO',{maximumFractionDigits:4})+
     ' COP · 1 € = '+TASAS.eur.toLocaleString('es-CO',{maximumFractionDigits:2})+' COP'+
     (TASAS.ron?' · 1 leu = '+TASAS.ron.toLocaleString('es-CO',{maximumFractionDigits:2})+' COP':'')+
     (TASAS.mxn?' · 1 peso mexicano = '+TASAS.mxn.toLocaleString('es-CO',{maximumFractionDigits:2})+' COP':'')+   /* 28-10: México */
